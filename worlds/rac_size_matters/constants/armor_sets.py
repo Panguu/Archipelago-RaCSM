@@ -1,6 +1,6 @@
 """This module contains string constants for Armor Sets locations"""
 
-class RACSMTARMORSET:
+class Rac5ArmourSet:
     """String constants for Armor Set locations"""
     CHAMELEON = "Armor Set: Equip Chameleon Armor Set"
     CRYSTALLIX = "Armor Set: Equip Crystallix Armor Set"

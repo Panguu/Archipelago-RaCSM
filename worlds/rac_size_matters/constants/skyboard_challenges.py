@@ -1,6 +1,6 @@
 """This module contains string constants for Skyboard Challenge locations"""
 
-class RACSMTCLANK:
+class Rac5SkyboardChallenges:
     """String constants for Skyboard Challenge locations"""
     KALIDON_LEARNER = "Kalidon: Skyboard Challenge: Learner's Challenge"
     KALIDON_MASTER = "Kalidon: Skyboard Challenge: Master's Challenge"

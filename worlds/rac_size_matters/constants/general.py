@@ -1,6 +1,6 @@
 """This module contains string constants for each general game location"""
 
-class RACSMLOCATION:
+class Rac5Locations:
     """String constants for locations"""
     POKITARU_FIGHT = "Pokitaru: Fight some robots (Complete Luna's photoshoot)"
     POKITARU_CHESTPLATE = "Pokitaru: Wildfire Chestplate on bridge"

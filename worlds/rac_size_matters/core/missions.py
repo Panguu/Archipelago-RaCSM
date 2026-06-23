@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 from CommonClient import logger
 
-from ..constants import RacSMCutsceneLocations
+from ..constants import Rac5CutsceneLocations
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
 from ..interface_orchestrator.storage.local import LocalStorage
@@ -15,7 +15,7 @@ from .structs.game import MissionsStruct
 
 # Maps (address, mask) -> location_name.
 # Detection: (current_value & mask) != 0
-# mask of 0x0000 means not yet validated — skipped by MissionsState.
+# mask of 0x0000 means not yet validated â€” skipped by MissionsState.
 
 # Bits that must be force-written on initial load (not location checks).
 PRESET_MISSION_BITS: list[tuple[int, int]] = [
@@ -24,72 +24,72 @@ PRESET_MISSION_BITS: list[tuple[int, int]] = [
     (_ADDRS["Challax"],  0x0004),   # Explore the miniature city
 ]
 
-# ── Story missions ─────────────────────────────────────────────────────────────
+# â”€â”€ Story missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 STORY_MISSION_MAP: dict[tuple[int, int], str] = {
     # Pokitaru
-    (_ADDRS["Pokitaru"],      0x0002): RacSMCutsceneLocations.POKITARU_FIGHT,
+    (_ADDRS["Pokitaru"],      0x0002): Rac5CutsceneLocations.POKITARU_FIGHT,
 
     # Ryllus
-    (_ADDRS["Ryllus"],        0x0008): RacSMCutsceneLocations.RYLLUS_ARTIFACT,
-    (_ADDRS["Ryllus"],        0x0010): RacSMCutsceneLocations.RYLLUS_TEMPLE,
+    (_ADDRS["Ryllus"],        0x0008): Rac5CutsceneLocations.RYLLUS_ARTIFACT,
+    (_ADDRS["Ryllus"],        0x0010): Rac5CutsceneLocations.RYLLUS_TEMPLE,
 
     # Kalidon
-    (_ADDRS["Kalidon"],       0x0010): RacSMCutsceneLocations.KALIDON_WIN,
+    (_ADDRS["Kalidon"],       0x0010): Rac5CutsceneLocations.KALIDON_WIN,
 
     # Metalis
-    (_ADDRS["Metalis"],       0x0002): RacSMCutsceneLocations.METALIS_WAR,
-    # (_ADDRS["Metalis"],     0x0004): RacSMCutsceneLocations.METALIS_ESCAPE,  # Giant Clank disabled — unreachable
+    (_ADDRS["Metalis"],       0x0002): Rac5CutsceneLocations.METALIS_WAR,
+    # (_ADDRS["Metalis"],     0x0004): Rac5CutsceneLocations.METALIS_ESCAPE,  # Giant Clank disabled â€” unreachable
 
     # Dreamtime
-    (_ADDRS["Dreamtime"],     0x0004): RacSMCutsceneLocations.DREAMTIME_COMPLETE,
+    (_ADDRS["Dreamtime"],     0x0004): Rac5CutsceneLocations.DREAMTIME_COMPLETE,
 
     # Outpost Omega
-    (_ADDRS["Outpost Omega"], 0x0080): RacSMCutsceneLocations.OUTPOST_OMEGA_ESCAPE,
-    (_ADDRS["Outpost Omega"], 0x0010): RacSMCutsceneLocations.OUTPOST_OMEGA_REMATCH,
+    (_ADDRS["Outpost Omega"], 0x0080): Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
+    (_ADDRS["Outpost Omega"], 0x0010): Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,
 
     # Challax
-    # (_ADDRS["Challax"],     0x0020): RacSMCutsceneLocations.CHALLAX_CLANK,  # Giant Clank disabled — unreachable
+    # (_ADDRS["Challax"],     0x0020): Rac5CutsceneLocations.CHALLAX_CLANK,  # Giant Clank disabled â€” unreachable
 
     # Dayni Moon
-    (_ADDRS["Dayni Moon"],    0x0008): RacSMCutsceneLocations.DAYNI_MOON,
-    (_ADDRS["Dayni Moon"],    0x0004): RacSMCutsceneLocations.DAYNI_MOON_LUNA,
-    (_ADDRS["Dayni Moon"],    0x0020): RacSMCutsceneLocations.INSIDE_CLANK_ESCAPE,
+    (_ADDRS["Dayni Moon"],    0x0008): Rac5CutsceneLocations.DAYNI_MOON,
+    (_ADDRS["Dayni Moon"],    0x0004): Rac5CutsceneLocations.DAYNI_MOON_LUNA,
+    (_ADDRS["Dayni Moon"],    0x0020): Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,
 
     # Inside Clank
-    (_ADDRS["Inside Clank"],  0x0002): RacSMCutsceneLocations.INSIDE_CLANK_TECHNOMITES,
+    (_ADDRS["Inside Clank"],  0x0002): Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES,
 
     # Quodrona
-    (_ADDRS["Quodrona"],      0x0004): RacSMCutsceneLocations.QUODRONA_FIND,
-    (_ADDRS["Quodrona"],      0x0140): RacSMCutsceneLocations.QUODRONA_GOAL,
+    (_ADDRS["Quodrona"],      0x0004): Rac5CutsceneLocations.QUODRONA_FIND,
+    (_ADDRS["Quodrona"],      0x0140): Rac5CutsceneLocations.QUODRONA_GOAL,
 }
 
-# ── Cutscenes ──────────────────────────────────────────────────────────────────
+# â”€â”€ Cutscenes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CUTSCENE_MAP: dict[tuple[int, int], str] = {
     # Enter Planet (mask 0x0001 on each planet's mission address)
-    (_ADDRS["Pokitaru"],      0x0001): RacSMCutsceneLocations.POKITARU_ENTER,
-    (_ADDRS["Ryllus"],        0x0001): RacSMCutsceneLocations.RYLLUS_ENTER,
-    (_ADDRS["Kalidon"],       0x0001): RacSMCutsceneLocations.KALIDON_ENTER,
-    (_ADDRS["Metalis"],       0x0001): RacSMCutsceneLocations.METALIS_ENTER,
-    (_ADDRS["Dreamtime"],     0x0001): RacSMCutsceneLocations.DREAMTIME_ENTER,
-    (_ADDRS["Outpost Omega"], 0x0001): RacSMCutsceneLocations.OUTPOST_OMEGA_ENTER,
-    (_ADDRS["Challax"],       0x0001): RacSMCutsceneLocations.CHALLAX_ENTER,
-    (_ADDRS["Dayni Moon"],    0x0001): RacSMCutsceneLocations.DAYNI_MOON_ENTER,
-    (_ADDRS["Inside Clank"],  0x0001): RacSMCutsceneLocations.INSIDE_CLANK_ENTER,
-    (_ADDRS["Quodrona"],      0x0001): RacSMCutsceneLocations.QUODRONA_ENTER,
+    (_ADDRS["Pokitaru"],      0x0001): Rac5CutsceneLocations.POKITARU_ENTER,
+    (_ADDRS["Ryllus"],        0x0001): Rac5CutsceneLocations.RYLLUS_ENTER,
+    (_ADDRS["Kalidon"],       0x0001): Rac5CutsceneLocations.KALIDON_ENTER,
+    (_ADDRS["Metalis"],       0x0001): Rac5CutsceneLocations.METALIS_ENTER,
+    (_ADDRS["Dreamtime"],     0x0001): Rac5CutsceneLocations.DREAMTIME_ENTER,
+    (_ADDRS["Outpost Omega"], 0x0001): Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,
+    (_ADDRS["Challax"],       0x0001): Rac5CutsceneLocations.CHALLAX_ENTER,
+    (_ADDRS["Dayni Moon"],    0x0001): Rac5CutsceneLocations.DAYNI_MOON_ENTER,
+    (_ADDRS["Inside Clank"],  0x0001): Rac5CutsceneLocations.INSIDE_CLANK_ENTER,
+    (_ADDRS["Quodrona"],      0x0001): Rac5CutsceneLocations.QUODRONA_ENTER,
 
     # Flag-triggered events
-    (_ADDRS["Ryllus"],        0x0002): RacSMCutsceneLocations.RYLLUS_BUZZING,
-    (_ADDRS["Kalidon"],       0x0008): RacSMCutsceneLocations.KALIDON_EXPLORE,
-    (_ADDRS["Outpost Omega"], 0x0002): RacSMCutsceneLocations.OUTPOST_OMEGA,
-    # (_ADDRS["Challax"],     0x0010): RacSMCutsceneLocations.METALIS_CLANK,  # Giant Clank disabled — unreachable
-    (_ADDRS["Dayni Moon"],    0x0010): RacSMCutsceneLocations.DAYNI_MOON_FIGHT1,
-    (_ADDRS["Dayni Moon"],    0x0002): RacSMCutsceneLocations.DAYNI_MOON_FIGHT2,
-    (_ADDRS["Quodrona"],      0x0008): RacSMCutsceneLocations.QUODRONA_CLONE,
-    (_ADDRS["Quodrona"],      0x0010): RacSMCutsceneLocations.QUODRONA_CHASE,
-    (_ADDRS["Quodrona"],      0x0020): RacSMCutsceneLocations.QUODRONA_MECHA,
+    (_ADDRS["Ryllus"],        0x0002): Rac5CutsceneLocations.RYLLUS_BUZZING,
+    (_ADDRS["Kalidon"],       0x0008): Rac5CutsceneLocations.KALIDON_EXPLORE,
+    (_ADDRS["Outpost Omega"], 0x0002): Rac5CutsceneLocations.OUTPOST_OMEGA,
+    # (_ADDRS["Challax"],     0x0010): Rac5CutsceneLocations.METALIS_CLANK,  # Giant Clank disabled â€” unreachable
+    (_ADDRS["Dayni Moon"],    0x0010): Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,
+    (_ADDRS["Dayni Moon"],    0x0002): Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,
+    (_ADDRS["Quodrona"],      0x0008): Rac5CutsceneLocations.QUODRONA_CLONE,
+    (_ADDRS["Quodrona"],      0x0010): Rac5CutsceneLocations.QUODRONA_CHASE,
+    (_ADDRS["Quodrona"],      0x0020): Rac5CutsceneLocations.QUODRONA_MECHA,
 }
 
-# ── Combined (used by MissionsState to watch all possible completions) ─────────
+# â”€â”€ Combined (used by MissionsState to watch all possible completions) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 MISSION_COMPLETE_MAP: dict[tuple[int, int], str] = {**STORY_MISSION_MAP, **CUTSCENE_MAP}
 
 VALIDATED_MISSION_MAP: dict[tuple[int, int], str] = {
@@ -97,7 +97,7 @@ VALIDATED_MISSION_MAP: dict[tuple[int, int], str] = {
 }
 
 
-# ── State (runtime) ──────────────────────────────────────────────────────────────
+# â”€â”€ State (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 # Reverse map: address -> planet name for log messages
 _PLANET_BY_ADDR: dict[int, str] = {v: k for k, v in PLANET_MISSION_ADDRESSES.items()}

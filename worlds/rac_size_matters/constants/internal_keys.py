@@ -2,11 +2,11 @@
 
 These match the lowercase snake_case names used to address memory structs
 (see core/weapons.py WEAPON_ORDER/GADGET_ORDER) and are distinct from the
-player-facing display names in RACSMITEM. Kept import-free so both
+player-facing display names in Rac5Items. Kept import-free so both
 core/weapons.py and items.py can depend on it without a circular import.
 """
 
-class RACSMWEAPONKEY:
+class Rac5WeaponKeys:
     LACERATOR = "lacerator"
     CONCUSSION_GUN = "concussion_gun"
     ACID_BOMB_GLOVE = "acid_bomb_glove"
@@ -22,7 +22,7 @@ class RACSMWEAPONKEY:
     RYNO = "ryno"
 
 
-class RACSMGADGETKEY:
+class Rac5GadgetKeys:
     HYPERSHOT = "hypershot"
     SPROUT_O_MATIC = "sprout_o_matic"
     POLARIZER = "polarizer"

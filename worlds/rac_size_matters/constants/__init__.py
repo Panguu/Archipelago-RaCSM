@@ -1,28 +1,40 @@
-from .armor_sets import RACSMTARMORSET
-from .clank_challenges import RACSMTCLANK as RACSMCLANKCHALLENGE
-from .cutscenes import RacSMCutsceneLocations
-from .flag_locations import RACSMFLAGLOCATION
-from .general import RACSMLOCATION
-from .internal_keys import RACSMGADGETKEY, RACSMWEAPONKEY
-from .items import RACSMITEM
-from .planets import RACSMPLANET
-from .skillpoints import RACSMSKILLPOINT
-from .skyboard_challenges import RACSMTCLANK as RACSMSKYBOARDCHALLENGE
-from .tbolts import RACSMTBOLT
-from .vendors import RACSMVENDORLOCATION
+from .armor_sets import Rac5ArmourSet
+from .clank_challenges import Rac5ClankChallenges
+from .cutscenes import Rac5CutsceneLocations
+from .flag_locations import Rac5FlagLocations
+from .gadgets import Rac5Gadgets
+from .general import Rac5Locations
+from .internal_keys import Rac5GadgetKeys, Rac5WeaponKeys
+from .items import Rac5Items
+from .planets import Rac5Planets
+from .skillpoints import Rac5SkillPoints
+from .skyboard_challenges import Rac5SkyboardChallenges
+from .tbolts import Rac5TBolts
+from .vendors import Rac5VendorLocations
+from .weapons import (
+    Rac5ProgressiveWeaponMods,
+    Rac5ProgressiveWeapons,
+    Rac5WeaponMods,
+    Rac5Weapons,
+)
 
 __all__ = [
-    "RACSMCLANKCHALLENGE",
-    "RACSMFLAGLOCATION",
-    "RACSMGADGETKEY",
-    "RACSMITEM",
-    "RACSMLOCATION",
-    "RACSMPLANET",
-    "RACSMSKILLPOINT",
-    "RACSMSKYBOARDCHALLENGE",
-    "RACSMTARMORSET",
-    "RACSMTBOLT",
-    "RACSMVENDORLOCATION",
-    "RACSMWEAPONKEY",
-    "RacSMCutsceneLocations",
+    "Rac5ClankChallenges",
+    "Rac5FlagLocations",
+    "Rac5GadgetKeys",
+    "Rac5Gadgets",
+    "Rac5Items",
+    "Rac5Locations",
+    "Rac5Planets",
+    "Rac5ProgressiveWeaponMods",
+    "Rac5ProgressiveWeapons",
+    "Rac5SkillPoints",
+    "Rac5SkyboardChallenges",
+    "Rac5ArmourSet",
+    "Rac5TBolts",
+    "Rac5VendorLocations",
+    "Rac5WeaponKeys",
+    "Rac5WeaponMods",
+    "Rac5Weapons",
+    "Rac5CutsceneLocations",
 ]

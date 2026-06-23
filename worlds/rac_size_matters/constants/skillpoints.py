@@ -1,6 +1,6 @@
 """This module contains string constants for skillpoint locations"""
 
-class RACSMSKILLPOINT:
+class Rac5SkillPoints:
     """String constants for skillpoint locations"""
     POKITARU_TRAIN = "Pokitaru: Skill Point: Train Faster"
     POKITARU_BOAT = "Pokitaru: Skill Point: Don't Rock the Boat"

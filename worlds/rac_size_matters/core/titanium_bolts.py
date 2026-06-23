@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..constants import RACSMPLANET, RACSMTBOLT
+from ..constants import Rac5Planets, Rac5TBolts
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
 from ..interface_orchestrator.storage.local import LocalStorage
@@ -18,14 +18,14 @@ __all__ = [
 ]
 
 
-# ── Address resolver ─────────────────────────────────────────────────────────────
+# â”€â”€ Address resolver â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class TitaniumBoltAddresses:
     """Resolves titanium bolt field addresses from a single base address.
 
     Layout (identical on PSP and PS2):
-      +0x00  pickup  — increments each time a bolt is picked up
-      +0x05  total   — cumulative bolt count
+      +0x00  pickup  â€” increments each time a bolt is picked up
+      +0x05  total   â€” cumulative bolt count
     """
 
     def __init__(self, base: int) -> None:
@@ -34,7 +34,7 @@ class TitaniumBoltAddresses:
         self.total  = base + 0x05
 
 
-# ── Data ────────────────────────────────────────────────────────────────────────
+# â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @dataclass(frozen=True)
 class TitaniumBolt:
@@ -48,36 +48,36 @@ class TitaniumBolt:
 
 
 TITANIUM_BOLTS: dict[str, TitaniumBolt] = {
-    RACSMTBOLT.POKITARU_ZIPLINE:   TitaniumBolt(0x01,  0, RACSMPLANET.POKITARU),
-    RACSMTBOLT.POKITARU_HUT:       TitaniumBolt(0x01,  1, RACSMPLANET.POKITARU),
-    RACSMTBOLT.RYLLUS_CLIFF:       TitaniumBolt(0x02,  4, RACSMPLANET.RYLLUS),
-    RACSMTBOLT.RYLLUS_WALL:        TitaniumBolt(0x02,  5, RACSMPLANET.RYLLUS),
-    RACSMTBOLT.KALIDON_SHIP:       TitaniumBolt(0x03,  8, RACSMPLANET.KALIDON),
-    RACSMTBOLT.KALIDON_FACTORY:    TitaniumBolt(0x03, 10, RACSMPLANET.KALIDON),
-    RACSMTBOLT.KALIDON_RAMP:       TitaniumBolt(0x03,  9, RACSMPLANET.KALIDON),
-    RACSMTBOLT.METALIS_DOOR:       TitaniumBolt(0x04, 12, RACSMPLANET.METALIS),
-    RACSMTBOLT.DREAMTIME_HAT:      TitaniumBolt(0x05, 16, RACSMPLANET.DREAMTIME),
-    RACSMTBOLT.DREAMTIME_GARAGE:   TitaniumBolt(0x05, 17, RACSMPLANET.DREAMTIME),
-    RACSMTBOLT.DREAMTIME_CRAB:     TitaniumBolt(0x05, 18, RACSMPLANET.DREAMTIME),
-    RACSMTBOLT.OUTPOST_OMEGA_DREAM:TitaniumBolt(0x17, 20, RACSMPLANET.OUTPOST_OMEGA),
-    RACSMTBOLT.CHALLAX_MECH_PAD:   TitaniumBolt(0x07, 24, RACSMPLANET.CHALLAX),
-    RACSMTBOLT.CHALLAX_ROOM:       TitaniumBolt(0x07, 25, RACSMPLANET.CHALLAX),
-    RACSMTBOLT.CHALLAX_PLANT:      TitaniumBolt(0x07, 26, RACSMPLANET.CHALLAX),
-    RACSMTBOLT.DAYNI_MOON_BARN:    TitaniumBolt(0x08, 28, RACSMPLANET.DAYNI_MOON),
-    RACSMTBOLT.DAYNI_MOON_MIMIC:   TitaniumBolt(0x08, 29, RACSMPLANET.DAYNI_MOON),
-    RACSMTBOLT.INSIDE_CLANK_LADDER:TitaniumBolt(0x09, 32, RACSMPLANET.INSIDE_CLANK),
-    RACSMTBOLT.INSIDE_CLANK_WALL:  TitaniumBolt(0x09, 33, RACSMPLANET.INSIDE_CLANK),
-    RACSMTBOLT.QUODRONA_DUMMIES:   TitaniumBolt(0x0A, 36, RACSMPLANET.QUODRONA),
+    Rac5TBolts.POKITARU_ZIPLINE:   TitaniumBolt(0x01,  0, Rac5Planets.POKITARU),
+    Rac5TBolts.POKITARU_HUT:       TitaniumBolt(0x01,  1, Rac5Planets.POKITARU),
+    Rac5TBolts.RYLLUS_CLIFF:       TitaniumBolt(0x02,  4, Rac5Planets.RYLLUS),
+    Rac5TBolts.RYLLUS_WALL:        TitaniumBolt(0x02,  5, Rac5Planets.RYLLUS),
+    Rac5TBolts.KALIDON_SHIP:       TitaniumBolt(0x03,  8, Rac5Planets.KALIDON),
+    Rac5TBolts.KALIDON_FACTORY:    TitaniumBolt(0x03, 10, Rac5Planets.KALIDON),
+    Rac5TBolts.KALIDON_RAMP:       TitaniumBolt(0x03,  9, Rac5Planets.KALIDON),
+    Rac5TBolts.METALIS_DOOR:       TitaniumBolt(0x04, 12, Rac5Planets.METALIS),
+    Rac5TBolts.DREAMTIME_HAT:      TitaniumBolt(0x05, 16, Rac5Planets.DREAMTIME),
+    Rac5TBolts.DREAMTIME_GARAGE:   TitaniumBolt(0x05, 17, Rac5Planets.DREAMTIME),
+    Rac5TBolts.DREAMTIME_CRAB:     TitaniumBolt(0x05, 18, Rac5Planets.DREAMTIME),
+    Rac5TBolts.OUTPOST_OMEGA_DREAM:TitaniumBolt(0x17, 20, Rac5Planets.OUTPOST_OMEGA),
+    Rac5TBolts.CHALLAX_MECH_PAD:   TitaniumBolt(0x07, 24, Rac5Planets.CHALLAX),
+    Rac5TBolts.CHALLAX_ROOM:       TitaniumBolt(0x07, 25, Rac5Planets.CHALLAX),
+    Rac5TBolts.CHALLAX_PLANT:      TitaniumBolt(0x07, 26, Rac5Planets.CHALLAX),
+    Rac5TBolts.DAYNI_MOON_BARN:    TitaniumBolt(0x08, 28, Rac5Planets.DAYNI_MOON),
+    Rac5TBolts.DAYNI_MOON_MIMIC:   TitaniumBolt(0x08, 29, Rac5Planets.DAYNI_MOON),
+    Rac5TBolts.INSIDE_CLANK_LADDER:TitaniumBolt(0x09, 32, Rac5Planets.INSIDE_CLANK),
+    Rac5TBolts.INSIDE_CLANK_WALL:  TitaniumBolt(0x09, 33, Rac5Planets.INSIDE_CLANK),
+    Rac5TBolts.QUODRONA_DUMMIES:   TitaniumBolt(0x0A, 36, Rac5Planets.QUODRONA),
 }
 
-# (planet_id, delta) → location name — used by the client for unambiguous detection
+# (planet_id, delta) â†’ location name â€” used by the client for unambiguous detection
 BOLT_BY_PLANET_AND_DELTA: dict[tuple[int, int], str] = {
     (bolt.planet_id, bolt.delta): name
     for name, bolt in TITANIUM_BOLTS.items()
 }
 
 
-# ── State (runtime) ──────────────────────────────────────────────────────────────
+# â”€â”€ State (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class TitaniumBoltState(BaseState):
 

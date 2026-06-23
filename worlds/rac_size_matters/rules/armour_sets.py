@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import RACSMTARMORSET
+from ..constants import Rac5ArmourSet
 from ._helpers import HasArmourPiece
 from rule_builder.rules import And
 
@@ -16,34 +16,34 @@ def _full_set(set_display: str) -> list[tuple[str, str]]:
 
 
 _ARMOUR_SET_RULES: dict[str, list[tuple[str, str]]] = {
-    RACSMTARMORSET.WILDFIRE: _full_set("Wildfire"),
-    RACSMTARMORSET.WILDBURST: [
+    Rac5ArmourSet.WILDFIRE: _full_set("Wildfire"),
+    Rac5ArmourSet.WILDBURST: [
         ("Wildfire", "Chestplate"), ("Sludge Mk9", "Helmet"),
         ("Wildfire", "Gloves"), ("Wildfire", "Boots"),
     ],
-    RACSMTARMORSET.SLUDGE_MK9: _full_set("Sludge Mk9"),
-    RACSMTARMORSET.CRYSTALLIX: _full_set("Crystallix"),
-    RACSMTARMORSET.TRIPLE_WAVE: [
+    Rac5ArmourSet.SLUDGE_MK9: _full_set("Sludge Mk9"),
+    Rac5ArmourSet.CRYSTALLIX: _full_set("Crystallix"),
+    Rac5ArmourSet.TRIPLE_WAVE: [
         ("Wildfire", "Helmet"), ("Electroshock", "Chestplate"),
         ("Sludge Mk9", "Gloves"), ("Electroshock", "Boots"),
     ],
-    RACSMTARMORSET.SHOCK_CRYSTAL: [
+    Rac5ArmourSet.SHOCK_CRYSTAL: [
         ("Electroshock", "Helmet"), ("Crystallix", "Chestplate"),
         ("Crystallix", "Gloves"), ("Electroshock", "Boots"),
     ],
-    RACSMTARMORSET.ELECTROSHOCK: _full_set("Electroshock"),
-    RACSMTARMORSET.MEGA_BOMB: _full_set("Mega Bomb"),
-    RACSMTARMORSET.FIRE_BOMB: [
+    Rac5ArmourSet.ELECTROSHOCK: _full_set("Electroshock"),
+    Rac5ArmourSet.MEGA_BOMB: _full_set("Mega Bomb"),
+    Rac5ArmourSet.FIRE_BOMB: [
         ("Mega Bomb", "Chestplate"), ("Mega Bomb", "Helmet"),
         ("Wildfire", "Gloves"), ("Mega Bomb", "Boots"),
     ],
-    RACSMTARMORSET.HYPERBOREAN: _full_set("Hyperborean"),
-    RACSMTARMORSET.ICE_II: [
+    Rac5ArmourSet.HYPERBOREAN: _full_set("Hyperborean"),
+    Rac5ArmourSet.ICE_II: [
         ("Hyperborean", "Chestplate"), ("Crystallix", "Helmet"),
         ("Hyperborean", "Gloves"), ("Hyperborean", "Boots"),
     ],
-    RACSMTARMORSET.CHAMELEON: _full_set("Chameleon"),
-    RACSMTARMORSET.STALKER: [
+    Rac5ArmourSet.CHAMELEON: _full_set("Chameleon"),
+    Rac5ArmourSet.STALKER: [
         ("Wildfire", "Helmet"), ("Chameleon", "Chestplate"),
         ("Sludge Mk9", "Gloves"), ("Chameleon", "Boots"),
     ],

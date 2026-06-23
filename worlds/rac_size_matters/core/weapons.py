@@ -6,7 +6,7 @@ from typing import NamedTuple
 
 from BaseClasses import ItemClassification
 
-from ..constants import RACSMGADGETKEY, RACSMWEAPONKEY
+from ..constants import Rac5GadgetKeys, Rac5WeaponKeys
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
 from ..interface_orchestrator.storage.local import LocalStorage
@@ -19,7 +19,7 @@ from .structs.pickups import GadgetStruct, WeaponStruct
 # ``locations.py`` imports ``core.weapons`` siblings + items.py.
 
 
-# ── Weapon data ──────────────────────────────────────────────────────────────────
+# â”€â”€ Weapon data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
@@ -31,48 +31,48 @@ class WeaponData(NamedTuple):
     mod_count: int
 
 
-# Single source of truth per weapon (keyed by internal RACSMWEAPONKEY).
+# Single source of truth per weapon (keyed by internal Rac5WeaponKeys).
 # WEAPON_MAX_LEVELS/WEAPON_MOD_COUNTS below are derived from this for
 # existing consumers (client/vendor.py, core/vendor.py); items.py and
 # rules/_helpers.py derive projectile/classification membership from it too.
 WEAPON_DATA: dict[str, WeaponData] = {
-    RACSMWEAPONKEY.LACERATOR: WeaponData(
+    Rac5WeaponKeys.LACERATOR: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.CONCUSSION_GUN: WeaponData(
+    Rac5WeaponKeys.CONCUSSION_GUN: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=3,
     ),
-    RACSMWEAPONKEY.ACID_BOMB_GLOVE: WeaponData(
+    Rac5WeaponKeys.ACID_BOMB_GLOVE: WeaponData(
         is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.AGENTS_OF_DOOM: WeaponData(
+    Rac5WeaponKeys.AGENTS_OF_DOOM: WeaponData(
         is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.BEE_MINE_GLOVE: WeaponData(
+    Rac5WeaponKeys.BEE_MINE_GLOVE: WeaponData(
         is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.STATIC_BARRIER: WeaponData(
+    Rac5WeaponKeys.STATIC_BARRIER: WeaponData(
         is_projectile=False, classification=ItemClassification.useful, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.SHOCK_ROCKET: WeaponData(
+    Rac5WeaponKeys.SHOCK_ROCKET: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=3,
     ),
-    RACSMWEAPONKEY.SNIPER_MINE: WeaponData(
+    Rac5WeaponKeys.SNIPER_MINE: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.SCORCHER: WeaponData(
+    Rac5WeaponKeys.SCORCHER: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.LASER_TRACER: WeaponData(
+    Rac5WeaponKeys.LASER_TRACER: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
     ),
-    RACSMWEAPONKEY.SUCK_CANNON: WeaponData(
+    Rac5WeaponKeys.SUCK_CANNON: WeaponData(
         is_projectile=True, classification=ItemClassification.useful, max_level=4, mod_count=0,
     ),
-    RACSMWEAPONKEY.MOOTATOR: WeaponData(
+    Rac5WeaponKeys.MOOTATOR: WeaponData(
         is_projectile=False, classification=ItemClassification.progression, max_level=1, mod_count=0,
     ),
-    RACSMWEAPONKEY.RYNO: WeaponData(
+    Rac5WeaponKeys.RYNO: WeaponData(
         is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
     ),
 }
@@ -191,49 +191,49 @@ class GadgetData(NamedTuple):
     classification: ItemClassification
 
 
-# Single source of truth per gadget (keyed by internal RACSMGADGETKEY).
+# Single source of truth per gadget (keyed by internal Rac5GadgetKeys).
 # Gadgets have no level/mod/projectile concept, so classification is the
-# only flag needed — items.py derives GADGET_ITEM_TABLE's classification
+# only flag needed â€” items.py derives GADGET_ITEM_TABLE's classification
 # from this instead of keeping its own frozenset.
 GADGET_DATA: dict[str, GadgetData] = {
-    RACSMGADGETKEY.HYPERSHOT:      GadgetData(classification=ItemClassification.progression),
-    RACSMGADGETKEY.SPROUT_O_MATIC: GadgetData(classification=ItemClassification.progression),
-    RACSMGADGETKEY.POLARIZER:      GadgetData(classification=ItemClassification.progression),
-    RACSMGADGETKEY.PDA:            GadgetData(classification=ItemClassification.useful),
-    RACSMGADGETKEY.SHRINK_RAY:     GadgetData(classification=ItemClassification.progression),
-    RACSMGADGETKEY.BOLT_GRABBER:   GadgetData(classification=ItemClassification.useful),
-    RACSMGADGETKEY.MAP_O_MATIC:    GadgetData(classification=ItemClassification.useful),
-    RACSMGADGETKEY.BOX_BREAKER:    GadgetData(classification=ItemClassification.useful),
+    Rac5GadgetKeys.HYPERSHOT:      GadgetData(classification=ItemClassification.progression),
+    Rac5GadgetKeys.SPROUT_O_MATIC: GadgetData(classification=ItemClassification.progression),
+    Rac5GadgetKeys.POLARIZER:      GadgetData(classification=ItemClassification.progression),
+    Rac5GadgetKeys.PDA:            GadgetData(classification=ItemClassification.useful),
+    Rac5GadgetKeys.SHRINK_RAY:     GadgetData(classification=ItemClassification.progression),
+    Rac5GadgetKeys.BOLT_GRABBER:   GadgetData(classification=ItemClassification.useful),
+    Rac5GadgetKeys.MAP_O_MATIC:    GadgetData(classification=ItemClassification.useful),
+    Rac5GadgetKeys.BOX_BREAKER:    GadgetData(classification=ItemClassification.useful),
 }
 
 
 WEAPON_ORDER: list[str | None] = [
-    RACSMWEAPONKEY.LACERATOR,        # slot  0
-    RACSMWEAPONKEY.CONCUSSION_GUN,   # slot  1
-    RACSMWEAPONKEY.ACID_BOMB_GLOVE,  # slot  2
-    RACSMWEAPONKEY.AGENTS_OF_DOOM,   # slot  3
-    RACSMWEAPONKEY.BEE_MINE_GLOVE,   # slot  4
-    RACSMWEAPONKEY.STATIC_BARRIER,   # slot  5
-    RACSMWEAPONKEY.SHOCK_ROCKET,     # slot  6
-    RACSMWEAPONKEY.SNIPER_MINE,      # slot  7
-    RACSMWEAPONKEY.SCORCHER,         # slot  8
-    RACSMWEAPONKEY.LASER_TRACER,     # slot  9
-    RACSMWEAPONKEY.SUCK_CANNON,      # slot 10
-    RACSMWEAPONKEY.MOOTATOR,         # slot 11
+    Rac5WeaponKeys.LACERATOR,        # slot  0
+    Rac5WeaponKeys.CONCUSSION_GUN,   # slot  1
+    Rac5WeaponKeys.ACID_BOMB_GLOVE,  # slot  2
+    Rac5WeaponKeys.AGENTS_OF_DOOM,   # slot  3
+    Rac5WeaponKeys.BEE_MINE_GLOVE,   # slot  4
+    Rac5WeaponKeys.STATIC_BARRIER,   # slot  5
+    Rac5WeaponKeys.SHOCK_ROCKET,     # slot  6
+    Rac5WeaponKeys.SNIPER_MINE,      # slot  7
+    Rac5WeaponKeys.SCORCHER,         # slot  8
+    Rac5WeaponKeys.LASER_TRACER,     # slot  9
+    Rac5WeaponKeys.SUCK_CANNON,      # slot 10
+    Rac5WeaponKeys.MOOTATOR,         # slot 11
     None,                            # slot 12  gap
-    RACSMWEAPONKEY.RYNO,             # slot 13
+    Rac5WeaponKeys.RYNO,             # slot 13
 ]
 
 GADGET_ORDER: list[str | None] = [
-    RACSMGADGETKEY.HYPERSHOT,        # slot 0
-    RACSMGADGETKEY.SPROUT_O_MATIC,   # slot 1
-    RACSMGADGETKEY.POLARIZER,        # slot 2
-    RACSMGADGETKEY.PDA,              # slot 3
-    RACSMGADGETKEY.SHRINK_RAY,       # slot 4
-    RACSMGADGETKEY.BOLT_GRABBER,     # slot 5
+    Rac5GadgetKeys.HYPERSHOT,        # slot 0
+    Rac5GadgetKeys.SPROUT_O_MATIC,   # slot 1
+    Rac5GadgetKeys.POLARIZER,        # slot 2
+    Rac5GadgetKeys.PDA,              # slot 3
+    Rac5GadgetKeys.SHRINK_RAY,       # slot 4
+    Rac5GadgetKeys.BOLT_GRABBER,     # slot 5
     None,                            # slot 6  gap
-    RACSMGADGETKEY.MAP_O_MATIC,      # slot 7
-    RACSMGADGETKEY.BOX_BREAKER,      # slot 8
+    Rac5GadgetKeys.MAP_O_MATIC,      # slot 7
+    Rac5GadgetKeys.BOX_BREAKER,      # slot 8
 ]
 
 
@@ -252,7 +252,7 @@ def build_weapons(array_base: int) -> tuple[dict[str, WeaponAddresses], dict[str
     return weapons, gadgets
 
 
-# ── Weapon state (runtime) ───────────────────────────────────────────────────────
+# â”€â”€ Weapon state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 _MOD_SLOTS = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
@@ -274,7 +274,7 @@ _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
 
 # (internal_weapon, mod_unlock_attr) -> planet the vendor selling that mod
 # lives on. Drives the mod_unlock_N "purchasable" byte: it should only read 1
-# once the player owns the weapon (and, on Challax, the extra gadgets below —
+# once the player owns the weapon (and, on Challax, the extra gadgets below â€”
 # that vendor sits behind the Polarizer gate, mirroring rules/challax.py's _base).
 MOD_UNLOCK_PLANET: dict[tuple[str, str], str] = {}
 
@@ -291,7 +291,7 @@ def _ensure_loc_data() -> None:
     global MOD_UNLOCK_PLANET, MOD_UNLOCK_EXTRA_GADGETS
     if _LOC_DATA_LOADED:
         return
-    from ..constants import RACSMGADGETKEY, RACSMPLANET
+    from ..constants import Rac5GadgetKeys, Rac5Planets
     from ..locations import (
         GADGET_INTERNAL_TO_LOCATION as _GADGET_INTERNAL_TO_LOCATION,
         MOD_INTERNAL_TO_LOCATION as _MOD_INTERNAL_TO_LOCATION,
@@ -311,7 +311,7 @@ def _ensure_loc_data() -> None:
         for (weapon, slot), loc in _MOD_INTERNAL_TO_LOCATION.items()
     }
     MOD_UNLOCK_EXTRA_GADGETS = {
-        RACSMPLANET.CHALLAX: (RACSMGADGETKEY.SHRINK_RAY, RACSMGADGETKEY.POLARIZER),
+        Rac5Planets.CHALLAX: (Rac5GadgetKeys.SHRINK_RAY, Rac5GadgetKeys.POLARIZER),
     }
     _LOC_DATA_LOADED = True
 
@@ -350,7 +350,7 @@ class WeaponState(BaseState):
         )
         # _make_weapon_handler/_make_gadget_handler return a fresh closure on
         # every call, so register/unregister must reuse the exact same
-        # function objects — otherwise remove_struct_handler's identity check
+        # function objects â€” otherwise remove_struct_handler's identity check
         # silently no-ops and handlers pile up at the same address on every
         # planet revisit.
         self._registered_handlers: dict[type, Callable[[int, bytes], None]] = {}
@@ -465,7 +465,7 @@ class WeaponState(BaseState):
 
         Weapons/gadgets restored if purchased from vendor (and still owned) OR
         if name is in allowed_extra (owned weapon whose vendor planet is
-        unlocked). Mods restored only if purchased from this vendor — owning
+        unlocked). Mods restored only if purchased from this vendor â€” owning
         the mod via an AP item received elsewhere does not restore it here.
         """
         weapon_classes = {
@@ -480,7 +480,7 @@ class WeaponState(BaseState):
         }
 
         # Compute the final desired state first, then write each field exactly
-        # once — no separate zero pass followed by a restore pass.
+        # once â€” no separate zero pass followed by a restore pass.
         weapon_unlocked = dict.fromkeys(weapon_classes, False)
         weapon_mods: dict[str, dict[str, bool]] = {
             name: dict.fromkeys(_MOD_SLOTS, False) for name in weapon_classes

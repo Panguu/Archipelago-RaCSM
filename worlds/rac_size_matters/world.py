@@ -7,7 +7,7 @@ from BaseClasses import Item, ItemClassification, Location, Tutorial
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
-from .constants import RACSMITEM
+from .constants import Rac5Items, Rac5Weapons
 from .core.weapons import WEAPON_MOD_COUNTS
 from .items import (
     ALL_ITEMS,
@@ -117,9 +117,9 @@ class RACSizeMatterWorld(World):
             ryno_progressive = self.options.skill_points.value >= SkillPoints.option_hard
             mootator_progressive = self.options.skill_points.value >= SkillPoints.option_easy
             for display, steps in WEAPON_PROGRESSIVE_STEPS.items():
-                if display == RACSMITEM.RYNO and not ryno_progressive:
+                if display == Rac5Weapons.RYNO and not ryno_progressive:
                     pool.append(display)
-                elif display == RACSMITEM.MOOTATOR and not mootator_progressive:
+                elif display == Rac5Weapons.MOOTATOR and not mootator_progressive:
                     pool.append(display)
                 else:
                     pool += [PROGRESSIVE_WEAPON_NAME[display]] * steps
@@ -178,9 +178,13 @@ class RACSizeMatterWorld(World):
         if excluded_count > 10:
             option_list.append("Exclude Locations")
         if not option_list:
-            option_list = ["dunno"]  # ¯\_(ツ)_/¯
+            option_list = ["dunno"]  # Â¯\_(ãƒ„)_/Â¯
 
-        message = f"Not enough location options enabled! {count} items have nowhere to be placed."
+        player_name = self.multiworld.get_player_name(self.player)
+        message = (
+            f"{player_name}'s RAC Size Matters: Not enough location options enabled! "
+            f"{count} items have nowhere to be placed."
+        )
         if count >= 20:
             message += (f"\nThis large of a difference requires {ProgressiveWeapons.display_name} to be disabled, "
                         f"{ClankChallenges.display_name} set to All, or {SkyboardChallenges.display_name} set to All.")
@@ -202,8 +206,8 @@ class RACSizeMatterWorld(World):
 
     def generate_basic(self) -> None:
         # Pokitaru and Ryllus are always the starting planets.
-        self._precollect(RACSMITEM.POKITARU)
-        self._precollect(RACSMITEM.RYLLUS)
+        self._precollect(Rac5Items.POKITARU)
+        self._precollect(Rac5Items.RYLLUS)
 
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))

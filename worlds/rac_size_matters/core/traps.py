@@ -3,19 +3,19 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from ..constants import RACSMLOCATION
+from ..constants import Rac5Locations
 from .address_maps import BRIGHTNESS_ADDRESS, CHEATS, DREAMTIME_EFFECT
 
 if TYPE_CHECKING:
     from ..pypine.pypine.pine import Pine
 
-# ── Data ────────────────────────────────────────────────────────────────────────
-# TRAP_RESET_LEVEL is intentionally absent below — not functional yet.
+# â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# TRAP_RESET_LEVEL is intentionally absent below â€” not functional yet.
 
 # Direct memory-flag traps: write 1 to activate, write 0 to revert.
 _DIRECT_ADDRESSES: dict[str, int] = {
-    RACSMLOCATION.TRAP_FEVERDREAMTIME: DREAMTIME_EFFECT,
-    RACSMLOCATION.TRAP_BRIGHTNESS:     BRIGHTNESS_ADDRESS,
+    Rac5Locations.TRAP_FEVERDREAMTIME: DREAMTIME_EFFECT,
+    Rac5Locations.TRAP_BRIGHTNESS:     BRIGHTNESS_ADDRESS,
 }
 
 # Cheat-flag traps: bits OR'd into CHEATS (0x21F4C440) so multiple cheat traps
@@ -25,24 +25,24 @@ REVERSE_CONTROLS_CHEAT_BIT: int = 0x40
 WEAPON_SWITCHING_CHEAT_BIT: int = 0x80
 
 _CHEAT_BITS: dict[str, int] = {
-    RACSMLOCATION.TRAP_MIRROR_LEVEL:     MIRROR_LEVEL_CHEAT_BIT,
-    RACSMLOCATION.TRAP_REVERSE_CONTROLS: REVERSE_CONTROLS_CHEAT_BIT,
-    RACSMLOCATION.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
+    Rac5Locations.TRAP_MIRROR_LEVEL:     MIRROR_LEVEL_CHEAT_BIT,
+    Rac5Locations.TRAP_REVERSE_CONTROLS: REVERSE_CONTROLS_CHEAT_BIT,
+    Rac5Locations.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
 }
 
 # Seconds each trap stays active before automatically reverting.
 TRAP_DURATIONS: dict[str, float] = {
-    RACSMLOCATION.TRAP_FEVERDREAMTIME:   70,
-    RACSMLOCATION.TRAP_BRIGHTNESS:       70,
-    RACSMLOCATION.TRAP_MIRROR_LEVEL:     70,
-    RACSMLOCATION.TRAP_REVERSE_CONTROLS: 70,
-    RACSMLOCATION.TRAP_WEAPON_SWITCHING: 70,
+    Rac5Locations.TRAP_FEVERDREAMTIME:   70,
+    Rac5Locations.TRAP_BRIGHTNESS:       70,
+    Rac5Locations.TRAP_MIRROR_LEVEL:     70,
+    Rac5Locations.TRAP_REVERSE_CONTROLS: 70,
+    Rac5Locations.TRAP_WEAPON_SWITCHING: 70,
 }
 
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
 
 
-# ── Activation ───────────────────────────────────────────────────────────────────
+# â”€â”€ Activation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def activate_trap(pine: Pine, trap_name: str) -> None:
     """Activate a trap by name and schedule it to automatically revert.

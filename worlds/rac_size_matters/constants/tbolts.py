@@ -1,6 +1,6 @@
 """This module contains string constants for Titanium Bolt locations"""
 
-class RACSMTBOLT:
+class Rac5TBolts:
     """String constants for Titanium Bolt locations"""
     POKITARU_ZIPLINE = "Pokitaru: T-Bolt: Above Zipline"
     POKITARU_HUT = "Pokitaru: T-Bolt: Behind Hut"

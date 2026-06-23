@@ -5,10 +5,10 @@ from enum import IntFlag
 from typing import NamedTuple
 
 from ..constants import (
-    RACSMCLANKCHALLENGE as RACSMCLANK,
-    RACSMPLANET,
-    RACSMSKILLPOINT,
-    RACSMSKYBOARDCHALLENGE as RACSMSKY,
+    Rac5ClankChallenges as RACSMCLANK,
+    Rac5Planets,
+    Rac5SkillPoints,
+    Rac5SkyboardChallenges as RACSMSKY,
 )
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
@@ -17,7 +17,7 @@ from ..interface_orchestrator.structs.address_map import AddressMap
 from .address_maps import PLANET_ADDRESSES
 from .structs.pickups import ClankChallengeStruct, SkyboardStruct
 
-# ── Per-planet clank challenge base addresses ──────────────────────────────────
+# â”€â”€ Per-planet clank challenge base addresses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Base layout (offsets from base):
 #   +0  Derby unlock byte
 #   +1  Gadgetbot Toss unlock byte
@@ -52,7 +52,7 @@ class SkyboardBit(IntFlag):
     RACE_4 = 0x40
 
 
-# ── Unlock addresses (derived from base) ──────────────────────────────────────
+# â”€â”€ Unlock addresses (derived from base) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 METALIS_CLANK_UNLOCK_ADDR:           int   = _METALIS_BASE        # +0: Derby unlock
 METALIS_CLANK_UNLOCK_BYTES:          bytes = bytes([0x0F, 0x0F, 0x0F])
 
@@ -63,7 +63,7 @@ DAYNI_CLANK_GADGETBOT_UNLOCK_ADDR:   int   = _DAYNI_BASE + 2     # +2
 DAYNI_CLANK_UNLOCK_BYTES:            bytes = bytes([0x0F, 0x0F, 0x0F])
 
 
-# ── Clank challenge address tables (name → base + offset) ─────────────────────
+# â”€â”€ Clank challenge address tables (name â†’ base + offset) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Metalis:  Derby +3..+7 | Gadgetbot Toss +8..+12 | Gadgetbot +13..+17
 # Dayni:    Derby +3..+7 | Gadgetbot Toss +8..+12 | Gadgetbot +13..+17
 
@@ -116,36 +116,36 @@ _DAYNI_GADGETBOT: dict[str, int] = {
 }
 
 
-# ── Challenge type pickup lists ────────────────────────────────────────────────
+# â”€â”€ Challenge type pickup lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 DERBY_CLANK_PICKUPS: list[ChallengePickup] = [
-    ChallengePickup(addr, name, RACSMPLANET.METALIS)   for name, addr in _METALIS_DERBY.items()
+    ChallengePickup(addr, name, Rac5Planets.METALIS)   for name, addr in _METALIS_DERBY.items()
 ] + [
-    ChallengePickup(addr, name, RACSMPLANET.DAYNI_MOON) for name, addr in _DAYNI_DERBY.items()
+    ChallengePickup(addr, name, Rac5Planets.DAYNI_MOON) for name, addr in _DAYNI_DERBY.items()
 ]
 
 GADGETBOT_TOSS_CLANK_PICKUPS: list[ChallengePickup] = [
-    ChallengePickup(addr, name, RACSMPLANET.METALIS)   for name, addr in _METALIS_GADGETBOT_TOSS.items()
+    ChallengePickup(addr, name, Rac5Planets.METALIS)   for name, addr in _METALIS_GADGETBOT_TOSS.items()
 ] + [
-    ChallengePickup(addr, name, RACSMPLANET.DAYNI_MOON) for name, addr in _DAYNI_GADGETBOT_TOSS.items()
+    ChallengePickup(addr, name, Rac5Planets.DAYNI_MOON) for name, addr in _DAYNI_GADGETBOT_TOSS.items()
 ]
 
 GADGETBOT_CLANK_PICKUPS: list[ChallengePickup] = [
-    ChallengePickup(addr, name, RACSMPLANET.METALIS)   for name, addr in _METALIS_GADGETBOT.items()
+    ChallengePickup(addr, name, Rac5Planets.METALIS)   for name, addr in _METALIS_GADGETBOT.items()
 ] + [
-    ChallengePickup(addr, name, RACSMPLANET.DAYNI_MOON) for name, addr in _DAYNI_GADGETBOT.items()
+    ChallengePickup(addr, name, Rac5Planets.DAYNI_MOON) for name, addr in _DAYNI_GADGETBOT.items()
 ]
 
 
-# ── Reward locations (item grants on challenge completion) ────────────────────
+# â”€â”€ Reward locations (item grants on challenge completion) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Subset of the above: the final challenge of each type grants an item.
 CHALLENGE_PICKUPS: list[ChallengePickup] = [
-    ChallengePickup(_METALIS_BASE + 3,  RACSMCLANK.METALIS_BUZZSAW,     RACSMPLANET.METALIS),   # Derby first
-    ChallengePickup(_METALIS_BASE + 7,  RACSMCLANK.METALIS_REVENGE,     RACSMPLANET.METALIS),   # Derby reward
-    ChallengePickup(_METALIS_BASE + 12, RACSMCLANK.METALIS_UBER,        RACSMPLANET.METALIS),   # Gadgetbot Toss reward
-    ChallengePickup(_METALIS_BASE + 17, RACSMCLANK.METALIS_NIGHT,       RACSMPLANET.METALIS),   # Gadgetbot reward
-    ChallengePickup(_DAYNI_BASE   + 12, RACSMCLANK.DAYNI_MOON_SHOWDOWN, RACSMPLANET.DAYNI_MOON), # Gadgetbot Toss reward
-    ChallengePickup(_DAYNI_BASE   + 17, RACSMCLANK.DAYNI_MOON_INFINITE, RACSMPLANET.DAYNI_MOON), # Gadgetbot reward
+    ChallengePickup(_METALIS_BASE + 3,  RACSMCLANK.METALIS_BUZZSAW,     Rac5Planets.METALIS),   # Derby first
+    ChallengePickup(_METALIS_BASE + 7,  RACSMCLANK.METALIS_REVENGE,     Rac5Planets.METALIS),   # Derby reward
+    ChallengePickup(_METALIS_BASE + 12, RACSMCLANK.METALIS_UBER,        Rac5Planets.METALIS),   # Gadgetbot Toss reward
+    ChallengePickup(_METALIS_BASE + 17, RACSMCLANK.METALIS_NIGHT,       Rac5Planets.METALIS),   # Gadgetbot reward
+    ChallengePickup(_DAYNI_BASE   + 12, RACSMCLANK.DAYNI_MOON_SHOWDOWN, Rac5Planets.DAYNI_MOON), # Gadgetbot Toss reward
+    ChallengePickup(_DAYNI_BASE   + 17, RACSMCLANK.DAYNI_MOON_INFINITE, Rac5Planets.DAYNI_MOON), # Gadgetbot reward
 ]
 
 CHALLENGE_ADDRESS_MAP: dict[int, str] = {
@@ -153,7 +153,7 @@ CHALLENGE_ADDRESS_MAP: dict[int, str] = {
 }
 
 
-# ── Derived maps used by ClankChallengeState ───────────────────────────────────
+# â”€â”€ Derived maps used by ClankChallengeState â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 COUNT_BASED_CHALLENGE_ADDRS: frozenset[int] = frozenset(
     list(_METALIS_DERBY.values())
@@ -181,14 +181,14 @@ DAYNI_MOON_CHALLENGE_NAMES: frozenset[str] = frozenset(
 )
 
 GLADIATOR_FAILSAFE: dict[str, str] = {
-    RACSMPLANET.METALIS:    RACSMSKILLPOINT.METALIS_GLADIATOR,
-    RACSMPLANET.DAYNI_MOON: RACSMSKILLPOINT.DAYNI_MOON_GLADIATOR,
+    Rac5Planets.METALIS:    Rac5SkillPoints.METALIS_GLADIATOR,
+    Rac5Planets.DAYNI_MOON: Rac5SkillPoints.DAYNI_MOON_GLADIATOR,
 }
 
 
-# ── Skyboard addresses ─────────────────────────────────────────────────────────
+# â”€â”€ Skyboard addresses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-# Maps AP location name (constant) → (unlock_addr, completed_addr, mask).
+# Maps AP location name (constant) â†’ (unlock_addr, completed_addr, mask).
 _KALIDON_SKYBOARD: dict[str, tuple[int, int, int]] = {
     RACSMSKY.KALIDON_LEARNER: (_KALIDON_SKY, _KALIDON_SKY + 1, 0x01),
     RACSMSKY.KALIDON_TICKET:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x04),
@@ -204,12 +204,12 @@ _OUTPOST_OMEGA_SKYBOARD: dict[str, tuple[int, int, int]] = {
 }
 
 KALIDON_SKYBOARD_PICKUPS: list[SkyboardPickup] = [
-    SkyboardPickup(unlock_addr, completed_addr, SkyboardBit(mask), name, RACSMPLANET.KALIDON)
+    SkyboardPickup(unlock_addr, completed_addr, SkyboardBit(mask), name, Rac5Planets.KALIDON)
     for name, (unlock_addr, completed_addr, mask) in _KALIDON_SKYBOARD.items()
 ]
 
 OUTPOST_OMEGA_SKYBOARD_PICKUPS: list[SkyboardPickup] = [
-    SkyboardPickup(unlock_addr, completed_addr, SkyboardBit(mask), name, RACSMPLANET.OUTPOST_OMEGA)
+    SkyboardPickup(unlock_addr, completed_addr, SkyboardBit(mask), name, Rac5Planets.OUTPOST_OMEGA)
     for name, (unlock_addr, completed_addr, mask) in _OUTPOST_OMEGA_SKYBOARD.items()
 ]
 
@@ -227,7 +227,7 @@ for _sp in ALL_SKYBOARD_PICKUPS:
         SKYBOARD_UNLOCK_MASK[_sp.unlock_addr] = SKYBOARD_UNLOCK_MASK.get(_sp.unlock_addr, 0) | int(_sp.mask)
 
 
-# ── Challenge-only AP items ───────────────────────────────────────────────────
+# â”€â”€ Challenge-only AP items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CHALLENGE_ONLY_ITEMS: frozenset[str] = frozenset({
     "Polarizer",
     "Sludge Mk9 Gloves",
@@ -239,7 +239,7 @@ CHALLENGE_ONLY_ITEMS: frozenset[str] = frozenset({
 })
 
 
-# ── Clank challenge state (runtime) ──────────────────────────────────────────────
+# â”€â”€ Clank challenge state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ClankChallengeState(BaseState):
 
@@ -301,12 +301,12 @@ class ClankChallengeState(BaseState):
         """If every individual challenge on a planet is complete, send that
         planet's Ultimate Gladiator skill point even if its own in-game
         detection never fired."""
-        if RACSMPLANET.METALIS not in self._gladiator_sent and METALIS_CHALLENGE_NAMES <= self._completed:
-            self._gladiator_sent.add(RACSMPLANET.METALIS)
-            self._on_location_check(GLADIATOR_FAILSAFE[RACSMPLANET.METALIS])
-        if RACSMPLANET.DAYNI_MOON not in self._gladiator_sent and DAYNI_MOON_CHALLENGE_NAMES <= self._completed:
-            self._gladiator_sent.add(RACSMPLANET.DAYNI_MOON)
-            self._on_location_check(GLADIATOR_FAILSAFE[RACSMPLANET.DAYNI_MOON])
+        if Rac5Planets.METALIS not in self._gladiator_sent and METALIS_CHALLENGE_NAMES <= self._completed:
+            self._gladiator_sent.add(Rac5Planets.METALIS)
+            self._on_location_check(GLADIATOR_FAILSAFE[Rac5Planets.METALIS])
+        if Rac5Planets.DAYNI_MOON not in self._gladiator_sent and DAYNI_MOON_CHALLENGE_NAMES <= self._completed:
+            self._gladiator_sent.add(Rac5Planets.DAYNI_MOON)
+            self._on_location_check(GLADIATOR_FAILSAFE[Rac5Planets.DAYNI_MOON])
 
     def sync(self) -> None:
         for addr, name in ALL_CLANK_ADDRESS_MAP.items():
@@ -331,7 +331,7 @@ class ClankChallengeState(BaseState):
             return
         self.write_unlocks()
         if self._all_challenges:
-            return  # don't preset values — every completion is a check
+            return  # don't preset values â€” every completion is a check
         for addr in ALL_CLANK_ADDRESS_MAP:
             if addr not in COUNT_BASED_CHALLENGE_ADDRS:
                 raw = self.accessor.read_raw(addr, 1)

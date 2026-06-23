@@ -1,6 +1,6 @@
 """This module contains string constants for Clank Challenge locations"""
 
-class RACSMTCLANK:
+class Rac5ClankChallenges:
     """String constants for Clank Challenge locations"""
     METALIS_BRAIN = "Metalis: Clank Challenge: Brain Trip"
     METALIS_GAP = "Metalis: Clank Challenge: Bridge The Gap"

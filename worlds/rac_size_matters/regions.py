@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from BaseClasses import Region
 
-from .constants import RACSMPLANET
+from .constants import Rac5Planets
 from .locations import (
     ALL_CLANK_LOCATIONS,
     ARMOUR_PICKUP_LOCATIONS,
@@ -30,16 +30,16 @@ if TYPE_CHECKING:
     from .world import RACSizeMatterWorld
 
 PLANET_NAMES: tuple[str, ...] = (
-    RACSMPLANET.POKITARU,
-    RACSMPLANET.RYLLUS,
-    RACSMPLANET.KALIDON,
-    RACSMPLANET.METALIS,
-    RACSMPLANET.DREAMTIME,
-    RACSMPLANET.OUTPOST_OMEGA,
-    RACSMPLANET.CHALLAX,
-    RACSMPLANET.DAYNI_MOON,
-    RACSMPLANET.INSIDE_CLANK,
-    RACSMPLANET.QUODRONA,
+    Rac5Planets.POKITARU,
+    Rac5Planets.RYLLUS,
+    Rac5Planets.KALIDON,
+    Rac5Planets.METALIS,
+    Rac5Planets.DREAMTIME,
+    Rac5Planets.OUTPOST_OMEGA,
+    Rac5Planets.CHALLAX,
+    Rac5Planets.DAYNI_MOON,
+    Rac5Planets.INSIDE_CLANK,
+    Rac5Planets.QUODRONA,
 )
 
 
@@ -92,7 +92,7 @@ def create_regions(world: RACSizeMatterWorld) -> None:
             location = RACLocation(player, loc_name, loc_data.code, region)
             region.locations.append(location)
 
-    quodrona = planet_regions[RACSMPLANET.QUODRONA]
+    quodrona = planet_regions[Rac5Planets.QUODRONA]
     victory_loc = RACLocation(player, "Quodrona Completed", None, quodrona)
     victory_loc.place_locked_item(world.create_event("Victory"))
     quodrona.locations.append(victory_loc)

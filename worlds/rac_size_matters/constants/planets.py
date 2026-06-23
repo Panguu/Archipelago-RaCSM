@@ -1,6 +1,6 @@
 """This module contains string constants used for planets"""
 
-class RACSMPLANET:
+class Rac5Planets:
     """String constants for each planet"""
     POKITARU = "Pokitaru"
     RYLLUS = "Ryllus"

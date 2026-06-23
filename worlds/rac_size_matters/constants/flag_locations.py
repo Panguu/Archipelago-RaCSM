@@ -1,6 +1,6 @@
 """This module contains string constants for each flag related location"""
 
-class RACSMFLAGLOCATION:
+class Rac5FlagLocations:
     """String constants for flag locations"""
     RYLLUS_BUZZING = "Ryllus: Buzzing Cameras"
     KALIDON_EXPLORE = "Kalidon: Explore the planet"

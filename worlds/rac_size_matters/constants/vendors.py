@@ -1,6 +1,6 @@
 """This module provides a class with all the string constants used for Weapon Vendor names."""
 
-class RACSMVENDORLOCATION:
+class Rac5VendorLocations:
     """Constant strings for each Weapon/Weapon Mod location name."""
     POKITARU_LACERATOR = "Pokitaru: Gadgetron Vendor: Lacerator - 0"
     POKITARU_ACID = "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 0"

@@ -6,11 +6,11 @@ from enum import IntEnum, IntFlag
 from typing import NamedTuple
 
 from ..constants import (
-    RACSMCLANKCHALLENGE as RACSMCLANK,
-    RACSMLOCATION,
-    RACSMPLANET,
-    RACSMSKYBOARDCHALLENGE as RACSMSKY,
-    RACSMTARMORSET,
+    Rac5ClankChallenges as RACSMCLANK,
+    Rac5Locations,
+    Rac5Planets,
+    Rac5SkyboardChallenges as RACSMSKY,
+    Rac5ArmourSet,
 )
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
@@ -18,7 +18,7 @@ from ..interface_orchestrator.storage.local import LocalStorage
 from ..interface_orchestrator.structs.address_map import AddressMap
 from .structs.pickups import ArmourSetCollectedStruct, ArmourStruct
 
-# ── Armour address resolvers ─────────────────────────────────────────────────────
+# â”€â”€ Armour address resolvers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ArmourAddresses:
     """
@@ -124,7 +124,7 @@ class PlayerArmour:
         return f"PlayerArmour({self.pieces!r})"
 
 
-# ── Armour pickups ───────────────────────────────────────────────────────────────
+# â”€â”€ Armour pickups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ArmourPickup(NamedTuple):
     """
@@ -139,29 +139,29 @@ class ArmourPickup(NamedTuple):
 
 ARMOUR_PICKUPS: list[ArmourPickup] = [
     # Pokitaru
-    ArmourPickup("wildfire", ArmourPiece.CHESTPLATE, RACSMLOCATION.POKITARU_CHESTPLATE, RACSMPLANET.POKITARU),
-    ArmourPickup("wildfire", ArmourPiece.GLOVES,     RACSMLOCATION.POKITARU_GLOVES,     RACSMPLANET.POKITARU),
+    ArmourPickup("wildfire", ArmourPiece.CHESTPLATE, Rac5Locations.POKITARU_CHESTPLATE, Rac5Planets.POKITARU),
+    ArmourPickup("wildfire", ArmourPiece.GLOVES,     Rac5Locations.POKITARU_GLOVES,     Rac5Planets.POKITARU),
     # Ryllus
-    ArmourPickup("sludge",   ArmourPiece.BOOTS,      RACSMLOCATION.RYLLUS_BOOTS,        RACSMPLANET.RYLLUS),
-    ArmourPickup("wildfire", ArmourPiece.HELMET,     RACSMLOCATION.RYLLUS_HELMET,       RACSMPLANET.RYLLUS),
+    ArmourPickup("sludge",   ArmourPiece.BOOTS,      Rac5Locations.RYLLUS_BOOTS,        Rac5Planets.RYLLUS),
+    ArmourPickup("wildfire", ArmourPiece.HELMET,     Rac5Locations.RYLLUS_HELMET,       Rac5Planets.RYLLUS),
     # Kalidon
-    ArmourPickup("sludge",   ArmourPiece.CHESTPLATE, RACSMLOCATION.KALIDON_CHESTPLATE,  RACSMPLANET.KALIDON),
-    ArmourPickup("wildfire", ArmourPiece.BOOTS,      RACSMLOCATION.KALIDON_BOOTS,       RACSMPLANET.KALIDON),
+    ArmourPickup("sludge",   ArmourPiece.CHESTPLATE, Rac5Locations.KALIDON_CHESTPLATE,  Rac5Planets.KALIDON),
+    ArmourPickup("wildfire", ArmourPiece.BOOTS,      Rac5Locations.KALIDON_BOOTS,       Rac5Planets.KALIDON),
     # Metalis
-    # ArmourPickup("electroshock", ArmourPiece.GLOVES, RACSMLOCATION.METALIS_GLOVES,
-    #              RACSMPLANET.METALIS),  # currently unreachable
+    # ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES,
+    #              Rac5Planets.METALIS),  # currently unreachable
     # Dreamtime
-    ArmourPickup("crystallix", ArmourPiece.CHESTPLATE, RACSMLOCATION.DREAMTIME_CHESTPLATE, RACSMPLANET.DREAMTIME),
+    ArmourPickup("crystallix", ArmourPiece.CHESTPLATE, Rac5Locations.DREAMTIME_CHESTPLATE, Rac5Planets.DREAMTIME),
     # Outpost Omega
-    ArmourPickup("crystallix", ArmourPiece.BOOTS,    RACSMLOCATION.OUTPOST_OMEGA_BOOTS, RACSMPLANET.OUTPOST_OMEGA),
+    ArmourPickup("crystallix", ArmourPiece.BOOTS,    Rac5Locations.OUTPOST_OMEGA_BOOTS, Rac5Planets.OUTPOST_OMEGA),
     # Challax
     # ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, "Challax: Electroshock Chestplate",
-    #              RACSMPLANET.CHALLAX),  # not reachable
-    ArmourPickup("electroshock", ArmourPiece.HELMET, RACSMLOCATION.CHALLAX_HELMET,      RACSMPLANET.CHALLAX),
+    #              Rac5Planets.CHALLAX),  # not reachable
+    ArmourPickup("electroshock", ArmourPiece.HELMET, Rac5Locations.CHALLAX_HELMET,      Rac5Planets.CHALLAX),
     # Dayni Moon
-    ArmourPickup("mega_bomb", ArmourPiece.HELMET,    RACSMLOCATION.DAYNI_MOON_HELMET,   RACSMPLANET.DAYNI_MOON),
+    ArmourPickup("mega_bomb", ArmourPiece.HELMET,    Rac5Locations.DAYNI_MOON_HELMET,   Rac5Planets.DAYNI_MOON),
     # Inside Clank
-    ArmourPickup("mega_bomb", ArmourPiece.CHESTPLATE, RACSMLOCATION.INSIDE_CLANK_CHESTPLATE, RACSMPLANET.INSIDE_CLANK),
+    ArmourPickup("mega_bomb", ArmourPiece.CHESTPLATE, Rac5Locations.INSIDE_CLANK_CHESTPLATE, Rac5Planets.INSIDE_CLANK),
 ]
 
 ARMOUR_FLAG_TO_LOCATION: dict[tuple[str, ArmourPiece], str] = {
@@ -179,7 +179,7 @@ CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
 }
 
 
-# ── Armour set checks ────────────────────────────────────────────────────────────
+# â”€â”€ Armour set checks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ArmourSets(IntEnum):
     """
@@ -228,27 +228,27 @@ class ArmourSetCheck:
         return True
 
 ARMOUR_SET_CHECKS: dict[str, ArmourSetCheck] = {
-    RACSMTARMORSET.WILDFIRE:      ArmourSetCheck(chestplate=ArmourSets.Wildfire,     helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Wildfire,     boots=ArmourSets.Wildfire),
-    RACSMTARMORSET.WILDBURST:     ArmourSetCheck(chestplate=ArmourSets.Wildfire,     helmet=ArmourSets.Sludge,       gloves=ArmourSets.Wildfire,     boots=ArmourSets.Wildfire),
-    RACSMTARMORSET.SLUDGE_MK9:    ArmourSetCheck(chestplate=ArmourSets.Sludge,       helmet=ArmourSets.Sludge,       gloves=ArmourSets.Sludge,       boots=ArmourSets.Sludge),
-    RACSMTARMORSET.CRYSTALLIX:    ArmourSetCheck(chestplate=ArmourSets.Crystallix,   helmet=ArmourSets.Crystallix,   gloves=ArmourSets.Crystallix,   boots=ArmourSets.Crystallix),
-    RACSMTARMORSET.TRIPLE_WAVE:   ArmourSetCheck(chestplate=ArmourSets.Electroshock, helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Sludge,       boots=ArmourSets.Electroshock),
-    RACSMTARMORSET.SHOCK_CRYSTAL: ArmourSetCheck(chestplate=ArmourSets.Crystallix,   helmet=ArmourSets.Electroshock, gloves=ArmourSets.Crystallix,   boots=ArmourSets.Electroshock),
-    RACSMTARMORSET.ELECTROSHOCK:  ArmourSetCheck(chestplate=ArmourSets.Electroshock, helmet=ArmourSets.Electroshock, gloves=ArmourSets.Electroshock, boots=ArmourSets.Electroshock),
-    RACSMTARMORSET.MEGA_BOMB:     ArmourSetCheck(chestplate=ArmourSets.MegaBomb,     helmet=ArmourSets.MegaBomb,     gloves=ArmourSets.MegaBomb,     boots=ArmourSets.MegaBomb),
-    RACSMTARMORSET.FIRE_BOMB:     ArmourSetCheck(chestplate=ArmourSets.MegaBomb,     helmet=ArmourSets.MegaBomb,     gloves=ArmourSets.Wildfire,     boots=ArmourSets.MegaBomb),
-    RACSMTARMORSET.HYPERBOREAN:   ArmourSetCheck(chestplate=ArmourSets.Hyperborean,  helmet=ArmourSets.Hyperborean,  gloves=ArmourSets.Hyperborean,  boots=ArmourSets.Hyperborean),
-    RACSMTARMORSET.ICE_II:        ArmourSetCheck(chestplate=ArmourSets.Hyperborean,  helmet=ArmourSets.Crystallix,   gloves=ArmourSets.Hyperborean,  boots=ArmourSets.Hyperborean),
-    RACSMTARMORSET.CHAMELEON:     ArmourSetCheck(chestplate=ArmourSets.Chameleon,    helmet=ArmourSets.Chameleon,    gloves=ArmourSets.Chameleon,    boots=ArmourSets.Chameleon),
-    RACSMTARMORSET.STALKER:       ArmourSetCheck(chestplate=ArmourSets.Chameleon,    helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Sludge,       boots=ArmourSets.Chameleon),
+    Rac5ArmourSet.WILDFIRE:      ArmourSetCheck(chestplate=ArmourSets.Wildfire,     helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Wildfire,     boots=ArmourSets.Wildfire),
+    Rac5ArmourSet.WILDBURST:     ArmourSetCheck(chestplate=ArmourSets.Wildfire,     helmet=ArmourSets.Sludge,       gloves=ArmourSets.Wildfire,     boots=ArmourSets.Wildfire),
+    Rac5ArmourSet.SLUDGE_MK9:    ArmourSetCheck(chestplate=ArmourSets.Sludge,       helmet=ArmourSets.Sludge,       gloves=ArmourSets.Sludge,       boots=ArmourSets.Sludge),
+    Rac5ArmourSet.CRYSTALLIX:    ArmourSetCheck(chestplate=ArmourSets.Crystallix,   helmet=ArmourSets.Crystallix,   gloves=ArmourSets.Crystallix,   boots=ArmourSets.Crystallix),
+    Rac5ArmourSet.TRIPLE_WAVE:   ArmourSetCheck(chestplate=ArmourSets.Electroshock, helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Sludge,       boots=ArmourSets.Electroshock),
+    Rac5ArmourSet.SHOCK_CRYSTAL: ArmourSetCheck(chestplate=ArmourSets.Crystallix,   helmet=ArmourSets.Electroshock, gloves=ArmourSets.Crystallix,   boots=ArmourSets.Electroshock),
+    Rac5ArmourSet.ELECTROSHOCK:  ArmourSetCheck(chestplate=ArmourSets.Electroshock, helmet=ArmourSets.Electroshock, gloves=ArmourSets.Electroshock, boots=ArmourSets.Electroshock),
+    Rac5ArmourSet.MEGA_BOMB:     ArmourSetCheck(chestplate=ArmourSets.MegaBomb,     helmet=ArmourSets.MegaBomb,     gloves=ArmourSets.MegaBomb,     boots=ArmourSets.MegaBomb),
+    Rac5ArmourSet.FIRE_BOMB:     ArmourSetCheck(chestplate=ArmourSets.MegaBomb,     helmet=ArmourSets.MegaBomb,     gloves=ArmourSets.Wildfire,     boots=ArmourSets.MegaBomb),
+    Rac5ArmourSet.HYPERBOREAN:   ArmourSetCheck(chestplate=ArmourSets.Hyperborean,  helmet=ArmourSets.Hyperborean,  gloves=ArmourSets.Hyperborean,  boots=ArmourSets.Hyperborean),
+    Rac5ArmourSet.ICE_II:        ArmourSetCheck(chestplate=ArmourSets.Hyperborean,  helmet=ArmourSets.Crystallix,   gloves=ArmourSets.Hyperborean,  boots=ArmourSets.Hyperborean),
+    Rac5ArmourSet.CHAMELEON:     ArmourSetCheck(chestplate=ArmourSets.Chameleon,    helmet=ArmourSets.Chameleon,    gloves=ArmourSets.Chameleon,    boots=ArmourSets.Chameleon),
+    Rac5ArmourSet.STALKER:       ArmourSetCheck(chestplate=ArmourSets.Chameleon,    helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Sludge,       boots=ArmourSets.Chameleon),
 }
 
 _HYBRID_BYTE1_BITS: dict[str, int] = {
-    RACSMTARMORSET.SHOCK_CRYSTAL: 0x01,
-    RACSMTARMORSET.WILDBURST:     0x02,
-    RACSMTARMORSET.TRIPLE_WAVE:   0x04,
-    RACSMTARMORSET.ICE_II:        0x08,
-    RACSMTARMORSET.STALKER:       0x10,
+    Rac5ArmourSet.SHOCK_CRYSTAL: 0x01,
+    Rac5ArmourSet.WILDBURST:     0x02,
+    Rac5ArmourSet.TRIPLE_WAVE:   0x04,
+    Rac5ArmourSet.ICE_II:        0x08,
+    Rac5ArmourSet.STALKER:       0x10,
 }
 
 ARMOUR_SET_CHECK_MASKS: dict[str, int] = {
@@ -258,7 +258,7 @@ ARMOUR_SET_CHECK_MASKS: dict[str, int] = {
 }
 
 
-# ── Armour state (runtime) ───────────────────────────────────────────────────────
+# â”€â”€ Armour state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ArmourState(BaseState):
 
@@ -269,9 +269,9 @@ class ArmourState(BaseState):
         storage: LocalStorage,
     ) -> None:
         super().__init__(accessor, addresses, storage)
-        # Slot bytes store set indices (1-7), not ArmourPiece bitmask values — keep as int.
+        # Slot bytes store set indices (1-7), not ArmourPiece bitmask values â€” keep as int.
         self.equipped: dict[str, int]  = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
-        # Stable snapshot — only updated by freeze_slots()/sync_slots()/sync().
+        # Stable snapshot â€” only updated by freeze_slots()/sync_slots()/sync().
         self._stable_slots: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
         self.sets_unlocked: dict[str, bool]    = dict.fromkeys(ArmourStruct.SET_FIELDS, False)
         self.sets_bitmask: dict[str, int]      = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
@@ -394,7 +394,7 @@ class ArmourState(BaseState):
         return f"ArmourState(sets_unlocked={unlocked}, equipped_slots={slots})"
 
 
-# ── Armour set collected state (runtime) ─────────────────────────────────────────
+# â”€â”€ Armour set collected state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ArmourSetCollectedState(BaseState):
 

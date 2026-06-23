@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from ..constants import RACSMITEM
+from ..constants import Rac5Items
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
 from ..interface_orchestrator.storage.local import LocalStorage
@@ -104,14 +104,14 @@ INFOBOT_UNLOCK_VALUE = 3  # value written to the planet status address
 
 # Display name -> planet key used in PLANET_STATE_ADDRESSES
 INFOBOT_ITEM_TO_PLANET: dict[str, str] = {
-    RACSMITEM.POKITARU:     "pokitaru",
-    RACSMITEM.RYLLUS:       "ryllus",
-    RACSMITEM.KALIDON:      "kalidon",
-    RACSMITEM.METALIS:      "metalis",
-    RACSMITEM.OUTPOST_OMEGA: "outpost_omega",
-    RACSMITEM.CHALLAX:      "challax",
-    RACSMITEM.DAYNI_MOON:   "dayni_moon",
-    RACSMITEM.QUODRONA:     "quodrona",
+    Rac5Items.POKITARU:     "pokitaru",
+    Rac5Items.RYLLUS:       "ryllus",
+    Rac5Items.KALIDON:      "kalidon",
+    Rac5Items.METALIS:      "metalis",
+    Rac5Items.OUTPOST_OMEGA: "outpost_omega",
+    Rac5Items.CHALLAX:      "challax",
+    Rac5Items.DAYNI_MOON:   "dayni_moon",
+    Rac5Items.QUODRONA:     "quodrona",
 }
 
 PLANET_STATE_ADDRESSES: dict[str, int] = {

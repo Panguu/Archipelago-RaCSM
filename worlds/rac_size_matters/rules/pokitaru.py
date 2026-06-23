@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import RACSMITEM, RACSMSKILLPOINT, RACSMTBOLT, RACSMVENDORLOCATION, RacSMCutsceneLocations
+from ..constants import Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5CutsceneLocations, Rac5Weapons
 from ._helpers import has_projectile_weapon, has_weapon
 
 if TYPE_CHECKING:
@@ -13,25 +13,25 @@ def set_pokitaru_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    # ── Skill Points ──────────────────────────────────────────────────────────
+    # â”€â”€ Skill Points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if world.options.skill_points.value >= 1:
-        mw.get_location(RACSMSKILLPOINT.POKITARU_TRAIN, player).access_rule = \
+        mw.get_location(Rac5SkillPoints.POKITARU_TRAIN, player).access_rule = \
             lambda state: has_projectile_weapon(state, player)
-        mw.get_location(RACSMSKILLPOINT.POKITARU_BOAT, player).access_rule = lambda _: True
-        mw.get_location(RACSMSKILLPOINT.POKITARU_COWS, player).access_rule = \
-            lambda state: has_weapon(state, player, RACSMITEM.MOOTATOR)
+        mw.get_location(Rac5SkillPoints.POKITARU_BOAT, player).access_rule = lambda _: True
+        mw.get_location(Rac5SkillPoints.POKITARU_COWS, player).access_rule = \
+            lambda state: has_weapon(state, player, Rac5Weapons.MOOTATOR)
 
-    # ── Missions ──────────────────────────────────────────────────────────────
+    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if world.options.all_missions:
-        mw.get_location(RacSMCutsceneLocations.POKITARU_FIGHT, player).access_rule = lambda _: True
+        mw.get_location(Rac5CutsceneLocations.POKITARU_FIGHT, player).access_rule = lambda _: True
 
-    # ── Titanium Bolts ────────────────────────────────────────────────────────
-    mw.get_location(RACSMTBOLT.POKITARU_ZIPLINE, player).access_rule = lambda _: True
-    mw.get_location(RACSMTBOLT.POKITARU_HUT,     player).access_rule = lambda _: True
+    # â”€â”€ Titanium Bolts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    mw.get_location(Rac5TBolts.POKITARU_ZIPLINE, player).access_rule = lambda _: True
+    mw.get_location(Rac5TBolts.POKITARU_HUT,     player).access_rule = lambda _: True
 
-    # ── Vendors ───────────────────────────────────────────────────────────────
+    # â”€â”€ Vendors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Weapons and gadgets freely accessible on arrival.
-    mw.get_location(RACSMVENDORLOCATION.POKITARU_LACERATOR,  player).access_rule = lambda _: True
-    mw.get_location(RACSMVENDORLOCATION.POKITARU_ACID,       player).access_rule = lambda _: True
-    mw.get_location(RACSMVENDORLOCATION.POKITARU_CONCUSSION, player).access_rule = lambda _: True
-    mw.get_location(RACSMVENDORLOCATION.POKITARU_HYPERSHOT,  player).access_rule = lambda _: True
+    mw.get_location(Rac5VendorLocations.POKITARU_LACERATOR,  player).access_rule = lambda _: True
+    mw.get_location(Rac5VendorLocations.POKITARU_ACID,       player).access_rule = lambda _: True
+    mw.get_location(Rac5VendorLocations.POKITARU_CONCUSSION, player).access_rule = lambda _: True
+    mw.get_location(Rac5VendorLocations.POKITARU_HYPERSHOT,  player).access_rule = lambda _: True
