@@ -1,0 +1,3 @@
+GAME_NAME = "Ratchet & Clank: Size Matters"
+EXPECTED_GAME_ID = "SCUS-97615"
+POLL_INTERVAL = 0.1

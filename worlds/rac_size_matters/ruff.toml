@@ -1,0 +1,32 @@
+line-length = 120
+
+exclude = ["pypine/"]
+
+[lint]
+select = ["B", "C", "E", "F", "W", "I", "N", "Q", "UP", "RET", "RSE", "RUF", "ISC", "PLC", "PLE", "PLW", "T20", "PERF"]
+per-file-ignores."core/address_maps/ps2.py" = ["E501"]  # one PlanetAddresses(...) row per planet; wrapping hurts readability.
+per-file-ignores."core/armour.py" = ["E501"]            # ARMOUR_SET_CHECKS is a dense one-row-per-set lookup table.
+ignore = [
+    "B011",    # In AP, the use of assert False is essential because we optimise out these statements for release builds.
+    "B027",    # MemoryInterface.connect/disconnect are intentionally optional no-op hooks, not required overrides.
+    "C901",    # Author disagrees with limiting branch complexity
+    "E402",    # Imports after try/except tracker block are intentional in AP clients.
+    "E731",    # Lambda assignments used as local helpers in rules/pollers are intentional.
+    "N806",    # Uppercase scan constants (SCAN_START, SCAN_LENGTH) in functions are intentional.
+    "N818",    # Author agrees with this rule, but Core AP violates this and changing it would be a hassle.
+    "PLC0415", # In AP, we consider local imports totally fine & necessary
+    "PLC1802", # Author agrees with this rule, but it literally changes the functionality of the code, which is unsafe.
+    "PLC1901", # This is just not equivalent
+    "PLE1141", # Gives false positives when the dict keys are tuples, but does not mention this in the suggested fix.
+    "PERF203", # notify_change's per-handler try/except is intentional: one bad handler must not stop the others.
+    "PLW0108", # Lambdas passed to MemoryState/PollAddress need to be lazy; inlining would evaluate eagerly.
+    "PLW0603", # core.weapons._ensure_loc_data rebinds module globals deliberately, to lazy-load data without
+               # a circular import between core.weapons/items.py/locations.py (see comments at top of weapons.py).
+    "RUF006",  # asyncio.create_task fire-and-forget is the standard AP client pattern.
+    "RUF012",  # Mutable class attributes (options dicts, name→id maps) are the standard AP World/test pattern.
+    "RUF022",  # __all__ is grouped by category, not sorted alphabetically.
+    "UP015",   # Explicit is better than implicit, so we'd prefer to keep "r" in open() calls.
+]
+
+[lint.isort]
+combine-as-imports = true

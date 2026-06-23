@@ -1,0 +1,12 @@
+{
+  "compatible_version": 7,
+  "version": 7,
+  "game": "Ratchet & Clank: Size Matters",
+  "world_version": "0.2.3",
+  "authors": [
+    "Pangu",
+	"Amondo",
+    "ImJustATester"
+  ]
+  
+}

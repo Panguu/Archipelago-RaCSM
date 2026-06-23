@@ -1,0 +1,43 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. v1.0.0)"
+        required: true
+      notes:
+        description: "Additional release notes"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build apworld
+        run: bash build/build.sh
+        env:
+          TAG: ${{ inputs.version }}
+
+      - name: Locate apworld
+        id: artifact
+        run: |
+          path=$(find build/target -name "rac_size_matters.apworld" | head -1)
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          body: ${{ inputs.notes }}
+          artifacts: ${{ steps.artifact.outputs.path }}
+          generateReleaseNotes: true
