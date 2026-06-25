@@ -216,9 +216,9 @@ jobs:
           git fetch --tags
 
           if [[ "$branch" == "main" ]]; then
-            prev_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | grep -v -- '-pre' | grep -v "^$new_tag\$" | head -n 1)
+            prev_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | grep -v -- '-pre' | grep -v "^$new_tag\$" | head -n 1 || true)
           else
-            prev_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | grep -v "^$new_tag\$" | head -n 1)
+            prev_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | grep -v "^$new_tag\$" | head -n 1 || true)
           fi
 
           if [[ -z "$prev_tag" ]]; then
