@@ -7,13 +7,22 @@ on:
       - 'fuzz.py'
       - 'hooks/**'
       - '.github/workflows/fuzz-rac-size-matters.yml'
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Number of fuzz runs per hook"
+        required: false
+        default: "150"
+      pr_number:
+        description: "Optional PR number to post the results comment to (leave blank to only get a job summary)"
+        required: false
 
 permissions:
   contents: read
   pull-requests: write
 
 concurrency:
-  group: "fuzz-rac-size-matters-${{ github.event.pull_request.number }}"
+  group: "fuzz-rac-size-matters-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}"
   cancel-in-progress: true
 
 jobs:
@@ -60,9 +69,10 @@ jobs:
         shell: bash
         env:
           HOOK: ${{ matrix.hook }}
+          RUNS: ${{ github.event.inputs.runs || '150' }}
         run: |
           set +e
-          python fuzz.py -g rac_size_matters -r 150 -j 4 -t 30 \
+          python fuzz.py -g rac_size_matters -r "$RUNS" -j 4 -t 30 \
             --hook "hooks.${HOOK}:Hook" --dump-ignored
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           set -e
@@ -154,19 +164,34 @@ jobs:
             done
           } > comment_body.md
           cat comment_body.md
+          cat comment_body.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Determine target PR number
+        id: target
+        shell: bash
+        run: |
+          number="${{ github.event.pull_request.number }}"
+          if [ -z "$number" ]; then
+            number="${{ github.event.inputs.pr_number }}"
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
 
       - name: Post or update PR comment
+        if: steps.target.outputs.number != ''
         uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.target.outputs.number }}
         with:
           script: |
             const fs = require('fs');
             const body = fs.readFileSync('comment_body.md', 'utf8');
             const marker = '<!-- fuzz-results-rac_size_matters -->';
+            const issue_number = parseInt(process.env.PR_NUMBER, 10);
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number,
             });
 
             const existing = comments.find(c => c.body.includes(marker));
@@ -182,7 +207,7 @@ jobs:
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number,
+                issue_number,
                 body,
               });
             }
