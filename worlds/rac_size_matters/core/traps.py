@@ -9,8 +9,8 @@ from .address_maps import BRIGHTNESS_ADDRESS, CHEATS, DREAMTIME_EFFECT
 if TYPE_CHECKING:
     from ..pypine.pypine.pine import Pine
 
-# â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# TRAP_RESET_LEVEL is intentionally absent below â€” not functional yet.
+# Data
+# TRAP_RESET_LEVEL is intentionally absent below — not functional yet.
 
 # Direct memory-flag traps: write 1 to activate, write 0 to revert.
 _DIRECT_ADDRESSES: dict[str, int] = {
@@ -42,7 +42,7 @@ TRAP_DURATIONS: dict[str, float] = {
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
 
 
-# â”€â”€ Activation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Activation
 
 def activate_trap(pine: Pine, trap_name: str) -> None:
     """Activate a trap by name and schedule it to automatically revert.

@@ -4,7 +4,7 @@ import asyncio
 import struct
 from dataclasses import dataclass
 
-# ── Colour encoding ─────────────────────────────────────────────────────────────
+# Colour encoding
 # 0x09 = colour-change marker; the following byte selects the colour.
 
 class TextColour:
@@ -40,7 +40,7 @@ from .address_maps import (
 )
 from .structs.game import CountdownTimerStruct, VendorVisibilityStruct
 
-# ── Data ────────────────────────────────────────────────────────────────────────
+# Data
 # Both box types share the same in-memory layout relative to their base address:
 #   base + 0x00  countdown_timer      (float, seconds remaining)
 #   base + 0x20  is_visible           (u16, message-ID when visible)
@@ -108,7 +108,7 @@ MultiLineTextBoxAddrs: list[MultiLineTextBox] = [
 ]
 
 
-# ── State (runtime) ──────────────────────────────────────────────────────────────
+# State (runtime)
 
 class DisplayedTextBoxState(BaseState):
 

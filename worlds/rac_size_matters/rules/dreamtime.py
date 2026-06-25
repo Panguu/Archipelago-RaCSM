@@ -24,23 +24,23 @@ def set_dreamtime_rules(world: RACSizeMatterWorld) -> None:
     _base = lambda state: (state.has(Rac5Gadgets.HYPERSHOT, player)
                            and state.has(Rac5Gadgets.SPROUT_O_MATIC, player))
 
-    # â”€â”€ Skill Points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Skill Points
     if world.options.skill_points.value >= 2:
         mw.get_location(Rac5SkillPoints.DREAMTIME_FRIENDS,       player).access_rule = _base
         mw.get_location(Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS, player).access_rule = _base
 
-    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Missions
     if world.options.all_missions:
         mw.get_location(Rac5CutsceneLocations.DREAMTIME_COMPLETE, player).access_rule = _base
 
-    # â”€â”€ Titanium Bolts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Titanium Bolts
     mw.get_location(Rac5TBolts.DREAMTIME_HAT,    player).access_rule = _base
     mw.get_location(Rac5TBolts.DREAMTIME_GARAGE, player).access_rule = _base
     mw.get_location(Rac5TBolts.DREAMTIME_CRAB,   player).access_rule = \
         lambda state: (_base(state) and has_projectile_weapon(state, player))
 
-    # â”€â”€ Armour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Armour
     mw.get_location(Rac5Locations.DREAMTIME_CHESTPLATE, player).access_rule = _base
 
-    # â”€â”€ Vendors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Vendors
     mw.get_location(Rac5VendorLocations.DREAMTIME_SUCK, player).access_rule = _base

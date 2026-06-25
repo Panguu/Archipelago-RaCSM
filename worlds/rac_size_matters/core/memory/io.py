@@ -167,14 +167,14 @@ class MemoryItemState:
             self._sorted_keys  = sorted(self._addresses, key=lambda k: self._addresses[k])
             self._base_address = sorted_addrs[0]
 
-    # ── Desired-state management ──────────────────────────────────────────────
+    # Desired-state management
 
     def add(self, key: str, value: int) -> None:
         """Set the desired value for *key* (does not write to memory)."""
         if key in self._values:
             self._values[key] = value & 0xFF
 
-    # ── Memory operations ─────────────────────────────────────────────────────
+    # Memory operations
 
     def give(self, pine: Pine) -> None:
         """Write every desired value to its address.
@@ -261,7 +261,7 @@ class MemoryItemState:
             self._sorted_keys  = []
             self._base_address = 0
 
-    # ── Accessors ─────────────────────────────────────────────────────────────
+    # Accessors
 
     def get(self, key: str, default: int = 0) -> int:
         return self._values.get(key, default)

@@ -26,11 +26,11 @@ if TYPE_CHECKING:
     from .display_text import DisplayTextBoxState, TextBoxConfig, TextBoxConfigState
     from .menu import MenuState
     from .player import PlayerState
-    from .vendor import VendorState, VendorUnlockState
+    from .vendor import ModVendorState, VendorUnlockState, WeaponVendorState
     from .weapons import WeaponState
 
 
-# ── Planet data ──────────────────────────────────────────────────────────────────
+# Planet data
 
 @dataclass(frozen=True)
 class Planet:
@@ -62,7 +62,7 @@ BY_ID: dict[int, Planet] = {
     if isinstance(p, Planet)
 }
 
-# ── Planet unlock data ───────────────────────────────────────────────────────────
+# Planet unlock data
 
 @dataclass(frozen=True)
 class PlanetUnlock:
@@ -91,7 +91,7 @@ PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
 }
 
 
-# ── Infobots / planet state ──────────────────────────────────────────────────────
+# Infobots / planet state
 # Infobots are AP items given to the player.  When received they set the
 # corresponding planet's unlock-status address to INFOBOT_UNLOCK_VALUE (3),
 # which allows Ratchet to travel to (or enter) that planet.
@@ -135,7 +135,7 @@ AUTO_UNLOCK_ADDRESSES: list[int] = [
 ]
 
 
-# ── Planet state (runtime) ───────────────────────────────────────────────────────
+# Planet state (runtime)
 
 logger = logging.getLogger("CommonClient")
 
@@ -164,7 +164,8 @@ class PlanetState(BaseState):
         self._weapons:            WeaponState | None           = None
         self._player:             PlayerState | None           = None
         self._menu:               MenuState | None             = None
-        self._vendor:             VendorState | None           = None
+        self._weapon_vendor:      WeaponVendorState | None     = None
+        self._mod_vendor:         ModVendorState | None        = None
         self._vendor_unlock:      VendorUnlockState | None     = None
         self._display_text:       DisplayTextBoxState | None   = None
         self._displayed_text_box: TextBoxConfigState | None = None
@@ -196,9 +197,15 @@ class PlanetState(BaseState):
     def set_armour(self, armour: ArmourState) -> None:
         self._armour = armour
 
-    def set_menu_state(self, menu: MenuState, vendor: VendorState) -> None:
-        self._menu   = menu
-        self._vendor = vendor
+    def set_menu_state(
+        self,
+        menu: MenuState,
+        weapon_vendor: WeaponVendorState,
+        mod_vendor: ModVendorState,
+    ) -> None:
+        self._menu          = menu
+        self._weapon_vendor  = weapon_vendor
+        self._mod_vendor     = mod_vendor
 
     def set_vendor_unlock(self, vendor_unlock: VendorUnlockState) -> None:
         self._vendor_unlock = vendor_unlock
@@ -239,12 +246,10 @@ class PlanetState(BaseState):
             cb()
         if self._player is not None:
             self._player.set_planet(self.planet_id)
-        if self._menu is not None and self._vendor is not None:
-            self._menu.bind(self._vendor, self)
+        if self._menu is not None and self._weapon_vendor is not None and self._mod_vendor is not None:
+            self._menu.bind(self._weapon_vendor, self._mod_vendor, self)
         if self._display_text is not None and self._display_text_cfg is not None:
             self._display_text.activate(self._display_text_cfg)
-            self._display_text.on_vendor_prompt_shown  = self.on_menu_preload
-            self._display_text.on_vendor_prompt_hidden = self.on_menu_preload_exit
         if self._displayed_text_box is not None and self._display_text_cfg is not None:
             self._displayed_text_box.activate(self._display_text_cfg)
         if self._get_checked_locs is not None and self._weapons is not None:
@@ -316,58 +321,40 @@ class PlanetState(BaseState):
     def on_armour_acquired(self, _name: str, _piece: ArmourPiece) -> None:
         del _name, _piece
 
-    def on_menu_preload(self) -> None:
-        self._log(f"[RAC] [{self.name}] Vendor preload started.")
-        # Locked against client._apply_player_inventory_sync (runs on a separate
-        # executor thread) — without this, an in-flight AP-ownership write can
-        # land right after this zero-then-restore and re-show an unpurchased mod.
-        with self._vendor_write_lock or contextlib.nullcontext():
-            if self._vendor is not None:
-                self._vendor.start_menu_preload()
-            if self._weapons is not None:
-                allowed = (
-                    self._vendor_unlock.allowed_weapons_for_inventory()
-                    if self._vendor_unlock is not None else frozenset()
-                )
-                self._weapons.apply_vendor_locations(allowed)
-
-    def on_menu_preload_exit(self) -> None:
-        from .vendor import VendorSessionState
-        session = self._vendor.session if self._vendor is not None else VendorSessionState.CLOSED
-        self._log(f"[RAC] [{self.name}] Vendor preload exit — session={session.name}.")
-        if session != VendorSessionState.PRELOADING:
+    def _wire_vendor_purchase_callbacks(self) -> None:
+        if self._weapons is None:
             return
-        if self._vendor is not None:
-            self._vendor.deactivate()
-        if self._reapply_inv is not None:
-            self._reapply_inv()
-
-    def on_menu_open(self) -> None:
-        from .menu import MenuStateValue
-        self._log(f"[RAC] [{self.name}] Vendor menu open.")
-        if self._weapons is not None:
-            allowed = (
-                self._vendor_unlock.allowed_weapons_for_inventory()
-                if self._vendor_unlock is not None else frozenset()
-            )
-            with self._vendor_write_lock or contextlib.nullcontext():
-                self._weapons.apply_vendor_locations(allowed)
-            self._prev_on_weapon_acquired = self._weapons.on_weapon_acquired
-            self._prev_on_gadget_acquired = self._weapons.on_gadget_acquired
-            self._prev_on_mod_acquired    = self._weapons.on_mod_acquired
-            self._weapons.on_weapon_acquired = lambda name: self.on_vendor_weapon_purchased(name)
-            self._weapons.on_gadget_acquired = lambda name: self.on_vendor_gadget_purchased(name)
-            self._weapons.on_mod_acquired    = lambda weapon, slot: self.on_vendor_mod_purchased(weapon, slot)
-            self._log(
-                f"[RAC] [{self.name}] Vendor purchase callbacks wired "
-                f"(on_weapon_acquired/on_gadget_acquired/on_mod_acquired)."
-            )
-        is_weapon_vendor = (
-            self._vendor is not None
-            and self._vendor.vendor_type == MenuStateValue.WEAPONS_VENDOR
+        allowed = (
+            self._vendor_unlock.allowed_weapons_for_inventory()
+            if self._vendor_unlock is not None else frozenset()
         )
-        if is_weapon_vendor and self._vendor_unlock is not None:
+        with self._vendor_write_lock or contextlib.nullcontext():
+            self._weapons.apply_vendor_locations(allowed)
+        self._prev_on_weapon_acquired = self._weapons.on_weapon_acquired
+        self._prev_on_gadget_acquired = self._weapons.on_gadget_acquired
+        self._prev_on_mod_acquired    = self._weapons.on_mod_acquired
+        self._weapons.on_weapon_acquired = lambda name: self.on_vendor_weapon_purchased(name)
+        self._weapons.on_gadget_acquired = lambda name: self.on_vendor_gadget_purchased(name)
+        self._weapons.on_mod_acquired    = lambda weapon, slot: self.on_vendor_mod_purchased(weapon, slot)
+        self._log(
+            f"[RAC] [{self.name}] Vendor purchase callbacks wired "
+            f"(on_weapon_acquired/on_gadget_acquired/on_mod_acquired)."
+        )
+
+    def on_weapon_vendor_open(self) -> None:
+        self._log(f"[RAC] [{self.name}] Weapon vendor open.")
+        self._wire_vendor_purchase_callbacks()
+        # Weapon vendor only: writes the vendor list/size array
+        # (WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS). The mod vendor has no
+        # equivalent array — mod purchasability lives on the weapon structs
+        # themselves (mod_unlock_N), kept correct by the existing inventory
+        # sync, not by anything here.
+        if self._vendor_unlock is not None:
             self._vendor_unlock.apply(self.accessor)
+
+    def on_mod_vendor_open(self) -> None:
+        self._log(f"[RAC] [{self.name}] Mod vendor open.")
+        self._wire_vendor_purchase_callbacks()
 
     def on_menu_close(self) -> None:
         self._log(f"[RAC] [{self.name}] Vendor menu closed — restoring AP inventory.")
@@ -381,8 +368,6 @@ class PlanetState(BaseState):
             self._prev_on_weapon_acquired = None
             self._prev_on_gadget_acquired = None
             self._prev_on_mod_acquired    = None
-        if self._vendor is not None:
-            self._vendor.deactivate()
         if self._reapply_inv is not None:
             self._reapply_inv()
 
@@ -407,7 +392,7 @@ class PlanetState(BaseState):
         return f"PlanetState(name={self.name!r}, planet_id={self.planet_id:#04x})"
 
 
-# ── Planet load state (runtime) ──────────────────────────────────────────────────
+# Planet load state (runtime)
 
 class PlanetLoadState(BaseState):
 
@@ -448,7 +433,7 @@ class PlanetLoadState(BaseState):
         self._complete_prev = instance.load_complete
 
 
-# ── Planet unlock state (runtime) ────────────────────────────────────────────────
+# Planet unlock state (runtime)
 
 PLANET_UNLOCK_BASE: int = PlanetProgressStruct.BASE_ADDRESS
 

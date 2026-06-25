@@ -31,7 +31,7 @@ from .skill_points import SkillPointState
 from .skins import SkinState
 from .structs.game import TRANSITION_GATE_IDLE, TransitionGateStruct
 from .titanium_bolts import TitaniumBoltState
-from .vendor import VendorState, VendorUnlockState
+from .vendor import ModVendorState, VendorUnlockState, WeaponVendorState
 from .weapons import WeaponState
 
 _TEXT_BOX_BY_PLANET = {tb.planet_id: tb for tb in SmallTextBoxAddrs}
@@ -111,7 +111,8 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         self.skin               = SkinState()
         self.player             = PlayerState(acc, self._global_map, storage)
         self.menu               = MenuState(acc, self._global_map, storage, log=self._log)
-        self.vendor             = VendorState(acc, self._global_map, storage)
+        self.weapon_vendor      = WeaponVendorState(acc, self._global_map, storage)
+        self.mod_vendor         = ModVendorState(acc, self._global_map, storage)
         self.display_text       = DisplayTextBoxState(acc, self._global_map, storage)
         self.displayed_text_box = DisplayedTextBoxState(acc, self._global_map, storage)
         self.missions           = MissionsState(acc, self._global_map, storage)
@@ -142,7 +143,8 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
             "weapons":            self.weapons,
             "player":             self.player,
             "menu":               self.menu,
-            "vendor":             self.vendor,
+            "weapon_vendor":      self.weapon_vendor,
+            "mod_vendor":         self.mod_vendor,
             "display_text":       self.display_text,
             "displayed_text_box": self.displayed_text_box,
             "missions":           self.missions,
@@ -154,7 +156,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         for state in (
             self.armour, self.armour_sets, self.bolts, self.skill_points, self.planet_unlock,
             self.quick_select, self.clank, self.skyboard, self.weapons, self.player,
-            self.menu, self.vendor, self.display_text, self.displayed_text_box,
+            self.menu, self.weapon_vendor, self.mod_vendor, self.display_text, self.displayed_text_box,
             self.missions,
         ):
             state.enter()
@@ -256,7 +258,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         for state in (
             self.armour, self.armour_sets, self.bolts, self.skill_points, self.planet_unlock,
             self.quick_select, self.clank, self.skyboard, self.weapons, self.player,
-            self.menu, self.vendor, self.display_text, self.displayed_text_box,
+            self.menu, self.weapon_vendor, self.mod_vendor, self.display_text, self.displayed_text_box,
             self.missions,
         ):
             state.exit()
@@ -274,8 +276,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
 
     @property
     def vendor_active(self) -> bool:
-        from .vendor import VendorSessionState
-        return self.vendor.session != VendorSessionState.CLOSED
+        return self.weapon_vendor.active or self.mod_vendor.active
 
     @property
     def is_picking_up(self) -> bool:
@@ -389,7 +390,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
                 ps.set_weapon_state(self.weapons)
 
             if planet_id in MENU_ADDR_BY_PLANET_ID:
-                ps.set_menu_state(self.menu, self.vendor)
+                ps.set_menu_state(self.menu, self.weapon_vendor, self.mod_vendor)
                 ps.set_vendor_unlock(self.vendor_unlock)
 
             tb = _TEXT_BOX_BY_PLANET.get(planet_id)

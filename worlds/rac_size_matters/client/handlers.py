@@ -4,7 +4,7 @@ from NetUtils import ClientStatus
 
 from ..core import ARMOUR_SET_CHECKS
 
-# ── Challenge handler ────────────────────────────────────────────────────────────
+# Challenge handler
 
 class ChallengeHandlerMixin:
     def _on_challenge_armour_earned(self, loc_name: str) -> None:
@@ -12,7 +12,7 @@ class ChallengeHandlerMixin:
         self._pending_challenge_checks.append(loc_name)
 
 
-# ── Cutscene handler ─────────────────────────────────────────────────────────────
+# Cutscene handler
 
 class CutsceneHandlerMixin:
     async def _send_goal_status(self) -> None:
@@ -21,7 +21,7 @@ class CutsceneHandlerMixin:
             self.finished_game = True
 
 
-# ── Events handler ───────────────────────────────────────────────────────────────
+# Events handler
 
 class EventsHandlerMixin:
     def _on_armour_pickup_update(self, key: str, new_value: int) -> None:

@@ -33,7 +33,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         w = ctx._wiring
         for state in (
             w.armour, w.armour_sets, w.bolts, w.planet_unlock, w.quick_select,
-            w.clank, w.skyboard, w.weapons, w.player, w.menu, w.vendor,
+            w.clank, w.skyboard, w.weapons, w.player, w.menu, w.weapon_vendor, w.mod_vendor,
             w.display_text, w.displayed_text_box, w.missions,
         ):
             logger.info(repr(state))
@@ -43,6 +43,24 @@ class RACCommandProcessor(ClientCommandProcessor):
             ctx._titanium_bolt_state,
         ):
             logger.info(repr(state))
+        return True
+
+    def _cmd_rac5_info(self) -> bool:
+        """Print the current slot options, then every active state's repr."""
+        ctx = self.ctx
+        options = "\n".join(f"{key}: {value}" for key, value in ctx.slot_data.items())
+        logger.info(f"[RAC] Options:\n{options}")
+
+        w = ctx._wiring
+        states = (
+            w.armour, w.armour_sets, w.bolts, w.planet_unlock, w.quick_select,
+            w.clank, w.skyboard, w.weapons, w.player, w.menu, w.weapon_vendor, w.mod_vendor,
+            w.display_text, w.displayed_text_box, w.missions,
+            ctx._planet_state, ctx._armour_pickup_state, ctx._player_armour_state,
+            ctx._armour_slot_state, ctx._player_weapon_state, ctx._player_gadget_state,
+            ctx._titanium_bolt_state,
+        )
+        logger.info("[RAC] States: " + " ".join(repr(state) for state in states))
         return True
 
     def _cmd_debug(self) -> bool:

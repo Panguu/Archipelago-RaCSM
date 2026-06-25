@@ -26,7 +26,7 @@ from .titanium_bolts import TITANIUM_BOLTS
 from .traps import ALL_TRAPS, activate_trap
 from .weapons import WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
 
-# NOTE: GameOrchestrator/VendorPoller/VendorSession are deliberately NOT
+# NOTE: GameOrchestrator/WeaponVendorState/ModVendorState are deliberately NOT
 # re-exported here. core.vendor imports from ..items, and items.py imports
 # several core submodules — eagerly loading core.vendor (or game_orchestrator,
 # which imports it) from this package __init__ creates a circular import

@@ -29,7 +29,7 @@ _GIANT_CLANK_MASK = 0x0010
 class PlanetLifecycleMixin:
     """Planet enter/exit, address-map swaps, initial load, and transition handling."""
 
-    # ── Transition gate (0x1EDDAD4) ──────────────────────────────────────────
+    # Transition gate (0x1EDDAD4)
     # Authoritative source for when writes must stop/resume. Rests at
     # TRANSITION_GATE_IDLE; any change away from idle means a transition has
     # started (block writes now). TRANSITION_GATE_ARRIVED tells us the planet

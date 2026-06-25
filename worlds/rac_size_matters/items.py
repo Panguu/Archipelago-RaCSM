@@ -134,14 +134,14 @@ PROGRESSIVE_MOD_NAME: dict[str, str] = {
     Rac5Weapons.LASER_TRACER:    Rac5ProgressiveWeaponMods.LASER_TRACER,
 }
 
-# One "Progressive {Weapon} Mod" item per mod slot â€” each additional copy
+# One "Progressive {Weapon} Mod" item per mod slot — each additional copy
 # unlocks the next mod slot, independent of the weapon's unlock/level item.
 WEAPON_PROGRESSIVE_MOD_ITEM_TABLE: dict[str, RACItemData] = {
     PROGRESSIVE_MOD_NAME[display]: RACItemData(BASE_ID + 380 + idx, ItemClassification.useful)
     for idx, display in enumerate(_WEAPONS_WITH_MODS)
 }
 
-# Named mod item per mod slot, in slot order, used when Progressive Mods is off â€”
+# Named mod item per mod slot, in slot order, used when Progressive Mods is off —
 # one item per mod slot, each independently grants that specific slot.
 WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
     Rac5Weapons.LACERATOR: [

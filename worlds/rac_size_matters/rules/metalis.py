@@ -18,29 +18,29 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    # â”€â”€ Skill Points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # METALIS_TERROR is commented out in core/skill_points.py â€” Giant Clank disabled.
+    # Skill Points
+    # METALIS_TERROR is commented out in core/skill_points.py — Giant Clank disabled.
     if world.options.enable_clank_challenge_skill_points:
         mw.get_location(Rac5SkillPoints.METALIS_SHUTOUT,   player).access_rule = lambda _: True
         mw.get_location(Rac5SkillPoints.METALIS_GLADIATOR, player).access_rule = lambda _: True
 
-    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # METALIS_ESCAPE is commented out in locations.py/missions.py â€” Giant Clank disabled.
+    # Missions
+    # METALIS_ESCAPE is commented out in locations.py/missions.py — Giant Clank disabled.
     if world.options.all_missions:
         mw.get_location(Rac5CutsceneLocations.METALIS_WAR,    player).access_rule = lambda _: True
 
-    # â”€â”€ Titanium Bolts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Titanium Bolts
     mw.get_location(Rac5TBolts.METALIS_DOOR, player).access_rule = \
         lambda state: state.has(Rac5Gadgets.POLARIZER, player) and state.has(Rac5Gadgets.HYPERSHOT, player)
 
-    # â”€â”€ Clank Challenges â€” item rewards (clank_challenges >= 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Clank Challenges — item rewards (clank_challenges >= 1)
     if world.options.clank_challenges.value >= 1:
         mw.get_location(RACSMCLANK.METALIS_BUZZSAW, player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.METALIS_REVENGE, player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.METALIS_UBER,    player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.METALIS_NIGHT,   player).access_rule = lambda _: True
 
-    # â”€â”€ Clank Challenges â€” individual completions (clank_challenges >= 2) â”€â”€â”€â”€â”€
+    # Clank Challenges — individual completions (clank_challenges >= 2)
     if world.options.clank_challenges.value >= 2:
         mw.get_location(RACSMCLANK.METALLIS_TEAM,        player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.METALIS_CHARGE,       player).access_rule = lambda _: True
@@ -54,4 +54,4 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
         mw.get_location(RACSMCLANK.METALIS_TELEPORTERS,  player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.METALIS_BRAIN,        player).access_rule = lambda _: True
 
-    # â”€â”€ No vendor on Metalis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # No vendor on Metalis

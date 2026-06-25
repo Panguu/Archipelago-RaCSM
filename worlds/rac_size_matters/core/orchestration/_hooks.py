@@ -30,7 +30,7 @@ class HooksMixin:
         self._wire_planet_hooks()
         self._wire_bonus_weapon_hooks()
 
-    # â”€â”€ Player â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Player
 
     def _wire_player_hooks(self) -> None:
         def on_death(cause: PlayerMovementState) -> None:
@@ -82,7 +82,7 @@ class HooksMixin:
         self.player.on_pickup_start = on_pickup_start
         self.player.on_pickup_end   = on_pickup_end
 
-    # â”€â”€ Collectibles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Collectibles
 
     def _wire_bolt_hooks(self) -> None:
         def on_bolt_delta(delta: int) -> None:
@@ -119,14 +119,14 @@ class HooksMixin:
                           self._send_location(name))
         )
 
-    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Missions
 
     # Missions that coincide with a gadget pickup: fire both the gadget
     # location and the mission location when complete.
     _MISSION_GADGET_LOCATION: dict[str, str] = {
         Rac5CutsceneLocations.RYLLUS_BUZZING: Rac5Locations.RYLLUS_SPROUT,
         Rac5CutsceneLocations.KALIDON_WIN:    Rac5Locations.KALIDON_SHRINK,
-        # Rac5CutsceneLocations.METALIS_WAR:    Rac5Locations.METALIS_GLOVES,  # Giant Clank disabled â€” unreachable
+        # Rac5CutsceneLocations.METALIS_WAR:    Rac5Locations.METALIS_GLOVES,  # Giant Clank disabled — unreachable
     }
 
     def _wire_mission_hooks(self) -> None:
@@ -141,14 +141,16 @@ class HooksMixin:
 
         self.missions.set_mission_complete_callback(on_mission_complete)
 
-    # â”€â”€ Menus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Menus
 
     def _wire_menu_hooks(self) -> None:
-        self.vendor.on_menu_open   = lambda: (self.quick_select.freeze(), self._on_vendor_open())
-        self.vendor.on_menu_close  = lambda: (self.quick_select.unfreeze(), self._on_vendor_close())
+        self.weapon_vendor.on_menu_open  = lambda: (self.quick_select.freeze(), self._on_vendor_open())
+        self.weapon_vendor.on_menu_close = lambda: (self.quick_select.unfreeze(), self._on_vendor_close())
+        self.mod_vendor.on_menu_open     = lambda: (self.quick_select.freeze(), self._on_vendor_open())
+        self.mod_vendor.on_menu_close    = lambda: (self.quick_select.unfreeze(), self._on_vendor_close())
         self.menu.set_pause_close_callback(lambda: self._on_pause_close())
 
-    # â”€â”€ Planet (armour / vendor purchases) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Planet (armour / vendor purchases)
 
     def _wire_planet_hooks(self) -> None:
         for planet_id, ps in self.planet_states.items():
@@ -191,7 +193,7 @@ class HooksMixin:
                 return on_mod_purchased
             ps.on_vendor_mod_purchased = make_mod_hook(planet_id)
 
-    # â”€â”€ Bonus weapon pickup (Pokitaru starter weapons) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Bonus weapon pickup (Pokitaru starter weapons)
 
     _BONUS_TRIGGER_WEAPONS: frozenset[str] = frozenset({
         "lacerator", "acid_bomb_glove", "concussion_gun",

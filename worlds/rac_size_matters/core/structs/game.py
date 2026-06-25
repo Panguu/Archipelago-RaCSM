@@ -11,7 +11,7 @@ from ..address_maps import (
     PLAYER_BOLT_COUNT,
 )
 
-# ── Player ─────────────────────────────────────────────────────────────────────
+# Player
 
 class PlayerMovementStruct(MemoryStruct):
 
@@ -29,7 +29,7 @@ def make_player_movement_cls(planet_name: str, movement_addr: int) -> type[Playe
     )
 
 
-# ── Game status / controller ───────────────────────────────────────────────────
+# Game status / controller
 
 class GameStatusStruct(MemoryStruct):
 
@@ -56,22 +56,20 @@ class ControllerStruct(MemoryStruct):
     assert BASE_ADDRESS + 1 == CONTROLLER_BUTTONS_ADDRESS
 
 
-# ── Menu ───────────────────────────────────────────────────────────────────────
+# Menu
 
 class MenuStruct(MemoryStruct):
+    """+0x00 state  — current menu value, set by the game itself
+    +0x04 update — write a MenuStateValue here to request a menu change;
+                   same offset on every planet's menu address
+    """
 
     BASE_ADDRESS = 0
     _pack_ = 1
     _fields_ = [
-        ("state", ctypes.c_uint8),
-    ]
-
-class PreloadMenuStruct(MemoryStruct):
-
-    BASE_ADDRESS = 0
-    _pack_ = 1
-    _fields_ = [
-        ("state", ctypes.c_uint8),
+        ("state",  ctypes.c_uint8),
+        ("_pad",   ctypes.c_uint8 * 3),
+        ("update", ctypes.c_uint8),
     ]
 
 def make_menu_cls(planet_name: str, menu_addr: int) -> type[MenuStruct]:
@@ -81,15 +79,8 @@ def make_menu_cls(planet_name: str, menu_addr: int) -> type[MenuStruct]:
         {"BASE_ADDRESS": menu_addr},
     )
 
-def make_preload_menu_cls(planet_name: str, preload_addr: int) -> type[PreloadMenuStruct]:
-    return type(
-        f"PreloadMenuStruct_{planet_name}",
-        (PreloadMenuStruct,),
-        {"BASE_ADDRESS": preload_addr},
-    )
 
-
-# ── Planet load ────────────────────────────────────────────────────────────────
+# Planet load
 
 class PlanetLoadStruct(MemoryStruct):
     """Two consecutive uint32 values that signal planet load lifecycle events.
@@ -106,7 +97,7 @@ class PlanetLoadStruct(MemoryStruct):
     ]
 
 
-# ── Planet progress ────────────────────────────────────────────────────────────
+# Planet progress
 
 PLANET_PROGRESS_BASE = 0x21F4C661
 
@@ -134,7 +125,7 @@ class PlanetProgressStruct(MemoryStruct):
     PLANET_NAME_ORDER: tuple[str, ...] = tuple(n.upper() for n in PLANET_ORDER)
 
 
-# ── Quick select ───────────────────────────────────────────────────────────────
+# Quick select
 
 class QuickSelectStruct(MemoryStruct):
     BASE_ADDRESS = 0x21F4B364
@@ -156,7 +147,7 @@ class QuickSelectStruct(MemoryStruct):
     )
 
 
-# ── Skins ──────────────────────────────────────────────────────────────────────
+# Skins
 
 class SkinStruct(MemoryStruct):
     # +0x00 unlocked — bitmask; bit N = skin N is available.
@@ -169,7 +160,7 @@ class SkinStruct(MemoryStruct):
     ]
 
 
-# ── Display text ───────────────────────────────────────────────────────────────
+# Display text
 
 class CountdownTimerStruct(MemoryStruct):
 
@@ -198,7 +189,7 @@ def make_vendor_visibility_cls(planet_name: str, is_visible_addr: int) -> type[V
     )
 
 
-# ── Transition gate ────────────────────────────────────────────────────────────
+# Transition gate
 # Rests at TRANSITION_GATE_IDLE (0x000000FF). Any change away from idle means a
 # level transition has started — writes must stop immediately. It passes through
 # TRANSITION_GATE_ARRIVED (0x00000100) once the new planet is known (safe to swap
@@ -228,7 +219,7 @@ class LoadingPlanetStruct(MemoryStruct):
     _fields_ = [("value", ctypes.c_uint32)]
 
 
-# ── Missions ───────────────────────────────────────────────────────────────────
+# Missions
 
 MISSIONS_BASE = PLANET_MISSION_ADDRESSES["Pokitaru"]  # 0x21F4B3C4
 

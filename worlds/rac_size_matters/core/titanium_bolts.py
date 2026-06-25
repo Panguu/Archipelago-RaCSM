@@ -18,14 +18,14 @@ __all__ = [
 ]
 
 
-# â”€â”€ Address resolver â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Address resolver
 
 class TitaniumBoltAddresses:
     """Resolves titanium bolt field addresses from a single base address.
 
     Layout (identical on PSP and PS2):
-      +0x00  pickup  â€” increments each time a bolt is picked up
-      +0x05  total   â€” cumulative bolt count
+      +0x00  pickup  — increments each time a bolt is picked up
+      +0x05  total   — cumulative bolt count
     """
 
     def __init__(self, base: int) -> None:
@@ -34,7 +34,7 @@ class TitaniumBoltAddresses:
         self.total  = base + 0x05
 
 
-# â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Data
 
 @dataclass(frozen=True)
 class TitaniumBolt:
@@ -70,14 +70,14 @@ TITANIUM_BOLTS: dict[str, TitaniumBolt] = {
     Rac5TBolts.QUODRONA_DUMMIES:   TitaniumBolt(0x0A, 36, Rac5Planets.QUODRONA),
 }
 
-# (planet_id, delta) â†’ location name â€” used by the client for unambiguous detection
+# (planet_id, delta) → location name — used by the client for unambiguous detection
 BOLT_BY_PLANET_AND_DELTA: dict[tuple[int, int], str] = {
     (bolt.planet_id, bolt.delta): name
     for name, bolt in TITANIUM_BOLTS.items()
 }
 
 
-# â”€â”€ State (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# State (runtime)
 
 class TitaniumBoltState(BaseState):
 

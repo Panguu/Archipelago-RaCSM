@@ -45,7 +45,7 @@ BOSS_LOCATIONS: dict[str, RACLocationData] = {
     Rac5Locations.QUODRONA_GOAL: RACLocationData(BASE_ID + 1200, Rac5Planets.QUODRONA),
 }
 
-# â”€â”€ Weapon vendor locations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Weapon vendor locations
 WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.POKITARU_LACERATOR:  RACLocationData(BASE_ID + 2001, Rac5Planets.POKITARU),
     Rac5VendorLocations.POKITARU_ACID:       RACLocationData(BASE_ID + 2002, Rac5Planets.POKITARU),
@@ -60,7 +60,7 @@ WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.QUODRONA_LASER:      RACLocationData(BASE_ID + 2011, Rac5Planets.QUODRONA),
 }
 
-# â”€â”€ Gadget vendor locations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Gadget vendor locations
 GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.POKITARU_HYPERSHOT:      RACLocationData(BASE_ID + 2101, Rac5Planets.POKITARU),
     Rac5VendorLocations.CHALLAX_PDA:             RACLocationData(BASE_ID + 2102, Rac5Planets.CHALLAX),
@@ -69,7 +69,7 @@ GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER: RACLocationData(BASE_ID + 2105, Rac5Planets.OUTPOST_OMEGA),
 }
 
-# â”€â”€ Weapon mod vendor locations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Weapon mod vendor locations
 WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
     Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
@@ -126,7 +126,7 @@ GADGET_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
     # Rac5Locations.METALIS_GLOVES: RACLocationData(BASE_ID + 1406, Rac5Planets.METALIS),  # Giant Clank disabled
 }
 
-# â”€â”€ Skyboard challenge locations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Skyboard challenge locations
 SKYBOARD_ITEM_LOCATIONS: dict[str, RACLocationData] = {
     RACSMSKY.KALIDON_LEARNER:          RACLocationData(BASE_ID + 1402, Rac5Planets.KALIDON),
     RACSMSKY.KALIDON_MASTER:           RACLocationData(BASE_ID + 1405, Rac5Planets.KALIDON),
@@ -238,12 +238,12 @@ ALL_LOCATIONS: dict[str, RACLocationData] = {
 
 LOCATION_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_LOCATIONS.items()}
 
-# â”€â”€ Vendor location â†” internal-name lookup tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Vendor location ↔ internal-name lookup tables
 # Derived here so both the game-state layer and the client can share one source.
 
 from .items import GADGET_DISPLAY_TO_INTERNAL, WEAPON_DISPLAY_TO_INTERNAL
 
-# Map from vendor location name â†’ internal weapon/gadget name
+# Map from vendor location name → internal weapon/gadget name
 VENDOR_WEAPON_LOC: dict[str, str] = {
     Rac5VendorLocations.POKITARU_LACERATOR:  WEAPON_DISPLAY_TO_INTERNAL["Lacerator"],
     Rac5VendorLocations.POKITARU_ACID:       WEAPON_DISPLAY_TO_INTERNAL["Acid Bomb Glove"],
@@ -269,7 +269,7 @@ VENDOR_GADGET_LOC: dict[str, str] = {
 WEAPON_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_WEAPON_LOC.items()}
 GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_GADGET_LOC.items()}
 
-# (internal_weapon, 1-based game slot) â†’ AP location name.
+# (internal_weapon, 1-based game slot) → AP location name.
 # Slot 1 = mod_slot_one, 2 = mod_slot_two, 3 = mod_slot_three in the weapon struct.
 # Scorcher Spitfire is confirmed in slot 2; all others use the first available slot.
 _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [

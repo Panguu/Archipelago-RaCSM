@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ..interface_orchestrator.memory.accessor import MemoryAccessor
 
 
-# ── Data ────────────────────────────────────────────────────────────────────────
+# Data
 
 @dataclass(frozen=True)
 class SkinData:
@@ -44,7 +44,7 @@ SKIN_BY_EQUIP_ID: dict[int, Skin] = {s.equip_id: s for s in Skin}
 ALL_SKINS_UNLOCK_MASK: int = 0x01 | 0x02 | 0x04 | 0x10 | 0x20 | 0x40
 
 
-# ── State (runtime) ──────────────────────────────────────────────────────────────
+# State (runtime)
 
 class SkinState:
 

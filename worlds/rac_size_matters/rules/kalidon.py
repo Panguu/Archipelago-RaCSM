@@ -25,7 +25,7 @@ def set_kalidon_rules(world: RACSizeMatterWorld) -> None:
     _inside = lambda state: (state.has(Rac5Gadgets.HYPERSHOT, player)
                              and state.has(Rac5Gadgets.SHRINK_RAY, player))
 
-    # â”€â”€ Skill Points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Skill Points
     if world.options.skill_points.value >= 1:
         mw.get_location(Rac5SkillPoints.KALIDON_EXPLOSIVE,    player).access_rule = _inside
     if world.options.skill_points.value >= 2:
@@ -33,33 +33,33 @@ def set_kalidon_rules(world: RACSizeMatterWorld) -> None:
     if world.options.enable_skyboard_challenge_skill_points:
         mw.get_location(Rac5SkillPoints.KALIDON_SKYBOARDER, player).access_rule = lambda _: True
 
-    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Missions
     if world.options.all_cutscenes:
         mw.get_location(Rac5CutsceneLocations.KALIDON_EXPLORE, player).access_rule = _inside
     if world.options.all_missions:
         mw.get_location(Rac5CutsceneLocations.KALIDON_WIN,     player).access_rule = lambda _: True
 
-    # â”€â”€ Titanium Bolts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Titanium Bolts
     mw.get_location(Rac5TBolts.KALIDON_SHIP,    player).access_rule = lambda _: True
     mw.get_location(Rac5TBolts.KALIDON_FACTORY, player).access_rule = \
         lambda state: state.has(Rac5Gadgets.HYPERSHOT, player)
     mw.get_location(Rac5TBolts.KALIDON_RAMP,    player).access_rule = _inside
 
-    # â”€â”€ Armour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Armour
     mw.get_location(Rac5Locations.KALIDON_CHESTPLATE, player).access_rule = _inside
     mw.get_location(Rac5Locations.KALIDON_BOOTS,      player).access_rule = _inside
 
-    # â”€â”€ Skyboard Challenges (skyboard_challenges >= 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Skyboard Challenges (skyboard_challenges >= 1)
     if world.options.skyboard_challenges.value >= 1:
         mw.get_location(RACSMSKY.KALIDON_LEARNER, player).access_rule = lambda _: True
         mw.get_location(RACSMSKY.KALIDON_MASTER,  player).access_rule = lambda _: True
         mw.get_location(RACSMSKY.KALIDON_TICKET,  player).access_rule = lambda _: True
         mw.get_location(RACSMSKY.KALIDON_TRICKY,  player).access_rule = lambda _: True
 
-    # â”€â”€ Vendors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Vendors
     mw.get_location(Rac5VendorLocations.KALIDON_SCORCHER, player).access_rule = lambda _: True
 
-    # â”€â”€ Weapon Mod Vendor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Weapon Mod Vendor
     mw.get_location(Rac5VendorLocations.KALIDON_LACERATOR_LOCK,   player).access_rule = \
         lambda state: has_weapon(state, player, Rac5Weapons.LACERATOR)
     mw.get_location(Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT, player).access_rule = \

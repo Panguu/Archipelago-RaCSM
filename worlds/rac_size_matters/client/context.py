@@ -25,7 +25,6 @@ from ..core import (
 )
 from ..core.game_orchestrator import GameOrchestrator as GameWiring
 from ..core.states.game_state import GameState
-from ..core.vendor import VendorPoller, VendorSession
 from ..locations import ALL_LOCATIONS
 from ..pypine.pypine.pine import Pine
 from .command_processor import RACCommandProcessor
@@ -109,17 +108,11 @@ class RACContext(
         self._death_count = 0
         self._weapon_array_base: int | None = None
         self._pending_item_apply = True
-        self._pending_vendor_checks: list[str] = []
         self._already_hinted: set[int] = set()
         self._notification_item_index: int = 0
         self._last_mod_unlock_write: float = 0.0
         self._armour_set_checks_enabled = False
-        self._gs = GameState(
-            ipc=self.pine,
-            vendor_session=VendorSession(log=self._log, on_purchase=self._on_vendor_purchase),
-        )
-        self._gs.on_vendor_close = self._on_vendor_close_sync
-        self._vendor_poller = VendorPoller(self._gs, log=self._log)
+        self._gs = GameState(ipc=self.pine)
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
@@ -196,7 +189,6 @@ class RACContext(
                 planet_loaded=self._wiring._initial_load_done,
             )
             self._wiring.skin.set_skin_by_option(int(self.slot_data.get("starting_skin", 0)))
-            self._gs.vendor_session.mods_randomized = True
             if self._death_link_enabled:
                 asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": ["DeathLink"]}]))
             self._wiring.wire(

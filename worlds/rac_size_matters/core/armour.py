@@ -18,7 +18,7 @@ from ..interface_orchestrator.storage.local import LocalStorage
 from ..interface_orchestrator.structs.address_map import AddressMap
 from .structs.pickups import ArmourSetCollectedStruct, ArmourStruct
 
-# â”€â”€ Armour address resolvers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Armour address resolvers
 
 class ArmourAddresses:
     """
@@ -124,7 +124,7 @@ class PlayerArmour:
         return f"PlayerArmour({self.pieces!r})"
 
 
-# â”€â”€ Armour pickups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Armour pickups
 
 class ArmourPickup(NamedTuple):
     """
@@ -179,7 +179,7 @@ CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
 }
 
 
-# â”€â”€ Armour set checks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Armour set checks
 
 class ArmourSets(IntEnum):
     """
@@ -258,7 +258,7 @@ ARMOUR_SET_CHECK_MASKS: dict[str, int] = {
 }
 
 
-# â”€â”€ Armour state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Armour state (runtime)
 
 class ArmourState(BaseState):
 
@@ -269,9 +269,9 @@ class ArmourState(BaseState):
         storage: LocalStorage,
     ) -> None:
         super().__init__(accessor, addresses, storage)
-        # Slot bytes store set indices (1-7), not ArmourPiece bitmask values â€” keep as int.
+        # Slot bytes store set indices (1-7), not ArmourPiece bitmask values — keep as int.
         self.equipped: dict[str, int]  = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
-        # Stable snapshot â€” only updated by freeze_slots()/sync_slots()/sync().
+        # Stable snapshot — only updated by freeze_slots()/sync_slots()/sync().
         self._stable_slots: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
         self.sets_unlocked: dict[str, bool]    = dict.fromkeys(ArmourStruct.SET_FIELDS, False)
         self.sets_bitmask: dict[str, int]      = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
@@ -394,7 +394,7 @@ class ArmourState(BaseState):
         return f"ArmourState(sets_unlocked={unlocked}, equipped_slots={slots})"
 
 
-# â”€â”€ Armour set collected state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Armour set collected state (runtime)
 
 class ArmourSetCollectedState(BaseState):
 

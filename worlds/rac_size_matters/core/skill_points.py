@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 
-# â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Data
 
 @dataclass(frozen=True)
 class SkillPoint:
@@ -43,7 +43,7 @@ class SkillPoint:
 # Confirmed bit layout (groups of 2-3, 4-bit spacing between planets):
 #
 #  Planet        Count  Bits
-#  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# 
 #  Pokitaru        3     0,  1,  2
 #  Ryllus          3     4,  5,  6
 #  Kalidon         3     8,  9, 10
@@ -71,7 +71,7 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     # Metalis
     Rac5SkillPoints.METALIS_SHUTOUT:         SkillPoint(0x04, 12, Rac5Planets.METALIS),
     # Rac5SkillPoints.METALIS_TERROR: SkillPoint(0x04, 13, Rac5Planets.METALIS)
-    # Giant Clank disabled â€” unreachable.
+    # Giant Clank disabled — unreachable.
     Rac5SkillPoints.METALIS_GLADIATOR:       SkillPoint(0x04, 14, Rac5Planets.METALIS),
     # Dreamtime
     Rac5SkillPoints.DREAMTIME_FRIENDS:       SkillPoint(0x05, 16, Rac5Planets.DREAMTIME),
@@ -100,7 +100,7 @@ SKILL_POINTS: dict[str, SkillPoint] = {
 HARD_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.RYLLUS_BURY,
     Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
-    # Rac5SkillPoints.METALIS_TERROR,  # Giant Clank disabled â€” unreachable
+    # Rac5SkillPoints.METALIS_TERROR,  # Giant Clank disabled — unreachable
     Rac5SkillPoints.DREAMTIME_FRIENDS,
     Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS,
     Rac5SkillPoints.CHALLAX_MASTER,
@@ -111,7 +111,7 @@ HARD_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.QUODRONA_STORM,
 })
 
-# Earned from Clank Challenge arenas â€” gated by enable_clank_challenge_skill_points,
+# Earned from Clank Challenge arenas — gated by enable_clank_challenge_skill_points,
 # independent of the Skill Points easy/hard tier.
 CLANK_CHALLENGE_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.METALIS_SHUTOUT,
@@ -119,14 +119,14 @@ CLANK_CHALLENGE_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.DAYNI_MOON_GLADIATOR,
 })
 
-# Earned from Skyboard Challenges â€” gated by enable_skyboard_challenge_skill_points,
+# Earned from Skyboard Challenges — gated by enable_skyboard_challenge_skill_points,
 # independent of the Skill Points easy/hard tier.
 SKYBOARD_CHALLENGE_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.KALIDON_SKYBOARDER,
     Rac5SkillPoints.OUTPOST_OMEGA_AWESOME,
 })
 
-# (planet_id, mask) â†’ location name â€” mirrors BOLT_BY_PLANET_AND_DELTA
+# (planet_id, mask) → location name — mirrors BOLT_BY_PLANET_AND_DELTA
 SKILL_POINT_BY_PLANET_AND_MASK: dict[tuple[int, int], str] = {
     (sp.planet_id, sp.mask): name
     for name, sp in SKILL_POINTS.items()
@@ -138,7 +138,7 @@ LOCATION_SKILL_POINTS: dict[str, int] = {
 }
 
 
-# â”€â”€ State (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# State (runtime)
 
 class SkillPointState(BaseState):
 
@@ -162,7 +162,7 @@ class SkillPointState(BaseState):
         if enabled:
             # Always remove then re-add to avoid duplicates on reconnect.
             self.accessor.remove_struct_handler(SkillPointsStruct, self._on_struct_change)
-            # Baseline _bits BEFORE registering the handler â€” the poller runs on
+            # Baseline _bits BEFORE registering the handler — the poller runs on
             # a background thread and could otherwise fire _on_struct_change with
             # a stale (zero) baseline in the gap, treating every already-set bit
             # as "newly earned" and firing bogus location checks on connect.

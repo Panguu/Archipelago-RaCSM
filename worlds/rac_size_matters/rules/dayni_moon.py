@@ -25,7 +25,7 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
                                  and has_projectile_weapon(state, player))
     _shrink_ray = lambda state: (_base(state) and state.has(Rac5Gadgets.SHRINK_RAY, player))
 
-    # â”€â”€ Skill Points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Skill Points
     if world.options.skill_points.value >= 1:
         mw.get_location(Rac5SkillPoints.DAYNI_MOON_BOUNCY, player).access_rule = _base
     if world.options.skill_points.value >= 2:
@@ -33,7 +33,7 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
     if world.options.enable_clank_challenge_skill_points:
         mw.get_location(Rac5SkillPoints.DAYNI_MOON_GLADIATOR, player).access_rule = lambda _: True
 
-    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Missions
     if world.options.all_missions:
         mw.get_location(Rac5CutsceneLocations.DAYNI_MOON,      player).access_rule = _shrink_ray
         mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_LUNA, player).access_rule = _shrink_ray
@@ -41,19 +41,19 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
         mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT1, player).access_rule = _shrink_ray
         mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT2, player).access_rule = _shrink_ray
 
-    # â”€â”€ Titanium Bolts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Titanium Bolts
     mw.get_location(Rac5TBolts.DAYNI_MOON_BARN,  player).access_rule = _base
     mw.get_location(Rac5TBolts.DAYNI_MOON_MIMIC, player).access_rule = _shrink_ray
 
-    # â”€â”€ Armour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Armour
     mw.get_location(Rac5Locations.DAYNI_MOON_HELMET, player).access_rule = _base
 
-    # â”€â”€ Clank Challenges â€” item rewards (clank_challenges >= 1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Clank Challenges — item rewards (clank_challenges >= 1)
     if world.options.clank_challenges.value >= 1:
         mw.get_location(RACSMCLANK.DAYNI_MOON_SHOWDOWN,  player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.DAYNI_MOON_INFINITE,  player).access_rule = lambda _: True
 
-    # â”€â”€ Clank Challenges â€” individual completions (clank_challenges >= 2) â”€â”€â”€â”€â”€
+    # Clank Challenges — individual completions (clank_challenges >= 2)
     if world.options.clank_challenges.value >= 2:
         mw.get_location(RACSMCLANK.DAYNI_MOON_CROWD,      player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.DAYNI_MOON_REVERSE,    player).access_rule = lambda _: True
@@ -69,6 +69,6 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
         mw.get_location(RACSMCLANK.DAYNI_MOON_LINE,       player).access_rule = lambda _: True
         mw.get_location(RACSMCLANK.DAYNI_MOON_HAY,        player).access_rule = lambda _: True
 
-    # â”€â”€ Vendors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Vendors
     mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player).access_rule = lambda _: True
     mw.get_location(Rac5VendorLocations.DAYNI_MOON_MAP,   player).access_rule = lambda _: True

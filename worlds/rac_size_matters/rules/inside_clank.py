@@ -18,23 +18,23 @@ def set_inside_clank_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    # â”€â”€ Skill Points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Skill Points
     if world.options.skill_points.value >= 2:
         mw.get_location(Rac5SkillPoints.INSIDE_CLANK_SHOCK,   player).access_rule = lambda _: True
         mw.get_location(Rac5SkillPoints.INSIDE_CLANK_RATCHET, player).access_rule = lambda _: True
 
-    # â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Missions
     if world.options.all_missions:
         mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,      player).access_rule = lambda _: True
         mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES, player).access_rule = lambda _: True
 
-    # â”€â”€ Titanium Bolts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Titanium Bolts
     mw.get_location(Rac5TBolts.INSIDE_CLANK_LADDER, player).access_rule = lambda _: True
     mw.get_location(Rac5TBolts.INSIDE_CLANK_WALL,   player).access_rule = lambda _: True
 
-    # â”€â”€ Armour â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # Armour
     mw.get_location(Rac5Locations.INSIDE_CLANK_CHESTPLATE, player).access_rule = lambda _: True
 
-    # â”€â”€ Vendors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # Static Barrier vendor â€” freely accessible on arrival.
+    # Vendors
+    # Static Barrier vendor — freely accessible on arrival.
     mw.get_location(Rac5VendorLocations.INSIDE_CLANK_STATIC, player).access_rule = lambda _: True

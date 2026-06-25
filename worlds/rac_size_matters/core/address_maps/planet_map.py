@@ -6,7 +6,6 @@ from ..structs.game import (
     make_countdown_cls,
     make_menu_cls,
     make_player_movement_cls,
-    make_preload_menu_cls,
     make_vendor_visibility_cls,
 )
 from ..structs.pickups import make_gadget_struct_cls, make_weapon_struct_cls
@@ -30,8 +29,6 @@ def build_planet_address_map(planet_id: int) -> AddressMap:
 
         if pa.menu is not None:
             address_map.register(make_menu_cls(planet_name, pa.menu))
-        if pa.preload_menu is not None:
-            address_map.register(make_preload_menu_cls(planet_name, pa.preload_menu))
 
         if pa.weapon_array is not None:
             weapon_addrs, gadget_addrs = build_weapons(pa.weapon_array)

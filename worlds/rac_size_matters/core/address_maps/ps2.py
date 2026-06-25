@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# ── Global memory addresses ────────────────────────────────────────────────────
+# Global memory addresses
 
 ARMOUR_BASE                = 0x21F4B354
 ARMOUR_SET_COLLECTED_ADDR  = 0x21F4B442  # byte 0: pure sets (bit N = ArmourSets(N+1) complete)
@@ -57,7 +57,7 @@ STATIC_TEXT_BUFFER: int = 0x21F649D0
 PLANET_STATE_OFFSET: int = 0x11
 
 
-# ── Per-planet consolidated addresses ─────────────────────────────────────────
+# Per-planet consolidated addresses
 
 @dataclass(frozen=True)
 class PlanetAddresses:
@@ -90,7 +90,7 @@ PLANET_ADDRESSES: dict[int, PlanetAddresses] = {
 }
 
 
-# ── Legacy dict views (derived from PLANET_ADDRESSES) ─────────────────────────
+# Legacy dict views (derived from PLANET_ADDRESSES)
 
 PLAYER_ADDRS: dict[int, tuple[int, int]] = {
     pid: (p.player_state, p.player_health) for pid, p in PLANET_ADDRESSES.items()
@@ -98,10 +98,6 @@ PLAYER_ADDRS: dict[int, tuple[int, int]] = {
 
 MENU_ADDR_BY_PLANET_ID: dict[int, int] = {
     pid: p.menu for pid, p in PLANET_ADDRESSES.items() if p.menu is not None
-}
-
-PRELOAD_MENU_ADDR_BY_PLANET_ID: dict[int, int] = {
-    pid: p.preload_menu for pid, p in PLANET_ADDRESSES.items() if p.preload_menu is not None
 }
 
 WEAPON_ARRAY_BASE_BY_PLANET: dict[int, int] = {

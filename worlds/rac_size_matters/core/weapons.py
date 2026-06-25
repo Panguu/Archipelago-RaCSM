@@ -19,7 +19,7 @@ from .structs.pickups import GadgetStruct, WeaponStruct
 # ``locations.py`` imports ``core.weapons`` siblings + items.py.
 
 
-# â”€â”€ Weapon data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Weapon data
 
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
@@ -193,7 +193,7 @@ class GadgetData(NamedTuple):
 
 # Single source of truth per gadget (keyed by internal Rac5GadgetKeys).
 # Gadgets have no level/mod/projectile concept, so classification is the
-# only flag needed â€” items.py derives GADGET_ITEM_TABLE's classification
+# only flag needed — items.py derives GADGET_ITEM_TABLE's classification
 # from this instead of keeping its own frozenset.
 GADGET_DATA: dict[str, GadgetData] = {
     Rac5GadgetKeys.HYPERSHOT:      GadgetData(classification=ItemClassification.progression),
@@ -252,7 +252,7 @@ def build_weapons(array_base: int) -> tuple[dict[str, WeaponAddresses], dict[str
     return weapons, gadgets
 
 
-# â”€â”€ Weapon state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Weapon state (runtime)
 
 _MOD_SLOTS = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
@@ -274,7 +274,7 @@ _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
 
 # (internal_weapon, mod_unlock_attr) -> planet the vendor selling that mod
 # lives on. Drives the mod_unlock_N "purchasable" byte: it should only read 1
-# once the player owns the weapon (and, on Challax, the extra gadgets below â€”
+# once the player owns the weapon (and, on Challax, the extra gadgets below —
 # that vendor sits behind the Polarizer gate, mirroring rules/challax.py's _base).
 MOD_UNLOCK_PLANET: dict[tuple[str, str], str] = {}
 
@@ -350,7 +350,7 @@ class WeaponState(BaseState):
         )
         # _make_weapon_handler/_make_gadget_handler return a fresh closure on
         # every call, so register/unregister must reuse the exact same
-        # function objects â€” otherwise remove_struct_handler's identity check
+        # function objects — otherwise remove_struct_handler's identity check
         # silently no-ops and handlers pile up at the same address on every
         # planet revisit.
         self._registered_handlers: dict[type, Callable[[int, bytes], None]] = {}
@@ -465,7 +465,7 @@ class WeaponState(BaseState):
 
         Weapons/gadgets restored if purchased from vendor (and still owned) OR
         if name is in allowed_extra (owned weapon whose vendor planet is
-        unlocked). Mods restored only if purchased from this vendor â€” owning
+        unlocked). Mods restored only if purchased from this vendor — owning
         the mod via an AP item received elsewhere does not restore it here.
         """
         weapon_classes = {
@@ -480,7 +480,7 @@ class WeaponState(BaseState):
         }
 
         # Compute the final desired state first, then write each field exactly
-        # once â€” no separate zero pass followed by a restore pass.
+        # once — no separate zero pass followed by a restore pass.
         weapon_unlocked = dict.fromkeys(weapon_classes, False)
         weapon_mods: dict[str, dict[str, bool]] = {
             name: dict.fromkeys(_MOD_SLOTS, False) for name in weapon_classes

@@ -17,7 +17,7 @@ from ..interface_orchestrator.structs.address_map import AddressMap
 from .address_maps import PLANET_ADDRESSES
 from .structs.pickups import ClankChallengeStruct, SkyboardStruct
 
-# â”€â”€ Per-planet clank challenge base addresses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Per-planet clank challenge base addresses
 # Base layout (offsets from base):
 #   +0  Derby unlock byte
 #   +1  Gadgetbot Toss unlock byte
@@ -52,7 +52,7 @@ class SkyboardBit(IntFlag):
     RACE_4 = 0x40
 
 
-# â”€â”€ Unlock addresses (derived from base) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Unlock addresses (derived from base)
 METALIS_CLANK_UNLOCK_ADDR:           int   = _METALIS_BASE        # +0: Derby unlock
 METALIS_CLANK_UNLOCK_BYTES:          bytes = bytes([0x0F, 0x0F, 0x0F])
 
@@ -63,7 +63,7 @@ DAYNI_CLANK_GADGETBOT_UNLOCK_ADDR:   int   = _DAYNI_BASE + 2     # +2
 DAYNI_CLANK_UNLOCK_BYTES:            bytes = bytes([0x0F, 0x0F, 0x0F])
 
 
-# â”€â”€ Clank challenge address tables (name â†’ base + offset) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Clank challenge address tables (name → base + offset)
 # Metalis:  Derby +3..+7 | Gadgetbot Toss +8..+12 | Gadgetbot +13..+17
 # Dayni:    Derby +3..+7 | Gadgetbot Toss +8..+12 | Gadgetbot +13..+17
 
@@ -116,7 +116,7 @@ _DAYNI_GADGETBOT: dict[str, int] = {
 }
 
 
-# â”€â”€ Challenge type pickup lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Challenge type pickup lists
 
 DERBY_CLANK_PICKUPS: list[ChallengePickup] = [
     ChallengePickup(addr, name, Rac5Planets.METALIS)   for name, addr in _METALIS_DERBY.items()
@@ -137,7 +137,7 @@ GADGETBOT_CLANK_PICKUPS: list[ChallengePickup] = [
 ]
 
 
-# â”€â”€ Reward locations (item grants on challenge completion) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Reward locations (item grants on challenge completion)
 # Subset of the above: the final challenge of each type grants an item.
 CHALLENGE_PICKUPS: list[ChallengePickup] = [
     ChallengePickup(_METALIS_BASE + 3,  RACSMCLANK.METALIS_BUZZSAW,     Rac5Planets.METALIS),   # Derby first
@@ -153,7 +153,7 @@ CHALLENGE_ADDRESS_MAP: dict[int, str] = {
 }
 
 
-# â”€â”€ Derived maps used by ClankChallengeState â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Derived maps used by ClankChallengeState
 
 COUNT_BASED_CHALLENGE_ADDRS: frozenset[int] = frozenset(
     list(_METALIS_DERBY.values())
@@ -186,9 +186,9 @@ GLADIATOR_FAILSAFE: dict[str, str] = {
 }
 
 
-# â”€â”€ Skyboard addresses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Skyboard addresses
 
-# Maps AP location name (constant) â†’ (unlock_addr, completed_addr, mask).
+# Maps AP location name (constant) → (unlock_addr, completed_addr, mask).
 _KALIDON_SKYBOARD: dict[str, tuple[int, int, int]] = {
     RACSMSKY.KALIDON_LEARNER: (_KALIDON_SKY, _KALIDON_SKY + 1, 0x01),
     RACSMSKY.KALIDON_TICKET:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x04),
@@ -227,7 +227,7 @@ for _sp in ALL_SKYBOARD_PICKUPS:
         SKYBOARD_UNLOCK_MASK[_sp.unlock_addr] = SKYBOARD_UNLOCK_MASK.get(_sp.unlock_addr, 0) | int(_sp.mask)
 
 
-# â”€â”€ Challenge-only AP items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Challenge-only AP items
 CHALLENGE_ONLY_ITEMS: frozenset[str] = frozenset({
     "Polarizer",
     "Sludge Mk9 Gloves",
@@ -239,7 +239,7 @@ CHALLENGE_ONLY_ITEMS: frozenset[str] = frozenset({
 })
 
 
-# â”€â”€ Clank challenge state (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Clank challenge state (runtime)
 
 class ClankChallengeState(BaseState):
 
@@ -331,7 +331,7 @@ class ClankChallengeState(BaseState):
             return
         self.write_unlocks()
         if self._all_challenges:
-            return  # don't preset values â€” every completion is a check
+            return  # don't preset values — every completion is a check
         for addr in ALL_CLANK_ADDRESS_MAP:
             if addr not in COUNT_BASED_CHALLENGE_ADDRS:
                 raw = self.accessor.read_raw(addr, 1)

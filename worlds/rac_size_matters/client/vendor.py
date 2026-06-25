@@ -25,6 +25,7 @@ from ..core import (
 )
 from ..core.address_maps import BOLT_PICKUP_MASK, PLAYER_BOLT_COUNT
 from ..core.memory.singletons import _ARMOUR_PIECES, _ARMOUR_SET_ORDER, _PIECE_TO_SLOTS
+from ..core.vendor import MenuStateValue
 from ..items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_PIECE_BITMASKS,
@@ -37,11 +38,9 @@ from ..items import (
     WEAPON_MOD_NAME_TO_SLOT,
 )
 from ..locations import (
-    GADGET_INTERNAL_TO_LOCATION,
     MOD_INTERNAL_TO_VENDOR_SLOT_LOCATION,
     VENDOR_GADGET_LOC,
     VENDOR_WEAPON_LOC,
-    WEAPON_INTERNAL_TO_LOCATION,
 )
 
 _SMALL_BOX_BY_PLANET = {tb.planet_id: tb for tb in SmallTextBoxAddrs}
@@ -54,36 +53,9 @@ PROGRESSIVE_ARMOUR_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_ARMOUR_NAME.item
 PROGRESSIVE_MOD_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_MOD_NAME.items()}
 
 
-# ── Vendor handler ───────────────────────────────────────────────────────────────
-
-# (internal_weapon, "one"/"two"/"three") → AP location name — matches VendorSession._SLOT_NAMES
-_MOD_SLOT_TO_LOCATION = MOD_INTERNAL_TO_VENDOR_SLOT_LOCATION
-
+# Vendor handler
 
 class VendorHandlerMixin:
-    def _on_vendor_purchase(self, kind: str, name: str, slot: str | None) -> None:
-        """Fired immediately when a weapon, gadget, or mod purchase is detected.
-        Queues the AP location check straight away rather than waiting for close.
-        """
-        if kind == "weapon":
-            loc_name = WEAPON_INTERNAL_TO_LOCATION.get(name)
-            if loc_name:
-                self._pending_vendor_checks.append(loc_name)
-        elif kind == "gadget":
-            loc_name = GADGET_INTERNAL_TO_LOCATION.get(name)
-            if loc_name:
-                self._pending_vendor_checks.append(loc_name)
-        elif kind == "mod" and slot is not None:
-            loc_name = _MOD_SLOT_TO_LOCATION.get((name, slot))
-            if loc_name:
-                self._pending_vendor_checks.append(loc_name)
-
-    def _on_vendor_close_sync(self) -> None:
-        """Called when the vendor menu closes. Flushes pending purchase checks."""
-        for loc_name in self._pending_vendor_checks:
-            self._append_location_by_name(loc_name)
-        self._pending_vendor_checks.clear()
-
     async def _send_vendor_hints(self) -> None:
         """Send AP location hints for all currently purchasable vendor items.
 
@@ -92,13 +64,25 @@ class VendorHandlerMixin:
         """
         if self.slot is None or not self.pine_connected:
             return
-        vendor_type = self._wiring.vendor.vendor_type
+        if self._wiring.weapon_vendor.active:
+            vendor_type = MenuStateValue.WEAPONS_VENDOR
+        elif self._wiring.mod_vendor.active:
+            vendor_type = MenuStateValue.MOD_VENDOR
+        else:
+            vendor_type = None
         loc_names = self._wiring.vendor_unlock.purchasable_loc_names(vendor_type)
         checked   = self.checked_locations | self._locally_checked_locations
+        server_locations = getattr(self, "server_locations", None)
         new_ids: list[int] = []
         for name in loc_names:
             loc_id = self._location_name_to_id.get(name)
             if loc_id is None or loc_id in self._already_hinted or loc_id in checked:
+                continue
+            # Not every location in the static table exists in this seed —
+            # e.g. mods/armour-set/skyboard checks disabled by slot options
+            # remove them from the world entirely. Don't hint a location the
+            # server doesn't know about for this slot.
+            if server_locations is not None and loc_id not in server_locations:
                 continue
             new_ids.append(loc_id)
         if not new_ids:
@@ -109,7 +93,7 @@ class VendorHandlerMixin:
         self._already_hinted.update(new_ids)
 
 
-# ── Inventory ────────────────────────────────────────────────────────────────────
+# Inventory
 
 # AP location name → (internal weapon, "one"/"two"/"three") — for inventory sync
 _VENDOR_MOD_LOC: dict[str, tuple[str, str]] = {
@@ -194,7 +178,7 @@ class InventoryMixin:
         self._show_new_item_notifications()
         self._pending_item_apply = False
 
-    # ── Rebuild from received AP items ────────────────────────────────────────
+    # Rebuild from received AP items
 
     def _rebuild_player_inventory(self) -> None:
         """Recompute all three player states from items_received."""
@@ -305,7 +289,7 @@ class InventoryMixin:
 
         self._sync_game_state_inventory()
 
-    # ── Pickup state seed ─────────────────────────────────────────────────────
+    # Pickup state seed
 
     def _seed_armour_pickup_state(self) -> None:
         """OR already-checked armour-pickup locations into the pickup state."""
@@ -318,7 +302,7 @@ class InventoryMixin:
                     self._armour_pickup_state.get(set_key) | piece,
                 )
 
-    # ── Game-state sync ───────────────────────────────────────────────────────
+    # Game-state sync
 
     def _sync_game_state_inventory(self) -> None:
         self._seed_armour_pickup_state()
@@ -367,7 +351,7 @@ class InventoryMixin:
         self._gs.tracked_vendor_gadgets = vendor_gadgets
         self._gs.tracked_vendor_mods    = vendor_mods
 
-    # ── Slot state ────────────────────────────────────────────────────────────
+    # Slot state
 
     def _sync_armour_slot_state(self) -> None:
         """Compute slot values from tracked_armour and store them in _armour_slot_state.
@@ -389,7 +373,7 @@ class InventoryMixin:
         for slot, v in slot_vals.items():
             self._armour_slot_state.add(slot, v)
 
-    # ── Write to game memory ──────────────────────────────────────────────────
+    # Write to game memory
 
     def _apply_player_inventory_sync(self) -> None:
         """Rebuild from items_received, sync addresses, and write all states to memory.
@@ -427,15 +411,14 @@ class InventoryMixin:
         # already standing at the vendor leaves you stuck until you back out.
         self._apply_mod_unlock_flags()
         # This runs on a worker thread (loop.run_in_executor) while the
-        # orchestrator's vendor preload/open/close zero-then-restore writes run
-        # on the main thread. Take the same lock and re-check the vendor guard
+        # orchestrator's vendor open/close zero-then-restore writes run on the
+        # main thread. Take the same lock and re-check the vendor guard
         # *inside* it — otherwise a write that passed the guard just before the
-        # vendor preloaded can land right after, re-showing an unpurchased mod.
+        # vendor opened can land right after, re-showing an unpurchased mod.
         with self._wiring.vendor_write_lock:
             # Never write weapons or gadgets while vendor owns the weapon state.
-            if self._gs.is_preloaded or self._gs.is_in_menu or self._wiring.vendor_active:
+            if self._wiring.vendor_active:
                 self._log(f"[RAC] _apply_player_inventory_sync: weapon write blocked — "
-                          f"is_preloaded={self._gs.is_preloaded}, is_in_menu={self._gs.is_in_menu}, "
                           f"vendor_active={self._wiring.vendor_active}")
                 return
             unlocked = [k for k, v in self._player_weapon_state.values.items() if v and "_mod_" not in k]
@@ -448,7 +431,7 @@ class InventoryMixin:
             if GADGETS:
                 self._player_gadget_state.give(self.pine)
 
-    # ── Mod-unlock flags ───────────────────────────────────────────────────────
+    # Mod-unlock flags
 
     def _apply_mod_unlock_flags(self) -> None:
         """Write the mod_unlock_N "purchasable" byte for every weapon mod slot
@@ -480,7 +463,7 @@ class InventoryMixin:
             )
             self.pine.write_int8(addr, 1 if unlocked else 0)
 
-    # ── Bonus weapon pickup ───────────────────────────────────────────────────
+    # Bonus weapon pickup
 
     def _grant_random_bonus_item(self, trigger_name: str) -> None:
         """Called when lacerator/acid_bomb_glove/concussion_gun transitions
@@ -503,7 +486,7 @@ class InventoryMixin:
         except Exception:
             pass
 
-    # ── Notification helper ───────────────────────────────────────────────────
+    # Notification helper
 
     def _write_notification_text(self, msg: bytes) -> None:
         if not self.pine_connected:
@@ -518,7 +501,7 @@ class InventoryMixin:
         except Exception:
             pass
 
-    # ── Item notifications ────────────────────────────────────────────────────
+    # Item notifications
 
     def _show_new_item_notifications(self) -> None:
         new_items = self.items_received[self._notification_item_index:]
@@ -534,7 +517,7 @@ class InventoryMixin:
         )
         self._write_notification_text(msg)
 
-    # ── Bolt items ────────────────────────────────────────────────────────────
+    # Bolt items
 
     def _grant_new_bolt_items(self) -> None:
         # PLAYER_BOLT_COUNT is a global address — safe to write during a transition.
@@ -578,7 +561,7 @@ class InventoryMixin:
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
 
-    # ── Trap items ────────────────────────────────────────────────────────────
+    # Trap items
 
     def _grant_new_trap_items(self) -> None:
         # Trap addresses (DREAMTIME_EFFECT, BRIGHTNESS_ADDRESS, CHEATS) are all
@@ -597,7 +580,7 @@ class InventoryMixin:
             except Exception as exc:
                 self._log(f"[RAC] Could not activate trap {item_name!r}: {exc}", "warning")
 
-    # ── World-state restore (crash recovery) ──────────────────────────────────
+    # World-state restore (crash recovery)
 
     def _seed_world_states(self) -> None:
         """Compute bolt and skill-point states from already-completed locations."""

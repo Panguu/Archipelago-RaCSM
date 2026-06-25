@@ -9,7 +9,7 @@ from ..interface_orchestrator.structs.address_map import AddressMap
 from .address_maps import PLAYER_ADDRS
 from .structs.game import PlayerMovementStruct
 
-# ── Player movement state enum (data) ────────────────────────────────────────────
+# Player movement state enum (data)
 
 class PlayerMovementState(IntEnum):
     Alive           = 0x00
@@ -28,7 +28,7 @@ class PlayerMovementState(IntEnum):
 
 
 
-# ── Player state (runtime) ───────────────────────────────────────────────────────
+# Player state (runtime)
 
 class PlayerState(BaseState):
 

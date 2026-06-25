@@ -15,7 +15,7 @@ from .structs.game import MissionsStruct
 
 # Maps (address, mask) -> location_name.
 # Detection: (current_value & mask) != 0
-# mask of 0x0000 means not yet validated â€” skipped by MissionsState.
+# mask of 0x0000 means not yet validated — skipped by MissionsState.
 
 # Bits that must be force-written on initial load (not location checks).
 PRESET_MISSION_BITS: list[tuple[int, int]] = [
@@ -24,7 +24,7 @@ PRESET_MISSION_BITS: list[tuple[int, int]] = [
     (_ADDRS["Challax"],  0x0004),   # Explore the miniature city
 ]
 
-# â”€â”€ Story missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Story missions
 STORY_MISSION_MAP: dict[tuple[int, int], str] = {
     # Pokitaru
     (_ADDRS["Pokitaru"],      0x0002): Rac5CutsceneLocations.POKITARU_FIGHT,
@@ -38,7 +38,7 @@ STORY_MISSION_MAP: dict[tuple[int, int], str] = {
 
     # Metalis
     (_ADDRS["Metalis"],       0x0002): Rac5CutsceneLocations.METALIS_WAR,
-    # (_ADDRS["Metalis"],     0x0004): Rac5CutsceneLocations.METALIS_ESCAPE,  # Giant Clank disabled â€” unreachable
+    # (_ADDRS["Metalis"],     0x0004): Rac5CutsceneLocations.METALIS_ESCAPE,  # Giant Clank disabled — unreachable
 
     # Dreamtime
     (_ADDRS["Dreamtime"],     0x0004): Rac5CutsceneLocations.DREAMTIME_COMPLETE,
@@ -48,7 +48,7 @@ STORY_MISSION_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Outpost Omega"], 0x0010): Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,
 
     # Challax
-    # (_ADDRS["Challax"],     0x0020): Rac5CutsceneLocations.CHALLAX_CLANK,  # Giant Clank disabled â€” unreachable
+    # (_ADDRS["Challax"],     0x0020): Rac5CutsceneLocations.CHALLAX_CLANK,  # Giant Clank disabled — unreachable
 
     # Dayni Moon
     (_ADDRS["Dayni Moon"],    0x0008): Rac5CutsceneLocations.DAYNI_MOON,
@@ -63,7 +63,7 @@ STORY_MISSION_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Quodrona"],      0x0140): Rac5CutsceneLocations.QUODRONA_GOAL,
 }
 
-# â”€â”€ Cutscenes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Cutscenes
 CUTSCENE_MAP: dict[tuple[int, int], str] = {
     # Enter Planet (mask 0x0001 on each planet's mission address)
     (_ADDRS["Pokitaru"],      0x0001): Rac5CutsceneLocations.POKITARU_ENTER,
@@ -81,7 +81,7 @@ CUTSCENE_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Ryllus"],        0x0002): Rac5CutsceneLocations.RYLLUS_BUZZING,
     (_ADDRS["Kalidon"],       0x0008): Rac5CutsceneLocations.KALIDON_EXPLORE,
     (_ADDRS["Outpost Omega"], 0x0002): Rac5CutsceneLocations.OUTPOST_OMEGA,
-    # (_ADDRS["Challax"],     0x0010): Rac5CutsceneLocations.METALIS_CLANK,  # Giant Clank disabled â€” unreachable
+    # (_ADDRS["Challax"],     0x0010): Rac5CutsceneLocations.METALIS_CLANK,  # Giant Clank disabled — unreachable
     (_ADDRS["Dayni Moon"],    0x0010): Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,
     (_ADDRS["Dayni Moon"],    0x0002): Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,
     (_ADDRS["Quodrona"],      0x0008): Rac5CutsceneLocations.QUODRONA_CLONE,
@@ -89,7 +89,7 @@ CUTSCENE_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Quodrona"],      0x0020): Rac5CutsceneLocations.QUODRONA_MECHA,
 }
 
-# â”€â”€ Combined (used by MissionsState to watch all possible completions) â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Combined (used by MissionsState to watch all possible completions)
 MISSION_COMPLETE_MAP: dict[tuple[int, int], str] = {**STORY_MISSION_MAP, **CUTSCENE_MAP}
 
 VALIDATED_MISSION_MAP: dict[tuple[int, int], str] = {
@@ -97,7 +97,7 @@ VALIDATED_MISSION_MAP: dict[tuple[int, int], str] = {
 }
 
 
-# â”€â”€ State (runtime) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# State (runtime)
 
 # Reverse map: address -> planet name for log messages
 _PLANET_BY_ADDR: dict[int, str] = {v: k for k, v in PLANET_MISSION_ADDRESSES.items()}

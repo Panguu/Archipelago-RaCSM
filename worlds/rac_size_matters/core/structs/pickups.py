@@ -11,7 +11,7 @@ from ..address_maps import (
     TITANIUM_BOLT_BASE,
 )
 
-# ── Armour ─────────────────────────────────────────────────────────────────────
+# Armour
 
 class ArmourStruct(MemoryStruct):
 
@@ -63,7 +63,7 @@ class ArmourSetCollectedStruct(MemoryStruct):
     ]
 
 
-# ── Weapons / gadgets ──────────────────────────────────────────────────────────
+# Weapons / gadgets
 
 class WeaponStruct(MemoryStruct):
 
@@ -111,7 +111,7 @@ def make_gadget_struct_cls(name: str, gadget_base: int) -> type[GadgetStruct]:
     )
 
 
-# ── Skill points ───────────────────────────────────────────────────────────────
+# Skill points
 
 class SkillPointsStruct(MemoryStruct):
 
@@ -132,7 +132,7 @@ class SkillPointsStruct(MemoryStruct):
         self.high = (value >> 32) & 0xFF
 
 
-# ── Titanium bolts ─────────────────────────────────────────────────────────────
+# Titanium bolts
 
 class TitaniumBoltStruct(MemoryStruct):
 
@@ -145,7 +145,7 @@ class TitaniumBoltStruct(MemoryStruct):
     ]
 
 
-# ── Challenges ─────────────────────────────────────────────────────────────────
+# Challenges
 
 class ClankChallengeStruct(MemoryStruct):
 

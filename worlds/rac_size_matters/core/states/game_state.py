@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ...pypine.pypine.pine import Pine
-    from ..vendor import VendorSession
 
 
 class PollAddress:
@@ -53,7 +52,6 @@ class PollAddress:
 @dataclass
 class GameState:
     ipc:                    Pine
-    vendor_session:         VendorSession | None   = field(default=None)
     tracked_armour:         dict[str, int]         = field(default_factory=dict)
     tracked_weapons:        dict[str, int]         = field(default_factory=dict)
     tracked_gadgets:        dict[str, int]         = field(default_factory=dict)
@@ -66,11 +64,6 @@ class GameState:
     current_planet:         int                    = 0
     state_addr:             int | None             = None
     tracked_vendor:         int | None             = None
-    is_dead:                bool                   = False
-    is_picking_up:          bool                   = False
-    is_preloaded:           bool                   = False
-    is_in_menu:             bool                   = False
     weapons_ready:          bool                   = False
     goal_reached:           bool                   = False
     on_reward:              Callable[[], None] | None = field(default=None)
-    on_vendor_close:        Callable[[], None] | None = field(default=None)
