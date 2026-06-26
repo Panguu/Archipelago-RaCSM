@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...pypine.pypine.pine import Pine
+    from ...pcsx2_interface.pine import Pine
 
 
 class PollAddress:

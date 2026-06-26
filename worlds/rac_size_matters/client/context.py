@@ -26,7 +26,7 @@ from ..core import (
 from ..core.game_orchestrator import GameOrchestrator as GameWiring
 from ..core.states.game_state import GameState
 from ..locations import ALL_LOCATIONS
-from ..pypine.pypine.pine import Pine
+from ..pcsx2_interface.pine import Pine
 from .command_processor import RACCommandProcessor
 from .constants import EXPECTED_GAME_ID, GAME_NAME
 from .deathlink import DeathLinkMixin

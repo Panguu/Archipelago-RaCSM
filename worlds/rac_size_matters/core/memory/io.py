@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 
-from ...pypine.pypine.pine import Pine
+from ...pcsx2_interface.pine import Pine
 
 
 class MemoryState:

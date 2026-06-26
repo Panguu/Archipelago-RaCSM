@@ -13,7 +13,7 @@ This is **not** all **Human written code**, this was developed with the help of 
 - Outpost Omega 1 currently removed from game, until logic for level is completed.
 
 ## Massive thank you's
-PyPine is vendored from [evilwb/pypine](https://github.com/evilwb/pypine). Based on https://projects.govanify.com/govanify/pine. this couldnt have been done without his pcsx2 interface.
+The PCSX2 PINE interface (`pcsx2_interface/`) is adapted from [evilwb/pypine](https://github.com/evilwb/pypine), based on https://projects.govanify.com/govanify/pine. This couldn't have been done without his pcsx2 interface.
 
 Massive inspiration from RAC2 and RAC3 AP's for how to handle Ratchet and Clank games.
 

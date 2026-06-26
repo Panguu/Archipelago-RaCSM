@@ -9,7 +9,7 @@ from typing import Any
 from CommonClient import logger
 
 from ..interface_orchestrator import Orchestrator
-from ..pypine.pypine.pine import Pine
+from ..pcsx2_interface.pine import Pine
 from .address_maps import (
     CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
@@ -20,9 +20,10 @@ from .address_maps.global_map import build_global_address_map
 from .address_maps.planet_map import build_planet_address_map
 from .armour import ArmourSetCollectedState, ArmourState
 from .challenges import ClankChallengeState, SkyboardChallengeState
+from .controller import ButtonState
 from .display_text import DisplayedTextBoxState, DisplayTextBoxState, SmallTextBoxAddrs
 from .memory.pine_interface import PineInterface
-from .menu import MenuState
+from .menu import MenuState, MenuStateValue
 from .missions import MissionsState
 from .planets import Planet, Planets, PlanetState, PlanetUnlockState
 from .player import PlayerState
@@ -176,6 +177,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         self._last_gate_debug: float              = 0.0
         self._pickup_detection_active: bool       = False
         self._last_quick_select_write: float      = 0.0
+        self._planet_menu_hotkey_held: bool       = False
 
     def wire(
         self,
@@ -312,6 +314,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
                     return
                 self._orchestrator.poll()
                 self._maybe_apply_quick_select()
+                self._check_planet_menu_hotkey()
                 self._debug_print_transition_gate()
             except Exception as exc:
                 logger.warning(f"[RAC] Poll error: {exc}")
@@ -361,6 +364,14 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
             return
         self._last_quick_select_write = now
         self.quick_select.apply()
+
+    def _check_planet_menu_hotkey(self) -> None:
+        """Force the Planet Menu open on the rising edge of the L1+L2+R1+R2+START
+        combo (held, not re-fired every tick while held)."""
+        held = ButtonState.read(self._pine).opens_planet_menu
+        if held and not self._planet_menu_hotkey_held:
+            self.menu.set_menu(MenuStateValue.PLANET_MENU)
+        self._planet_menu_hotkey_held = held
 
     # -- Planet state builder -------------------------------------------------
 
