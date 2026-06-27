@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
@@ -57,21 +58,27 @@ class WeaponVendorState(BaseState):
         # player's full AP inventory (for ammo purchase) instead of the
         # default vendor-unlock ("left view") view.
         self.showing_inventory = False
-        # True while _check_weapon_vendor_view_toggle()'s own menu.set_menu()
-        # refresh is in flight. The game can briefly cycle the menu
-        # closed->open again in response to that write, which would
-        # otherwise look like a real exit to deactivate() below and wrongly
-        # reset showing_inventory back to the left view mid-refresh — set by
-        # the toggle right before set_menu(), cleared once
-        # on_weapon_vendor_open() re-asserts the view on the other side.
-        self.refreshing = False
+        # Monotonic deadline until which deactivate() should NOT reset
+        # showing_inventory. The toggle's own menu.set_menu() refresh can make
+        # the game briefly cycle the menu closed->open, which would otherwise
+        # look like a real exit and wrongly reset showing_inventory mid-toggle.
+        # Set a short window (see game_orchestrator's toggle) rather than a
+        # plain bool that depends on something else clearing it — relying on
+        # on_weapon_vendor_open() re-firing to clear a sticky flag is fragile:
+        # if that speculative re-trigger never happens, the flag gets stuck
+        # forever, the next *real* close silently skips its reset, and every
+        # later open re-asserts the inventory view without ever calling
+        # _wire_vendor_purchase_callbacks() again — permanently breaking
+        # vendor-purchase location tracking for the rest of the session. A
+        # deadline always expires on its own, even if nothing clears it.
+        self.refresh_deadline = 0.0
 
     def activate(self) -> None:
         self.active = True
 
     def deactivate(self) -> None:
         self.active = False
-        if not self.refreshing:
+        if time.monotonic() >= self.refresh_deadline:
             # A real exit (not a refresh-induced blip) — always default back
             # to the left/purchasable view for the next open.
             self.showing_inventory = False

@@ -361,8 +361,6 @@ class PlanetState(BaseState):
             if self._weapons is not None:
                 with self._vendor_write_lock or contextlib.nullcontext():
                     self._weapons.sync()
-            if self._weapon_vendor is not None:
-                self._weapon_vendor.refreshing = False
             return
         self._wire_vendor_purchase_callbacks()
         # Weapon vendor only: writes the vendor list/size array
@@ -374,8 +372,6 @@ class PlanetState(BaseState):
             self._vendor_unlock.apply(self.accessor)
             for line in self._vendor_unlock.debug_lines():
                 self._log(line)
-        if self._weapon_vendor is not None:
-            self._weapon_vendor.refreshing = False
 
     def on_mod_vendor_open(self) -> None:
         self._log(f"[RAC] [{self.name}] Mod vendor open.")

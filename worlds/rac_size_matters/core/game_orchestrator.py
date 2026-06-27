@@ -44,6 +44,14 @@ POLL_INTERVAL: float = 0.1
 # event-driven apply() calls in _guarded_reapply.
 QUICK_SELECT_WRITE_INTERVAL_S: float = 5.0
 
+# How long WeaponVendorState.deactivate() should ignore a close after the
+# D_PAD vendor-view toggle's menu.set_menu() refresh — that write can make the
+# game briefly cycle the menu closed->open, which would otherwise look like a
+# real exit and wrongly reset showing_inventory mid-toggle. Generous enough to
+# cover that blip, short enough that a genuine close well after a toggle is
+# still treated as real.
+VENDOR_REFRESH_GUARD_S: float = 2.0
+
 # How often _poll_loop re-validates PCSX2 is still running the expected game.
 # Without this, swapping discs/games in PCSX2 mid-session (without closing
 # the emulator) leaves the socket open and this loop keeps reading our fixed
@@ -462,7 +470,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
             with self.vendor_write_lock:
                 self.weapons.sync()
             self.weapon_vendor.showing_inventory = True
-            self.weapon_vendor.refreshing = True
+            self.weapon_vendor.refresh_deadline = time.monotonic() + VENDOR_REFRESH_GUARD_S
             self.menu.set_menu(MenuStateValue.WEAPONS_VENDOR)
 
         if left_held and not self._vendor_dpad_left_held and self.weapon_vendor.showing_inventory:
@@ -477,7 +485,7 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
                 self._resume_tracking_vendor_purchases()
                 self.vendor_unlock.apply(self._orchestrator.accessor)
                 self.weapon_vendor.showing_inventory = False
-                self.weapon_vendor.refreshing = True
+                self.weapon_vendor.refresh_deadline = time.monotonic() + VENDOR_REFRESH_GUARD_S
                 self.menu.set_menu(MenuStateValue.WEAPONS_VENDOR)
             # else: no vendor-unlock weapons to show — identical to the
             # inventory view, so skip the write/update entirely.
