@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "Building rac_size_matters.apworld..."
           python3 - <<'EOF'
-          import fnmatch, sys, os, zipfile
+          import fnmatch, json, sys, os, zipfile
           sys.path.insert(0, os.path.abspath("."))
           from worlds import Files
           from Utils import Version
@@ -77,6 +77,18 @@ jobs:
               return any(fnmatch.fnmatch(name, pat) for pat in patterns)
 
           class MyWorldContainer(Files.APWorldContainer):
+              def get_manifest(self):
+                  # Start from the project's own archipelago.json (authors,
+                  # etc.) instead of the bare manifest APWorldContainer would
+                  # otherwise generate from scratch, then layer on the fields
+                  # the build computes (version gets overwritten again later
+                  # by the release job once the real semver is known).
+                  manifest_path = os.path.join(self.world_folder, "archipelago.json")
+                  with open(manifest_path, encoding="utf-8") as f:
+                      manifest = json.load(f)
+                  manifest.update(super().get_manifest())
+                  return manifest
+
               def write_contents(self, opened_zipfile: zipfile.ZipFile) -> None:
                   super().write_contents(opened_zipfile)
                   patterns = load_ignore_patterns(self.world_folder)
