@@ -34,7 +34,7 @@ PLANET_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
     ControllerButtons.L2,
     ControllerButtons.R1,
     ControllerButtons.R2,
-    PauseSelectButtons.START,
+    PauseSelectButtons.SELECT,
 )
 
 
