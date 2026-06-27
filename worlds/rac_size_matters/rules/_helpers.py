@@ -35,14 +35,3 @@ def HasGadget(gadget: str) -> HasAny:
 
 def HasInfobot(infobot: str) -> HasAny:
     return Has(infobot)
-
-def has_projectile_weapon(state, player: int) -> bool:
-    return state.has_any(_PROJECTILE_WEAPONS_ALL_NAMES, player)
-
-
-def infobot(item_name: str, player: int):
-    return lambda state: state.has(item_name, player)
-
-
-def has_weapon(state, player: int, weapon: str) -> bool:
-    return state.has(weapon, player) or state.has(PROGRESSIVE_WEAPON_NAME[weapon], player)

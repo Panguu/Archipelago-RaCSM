@@ -1,0 +1,44 @@
+{
+  "broadcast_horizontal": {
+    "type": "container",
+    "background": "#1d2c3d",
+    "content": {
+      "type": "dock",
+      "content": [
+        {
+          "type": "group",
+          "header": "Weapons & Gadgets",
+          "dock": "top",
+          "content": {
+            "type": "layout",
+            "h_alignment": "center",
+            "v_alignment": "center",
+            "key": "weapon_grid"
+          }
+        },
+        {
+          "type": "group",
+          "header": "Items",
+          "dock": "top",
+          "content": {
+            "type": "layout",
+            "h_alignment": "center",
+            "v_alignment": "center",
+            "key": "shared_item_grid_horizontal"
+          }
+        },
+        {
+          "type": "group",
+          "header": "Planets",
+          "dock": "top",
+          "content": {
+            "type": "layout",
+            "h_alignment": "center",
+            "v_alignment": "center",
+            "key": "planet_grid"
+          }
+        }
+      ]
+    }
+  }
+}

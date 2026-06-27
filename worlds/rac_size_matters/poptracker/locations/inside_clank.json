@@ -1,0 +1,143 @@
+[
+  {
+    "name": "Inside Clank",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Walk behind the ladder",
+        "sections": [
+          {
+            "name": "T-Bolt: Walk behind the ladder"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "335",
+            "y": "107"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "T-Bolt: Wall jumping Technomite",
+        "sections": [
+          {
+            "name": "T-Bolt: Wall jumping Technomite"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "176",
+            "y": "108"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "Mega Bomb Chestplate",
+        "sections": [
+          {
+            "name": "Mega Bomb Chestplate"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "148",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Escape from Clank",
+        "sections": [
+          {
+            "name": "Escape from Clank"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      },
+      {
+        "name": "Defeat all Technomites",
+        "sections": [
+          {
+            "name": "Defeat all Technomites"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "364",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Static Barrier - 65,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Not the Shock of Me Now"
+          },
+          {
+            "name": "Skill Point: Ratchet... Just Ratchet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Inside_Clank_map_section_1",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "$inside_clank_entrance"
+    ]
+  }
+]

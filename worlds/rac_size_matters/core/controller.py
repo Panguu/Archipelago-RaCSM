@@ -1,12 +1,12 @@
 from enum import IntFlag
 
 from ..pcsx2_interface.pine import Pine
-from .address_maps import CONTROLLER_BUTTONS_ADDRESS, CONTROLLER_PAUSE_SELECT_ADDRESS
+from .address_maps import PLANET_ADDRESSES
 
 """
 Controller Logic
 Holding L1 + L2 + R1 + R2 + START is the hotkey to force-open the Planet Menu
-(see PLANET_MENU_HOTKEY / ButtonState.opens_planet_menu).
+(see PLANET_MENU_HOTKEY / GlobalButtonState.opens_planet_menu).
 """
 class PauseSelectButtons(IntFlag):
     SELECT = 0x01
@@ -38,18 +38,31 @@ PLANET_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
 )
 
 
-class ButtonState:
-    """Snapshot of both controller bytes, read each tick."""
+class GlobalButtonState:
+    """Snapshot of both controller bytes, read each tick.
+
+    These bytes start at 0xFF (nothing held) and are decremented by a
+    button's PauseSelectButtons/ControllerButtons bit value while it's held,
+    so a bit reads 0 when pressed and 1 when released. The address is
+    per-planet (PlanetAddresses.controller_pause_select_v2, buttons byte at
+    +1) and is not yet captured for Outpost Omega.
+    """
 
     def __init__(self, pause_sel: int, buttons: int) -> None:
-        self.pause_sel = PauseSelectButtons(pause_sel & 0xFF)
-        self.buttons   = ControllerButtons(buttons & 0xFF)
+        self.pause_sel = PauseSelectButtons(~pause_sel & 0xFF)
+        self.buttons   = ControllerButtons(~buttons & 0xFF)
 
     @classmethod
-    def read(cls, ipc: Pine) -> "ButtonState":
+    def read(cls, ipc: Pine, planet_id: int) -> "GlobalButtonState":
+        pause_select_addr = PLANET_ADDRESSES[planet_id].controller_pause_select_v2
+        if pause_select_addr is None:
+            raise ValueError(f"No controller_pause_select_v2 mapped for planet {planet_id:#x}")
+        # Values in the table are stored short-form (no 0x20 EE-RAM prefix),
+        # matching the convention used for controller_pause_select.
+        full_addr = 0x20000000 | pause_select_addr
         return cls(
-            ipc.read_int8(CONTROLLER_PAUSE_SELECT_ADDRESS),
-            ipc.read_int8(CONTROLLER_BUTTONS_ADDRESS),
+            ipc.read_int8(full_addr),
+            ipc.read_int8(full_addr + 1),
         )
 
     def pressed(self, *flags: PauseSelectButtons | ControllerButtons) -> bool:
@@ -69,4 +82,7 @@ class ButtonState:
         return self.pressed(*PLANET_MENU_HOTKEY)
 
     def __repr__(self) -> str:
-        return f"ButtonState(pause_sel={self.pause_sel}, buttons={self.buttons})"
+        # !r forces repr() (which still includes flag names) — since Python 3.11,
+        # IntFlag's __str__/__format__ behave like a plain int for backward compat,
+        # so neither f"{x}" nor f"{x!s}" show the names anymore.
+        return f"GlobalButtonState(pause_sel={self.pause_sel!r}, buttons={self.buttons!r})"

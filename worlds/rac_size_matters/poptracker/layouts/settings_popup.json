@@ -1,0 +1,15 @@
+{
+  "settings_popup": {
+    "type": "array",
+    "margin": "5",
+    "content": [
+      {
+        "type": "group",
+        "header": "Settings",
+        "description": "Manually set these to match your generated game's options.",
+        "header_background": "#3e4b57",
+        "content": []
+      }
+    ]
+  }
+}

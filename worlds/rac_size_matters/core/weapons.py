@@ -386,7 +386,15 @@ class WeaponState(BaseState):
             instance     = WeaponStruct.from_bytes(new_bytes)
             was_unlocked = self.weapons.get(weapon_name, False)
             is_unlocked  = bool(instance.unlocked)
-            self.weapons[weapon_name] = is_unlocked
+            # Never regress True->False here: weapons aren't lost in this game,
+            # and apply_vendor_locations()/set_unlocked() deliberately zero this
+            # bit for vendor-display purposes (showing "buy weapon" instead of
+            # "buy ammo") without the player actually losing AP ownership. If
+            # this dict followed the bit down to False, owned_names() would
+            # wrongly think an owned-but-not-yet-vendor-purchased weapon (e.g.
+            # Scorcher) isn't owned at all the moment the default view locks it.
+            if is_unlocked:
+                self.weapons[weapon_name] = True
             prev_mods = dict(self.mods.get(weapon_name, dict.fromkeys(_MOD_SLOTS, False)))
             self.mods.setdefault(weapon_name, dict.fromkeys(_MOD_SLOTS, False))
             self.mods[weapon_name]["mod_slot_one"]   = bool(instance.mod_slot_one)
@@ -417,7 +425,10 @@ class WeaponState(BaseState):
             instance     = GadgetStruct.from_bytes(new_bytes)
             was_unlocked = self.gadgets.get(gadget_name, False)
             is_unlocked  = bool(instance.unlocked)
-            self.gadgets[gadget_name] = is_unlocked
+            # See _make_weapon_handler — same monotonic guard against
+            # vendor-display zero-writes wrongly erasing AP ownership.
+            if is_unlocked:
+                self.gadgets[gadget_name] = True
             if is_unlocked and not was_unlocked:
                 self.on_gadget_acquired(gadget_name)
             elif not is_unlocked and was_unlocked:
@@ -511,10 +522,12 @@ class WeaponState(BaseState):
             if name in gadget_unlocked:
                 gadget_unlocked[name] = True
 
+        missing_allowed = [n for n in allowed_extra if n not in weapon_unlocked and n not in gadget_unlocked]
         self._log(
             f"[RAC] WeaponState.apply_vendor_locations: writing "
-            f"{len(weapon_classes)} weapon struct(s), {len(gadget_classes)} gadget struct(s) "
-            f"-> unlocked={[n for n, v in weapon_unlocked.items() if v]}"
+            f"{len(weapon_classes)} weapon struct(s) {sorted(weapon_classes)}, "
+            f"{len(gadget_classes)} gadget struct(s) -> unlocked={[n for n, v in weapon_unlocked.items() if v]}"
+            + (f" — NOT REGISTERED (no struct for): {missing_allowed}" if missing_allowed else "")
         )
         for name, cls in weapon_classes.items():
             self.accessor.write_field(cls, "unlocked", int(weapon_unlocked[name]))
@@ -522,6 +535,40 @@ class WeaponState(BaseState):
                 self.accessor.write_field(cls, slot, int(weapon_mods[name][slot]))
         for name, cls in gadget_classes.items():
             self.accessor.write_field(cls, "unlocked", int(gadget_unlocked[name]))
+
+    def zero_unpurchased_mod_slots(self, names: frozenset[str]) -> None:
+        """Explicitly re-zero mod_slot_N for the given weapons unless that
+        specific slot was actually bought from this vendor. apply_vendor_locations
+        already does this as part of its zero/restore pass, but a Progressive-
+        item grant (mod_slot_N=1, owned outright, unrelated to this vendor) can
+        still race back in afterwards — calling this right after as a dedicated
+        second pass guarantees the mod vendor shows it as purchasable rather
+        than already-owned."""
+        purchased_slots = {
+            _MOD_LOC[loc] for loc, bought in self.vendor_locations.items()
+            if bought and loc in _MOD_LOC
+        }
+        zeroed: list[str] = []
+        for cls in self.addresses.structs():
+            if not (issubclass(cls, WeaponStruct) and cls is not WeaponStruct):
+                continue
+            name = cls.__name__.removeprefix("WeaponStruct_")
+            if name not in names:
+                continue
+            for slot in _MOD_SLOTS:
+                if (name, slot) in purchased_slots:
+                    continue
+                # Read first — this runs every poll tick while the mod vendor
+                # is open, so skip the write (and the log below) unless
+                # something actually set it back to 1 since our last pass.
+                if self.accessor.read_field(cls, slot):
+                    self.accessor.write_field(cls, slot, 0)
+                    zeroed.append(f"{name}.{slot}")
+        if zeroed:
+            self._log(
+                f"[RAC] WeaponState.zero_unpurchased_mod_slots: re-zeroed {zeroed} "
+                f"(was set to 1 despite not being in purchased_slots={sorted(purchased_slots)})"
+            )
 
     def sync_from_ap(self, checked_locations: set[str]) -> None:
         for loc in checked_locations:

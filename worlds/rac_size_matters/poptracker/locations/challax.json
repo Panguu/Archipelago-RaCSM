@@ -1,0 +1,207 @@
+[
+  {
+    "name": "Challax",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Beside The Ultra Mech Pad",
+        "sections": [
+          {
+            "name": "T-Bolt: Beside The Ultra Mech Pad"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "467",
+            "y": "390"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "T-Bolt: Hidden Room",
+        "sections": [
+          {
+            "name": "T-Bolt: Hidden Room"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "212",
+            "y": "335"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$challax_base"
+        ]
+      },
+      {
+        "name": "T-Bolt: Mimic Plant Lob",
+        "sections": [
+          {
+            "name": "T-Bolt: Mimic Plant Lob"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "277",
+            "y": "154"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$challax_sprout"
+        ]
+      },
+      {
+        "name": "Electroshock Helmet after Dropship fight",
+        "sections": [
+          {
+            "name": "Electroshock Helmet after Dropship fight"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "50",
+            "y": "500"
+          }
+        ],
+        "access_rules": [
+          "$challax_helmet"
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Sniper Mine - 50,000",
+            "access_rules": [
+              "shrink_ray"
+            ]
+          },
+          {
+            "name": "Gadgetron Vendor: PDA - 50,000",
+            "access_rules": [
+              "shrink_ray"
+            ]
+          },
+          {
+            "name": "Gadgetron Vendor: Bolt Grabber - 5,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "50",
+            "y": "500"
+          }
+        ]
+      },
+      {
+        "name": "Slim Cognito Vendor",
+        "chest_unopened_img": "images/icons/Slim_Cognito.png",
+        "chest_opened_img": "images/icons/Slim_Cognito.png",
+        "sections": [
+          {
+            "name": "Slim Cognito: Lacerator Double Barrel Mod - 30,000",
+            "access_rules": [
+              "$challax_base"
+            ]
+          },
+          {
+            "name": "Slim Cognito: Acid Bomb Acid Burn Mod - 30,000",
+            "access_rules": [
+              "$challax_base"
+            ]
+          },
+          {
+            "name": "Slim Cognito: Acid Bomb Epoxy Mod - 50,000",
+            "access_rules": [
+              "$challax_base"
+            ]
+          },
+          {
+            "name": "Slim Cognito: Concussion Gun Lock On Mod - 5,000",
+            "access_rules": [
+              "$challax_base"
+            ]
+          },
+          {
+            "name": "Slim Cognito: Concussion Gun Charge Up Mod - 50,000",
+            "access_rules": [
+              "$challax_base"
+            ]
+          },
+          {
+            "name": "Slim Cognito: Bee Mine Glove Worker Mod - 5,000",
+            "access_rules": [
+              "$challax_base"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "50",
+            "y": "500"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: High Tech Weapons Master",
+            "access_rules": [
+              "$challax_sprout"
+            ]
+          },
+          {
+            "name": "Skill Point: No More Varmints!",
+            "access_rules": [
+              "$challax_sprout"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Challax_map",
+            "x": "50",
+            "y": "500"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "challax,shrink_ray,polarizer"
+    ]
+  }
+]

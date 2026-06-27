@@ -1,0 +1,83 @@
+{
+  "shared_item_grid_horizontal": {
+    "type": "array",
+    "orientation": "vertical",
+    "margin": "0,0",
+    "content": [
+      {
+        "type": "array",
+        "orientation": "vertical",
+        "margin": "0,0",
+        "content": [
+          {
+            "type": "itemgrid",
+            "item_margin": "2, 2",
+            "h_alignment": "left",
+            "item_h_alignment": "center",
+            "item_v_alignment": "center",
+            "item_height": 48,
+            "item_width": 48,
+            "rows": [
+              [
+                "hypershot",
+                "sprout_o_matic",
+                "polarizer",
+                "pda",
+                "shrink_ray",
+                "bolt_grabber"
+              ],
+              [
+                "map_o_matic",
+                "box_breaker",
+                "wildfire_chestplate",
+                "wildfire_helmet",
+                "wildfire_gloves",
+                "wildfire_boots"
+              ],
+              [
+                "sludge_mk9_chestplate",
+                "sludge_mk9_helmet",
+                "sludge_mk9_gloves",
+                "sludge_mk9_boots",
+                "crystallix_chestplate",
+                "crystallix_helmet"
+              ],
+              [
+                "crystallix_gloves",
+                "crystallix_boots",
+                "electroshock_chestplate",
+                "electroshock_helmet",
+                "electroshock_gloves",
+                "electroshock_boots"
+              ],
+              [
+                "mega_bomb_chestplate",
+                "mega_bomb_helmet",
+                "mega_bomb_gloves",
+                "mega_bomb_boots",
+                "hyperborean_chestplate",
+                "hyperborean_helmet"
+              ],
+              [
+                "hyperborean_gloves",
+                "hyperborean_boots",
+                "chameleon_chestplate",
+                "chameleon_helmet",
+                "chameleon_gloves",
+                "chameleon_boots"
+              ],
+              [
+                "bolts",
+                "trap_feverdream",
+                "trap_whats_gamma",
+                "trap_mirror_level",
+                "trap_reverse_controls",
+                "trap_weapon_switching"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

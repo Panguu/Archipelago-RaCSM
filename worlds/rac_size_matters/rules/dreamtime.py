@@ -10,7 +10,8 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5CutsceneLocations,
 )
-from ._helpers import has_projectile_weapon
+from ._helpers import HasProjectileWeapon
+from rule_builder.rules import HasAll
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -21,26 +22,24 @@ def set_dreamtime_rules(world: RACSizeMatterWorld) -> None:
     mw = world.multiworld
 
     # Entrance already requires Hypershot + Sprout-O-Matic.
-    _base = lambda state: (state.has(Rac5Gadgets.HYPERSHOT, player)
-                           and state.has(Rac5Gadgets.SPROUT_O_MATIC, player))
+    _base = HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC)
 
     # Skill Points
     if world.options.skill_points.value >= 2:
-        mw.get_location(Rac5SkillPoints.DREAMTIME_FRIENDS,       player).access_rule = _base
-        mw.get_location(Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS, player).access_rule = _base
+        world.set_rule(mw.get_location(Rac5SkillPoints.DREAMTIME_FRIENDS, player), _base)
+        world.set_rule(mw.get_location(Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS, player), _base)
 
     # Missions
     if world.options.all_missions:
-        mw.get_location(Rac5CutsceneLocations.DREAMTIME_COMPLETE, player).access_rule = _base
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DREAMTIME_COMPLETE, player), _base)
 
     # Titanium Bolts
-    mw.get_location(Rac5TBolts.DREAMTIME_HAT,    player).access_rule = _base
-    mw.get_location(Rac5TBolts.DREAMTIME_GARAGE, player).access_rule = _base
-    mw.get_location(Rac5TBolts.DREAMTIME_CRAB,   player).access_rule = \
-        lambda state: (_base(state) and has_projectile_weapon(state, player))
+    world.set_rule(mw.get_location(Rac5TBolts.DREAMTIME_HAT, player), _base)
+    world.set_rule(mw.get_location(Rac5TBolts.DREAMTIME_GARAGE, player), _base)
+    world.set_rule(mw.get_location(Rac5TBolts.DREAMTIME_CRAB, player), _base & HasProjectileWeapon())
 
     # Armour
-    mw.get_location(Rac5Locations.DREAMTIME_CHESTPLATE, player).access_rule = _base
+    world.set_rule(mw.get_location(Rac5Locations.DREAMTIME_CHESTPLATE, player), _base)
 
     # Vendors
-    mw.get_location(Rac5VendorLocations.DREAMTIME_SUCK, player).access_rule = _base
+    world.set_rule(mw.get_location(Rac5VendorLocations.DREAMTIME_SUCK, player), _base)

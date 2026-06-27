@@ -13,6 +13,7 @@ from ..pcsx2_interface.pine import Pine
 from .address_maps import (
     CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
+    PLANET_ADDRESSES,
     PLAYER_ADDRS,
     WEAPON_ARRAY_BASE_BY_PLANET,
 )
@@ -20,7 +21,7 @@ from .address_maps.global_map import build_global_address_map
 from .address_maps.planet_map import build_planet_address_map
 from .armour import ArmourSetCollectedState, ArmourState
 from .challenges import ClankChallengeState, SkyboardChallengeState
-from .controller import ButtonState
+from .controller import GlobalButtonState, PauseSelectButtons
 from .display_text import DisplayedTextBoxState, DisplayTextBoxState, SmallTextBoxAddrs
 from .memory.pine_interface import PineInterface
 from .menu import MenuState, MenuStateValue
@@ -154,16 +155,6 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
             state_registry[f"planet_{pid:#04x}"] = ps
         self._orchestrator.register_states(state_registry)
 
-        for state in (
-            self.armour, self.armour_sets, self.bolts, self.skill_points, self.planet_unlock,
-            self.quick_select, self.clank, self.skyboard, self.weapons, self.player,
-            self.menu, self.weapon_vendor, self.mod_vendor, self.display_text, self.displayed_text_box,
-            self.missions,
-        ):
-            state.enter()
-        for ps in self.planet_states.values():
-            ps.enter()
-
         self._poll_task: asyncio.Task | None      = None
         self._swap_task: asyncio.Task | None      = None
         self._active_planet_id: int               = 0
@@ -178,6 +169,13 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         self._pickup_detection_active: bool       = False
         self._last_quick_select_write: float      = 0.0
         self._planet_menu_hotkey_held: bool       = False
+        self._vendor_dpad_right_held: bool        = False
+        self._vendor_dpad_left_held: bool         = False
+        self._vendor_saved_weapon_cb: Callable[[str], None]        | None = None
+        self._vendor_saved_gadget_cb: Callable[[str], None]        | None = None
+        self._vendor_saved_mod_cb:    Callable[[str, str], None]   | None = None
+        self._debug_buttons_enabled: bool         = False
+        self._last_button_state: tuple[int, int] | None = None
 
     def wire(
         self,
@@ -221,6 +219,22 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         self._wire_hooks()
 
     async def start(self) -> None:
+        # Mirrors stop()'s state.exit()/ps.exit() calls — without re-entering here,
+        # a reconnect (stop() then start() again) leaves every state's struct-change
+        # handlers unregistered forever, since enter() used to only run once from
+        # __init__. That's what silently broke menu/vendor detection after /reconnect.
+        for state in (
+            self.armour, self.armour_sets, self.bolts, self.skill_points, self.planet_unlock,
+            self.quick_select, self.clank, self.skyboard, self.weapons, self.player,
+            self.menu, self.weapon_vendor, self.mod_vendor, self.display_text, self.displayed_text_box,
+            self.missions,
+        ):
+            if not state._active:
+                state.enter()
+        for ps in self.planet_states.values():
+            if not ps._active:
+                ps.enter()
+
         self.planet_unlock.sync()
         try:
             raw = self._orchestrator.accessor.read_raw(CURRENT_PLANET_ADDRESS, 1)
@@ -256,6 +270,17 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
         if self._swap_task:
             self._swap_task.cancel()
             self._swap_task = None
+
+        # Counterpart to _register_transition_gate() in start() — without this,
+        # every reconnect piles up another duplicate handler on the same struct,
+        # so _on_transition_gate_change (and the planet_enter/planet_exit calls
+        # it triggers) fires once per past connection instead of once.
+        try:
+            self._orchestrator.accessor.remove_struct_handler(
+                TransitionGateStruct, self._on_transition_gate_change
+            )
+        except Exception:
+            pass
 
         for state in (
             self.armour, self.armour_sets, self.bolts, self.skill_points, self.planet_unlock,
@@ -315,6 +340,8 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
                 self._orchestrator.poll()
                 self._maybe_apply_quick_select()
                 self._check_planet_menu_hotkey()
+                self._check_weapon_vendor_view_toggle()
+                self._check_debug_buttons()
                 self._debug_print_transition_gate()
             except Exception as exc:
                 logger.warning(f"[RAC] Poll error: {exc}")
@@ -368,10 +395,112 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
     def _check_planet_menu_hotkey(self) -> None:
         """Force the Planet Menu open on the rising edge of the L1+L2+R1+R2+START
         combo (held, not re-fired every tick while held)."""
-        held = ButtonState.read(self._pine).opens_planet_menu
+        planet = PLANET_ADDRESSES.get(self._active_planet_id)
+        if planet is None or planet.controller_pause_select_v2 is None:
+            return
+        held = GlobalButtonState.read(self._pine, self._active_planet_id).opens_planet_menu
         if held and not self._planet_menu_hotkey_held:
             self.menu.set_menu(MenuStateValue.PLANET_MENU)
         self._planet_menu_hotkey_held = held
+
+    def _stop_tracking_vendor_purchases(self) -> None:
+        """While the inventory view is showing, our own unlock writes would
+        otherwise be misread as the player buying something (WeaponState's
+        struct-change handler can't tell "we wrote unlocked=1" apart from
+        "the player paid for it") and wrongly check off a vendor-purchase AP
+        location. Save the current purchase-tracking callbacks and replace
+        them with no-ops until _resume_tracking_vendor_purchases."""
+        self._vendor_saved_weapon_cb = self.weapons.on_weapon_acquired
+        self._vendor_saved_gadget_cb = self.weapons.on_gadget_acquired
+        self._vendor_saved_mod_cb    = self.weapons.on_mod_acquired
+        self.weapons.on_weapon_acquired = lambda _name: None
+        self.weapons.on_gadget_acquired = lambda _name: None
+        self.weapons.on_mod_acquired    = lambda _weapon, _slot: None
+
+    def _resume_tracking_vendor_purchases(self) -> None:
+        if self._vendor_saved_weapon_cb is not None:
+            self.weapons.on_weapon_acquired = self._vendor_saved_weapon_cb
+        if self._vendor_saved_gadget_cb is not None:
+            self.weapons.on_gadget_acquired = self._vendor_saved_gadget_cb
+        if self._vendor_saved_mod_cb is not None:
+            self.weapons.on_mod_acquired = self._vendor_saved_mod_cb
+        self._vendor_saved_weapon_cb = None
+        self._vendor_saved_gadget_cb = None
+        self._vendor_saved_mod_cb    = None
+
+    def _check_weapon_vendor_view_toggle(self) -> None:
+        """D_PAD_RIGHT swaps the weapons vendor list to show the player's full
+        AP inventory (so ammo can be bought for owned-but-not-vendor-unlocked
+        weapons); D_PAD_LEFT swaps back to the default vendor-unlock/purchasable
+        view."""
+        if not self.menu.is_weapons_vendor:
+            self._vendor_dpad_right_held = False
+            self._vendor_dpad_left_held  = False
+            return
+        planet = PLANET_ADDRESSES.get(self._active_planet_id)
+        if planet is None or planet.controller_pause_select_v2 is None:
+            return
+
+        buttons    = GlobalButtonState.read(self._pine, self._active_planet_id)
+        right_held = buttons.pressed(PauseSelectButtons.D_PAD_RIGHT)
+        left_held  = buttons.pressed(PauseSelectButtons.D_PAD_LEFT)
+
+        if right_held and not self._vendor_dpad_right_held and not self.weapon_vendor.showing_inventory:
+            # 1. Pause vendor-purchase tracking (our own unlock writes below
+            #    would otherwise be misread as the player buying something).
+            # 2. Set the vendor's slot list to the player's AP weapons/gadgets.
+            # 3. Unlock those weapons (apply ap inventory) so ammo can be
+            #    bought for anything owned, including weapons not yet
+            #    purchased from this vendor.
+            # 4. Refresh the vendor menu so the game redraws with the above.
+            #    set_menu() can make the game re-run its own open sequence on
+            #    a later poll tick, re-firing on_weapon_vendor_open() — set
+            #    showing_inventory=True first so that handler re-asserts the
+            #    inventory view instead of falling back to the default one.
+            self._stop_tracking_vendor_purchases()
+            self.vendor_unlock.apply_inventory(self._orchestrator.accessor)
+            with self.vendor_write_lock:
+                self.weapons.sync()
+            self.weapon_vendor.showing_inventory = True
+            self.weapon_vendor.refreshing = True
+            self.menu.set_menu(MenuStateValue.WEAPONS_VENDOR)
+
+        if left_held and not self._vendor_dpad_left_held and self.weapon_vendor.showing_inventory:
+            unlock_items = self.vendor_unlock.unlock_items()
+            if unlock_items:
+                # Zero every weapon/gadget unlock then restore only what the
+                # default view should show (ammo-refill + purchasable slots),
+                # and resume tracking so a real purchase from here gets
+                # checked off again.
+                with self.vendor_write_lock:
+                    self.weapons.apply_vendor_locations(self.vendor_unlock.allowed_weapons_for_inventory())
+                self._resume_tracking_vendor_purchases()
+                self.vendor_unlock.apply(self._orchestrator.accessor)
+                self.weapon_vendor.showing_inventory = False
+                self.weapon_vendor.refreshing = True
+                self.menu.set_menu(MenuStateValue.WEAPONS_VENDOR)
+            # else: no vendor-unlock weapons to show — identical to the
+            # inventory view, so skip the write/update entirely.
+
+        self._vendor_dpad_right_held = right_held
+        self._vendor_dpad_left_held  = left_held
+
+    def set_debug_buttons(self, enabled: bool) -> None:
+        """Enable/disable per-tick logging of GlobalButtonState changes (/debug_buttons)."""
+        self._debug_buttons_enabled = enabled
+        self._last_button_state = None
+
+    def _check_debug_buttons(self) -> None:
+        if not self._debug_buttons_enabled:
+            return
+        planet = PLANET_ADDRESSES.get(self._active_planet_id)
+        if planet is None or planet.controller_pause_select_v2 is None:
+            return
+        buttons = GlobalButtonState.read(self._pine, self._active_planet_id)
+        state   = (int(buttons.pause_sel), int(buttons.buttons))
+        if state != self._last_button_state:
+            self._last_button_state = state
+            logger.info(f"[RAC] debug_buttons: {buttons}")
 
     # -- Planet state builder -------------------------------------------------
 

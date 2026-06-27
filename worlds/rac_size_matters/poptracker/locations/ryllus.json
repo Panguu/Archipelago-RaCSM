@@ -1,0 +1,209 @@
+[
+  {
+    "name": "Ryllus",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Down The Cliff",
+        "sections": [
+          {
+            "name": "T-Bolt: Down The Cliff"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "95",
+            "y": "442"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "T-Bolt: After the Wall",
+        "sections": [
+          {
+            "name": "T-Bolt: After the Wall"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "350",
+            "y": "211"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$ryllus_full"
+        ]
+      },
+      {
+        "name": "Sludge Mk9 Boots behind breakable rock",
+        "sections": [
+          {
+            "name": "Sludge Mk9 Boots behind breakable rock"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "256",
+            "y": "278"
+          }
+        ],
+        "access_rules": [
+          "sprout_o_matic"
+        ]
+      },
+      {
+        "name": "Wildfire Helmet before temple entrance",
+        "sections": [
+          {
+            "name": "Wildfire Helmet before temple entrance"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "350",
+            "y": "211"
+          }
+        ],
+        "access_rules": [
+          "$ryllus_full"
+        ]
+      },
+      {
+        "name": "Receive Spout-O-Matic",
+        "sections": [
+          {
+            "name": "Receive Spout-O-Matic"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "224",
+            "y": "262"
+          }
+        ]
+      },
+      {
+        "name": "Investigate the artifact (Reach the temple)",
+        "sections": [
+          {
+            "name": "Investigate the artifact (Reach the temple)"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$ryllus_full"
+        ]
+      },
+      {
+        "name": "Unlock the temple",
+        "sections": [
+          {
+            "name": "Unlock the temple"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$ryllus_full"
+        ]
+      },
+      {
+        "name": "Buzzing Cameras",
+        "sections": [
+          {
+            "name": "Buzzing Cameras"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Agents of Doom - 25,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Bury the Pygmies",
+            "access_rules": [
+              "$ryllus_full"
+            ]
+          },
+          {
+            "name": "Skill Point: Lights, Camera, Action!"
+          },
+          {
+            "name": "Skill Point: Ship It",
+            "access_rules": [
+              "$ryllus_full"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ryllus_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      }
+    ]
+  }
+]

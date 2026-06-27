@@ -1,0 +1,141 @@
+[
+  {
+    "name": "Metalis",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Behind the Polarized Door",
+        "sections": [
+          {
+            "name": "T-Bolt: Behind the Polarized Door"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Metalis_map",
+            "x": "300",
+            "y": "200"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$metalis_door"
+        ]
+      },
+      {
+        "name": "Survive Robot War III (Complete Buzzsaw Blitz)",
+        "sections": [
+          {
+            "name": "Survive Robot War III (Complete Buzzsaw Blitz)"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Metalis_map",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Metalis_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Clank Challenges",
+        "chest_unopened_img": "images/icons/Clank_Challanges.png",
+        "chest_opened_img": "images/icons/Clank_Challanges.png",
+        "sections": [
+          {
+            "name": "Clank Challenge: Buzzsaw Blitz"
+          },
+          {
+            "name": "Clank Challenge: Smasherbot's Revenge"
+          },
+          {
+            "name": "Clank Challenge: The Uber Finals"
+          },
+          {
+            "name": "Clank Challenge: Night Impossible"
+          },
+          {
+            "name": "Clank Challenge: CHARGE!"
+          },
+          {
+            "name": "Clank Challenge: Electric Boogaloo"
+          },
+          {
+            "name": "Clank Challenge: Showdown"
+          },
+          {
+            "name": "Clank Challenge: Little League"
+          },
+          {
+            "name": "Clank Challenge: Varsity Bracket"
+          },
+          {
+            "name": "Clank Challenge: Collegiate Division"
+          },
+          {
+            "name": "Clank Challenge: Professional Level"
+          },
+          {
+            "name": "Clank Challenge: Take Two For The Team"
+          },
+          {
+            "name": "Clank Challenge: Bridge The Gap"
+          },
+          {
+            "name": "Clank Challenge: Of Trapeze and Teleporters"
+          },
+          {
+            "name": "Clank Challenge: Brain Trip"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Metalis_map",
+            "x": "80",
+            "y": "293"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Shutout"
+          },
+          {
+            "name": "Skill Point: Ultimate Gladiator"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Metalis_map",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "metalis"
+    ]
+  }
+]

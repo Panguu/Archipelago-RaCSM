@@ -1,0 +1,107 @@
+{
+  "tabbed_maps_horizontal": {
+    "type": "tabbed",
+    "tabs": [
+      {
+        "title": "Overview",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Overview"
+          ]
+        }
+      },
+      {
+        "title": "Pokitaru",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Pokitaru_map"
+          ]
+        }
+      },
+      {
+        "title": "Ryllus",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Ryllus_map"
+          ]
+        }
+      },
+      {
+        "title": "Kalidon",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Kalidon_map"
+          ]
+        }
+      },
+      {
+        "title": "Metalis",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Metalis_map"
+          ]
+        }
+      },
+      {
+        "title": "Dreamtime",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Dreamtime_map"
+          ]
+        }
+      },
+      {
+        "title": "Outpost Omega",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Outpost_Omega_1_map"
+          ]
+        }
+      },
+      {
+        "title": "Challax",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Challax_map"
+          ]
+        }
+      },
+      {
+        "title": "Dayni Moon",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Dayni_Moon_map"
+          ]
+        }
+      },
+      {
+        "title": "Inside Clank",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Inside_Clank_map_section_1",
+            "Inside_Clank_map_section_2"
+          ]
+        }
+      },
+      {
+        "title": "Quodrona",
+        "content": {
+          "type": "map",
+          "maps": [
+            "Quodrona_map"
+          ]
+        }
+      }
+    ]
+  }
+}

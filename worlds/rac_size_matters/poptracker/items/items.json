@@ -1,0 +1,1587 @@
+[
+  {
+    "name": "Hypershot",
+    "type": "toggle",
+    "img": "images/items/Hypershot.png",
+    "img_mods": "",
+    "codes": "hypershot"
+  },
+  {
+    "name": "Sprout-O-Matic",
+    "type": "toggle",
+    "img": "images/items/Sprout-O-Matic_icon.png",
+    "img_mods": "",
+    "codes": "sprout_o_matic"
+  },
+  {
+    "name": "Polarizer",
+    "type": "toggle",
+    "img": "images/items/Polarizer_icon.png",
+    "img_mods": "",
+    "codes": "polarizer"
+  },
+  {
+    "name": "PDA",
+    "type": "toggle",
+    "img": "images/items/Gadgetron_PDA.png",
+    "img_mods": "",
+    "codes": "pda"
+  },
+  {
+    "name": "Shrink Ray",
+    "type": "toggle",
+    "img": "images/items/Shrink_Ray.png",
+    "img_mods": "",
+    "codes": "shrink_ray"
+  },
+  {
+    "name": "Bolt Grabber",
+    "type": "toggle",
+    "img": "images/items/Bolt_Grabber.png",
+    "img_mods": "",
+    "codes": "bolt_grabber"
+  },
+  {
+    "name": "Map-O-Matic",
+    "type": "toggle",
+    "img": "images/items/Map-o-Matic.png",
+    "img_mods": "",
+    "codes": "map_o_matic"
+  },
+  {
+    "name": "Box Breaker",
+    "type": "toggle",
+    "img": "images/items/Box_Breaker.png",
+    "img_mods": "",
+    "codes": "box_breaker"
+  },
+  {
+    "name": "Wildfire Chestplate",
+    "type": "toggle",
+    "img": "images/items/wildfire_chestplate.png",
+    "img_mods": "",
+    "codes": "wildfire_chestplate"
+  },
+  {
+    "name": "Wildfire Helmet",
+    "type": "toggle",
+    "img": "images/items/wildfire_helmet.png",
+    "img_mods": "",
+    "codes": "wildfire_helmet"
+  },
+  {
+    "name": "Wildfire Gloves",
+    "type": "toggle",
+    "img": "images/items/wildfire_gloves.png",
+    "img_mods": "",
+    "codes": "wildfire_gloves"
+  },
+  {
+    "name": "Wildfire Boots",
+    "type": "toggle",
+    "img": "images/items/wildfire_boots.png",
+    "img_mods": "",
+    "codes": "wildfire_boots"
+  },
+  {
+    "name": "Sludge Mk9 Chestplate",
+    "type": "toggle",
+    "img": "images/items/sludge_mk9_chestplate.png",
+    "img_mods": "",
+    "codes": "sludge_mk9_chestplate"
+  },
+  {
+    "name": "Sludge Mk9 Helmet",
+    "type": "toggle",
+    "img": "images/items/sludge_mk9_helmet.png",
+    "img_mods": "",
+    "codes": "sludge_mk9_helmet"
+  },
+  {
+    "name": "Sludge Mk9 Gloves",
+    "type": "toggle",
+    "img": "images/items/sludge_mk9_gloves.png",
+    "img_mods": "",
+    "codes": "sludge_mk9_gloves"
+  },
+  {
+    "name": "Sludge Mk9 Boots",
+    "type": "toggle",
+    "img": "images/items/sludge_mk9_boots.png",
+    "img_mods": "",
+    "codes": "sludge_mk9_boots"
+  },
+  {
+    "name": "Crystallix Chestplate",
+    "type": "toggle",
+    "img": "images/items/crystallix_chestplate.png",
+    "img_mods": "",
+    "codes": "crystallix_chestplate"
+  },
+  {
+    "name": "Crystallix Helmet",
+    "type": "toggle",
+    "img": "images/items/crystallix_helmet.png",
+    "img_mods": "",
+    "codes": "crystallix_helmet"
+  },
+  {
+    "name": "Crystallix Gloves",
+    "type": "toggle",
+    "img": "images/items/crystallix_gloves.png",
+    "img_mods": "",
+    "codes": "crystallix_gloves"
+  },
+  {
+    "name": "Crystallix Boots",
+    "type": "toggle",
+    "img": "images/items/crystallix_boots.png",
+    "img_mods": "",
+    "codes": "crystallix_boots"
+  },
+  {
+    "name": "Electroshock Chestplate",
+    "type": "toggle",
+    "img": "images/items/electroshock_chestplate.png",
+    "img_mods": "",
+    "codes": "electroshock_chestplate"
+  },
+  {
+    "name": "Electroshock Helmet",
+    "type": "toggle",
+    "img": "images/items/electroshock_helmet.png",
+    "img_mods": "",
+    "codes": "electroshock_helmet"
+  },
+  {
+    "name": "Electroshock Gloves",
+    "type": "toggle",
+    "img": "images/items/electroshock_gloves.png",
+    "img_mods": "",
+    "codes": "electroshock_gloves"
+  },
+  {
+    "name": "Electroshock Boots",
+    "type": "toggle",
+    "img": "images/items/electroshock_boots.png",
+    "img_mods": "",
+    "codes": "electroshock_boots"
+  },
+  {
+    "name": "Mega Bomb Chestplate",
+    "type": "toggle",
+    "img": "images/items/mega_bomb_chestplate.png",
+    "img_mods": "",
+    "codes": "mega_bomb_chestplate"
+  },
+  {
+    "name": "Mega Bomb Helmet",
+    "type": "toggle",
+    "img": "images/items/mega_bomb_helmet.png",
+    "img_mods": "",
+    "codes": "mega_bomb_helmet"
+  },
+  {
+    "name": "Mega Bomb Gloves",
+    "type": "toggle",
+    "img": "images/items/mega_bomb_gloves.png",
+    "img_mods": "",
+    "codes": "mega_bomb_gloves"
+  },
+  {
+    "name": "Mega Bomb Boots",
+    "type": "toggle",
+    "img": "images/items/mega_bomb_boots.png",
+    "img_mods": "",
+    "codes": "mega_bomb_boots"
+  },
+  {
+    "name": "Hyperborean Chestplate",
+    "type": "toggle",
+    "img": "images/items/hyperborean_chestplate.png",
+    "img_mods": "",
+    "codes": "hyperborean_chestplate"
+  },
+  {
+    "name": "Hyperborean Helmet",
+    "type": "toggle",
+    "img": "images/items/hyperborean_helmet.png",
+    "img_mods": "",
+    "codes": "hyperborean_helmet"
+  },
+  {
+    "name": "Hyperborean Gloves",
+    "type": "toggle",
+    "img": "images/items/hyperborean_gloves.png",
+    "img_mods": "",
+    "codes": "hyperborean_gloves"
+  },
+  {
+    "name": "Hyperborean Boots",
+    "type": "toggle",
+    "img": "images/items/hyperborean_boots.png",
+    "img_mods": "",
+    "codes": "hyperborean_boots"
+  },
+  {
+    "name": "Chameleon Chestplate",
+    "type": "toggle",
+    "img": "images/items/chameleon_chestplate.png",
+    "img_mods": "",
+    "codes": "chameleon_chestplate"
+  },
+  {
+    "name": "Chameleon Helmet",
+    "type": "toggle",
+    "img": "images/items/chameleon_helmet.png",
+    "img_mods": "",
+    "codes": "chameleon_helmet"
+  },
+  {
+    "name": "Chameleon Gloves",
+    "type": "toggle",
+    "img": "images/items/chameleon_gloves.png",
+    "img_mods": "",
+    "codes": "chameleon_gloves"
+  },
+  {
+    "name": "Chameleon Boots",
+    "type": "toggle",
+    "img": "images/items/chameleon_boots.png",
+    "img_mods": "",
+    "codes": "chameleon_boots"
+  },
+  {
+    "name": "Progressive Lacerator",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Lacerator.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_lacerator",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator: 0"
+      },
+      {
+        "img": "images/items/Lacerator.png",
+        "img_mods": "",
+        "codes": "progressive_lacerator,lacerator",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator: 1"
+      },
+      {
+        "img": "images/items/Lacerator.png",
+        "img_mods": "",
+        "codes": "progressive_lacerator,lacerator",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator: 2"
+      },
+      {
+        "img": "images/items/Lacerator.png",
+        "img_mods": "",
+        "codes": "progressive_lacerator,lacerator",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator: 3"
+      },
+      {
+        "img": "images/items/Lacerator.png",
+        "img_mods": "",
+        "codes": "progressive_lacerator,lacerator",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Concussion Gun",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Concussion_Gun_icon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_concussion_gun",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun: 0"
+      },
+      {
+        "img": "images/items/Concussion_Gun_icon.png",
+        "img_mods": "",
+        "codes": "progressive_concussion_gun,concussion_gun",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun: 1"
+      },
+      {
+        "img": "images/items/Concussion_Gun_icon.png",
+        "img_mods": "",
+        "codes": "progressive_concussion_gun,concussion_gun",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun: 2"
+      },
+      {
+        "img": "images/items/Concussion_Gun_icon.png",
+        "img_mods": "",
+        "codes": "progressive_concussion_gun,concussion_gun",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun: 3"
+      },
+      {
+        "img": "images/items/Concussion_Gun_icon.png",
+        "img_mods": "",
+        "codes": "progressive_concussion_gun,concussion_gun",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Acid Bomb Glove",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Acid_Bomb_Glove.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_acid_bomb_glove",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove: 0"
+      },
+      {
+        "img": "images/items/Acid_Bomb_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_acid_bomb_glove,acid_bomb_glove",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove: 1"
+      },
+      {
+        "img": "images/items/Acid_Bomb_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_acid_bomb_glove,acid_bomb_glove",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove: 2"
+      },
+      {
+        "img": "images/items/Acid_Bomb_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_acid_bomb_glove,acid_bomb_glove",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove: 3"
+      },
+      {
+        "img": "images/items/Acid_Bomb_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_acid_bomb_glove,acid_bomb_glove",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Agents of Doom",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Agents_of_Doom.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_agents_of_doom",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom: 0"
+      },
+      {
+        "img": "images/items/Agents_of_Doom.png",
+        "img_mods": "",
+        "codes": "progressive_agents_of_doom,agents_of_doom",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom: 1"
+      },
+      {
+        "img": "images/items/Agents_of_Doom.png",
+        "img_mods": "",
+        "codes": "progressive_agents_of_doom,agents_of_doom",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom: 2"
+      },
+      {
+        "img": "images/items/Agents_of_Doom.png",
+        "img_mods": "",
+        "codes": "progressive_agents_of_doom,agents_of_doom",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom: 3"
+      },
+      {
+        "img": "images/items/Agents_of_Doom.png",
+        "img_mods": "",
+        "codes": "progressive_agents_of_doom,agents_of_doom",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Bee Mine Glove",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Bee_Mine_Glove.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_bee_mine_glove",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove: 0"
+      },
+      {
+        "img": "images/items/Bee_Mine_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_bee_mine_glove,bee_mine_glove",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove: 1"
+      },
+      {
+        "img": "images/items/Bee_Mine_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_bee_mine_glove,bee_mine_glove",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove: 2"
+      },
+      {
+        "img": "images/items/Bee_Mine_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_bee_mine_glove,bee_mine_glove",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove: 3"
+      },
+      {
+        "img": "images/items/Bee_Mine_Glove.png",
+        "img_mods": "",
+        "codes": "progressive_bee_mine_glove,bee_mine_glove",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Static Barrier",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Static_Barrier_icon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_static_barrier",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier: 0"
+      },
+      {
+        "img": "images/items/Static_Barrier_icon.png",
+        "img_mods": "",
+        "codes": "progressive_static_barrier,static_barrier",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier: 1"
+      },
+      {
+        "img": "images/items/Static_Barrier_icon.png",
+        "img_mods": "",
+        "codes": "progressive_static_barrier,static_barrier",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier: 2"
+      },
+      {
+        "img": "images/items/Static_Barrier_icon.png",
+        "img_mods": "",
+        "codes": "progressive_static_barrier,static_barrier",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier: 3"
+      },
+      {
+        "img": "images/items/Static_Barrier_icon.png",
+        "img_mods": "",
+        "codes": "progressive_static_barrier,static_barrier",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Shock Rocket",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Shock_Rocket.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_shock_rocket",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket: 0"
+      },
+      {
+        "img": "images/items/Shock_Rocket.png",
+        "img_mods": "",
+        "codes": "progressive_shock_rocket,shock_rocket",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket: 1"
+      },
+      {
+        "img": "images/items/Shock_Rocket.png",
+        "img_mods": "",
+        "codes": "progressive_shock_rocket,shock_rocket",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket: 2"
+      },
+      {
+        "img": "images/items/Shock_Rocket.png",
+        "img_mods": "",
+        "codes": "progressive_shock_rocket,shock_rocket",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket: 3"
+      },
+      {
+        "img": "images/items/Shock_Rocket.png",
+        "img_mods": "",
+        "codes": "progressive_shock_rocket,shock_rocket",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Sniper Mine",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Sniper_Mine_icon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_sniper_mine",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine: 0"
+      },
+      {
+        "img": "images/items/Sniper_Mine_icon.png",
+        "img_mods": "",
+        "codes": "progressive_sniper_mine,sniper_mine",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine: 1"
+      },
+      {
+        "img": "images/items/Sniper_Mine_icon.png",
+        "img_mods": "",
+        "codes": "progressive_sniper_mine,sniper_mine",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine: 2"
+      },
+      {
+        "img": "images/items/Sniper_Mine_icon.png",
+        "img_mods": "",
+        "codes": "progressive_sniper_mine,sniper_mine",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine: 3"
+      },
+      {
+        "img": "images/items/Sniper_Mine_icon.png",
+        "img_mods": "",
+        "codes": "progressive_sniper_mine,sniper_mine",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Scorcher",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Scorcher_icon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_scorcher",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher: 0"
+      },
+      {
+        "img": "images/items/Scorcher_icon.png",
+        "img_mods": "",
+        "codes": "progressive_scorcher,scorcher",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher: 1"
+      },
+      {
+        "img": "images/items/Scorcher_icon.png",
+        "img_mods": "",
+        "codes": "progressive_scorcher,scorcher",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher: 2"
+      },
+      {
+        "img": "images/items/Scorcher_icon.png",
+        "img_mods": "",
+        "codes": "progressive_scorcher,scorcher",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher: 3"
+      },
+      {
+        "img": "images/items/Scorcher_icon.png",
+        "img_mods": "",
+        "codes": "progressive_scorcher,scorcher",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Laser Tracer",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Laser_Tracer_icon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_laser_tracer",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer: 0"
+      },
+      {
+        "img": "images/items/Laser_Tracer_icon.png",
+        "img_mods": "",
+        "codes": "progressive_laser_tracer,laser_tracer",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer: 1"
+      },
+      {
+        "img": "images/items/Laser_Tracer_icon.png",
+        "img_mods": "",
+        "codes": "progressive_laser_tracer,laser_tracer",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer: 2"
+      },
+      {
+        "img": "images/items/Laser_Tracer_icon.png",
+        "img_mods": "",
+        "codes": "progressive_laser_tracer,laser_tracer",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer: 3"
+      },
+      {
+        "img": "images/items/Laser_Tracer_icon.png",
+        "img_mods": "",
+        "codes": "progressive_laser_tracer,laser_tracer",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Suck Cannon",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Suck_Cannon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_suck_cannon",
+        "inherit_codes": false,
+        "name": "Progressive Suck Cannon: 0"
+      },
+      {
+        "img": "images/items/Suck_Cannon.png",
+        "img_mods": "",
+        "codes": "progressive_suck_cannon,suck_cannon",
+        "inherit_codes": false,
+        "name": "Progressive Suck Cannon: 1"
+      },
+      {
+        "img": "images/items/Suck_Cannon.png",
+        "img_mods": "",
+        "codes": "progressive_suck_cannon,suck_cannon",
+        "inherit_codes": false,
+        "name": "Progressive Suck Cannon: 2"
+      },
+      {
+        "img": "images/items/Suck_Cannon.png",
+        "img_mods": "",
+        "codes": "progressive_suck_cannon,suck_cannon",
+        "inherit_codes": false,
+        "name": "Progressive Suck Cannon: 3"
+      },
+      {
+        "img": "images/items/Suck_Cannon.png",
+        "img_mods": "",
+        "codes": "progressive_suck_cannon,suck_cannon",
+        "inherit_codes": false,
+        "name": "Progressive Suck Cannon: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Mootator",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/Mootator_icon.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_mootator",
+        "inherit_codes": false,
+        "name": "Progressive Mootator: 0"
+      },
+      {
+        "img": "images/items/Mootator_icon.png",
+        "img_mods": "",
+        "codes": "progressive_mootator,mootator",
+        "inherit_codes": false,
+        "name": "Progressive Mootator: 1"
+      }
+    ]
+  },
+  {
+    "name": "Progressive RYNO",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/RYNO.png",
+        "img_mods": "@disabled",
+        "codes": "progressive_ryno",
+        "inherit_codes": false,
+        "name": "Progressive RYNO: 0"
+      },
+      {
+        "img": "images/items/RYNO.png",
+        "img_mods": "",
+        "codes": "progressive_ryno,ryno",
+        "inherit_codes": false,
+        "name": "Progressive RYNO: 1"
+      },
+      {
+        "img": "images/items/RYNO.png",
+        "img_mods": "",
+        "codes": "progressive_ryno,ryno",
+        "inherit_codes": false,
+        "name": "Progressive RYNO: 2"
+      },
+      {
+        "img": "images/items/RYNO.png",
+        "img_mods": "",
+        "codes": "progressive_ryno,ryno",
+        "inherit_codes": false,
+        "name": "Progressive RYNO: 3"
+      },
+      {
+        "img": "images/items/RYNO.png",
+        "img_mods": "",
+        "codes": "progressive_ryno,ryno",
+        "inherit_codes": false,
+        "name": "Progressive RYNO: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Lacerator Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_lacerator.png",
+        "codes": "progressive_mod_lacerator",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_lacerator.png",
+        "codes": "progressive_mod_lacerator,mod_lacerator_1",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_lacerator.png",
+        "codes": "progressive_mod_lacerator,mod_lacerator_2",
+        "inherit_codes": false,
+        "name": "Progressive Lacerator Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Concussion Gun Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_concussion_gun.png",
+        "codes": "progressive_mod_concussion_gun",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_concussion_gun.png",
+        "codes": "progressive_mod_concussion_gun,mod_concussion_gun_1",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_concussion_gun.png",
+        "codes": "progressive_mod_concussion_gun,mod_concussion_gun_2",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun Mod: 2"
+      },
+      {
+        "img": "images/items/progressive_mod_concussion_gun.png",
+        "codes": "progressive_mod_concussion_gun,mod_concussion_gun_3",
+        "inherit_codes": false,
+        "name": "Progressive Concussion Gun Mod: 3"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Acid Bomb Glove Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_acid_bomb_glove.png",
+        "codes": "progressive_mod_acid_bomb_glove",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_acid_bomb_glove.png",
+        "codes": "progressive_mod_acid_bomb_glove,mod_acid_bomb_glove_1",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_acid_bomb_glove.png",
+        "codes": "progressive_mod_acid_bomb_glove,mod_acid_bomb_glove_2",
+        "inherit_codes": false,
+        "name": "Progressive Acid Bomb Glove Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Agents of Doom Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_agents_of_doom.png",
+        "codes": "progressive_mod_agents_of_doom",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_agents_of_doom.png",
+        "codes": "progressive_mod_agents_of_doom,mod_agents_of_doom_1",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_agents_of_doom.png",
+        "codes": "progressive_mod_agents_of_doom,mod_agents_of_doom_2",
+        "inherit_codes": false,
+        "name": "Progressive Agents of Doom Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Bee Mine Glove Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_bee_mine_glove.png",
+        "codes": "progressive_mod_bee_mine_glove",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_bee_mine_glove.png",
+        "codes": "progressive_mod_bee_mine_glove,mod_bee_mine_glove_1",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_bee_mine_glove.png",
+        "codes": "progressive_mod_bee_mine_glove,mod_bee_mine_glove_2",
+        "inherit_codes": false,
+        "name": "Progressive Bee Mine Glove Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Static Barrier Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_static_barrier.png",
+        "codes": "progressive_mod_static_barrier",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_static_barrier.png",
+        "codes": "progressive_mod_static_barrier,mod_static_barrier_1",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_static_barrier.png",
+        "codes": "progressive_mod_static_barrier,mod_static_barrier_2",
+        "inherit_codes": false,
+        "name": "Progressive Static Barrier Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Shock Rocket Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_shock_rocket.png",
+        "codes": "progressive_mod_shock_rocket",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_shock_rocket.png",
+        "codes": "progressive_mod_shock_rocket,mod_shock_rocket_1",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_shock_rocket.png",
+        "codes": "progressive_mod_shock_rocket,mod_shock_rocket_2",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket Mod: 2"
+      },
+      {
+        "img": "images/items/progressive_mod_shock_rocket.png",
+        "codes": "progressive_mod_shock_rocket,mod_shock_rocket_3",
+        "inherit_codes": false,
+        "name": "Progressive Shock Rocket Mod: 3"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Sniper Mine Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_sniper_mine.png",
+        "codes": "progressive_mod_sniper_mine",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_sniper_mine.png",
+        "codes": "progressive_mod_sniper_mine,mod_sniper_mine_1",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_sniper_mine.png",
+        "codes": "progressive_mod_sniper_mine,mod_sniper_mine_2",
+        "inherit_codes": false,
+        "name": "Progressive Sniper Mine Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Scorcher Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_scorcher.png",
+        "codes": "progressive_mod_scorcher",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_scorcher.png",
+        "codes": "progressive_mod_scorcher,mod_scorcher_1",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_scorcher.png",
+        "codes": "progressive_mod_scorcher,mod_scorcher_2",
+        "inherit_codes": false,
+        "name": "Progressive Scorcher Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Laser Tracer Mod",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mod_laser_tracer.png",
+        "codes": "progressive_mod_laser_tracer",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer Mod: 0"
+      },
+      {
+        "img": "images/items/progressive_mod_laser_tracer.png",
+        "codes": "progressive_mod_laser_tracer,mod_laser_tracer_1",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer Mod: 1"
+      },
+      {
+        "img": "images/items/progressive_mod_laser_tracer.png",
+        "codes": "progressive_mod_laser_tracer,mod_laser_tracer_2",
+        "inherit_codes": false,
+        "name": "Progressive Laser Tracer Mod: 2"
+      }
+    ]
+  },
+  {
+    "name": "Lacerator: Lock On Mod",
+    "type": "toggle",
+    "img": "images/items/mod_lacerator_1.png",
+    "img_mods": "",
+    "codes": "mod_lacerator_1"
+  },
+  {
+    "name": "Lacerator: Double Barrel Mod",
+    "type": "toggle",
+    "img": "images/items/mod_lacerator_2.png",
+    "img_mods": "",
+    "codes": "mod_lacerator_2"
+  },
+  {
+    "name": "Concussion Gun: Split Barrel Mod",
+    "type": "toggle",
+    "img": "images/items/mod_concussion_gun_1.png",
+    "img_mods": "",
+    "codes": "mod_concussion_gun_1"
+  },
+  {
+    "name": "Concussion Gun: Lock On Mod",
+    "type": "toggle",
+    "img": "images/items/mod_concussion_gun_2.png",
+    "img_mods": "",
+    "codes": "mod_concussion_gun_2"
+  },
+  {
+    "name": "Concussion Gun: Charge Up Mod",
+    "type": "toggle",
+    "img": "images/items/mod_concussion_gun_3.png",
+    "img_mods": "",
+    "codes": "mod_concussion_gun_3"
+  },
+  {
+    "name": "Acid Bomb Glove: Acid Bomb Mod",
+    "type": "toggle",
+    "img": "images/items/mod_acid_bomb_glove_1.png",
+    "img_mods": "",
+    "codes": "mod_acid_bomb_glove_1"
+  },
+  {
+    "name": "Acid Bomb Glove: Epoxy Mod",
+    "type": "toggle",
+    "img": "images/items/mod_acid_bomb_glove_2.png",
+    "img_mods": "",
+    "codes": "mod_acid_bomb_glove_2"
+  },
+  {
+    "name": "Agents of Doom: Launcher Mod",
+    "type": "toggle",
+    "img": "images/items/mod_agents_of_doom_1.png",
+    "img_mods": "",
+    "codes": "mod_agents_of_doom_1"
+  },
+  {
+    "name": "Agents of Doom: Explosive Mod",
+    "type": "toggle",
+    "img": "images/items/mod_agents_of_doom_2.png",
+    "img_mods": "",
+    "codes": "mod_agents_of_doom_2"
+  },
+  {
+    "name": "Bee Mine Glove: Worker Mod",
+    "type": "toggle",
+    "img": "images/items/mod_bee_mine_glove_1.png",
+    "img_mods": "",
+    "codes": "mod_bee_mine_glove_1"
+  },
+  {
+    "name": "Bee Mine Glove: Hive Bomb Mod",
+    "type": "toggle",
+    "img": "images/items/mod_bee_mine_glove_2.png",
+    "img_mods": "",
+    "codes": "mod_bee_mine_glove_2"
+  },
+  {
+    "name": "Static Barrier: Reflection Mod",
+    "type": "toggle",
+    "img": "images/items/mod_static_barrier_1.png",
+    "img_mods": "",
+    "codes": "mod_static_barrier_1"
+  },
+  {
+    "name": "Static Barrier: Mirage Mod",
+    "type": "toggle",
+    "img": "images/items/mod_static_barrier_2.png",
+    "img_mods": "",
+    "codes": "mod_static_barrier_2"
+  },
+  {
+    "name": "Shock Rocket: Lock On Mod",
+    "type": "toggle",
+    "img": "images/items/mod_shock_rocket_1.png",
+    "img_mods": "",
+    "codes": "mod_shock_rocket_1"
+  },
+  {
+    "name": "Shock Rocket: After Shock Mod",
+    "type": "toggle",
+    "img": "images/items/mod_shock_rocket_2.png",
+    "img_mods": "",
+    "codes": "mod_shock_rocket_2"
+  },
+  {
+    "name": "Shock Rocket: Multi Launcher Mod",
+    "type": "toggle",
+    "img": "images/items/mod_shock_rocket_3.png",
+    "img_mods": "",
+    "codes": "mod_shock_rocket_3"
+  },
+  {
+    "name": "Sniper Mine: Split Beam Mod",
+    "type": "toggle",
+    "img": "images/items/mod_sniper_mine_1.png",
+    "img_mods": "",
+    "codes": "mod_sniper_mine_1"
+  },
+  {
+    "name": "Sniper Mine: Smart Reflector Mod",
+    "type": "toggle",
+    "img": "images/items/mod_sniper_mine_2.png",
+    "img_mods": "",
+    "codes": "mod_sniper_mine_2"
+  },
+  {
+    "name": "Scorcher: Split Fire Mod",
+    "type": "toggle",
+    "img": "images/items/mod_scorcher_1.png",
+    "img_mods": "",
+    "codes": "mod_scorcher_1"
+  },
+  {
+    "name": "Scorcher: Sunflare Mod",
+    "type": "toggle",
+    "img": "images/items/mod_scorcher_2.png",
+    "img_mods": "",
+    "codes": "mod_scorcher_2"
+  },
+  {
+    "name": "Laser Tracer: Pierce Mod",
+    "type": "toggle",
+    "img": "images/items/mod_laser_tracer_1.png",
+    "img_mods": "",
+    "codes": "mod_laser_tracer_1"
+  },
+  {
+    "name": "Laser Tracer: Ricochet Mod",
+    "type": "toggle",
+    "img": "images/items/mod_laser_tracer_2.png",
+    "img_mods": "",
+    "codes": "mod_laser_tracer_2"
+  },
+  {
+    "name": "Progressive Wildfire Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_wildfire.png",
+        "codes": "progressive_wildfire",
+        "inherit_codes": false,
+        "name": "Progressive Wildfire Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_wildfire.png",
+        "codes": "progressive_wildfire,wildfire_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Wildfire Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_wildfire.png",
+        "codes": "progressive_wildfire,wildfire_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Wildfire Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_wildfire.png",
+        "codes": "progressive_wildfire,wildfire_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Wildfire Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_wildfire.png",
+        "codes": "progressive_wildfire,wildfire_boots",
+        "inherit_codes": false,
+        "name": "Progressive Wildfire Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Sludge Mk9 Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_sludge.png",
+        "codes": "progressive_sludge",
+        "inherit_codes": false,
+        "name": "Progressive Sludge Mk9 Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_sludge.png",
+        "codes": "progressive_sludge,sludge_mk9_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Sludge Mk9 Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_sludge.png",
+        "codes": "progressive_sludge,sludge_mk9_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Sludge Mk9 Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_sludge.png",
+        "codes": "progressive_sludge,sludge_mk9_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Sludge Mk9 Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_sludge.png",
+        "codes": "progressive_sludge,sludge_mk9_boots",
+        "inherit_codes": false,
+        "name": "Progressive Sludge Mk9 Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Crystallix Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_crystallix.png",
+        "codes": "progressive_crystallix",
+        "inherit_codes": false,
+        "name": "Progressive Crystallix Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_crystallix.png",
+        "codes": "progressive_crystallix,crystallix_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Crystallix Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_crystallix.png",
+        "codes": "progressive_crystallix,crystallix_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Crystallix Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_crystallix.png",
+        "codes": "progressive_crystallix,crystallix_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Crystallix Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_crystallix.png",
+        "codes": "progressive_crystallix,crystallix_boots",
+        "inherit_codes": false,
+        "name": "Progressive Crystallix Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Electroshock Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_electroshock.png",
+        "codes": "progressive_electroshock",
+        "inherit_codes": false,
+        "name": "Progressive Electroshock Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_electroshock.png",
+        "codes": "progressive_electroshock,electroshock_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Electroshock Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_electroshock.png",
+        "codes": "progressive_electroshock,electroshock_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Electroshock Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_electroshock.png",
+        "codes": "progressive_electroshock,electroshock_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Electroshock Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_electroshock.png",
+        "codes": "progressive_electroshock,electroshock_boots",
+        "inherit_codes": false,
+        "name": "Progressive Electroshock Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Mega Bomb Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_mega_bomb.png",
+        "codes": "progressive_mega_bomb",
+        "inherit_codes": false,
+        "name": "Progressive Mega Bomb Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_mega_bomb.png",
+        "codes": "progressive_mega_bomb,mega_bomb_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Mega Bomb Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_mega_bomb.png",
+        "codes": "progressive_mega_bomb,mega_bomb_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Mega Bomb Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_mega_bomb.png",
+        "codes": "progressive_mega_bomb,mega_bomb_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Mega Bomb Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_mega_bomb.png",
+        "codes": "progressive_mega_bomb,mega_bomb_boots",
+        "inherit_codes": false,
+        "name": "Progressive Mega Bomb Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Hyperborean Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_hyperborean.png",
+        "codes": "progressive_hyperborean",
+        "inherit_codes": false,
+        "name": "Progressive Hyperborean Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_hyperborean.png",
+        "codes": "progressive_hyperborean,hyperborean_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Hyperborean Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_hyperborean.png",
+        "codes": "progressive_hyperborean,hyperborean_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Hyperborean Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_hyperborean.png",
+        "codes": "progressive_hyperborean,hyperborean_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Hyperborean Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_hyperborean.png",
+        "codes": "progressive_hyperborean,hyperborean_boots",
+        "inherit_codes": false,
+        "name": "Progressive Hyperborean Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Chameleon Armor",
+    "type": "progressive",
+    "allow_disabled": false,
+    "initial_stage_idx": 0,
+    "stages": [
+      {
+        "img": "images/items/progressive_chameleon.png",
+        "codes": "progressive_chameleon",
+        "inherit_codes": false,
+        "name": "Progressive Chameleon Armor: 0"
+      },
+      {
+        "img": "images/items/progressive_chameleon.png",
+        "codes": "progressive_chameleon,chameleon_chestplate",
+        "inherit_codes": false,
+        "name": "Progressive Chameleon Armor: 1"
+      },
+      {
+        "img": "images/items/progressive_chameleon.png",
+        "codes": "progressive_chameleon,chameleon_helmet",
+        "inherit_codes": false,
+        "name": "Progressive Chameleon Armor: 2"
+      },
+      {
+        "img": "images/items/progressive_chameleon.png",
+        "codes": "progressive_chameleon,chameleon_gloves",
+        "inherit_codes": false,
+        "name": "Progressive Chameleon Armor: 3"
+      },
+      {
+        "img": "images/items/progressive_chameleon.png",
+        "codes": "progressive_chameleon,chameleon_boots",
+        "inherit_codes": false,
+        "name": "Progressive Chameleon Armor: 4"
+      }
+    ]
+  },
+  {
+    "name": "Infobot: Pokitaru",
+    "type": "toggle",
+    "img": "images/planets/Pokitaru.png",
+    "img_mods": "",
+    "codes": "pokitaru"
+  },
+  {
+    "name": "Infobot: Ryllus",
+    "type": "toggle",
+    "img": "images/planets/Ryllus.png",
+    "img_mods": "",
+    "codes": "ryllus"
+  },
+  {
+    "name": "Infobot: Kalidon",
+    "type": "toggle",
+    "img": "images/planets/Kalidon.png",
+    "img_mods": "",
+    "codes": "kalidon"
+  },
+  {
+    "name": "Infobot: Metalis",
+    "type": "toggle",
+    "img": "images/planets/Metalis.png",
+    "img_mods": "",
+    "codes": "metalis"
+  },
+  {
+    "name": "Infobot: Outpost Omega",
+    "type": "toggle",
+    "img": "images/planets/Medical_Outpost_Omega.png",
+    "img_mods": "",
+    "codes": "outpost_omega"
+  },
+  {
+    "name": "Infobot: Challax",
+    "type": "toggle",
+    "img": "images/planets/Challax.png",
+    "img_mods": "",
+    "codes": "challax"
+  },
+  {
+    "name": "Infobot: Dayni Moon",
+    "type": "toggle",
+    "img": "images/planets/Dayni_Moon.png",
+    "img_mods": "",
+    "codes": "dayni_moon"
+  },
+  {
+    "name": "Infobot: Quodrona",
+    "type": "toggle",
+    "img": "images/planets/Quodrona.png",
+    "img_mods": "",
+    "codes": "quodrona"
+  },
+  {
+    "name": "Bolts",
+    "type": "consumable",
+    "allow_disabled": true,
+    "min_quantity": 0,
+    "max_quantity": 999999,
+    "increment": 1000,
+    "initial_quantity": 0,
+    "img": "images/items/bolts.png",
+    "img_mods": "",
+    "codes": "bolts"
+  },
+  {
+    "name": "Trap: Feverdream",
+    "type": "toggle",
+    "img": "images/items/trap_feverdream.png",
+    "img_mods": "",
+    "codes": "trap_feverdream"
+  },
+  {
+    "name": "Trap: Whats Gamma?",
+    "type": "toggle",
+    "img": "images/items/trap_whats_gamma.png",
+    "img_mods": "",
+    "codes": "trap_whats_gamma"
+  },
+  {
+    "name": "Trap: Mirror Level",
+    "type": "toggle",
+    "img": "images/items/trap_mirror_level.png",
+    "img_mods": "",
+    "codes": "trap_mirror_level"
+  },
+  {
+    "name": "Trap: Reverse Controls",
+    "type": "toggle",
+    "img": "images/items/trap_reverse_controls.png",
+    "img_mods": "",
+    "codes": "trap_reverse_controls"
+  },
+  {
+    "name": "Trap: Weapon Switching",
+    "type": "toggle",
+    "img": "images/items/trap_weapon_switching.png",
+    "img_mods": "",
+    "codes": "trap_weapon_switching"
+  }
+]

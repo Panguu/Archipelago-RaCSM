@@ -1,0 +1,16 @@
+{
+  "name": "Ratchet & Clank: Size Matters Archipelago",
+  "game_name": "Ratchet & Clank: Size Matters",
+  "package_version": "0.1.0",
+  "package_uid": "ratchet & clank size matters_ap",
+  "author": "RaCSM",
+  "variants": {
+    "Map Tracker": {
+      "display_name": "Map Tracker",
+      "flags": [
+        "ap"
+      ]
+    }
+  },
+  "min_poptracker_version": "0.27.0"
+}

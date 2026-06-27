@@ -1,0 +1,158 @@
+[
+  {
+    "name": "Pokitaru",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Above Zipline",
+        "sections": [
+          {
+            "name": "T-Bolt: Above Zipline"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "343",
+            "y": "379"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "T-Bolt: Behind Hut",
+        "sections": [
+          {
+            "name": "T-Bolt: Behind Hut"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "162",
+            "y": "189"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "Wildfire Chestplate on bridge",
+        "sections": [
+          {
+            "name": "Wildfire Chestplate on bridge"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "279",
+            "y": "172"
+          }
+        ]
+      },
+      {
+        "name": "Wildfire Gloves in the skuttle crab cave",
+        "sections": [
+          {
+            "name": "Wildfire Gloves in the skuttle crab cave"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "215",
+            "y": "424"
+          }
+        ]
+      },
+      {
+        "name": "Fight some robots (Complete Luna's photoshoot)",
+        "sections": [
+          {
+            "name": "Fight some robots (Complete Luna's photoshoot)"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Lacerator - 0"
+          },
+          {
+            "name": "Gadgetron Vendor: Acid Bomb Glove - 0"
+          },
+          {
+            "name": "Gadgetron Vendor: Concussion Gun - 10,000"
+          },
+          {
+            "name": "Gadgetron Vendor: Hypershot - 5,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Train Faster",
+            "access_rules": [
+              "$has_projectile_weapon"
+            ]
+          },
+          {
+            "name": "Skill Point: Don't Rock the Boat"
+          },
+          {
+            "name": "Skill Point: Do Cows Get Crabby?",
+            "access_rules": [
+              "mootator"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Pokitaru_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      }
+    ]
+  }
+]

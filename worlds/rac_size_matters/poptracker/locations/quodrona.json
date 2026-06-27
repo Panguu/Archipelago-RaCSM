@@ -1,0 +1,209 @@
+[
+  {
+    "name": "Quodrona",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Ratchet Clones and Dummies",
+        "sections": [
+          {
+            "name": "T-Bolt: Ratchet Clones and Dummies"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "565",
+            "y": "300"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$quodrona_checks"
+        ]
+      },
+      {
+        "name": "Defeat Otto Destruct",
+        "sections": [
+          {
+            "name": "Defeat Otto Destruct"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ],
+        "access_rules": [
+          "$quodrona_checks"
+        ]
+      },
+      {
+        "name": "Find Otto Destruct",
+        "sections": [
+          {
+            "name": "Find Otto Destruct"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ],
+        "access_rules": [
+          "$quodrona_checks"
+        ]
+      },
+      {
+        "name": "Clone Wars (Fight the Ratchet Clones)",
+        "sections": [
+          {
+            "name": "Clone Wars (Fight the Ratchet Clones)"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ],
+        "access_rules": [
+          "$quodrona_checks"
+        ]
+      },
+      {
+        "name": "Runnnn from Otto",
+        "sections": [
+          {
+            "name": "Runnnn from Otto"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ],
+        "access_rules": [
+          "$quodrona_checks"
+        ]
+      },
+      {
+        "name": "Defeat Mecha Otto",
+        "sections": [
+          {
+            "name": "Defeat Mecha Otto"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ],
+        "access_rules": [
+          "$quodrona_checks"
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "500",
+            "y": "500"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Laser Tracer - 85,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ]
+      },
+      {
+        "name": "Slim Cognito Vendor",
+        "chest_unopened_img": "images/icons/Slim_Cognito.png",
+        "chest_opened_img": "images/icons/Slim_Cognito.png",
+        "sections": [
+          {
+            "name": "Slim Cognito: Agents of Doom Launcher Mod - 20,000"
+          },
+          {
+            "name": "Slim Cognito: Scorcher Spitfire Mod - 15,000"
+          },
+          {
+            "name": "Slim Cognito: Sniper Mine Split Beam Mod - 25,000"
+          },
+          {
+            "name": "Slim Cognito: Shock Rocket Lock On Mod - 5,000"
+          },
+          {
+            "name": "Slim Cognito: Shock Rocket After Shock Mod - 25,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Elite Annihilation",
+            "access_rules": [
+              "$quodrona_checks"
+            ]
+          },
+          {
+            "name": "Skill Point: Storm the Front",
+            "access_rules": [
+              "$quodrona_checks"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Quodrona_map",
+            "x": "50",
+            "y": "500"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "quodrona"
+    ]
+  }
+]

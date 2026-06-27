@@ -93,6 +93,15 @@ class PineMixin:
                 )
                 await self._teardown_pine_connection()
                 return
+            # Confirm the connection in-game immediately — PINE has connected, the
+            # right game is loaded, and initial state read succeeded, so show this
+            # now rather than after the wiring-startup steps below, which can still
+            # fail transiently (e.g. a response timeout) without PINE itself having
+            # actually been lost.
+            self._write_notification_text(colored_text(
+                "Reconnected to " if is_reconnect else "Connected to ", TextColour.YELLOW,
+                "PCSX2", TextColour.WHITE,
+            ))
         try:
             await self._wiring.start()
             # Baseline before applying so the catch-up batch of items already
@@ -100,10 +109,6 @@ class PineMixin:
             self._notification_item_index = len(self.items_received)
             await self._apply_received_items()
             await self._send_map_page(self.current_planet)
-            self._write_notification_text(colored_text(
-                "Reconnected to " if is_reconnect else "Connected to ", TextColour.YELLOW,
-                "PCSX2", TextColour.WHITE,
-            ))
         except Exception as exc:
             logger.warning(f"[RAC] Lost PCSX2 connection while starting up: {exc}. Use /reconnect.")
             async with self._pine_lock:

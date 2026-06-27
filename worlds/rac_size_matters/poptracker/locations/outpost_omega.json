@@ -1,0 +1,176 @@
+[
+  {
+    "name": "Outpost Omega",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Near the Entrance to DreamTime",
+        "sections": [
+          {
+            "name": "T-Bolt: Near the Entrance to DreamTime"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "Crystallix Boots during escape",
+        "sections": [
+          {
+            "name": "Crystallix Boots during escape"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ]
+      },
+      {
+        "name": "Escape the medical facility",
+        "sections": [
+          {
+            "name": "Escape the medical facility"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ],
+        "access_rules": [
+          "$outpost_omega_facility"
+        ]
+      },
+      {
+        "name": "Rematch - Skyboard racers (Complete Interior Decorating)",
+        "sections": [
+          {
+            "name": "Rematch - Skyboard racers (Complete Interior Decorating)"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ]
+      },
+      {
+        "name": "Escape from facility pt 1",
+        "sections": [
+          {
+            "name": "Escape from facility pt 1"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ],
+        "access_rules": [
+          "$outpost_omega_facility"
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "500",
+            "y": "500"
+          }
+        ]
+      },
+      {
+        "name": "Skyboard Challenges",
+        "chest_unopened_img": "images/icons/Skyboard_Challanges.png",
+        "chest_opened_img": "images/icons/Skyboard_Challanges.png",
+        "sections": [
+          {
+            "name": "Skyboard Challenge: Vertigo"
+          },
+          {
+            "name": "Skyboard Challenge: Interior Decorating"
+          },
+          {
+            "name": "Skyboard Challenge: Danger, High Voltage"
+          },
+          {
+            "name": "Skyboard Challenge: The Vortex"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Bee Mine Glove - 50,000",
+            "access_rules": [
+              "shrink_ray"
+            ]
+          },
+          {
+            "name": "Gadgetron Vendor: Box Breaker - 20,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Be An Awesome Skyboarder"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Outpost_Omega_1_map",
+            "x": "50",
+            "y": "550"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "outpost_omega"
+    ]
+  }
+]

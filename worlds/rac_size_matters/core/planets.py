@@ -321,13 +321,14 @@ class PlanetState(BaseState):
     def on_armour_acquired(self, _name: str, _piece: ArmourPiece) -> None:
         del _name, _piece
 
-    def _wire_vendor_purchase_callbacks(self) -> None:
+    def _wire_vendor_purchase_callbacks(self, allowed: frozenset[str] | None = None) -> None:
         if self._weapons is None:
             return
-        allowed = (
-            self._vendor_unlock.allowed_weapons_for_inventory()
-            if self._vendor_unlock is not None else frozenset()
-        )
+        if allowed is None:
+            allowed = (
+                self._vendor_unlock.allowed_weapons_for_inventory()
+                if self._vendor_unlock is not None else frozenset()
+            )
         with self._vendor_write_lock or contextlib.nullcontext():
             self._weapons.apply_vendor_locations(allowed)
         self._prev_on_weapon_acquired = self._weapons.on_weapon_acquired
@@ -342,7 +343,27 @@ class PlanetState(BaseState):
         )
 
     def on_weapon_vendor_open(self) -> None:
-        self._log(f"[RAC] [{self.name}] Weapon vendor open.")
+        active            = self._weapon_vendor.active if self._weapon_vendor is not None else None
+        showing_inventory = bool(self._weapon_vendor is not None and self._weapon_vendor.showing_inventory)
+        self._log(
+            f"[RAC] [{self.name}] Weapon vendor open "
+            f"(weapon_vendor.active={active}, showing_inventory={showing_inventory})."
+        )
+        if showing_inventory:
+            # The D_PAD_RIGHT inventory-view refresh (menu.set_menu) can make
+            # the game re-run its own open sequence, which re-fires this same
+            # transition. Re-assert the inventory view instead of falling
+            # back to _wire_vendor_purchase_callbacks()'s default-view
+            # zero/restore and re-wiring purchase tracking back on — that
+            # would undo what the D_PAD toggle deliberately set up.
+            if self._vendor_unlock is not None:
+                self._vendor_unlock.apply_inventory(self.accessor)
+            if self._weapons is not None:
+                with self._vendor_write_lock or contextlib.nullcontext():
+                    self._weapons.sync()
+            if self._weapon_vendor is not None:
+                self._weapon_vendor.refreshing = False
+            return
         self._wire_vendor_purchase_callbacks()
         # Weapon vendor only: writes the vendor list/size array
         # (WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS). The mod vendor has no
@@ -351,10 +372,39 @@ class PlanetState(BaseState):
         # sync, not by anything here.
         if self._vendor_unlock is not None:
             self._vendor_unlock.apply(self.accessor)
+            for line in self._vendor_unlock.debug_lines():
+                self._log(line)
+        if self._weapon_vendor is not None:
+            self._weapon_vendor.refreshing = False
 
     def on_mod_vendor_open(self) -> None:
         self._log(f"[RAC] [{self.name}] Mod vendor open.")
-        self._wire_vendor_purchase_callbacks()
+        # Unlike the weapons vendor, weapon_unlocked here isn't gated on having
+        # bought the weapon from ITS OWN vendor — a weapon's mod slot won't
+        # render at all if the weapon shows locked, and mods are frequently
+        # sold on a different planet than the weapon itself. mod_slot_* (does
+        # the player own the mod) is still only restored if purchased from
+        # this vendor — owning it via an AP item received elsewhere doesn't
+        # restore it (apply_vendor_locations, called below, already does
+        # this part unchanged).
+        allowed = (
+            self._vendor_unlock.mod_vendor_unlock_weapons()
+            if self._vendor_unlock is not None else frozenset()
+        )
+        self._wire_vendor_purchase_callbacks(allowed)
+        if self._weapons is not None:
+            with self._vendor_write_lock or contextlib.nullcontext():
+                self._weapons.zero_unpurchased_mod_slots(allowed)
+        if self._vendor_unlock is not None:
+            self._vendor_unlock.apply_mod_vendor_weapons(self.accessor)
+        # The menu reads unlocked/mod_unlock_N to decide what to render when it
+        # opens — our writes above land slightly after that initial read (we're
+        # reacting to the same state-change event), so without this the mod
+        # vendor can display stale (pre-write) slot visibility. Forcing a
+        # refresh here makes it redraw with what we just wrote.
+        if self._menu is not None:
+            from .menu import MenuStateValue
+            self._menu.set_menu(MenuStateValue.MOD_VENDOR)
 
     def on_menu_close(self) -> None:
         self._log(f"[RAC] [{self.name}] Vendor menu closed — restoring AP inventory.")

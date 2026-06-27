@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Overview",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Galactic_map.png"
+  },
+  {
+    "name": "Pokitaru_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Pokitaru_map.png"
+  },
+  {
+    "name": "Ryllus_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Ryllus_map.png"
+  },
+  {
+    "name": "Kalidon_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Kalidon_map.png"
+  },
+  {
+    "name": "Metalis_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Metalis_map.png"
+  },
+  {
+    "name": "Dreamtime_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Dreamtime_map.png"
+  },
+  {
+    "name": "Outpost_Omega_1_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Outpost_Omega_1_map.png"
+  },
+  {
+    "name": "Challax_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Challax_map.png"
+  },
+  {
+    "name": "Dayni_Moon_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Dayni_Moon_map.png"
+  },
+  {
+    "name": "Inside_Clank_map_section_1",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Inside_Clank_map_section_1.png"
+  },
+  {
+    "name": "Inside_Clank_map_section_2",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Inside_Clank_map_section_2.png"
+  },
+  {
+    "name": "Quodrona_map",
+    "location_size": 16,
+    "location_border_thickness": 1,
+    "img": "images/maps/Quodrona_map.png"
+  }
+]

@@ -1,0 +1,265 @@
+[
+  {
+    "name": "Dayni Moon",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Planting at the Barnyard",
+        "sections": [
+          {
+            "name": "T-Bolt: Planting at the Barnyard"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "334",
+            "y": "110"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$dayni_moon_base"
+        ]
+      },
+      {
+        "name": "T-Bolt: Bounce on the Blue mimic",
+        "sections": [
+          {
+            "name": "T-Bolt: Bounce on the Blue mimic"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "226",
+            "y": "374"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$dayni_moon_shrink"
+        ]
+      },
+      {
+        "name": "Mega Bomb Helmet before Luna fight",
+        "sections": [
+          {
+            "name": "Mega Bomb Helmet before Luna fight"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$dayni_moon_base"
+        ]
+      },
+      {
+        "name": "Catch Luna",
+        "sections": [
+          {
+            "name": "Catch Luna"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$dayni_moon_shrink"
+        ]
+      },
+      {
+        "name": "Defeat Luna",
+        "sections": [
+          {
+            "name": "Defeat Luna"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$dayni_moon_shrink"
+        ]
+      },
+      {
+        "name": "Luna fight pt 1",
+        "sections": [
+          {
+            "name": "Luna fight pt 1"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$dayni_moon_shrink"
+        ]
+      },
+      {
+        "name": "Luna fight pt 2",
+        "sections": [
+          {
+            "name": "Luna fight pt 2"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$dayni_moon_shrink"
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Clank Challenges",
+        "chest_unopened_img": "images/icons/Clank_Challanges.png",
+        "chest_opened_img": "images/icons/Clank_Challanges.png",
+        "sections": [
+          {
+            "name": "Clank Challenge: The Ultimate Showdown"
+          },
+          {
+            "name": "Clank Challenge: Infinite Improbability"
+          },
+          {
+            "name": "Clank Challenge: Welcome to Dayni"
+          },
+          {
+            "name": "Clank Challenge: Round Up!"
+          },
+          {
+            "name": "Clank Challenge: Variety Is Shocking"
+          },
+          {
+            "name": "Clank Challenge: Tom Sawyer"
+          },
+          {
+            "name": "Clank Challenge: Smasherbot Returns!"
+          },
+          {
+            "name": "Clank Challenge: HAY-re We Are!"
+          },
+          {
+            "name": "Clank Challenge: Tri-bomb Tournament"
+          },
+          {
+            "name": "Clank Challenge: A-rooouund the Bend"
+          },
+          {
+            "name": "Clank Challenge: The Thin Bouncy Line"
+          },
+          {
+            "name": "Clank Challenge: Two's A Crowd"
+          },
+          {
+            "name": "Clank Challenge: Reverse Into Victory"
+          },
+          {
+            "name": "Clank Challenge: Emergency Bridge"
+          },
+          {
+            "name": "Clank Challenge: Leap Of Faith"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "378",
+            "y": "299"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Shock Rocket - 55,000"
+          },
+          {
+            "name": "Gadgetron Vendor: Map-O-Matic - 50,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Ultimate Gladiator"
+          },
+          {
+            "name": "Skill Point: Wool Protest",
+            "access_rules": [
+              "$dayni_moon_base"
+            ]
+          },
+          {
+            "name": "Skill Point: Bouncy, Bouncy, Bouncy",
+            "access_rules": [
+              "$dayni_moon_base"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dayni_Moon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "dayni_moon"
+    ]
+  }
+]

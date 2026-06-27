@@ -1,0 +1,260 @@
+[
+  {
+    "name": "Kalidon",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Behind Ship",
+        "sections": [
+          {
+            "name": "T-Bolt: Behind Ship"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "408",
+            "y": "417"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png"
+      },
+      {
+        "name": "T-Bolt: Side of Mechanoid Factory",
+        "sections": [
+          {
+            "name": "T-Bolt: Side of Mechanoid Factory"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "226",
+            "y": "377"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "hypershot"
+        ]
+      },
+      {
+        "name": "T-Bolt: Grav-Ramps",
+        "sections": [
+          {
+            "name": "T-Bolt: Grav-Ramps"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "206",
+            "y": "286"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$kalidon_inside"
+        ]
+      },
+      {
+        "name": "Sludge Mk9 Chestplate from Master's Challenge",
+        "sections": [
+          {
+            "name": "Sludge Mk9 Chestplate from Master's Challenge"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "152",
+            "y": "169"
+          }
+        ],
+        "access_rules": [
+          "$kalidon_inside"
+        ]
+      },
+      {
+        "name": "Wildfire Boots inside factory",
+        "sections": [
+          {
+            "name": "Wildfire Boots inside factory"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "290",
+            "y": "266"
+          }
+        ],
+        "access_rules": [
+          "$kalidon_inside"
+        ]
+      },
+      {
+        "name": "Receive Shrink Ray",
+        "sections": [
+          {
+            "name": "Receive Shrink Ray"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Win the skyboard race (Complete Learner's Permit)",
+        "sections": [
+          {
+            "name": "Win the skyboard race (Complete Learner's Permit)"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      },
+      {
+        "name": "Explore the planet",
+        "sections": [
+          {
+            "name": "Explore the planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ],
+        "access_rules": [
+          "$kalidon_inside"
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Skyboard Challenges",
+        "chest_unopened_img": "images/icons/Skyboard_Challanges.png",
+        "chest_opened_img": "images/icons/Skyboard_Challanges.png",
+        "sections": [
+          {
+            "name": "Skyboard Challenge: Learner's Challenge"
+          },
+          {
+            "name": "Skyboard Challenge: Master's Challenge"
+          },
+          {
+            "name": "Skyboard Challenge: Speeding Ticket"
+          },
+          {
+            "name": "Skyboard Challenge: Tricky Air"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "328",
+            "y": "361"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Scorcher - 20,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "348",
+            "y": "397"
+          }
+        ]
+      },
+      {
+        "name": "Slim Cognito Vendor",
+        "chest_unopened_img": "images/icons/Slim_Cognito.png",
+        "chest_opened_img": "images/icons/Slim_Cognito.png",
+        "sections": [
+          {
+            "name": "Slim Cognito: Lacerator Lock On Mod - 5,000"
+          },
+          {
+            "name": "Slim Cognito: Concussion Gun Split Barrel Mod - 15,000"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "348",
+            "y": "397"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Explosive Ordnance Disposal",
+            "access_rules": [
+              "$kalidon_inside"
+            ]
+          },
+          {
+            "name": "Skill Point: Super Lombax",
+            "access_rules": [
+              "$kalidon_inside"
+            ]
+          },
+          {
+            "name": "Skill Point: Be A Cool Skyboarder"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Kalidon_map",
+            "x": "50",
+            "y": "480"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "kalidon"
+    ]
+  }
+]

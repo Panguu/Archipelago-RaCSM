@@ -1,0 +1,839 @@
+[
+  {
+    "name": "Overview",
+    "children": [
+      {
+        "name": "Pokitaru",
+        "sections": [
+          {
+            "name": "Pokitaru/T-Bolt: Above Zipline/T-Bolt: Above Zipline",
+            "ref": "Pokitaru/T-Bolt: Above Zipline/T-Bolt: Above Zipline"
+          },
+          {
+            "name": "Pokitaru/T-Bolt: Behind Hut/T-Bolt: Behind Hut",
+            "ref": "Pokitaru/T-Bolt: Behind Hut/T-Bolt: Behind Hut"
+          },
+          {
+            "name": "Pokitaru/Wildfire Chestplate on bridge/Wildfire Chestplate on bridge",
+            "ref": "Pokitaru/Wildfire Chestplate on bridge/Wildfire Chestplate on bridge"
+          },
+          {
+            "name": "Pokitaru/Wildfire Gloves in the skuttle crab cave/Wildfire Gloves in the skuttle crab cave",
+            "ref": "Pokitaru/Wildfire Gloves in the skuttle crab cave/Wildfire Gloves in the skuttle crab cave"
+          },
+          {
+            "name": "Pokitaru/Fight some robots (Complete Luna's photoshoot)/Fight some robots (Complete Luna's photoshoot)",
+            "ref": "Pokitaru/Fight some robots (Complete Luna's photoshoot)/Fight some robots (Complete Luna's photoshoot)"
+          },
+          {
+            "name": "Pokitaru/Enter Planet/Enter Planet",
+            "ref": "Pokitaru/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Lacerator - 0",
+            "ref": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Lacerator - 0"
+          },
+          {
+            "name": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Acid Bomb Glove - 0",
+            "ref": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Acid Bomb Glove - 0"
+          },
+          {
+            "name": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Concussion Gun - 10,000",
+            "ref": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Concussion Gun - 10,000"
+          },
+          {
+            "name": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Hypershot - 5,000",
+            "ref": "Pokitaru/Gadgetron Vendor/Gadgetron Vendor: Hypershot - 5,000"
+          },
+          {
+            "name": "Pokitaru/Skill Points/Skill Point: Train Faster",
+            "ref": "Pokitaru/Skill Points/Skill Point: Train Faster"
+          },
+          {
+            "name": "Pokitaru/Skill Points/Skill Point: Don't Rock the Boat",
+            "ref": "Pokitaru/Skill Points/Skill Point: Don't Rock the Boat"
+          },
+          {
+            "name": "Pokitaru/Skill Points/Skill Point: Do Cows Get Crabby?",
+            "ref": "Pokitaru/Skill Points/Skill Point: Do Cows Get Crabby?"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "813",
+            "y": "231"
+          }
+        ]
+      },
+      {
+        "name": "Ryllus",
+        "sections": [
+          {
+            "name": "Ryllus/T-Bolt: Down The Cliff/T-Bolt: Down The Cliff",
+            "ref": "Ryllus/T-Bolt: Down The Cliff/T-Bolt: Down The Cliff"
+          },
+          {
+            "name": "Ryllus/T-Bolt: After the Wall/T-Bolt: After the Wall",
+            "ref": "Ryllus/T-Bolt: After the Wall/T-Bolt: After the Wall"
+          },
+          {
+            "name": "Ryllus/Sludge Mk9 Boots behind breakable rock/Sludge Mk9 Boots behind breakable rock",
+            "ref": "Ryllus/Sludge Mk9 Boots behind breakable rock/Sludge Mk9 Boots behind breakable rock"
+          },
+          {
+            "name": "Ryllus/Wildfire Helmet before temple entrance/Wildfire Helmet before temple entrance",
+            "ref": "Ryllus/Wildfire Helmet before temple entrance/Wildfire Helmet before temple entrance"
+          },
+          {
+            "name": "Ryllus/Receive Spout-O-Matic/Receive Spout-O-Matic",
+            "ref": "Ryllus/Receive Spout-O-Matic/Receive Spout-O-Matic"
+          },
+          {
+            "name": "Ryllus/Investigate the artifact (Reach the temple)/Investigate the artifact (Reach the temple)",
+            "ref": "Ryllus/Investigate the artifact (Reach the temple)/Investigate the artifact (Reach the temple)"
+          },
+          {
+            "name": "Ryllus/Unlock the temple/Unlock the temple",
+            "ref": "Ryllus/Unlock the temple/Unlock the temple"
+          },
+          {
+            "name": "Ryllus/Buzzing Cameras/Buzzing Cameras",
+            "ref": "Ryllus/Buzzing Cameras/Buzzing Cameras"
+          },
+          {
+            "name": "Ryllus/Enter Planet/Enter Planet",
+            "ref": "Ryllus/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Ryllus/Gadgetron Vendor/Gadgetron Vendor: Agents of Doom - 25,000",
+            "ref": "Ryllus/Gadgetron Vendor/Gadgetron Vendor: Agents of Doom - 25,000"
+          },
+          {
+            "name": "Ryllus/Skill Points/Skill Point: Bury the Pygmies",
+            "ref": "Ryllus/Skill Points/Skill Point: Bury the Pygmies"
+          },
+          {
+            "name": "Ryllus/Skill Points/Skill Point: Lights, Camera, Action!",
+            "ref": "Ryllus/Skill Points/Skill Point: Lights, Camera, Action!"
+          },
+          {
+            "name": "Ryllus/Skill Points/Skill Point: Ship It",
+            "ref": "Ryllus/Skill Points/Skill Point: Ship It"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "171",
+            "y": "240"
+          }
+        ]
+      },
+      {
+        "name": "Kalidon",
+        "sections": [
+          {
+            "name": "Kalidon/T-Bolt: Behind Ship/T-Bolt: Behind Ship",
+            "ref": "Kalidon/T-Bolt: Behind Ship/T-Bolt: Behind Ship"
+          },
+          {
+            "name": "Kalidon/T-Bolt: Side of Mechanoid Factory/T-Bolt: Side of Mechanoid Factory",
+            "ref": "Kalidon/T-Bolt: Side of Mechanoid Factory/T-Bolt: Side of Mechanoid Factory"
+          },
+          {
+            "name": "Kalidon/T-Bolt: Grav-Ramps/T-Bolt: Grav-Ramps",
+            "ref": "Kalidon/T-Bolt: Grav-Ramps/T-Bolt: Grav-Ramps"
+          },
+          {
+            "name": "Kalidon/Sludge Mk9 Chestplate from Master's Challenge/Sludge Mk9 Chestplate from Master's Challenge",
+            "ref": "Kalidon/Sludge Mk9 Chestplate from Master's Challenge/Sludge Mk9 Chestplate from Master's Challenge"
+          },
+          {
+            "name": "Kalidon/Wildfire Boots inside factory/Wildfire Boots inside factory",
+            "ref": "Kalidon/Wildfire Boots inside factory/Wildfire Boots inside factory"
+          },
+          {
+            "name": "Kalidon/Receive Shrink Ray/Receive Shrink Ray",
+            "ref": "Kalidon/Receive Shrink Ray/Receive Shrink Ray"
+          },
+          {
+            "name": "Kalidon/Win the skyboard race (Complete Learner's Permit)/Win the skyboard race (Complete Learner's Permit)",
+            "ref": "Kalidon/Win the skyboard race (Complete Learner's Permit)/Win the skyboard race (Complete Learner's Permit)"
+          },
+          {
+            "name": "Kalidon/Explore the planet/Explore the planet",
+            "ref": "Kalidon/Explore the planet/Explore the planet"
+          },
+          {
+            "name": "Kalidon/Enter Planet/Enter Planet",
+            "ref": "Kalidon/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Kalidon/Skyboard Challenges/Skyboard Challenge: Learner's Challenge",
+            "ref": "Kalidon/Skyboard Challenges/Skyboard Challenge: Learner's Challenge"
+          },
+          {
+            "name": "Kalidon/Skyboard Challenges/Skyboard Challenge: Master's Challenge",
+            "ref": "Kalidon/Skyboard Challenges/Skyboard Challenge: Master's Challenge"
+          },
+          {
+            "name": "Kalidon/Skyboard Challenges/Skyboard Challenge: Speeding Ticket",
+            "ref": "Kalidon/Skyboard Challenges/Skyboard Challenge: Speeding Ticket"
+          },
+          {
+            "name": "Kalidon/Skyboard Challenges/Skyboard Challenge: Tricky Air",
+            "ref": "Kalidon/Skyboard Challenges/Skyboard Challenge: Tricky Air"
+          },
+          {
+            "name": "Kalidon/Gadgetron Vendor/Gadgetron Vendor: Scorcher - 20,000",
+            "ref": "Kalidon/Gadgetron Vendor/Gadgetron Vendor: Scorcher - 20,000"
+          },
+          {
+            "name": "Kalidon/Slim Cognito Vendor/Slim Cognito: Lacerator Lock On Mod - 5,000",
+            "ref": "Kalidon/Slim Cognito Vendor/Slim Cognito: Lacerator Lock On Mod - 5,000"
+          },
+          {
+            "name": "Kalidon/Slim Cognito Vendor/Slim Cognito: Concussion Gun Split Barrel Mod - 15,000",
+            "ref": "Kalidon/Slim Cognito Vendor/Slim Cognito: Concussion Gun Split Barrel Mod - 15,000"
+          },
+          {
+            "name": "Kalidon/Skill Points/Skill Point: Explosive Ordnance Disposal",
+            "ref": "Kalidon/Skill Points/Skill Point: Explosive Ordnance Disposal"
+          },
+          {
+            "name": "Kalidon/Skill Points/Skill Point: Super Lombax",
+            "ref": "Kalidon/Skill Points/Skill Point: Super Lombax"
+          },
+          {
+            "name": "Kalidon/Skill Points/Skill Point: Be A Cool Skyboarder",
+            "ref": "Kalidon/Skill Points/Skill Point: Be A Cool Skyboarder"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "369",
+            "y": "33"
+          }
+        ]
+      },
+      {
+        "name": "Metalis",
+        "sections": [
+          {
+            "name": "Metalis/T-Bolt: Behind the Polarized Door/T-Bolt: Behind the Polarized Door",
+            "ref": "Metalis/T-Bolt: Behind the Polarized Door/T-Bolt: Behind the Polarized Door"
+          },
+          {
+            "name": "Metalis/Survive Robot War III (Complete Buzzsaw Blitz)/Survive Robot War III (Complete Buzzsaw Blitz)",
+            "ref": "Metalis/Survive Robot War III (Complete Buzzsaw Blitz)/Survive Robot War III (Complete Buzzsaw Blitz)"
+          },
+          {
+            "name": "Metalis/Enter Planet/Enter Planet",
+            "ref": "Metalis/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Buzzsaw Blitz",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Buzzsaw Blitz"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Smasherbot's Revenge",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Smasherbot's Revenge"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: The Uber Finals",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: The Uber Finals"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Night Impossible",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Night Impossible"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: CHARGE!",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: CHARGE!"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Electric Boogaloo",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Electric Boogaloo"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Showdown",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Showdown"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Little League",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Little League"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Varsity Bracket",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Varsity Bracket"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Collegiate Division",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Collegiate Division"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Professional Level",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Professional Level"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Take Two For The Team",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Take Two For The Team"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Bridge The Gap",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Bridge The Gap"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Of Trapeze and Teleporters",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Of Trapeze and Teleporters"
+          },
+          {
+            "name": "Metalis/Clank Challenges/Clank Challenge: Brain Trip",
+            "ref": "Metalis/Clank Challenges/Clank Challenge: Brain Trip"
+          },
+          {
+            "name": "Metalis/Skill Points/Skill Point: Shutout",
+            "ref": "Metalis/Skill Points/Skill Point: Shutout"
+          },
+          {
+            "name": "Metalis/Skill Points/Skill Point: Ultimate Gladiator",
+            "ref": "Metalis/Skill Points/Skill Point: Ultimate Gladiator"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "768",
+            "y": "318"
+          }
+        ]
+      },
+      {
+        "name": "Dreamtime",
+        "sections": [
+          {
+            "name": "Dreamtime/T-Bolt: Atop the floating hat/T-Bolt: Atop the floating hat",
+            "ref": "Dreamtime/T-Bolt: Atop the floating hat/T-Bolt: Atop the floating hat"
+          },
+          {
+            "name": "Dreamtime/T-Bolt: To the left of Ratchet's Garage/T-Bolt: To the left of Ratchet's Garage",
+            "ref": "Dreamtime/T-Bolt: To the left of Ratchet's Garage/T-Bolt: To the left of Ratchet's Garage"
+          },
+          {
+            "name": "Dreamtime/T-Bolt: Apparition of the Scuttle Crab/T-Bolt: Apparition of the Scuttle Crab",
+            "ref": "Dreamtime/T-Bolt: Apparition of the Scuttle Crab/T-Bolt: Apparition of the Scuttle Crab"
+          },
+          {
+            "name": "Dreamtime/Crystallix Chestplate after Giant Clank chase/Crystallix Chestplate after Giant Clank chase",
+            "ref": "Dreamtime/Crystallix Chestplate after Giant Clank chase/Crystallix Chestplate after Giant Clank chase"
+          },
+          {
+            "name": "Dreamtime/Complete Dreamtime/Complete Dreamtime",
+            "ref": "Dreamtime/Complete Dreamtime/Complete Dreamtime"
+          },
+          {
+            "name": "Dreamtime/Enter Planet/Enter Planet",
+            "ref": "Dreamtime/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Dreamtime/Gadgetron Vendor/Gadgetron Vendor: Suck Cannon - 30,000",
+            "ref": "Dreamtime/Gadgetron Vendor/Gadgetron Vendor: Suck Cannon - 30,000"
+          },
+          {
+            "name": "Dreamtime/Skill Points/Skill Point: Friends Don't Hurt Friends",
+            "ref": "Dreamtime/Skill Points/Skill Point: Friends Don't Hurt Friends"
+          },
+          {
+            "name": "Dreamtime/Skill Points/Skill Point: Night Terrors",
+            "ref": "Dreamtime/Skill Points/Skill Point: Night Terrors"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "450",
+            "y": "207"
+          }
+        ]
+      },
+      {
+        "name": "Outpost Omega",
+        "sections": [
+          {
+            "name": "Outpost Omega/T-Bolt: Near the Entrance to DreamTime/T-Bolt: Near the Entrance to DreamTime",
+            "ref": "Outpost Omega/T-Bolt: Near the Entrance to DreamTime/T-Bolt: Near the Entrance to DreamTime"
+          },
+          {
+            "name": "Outpost Omega/Crystallix Boots during escape/Crystallix Boots during escape",
+            "ref": "Outpost Omega/Crystallix Boots during escape/Crystallix Boots during escape"
+          },
+          {
+            "name": "Outpost Omega/Escape the medical facility/Escape the medical facility",
+            "ref": "Outpost Omega/Escape the medical facility/Escape the medical facility"
+          },
+          {
+            "name": "Outpost Omega/Rematch - Skyboard racers (Complete Interior Decorating)/Rematch - Skyboard racers (Complete Interior Decorating)",
+            "ref": "Outpost Omega/Rematch - Skyboard racers (Complete Interior Decorating)/Rematch - Skyboard racers (Complete Interior Decorating)"
+          },
+          {
+            "name": "Outpost Omega/Escape from facility pt 1/Escape from facility pt 1",
+            "ref": "Outpost Omega/Escape from facility pt 1/Escape from facility pt 1"
+          },
+          {
+            "name": "Outpost Omega/Enter Planet/Enter Planet",
+            "ref": "Outpost Omega/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: Vertigo",
+            "ref": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: Vertigo"
+          },
+          {
+            "name": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: Interior Decorating",
+            "ref": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: Interior Decorating"
+          },
+          {
+            "name": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: Danger, High Voltage",
+            "ref": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: Danger, High Voltage"
+          },
+          {
+            "name": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: The Vortex",
+            "ref": "Outpost Omega/Skyboard Challenges/Skyboard Challenge: The Vortex"
+          },
+          {
+            "name": "Outpost Omega/Gadgetron Vendor/Gadgetron Vendor: Bee Mine Glove - 50,000",
+            "ref": "Outpost Omega/Gadgetron Vendor/Gadgetron Vendor: Bee Mine Glove - 50,000"
+          },
+          {
+            "name": "Outpost Omega/Gadgetron Vendor/Gadgetron Vendor: Box Breaker - 20,000",
+            "ref": "Outpost Omega/Gadgetron Vendor/Gadgetron Vendor: Box Breaker - 20,000"
+          },
+          {
+            "name": "Outpost Omega/Skill Points/Skill Point: Be An Awesome Skyboarder",
+            "ref": "Outpost Omega/Skill Points/Skill Point: Be An Awesome Skyboarder"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "183",
+            "y": "366"
+          }
+        ]
+      },
+      {
+        "name": "Challax",
+        "sections": [
+          {
+            "name": "Challax/T-Bolt: Beside The Ultra Mech Pad/T-Bolt: Beside The Ultra Mech Pad",
+            "ref": "Challax/T-Bolt: Beside The Ultra Mech Pad/T-Bolt: Beside The Ultra Mech Pad"
+          },
+          {
+            "name": "Challax/T-Bolt: Hidden Room/T-Bolt: Hidden Room",
+            "ref": "Challax/T-Bolt: Hidden Room/T-Bolt: Hidden Room"
+          },
+          {
+            "name": "Challax/T-Bolt: Mimic Plant Lob/T-Bolt: Mimic Plant Lob",
+            "ref": "Challax/T-Bolt: Mimic Plant Lob/T-Bolt: Mimic Plant Lob"
+          },
+          {
+            "name": "Challax/Electroshock Helmet after Dropship fight/Electroshock Helmet after Dropship fight",
+            "ref": "Challax/Electroshock Helmet after Dropship fight/Electroshock Helmet after Dropship fight"
+          },
+          {
+            "name": "Challax/Enter Planet/Enter Planet",
+            "ref": "Challax/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Challax/Gadgetron Vendor/Gadgetron Vendor: Sniper Mine - 50,000",
+            "ref": "Challax/Gadgetron Vendor/Gadgetron Vendor: Sniper Mine - 50,000"
+          },
+          {
+            "name": "Challax/Gadgetron Vendor/Gadgetron Vendor: PDA - 50,000",
+            "ref": "Challax/Gadgetron Vendor/Gadgetron Vendor: PDA - 50,000"
+          },
+          {
+            "name": "Challax/Gadgetron Vendor/Gadgetron Vendor: Bolt Grabber - 5,000",
+            "ref": "Challax/Gadgetron Vendor/Gadgetron Vendor: Bolt Grabber - 5,000"
+          },
+          {
+            "name": "Challax/Slim Cognito Vendor/Slim Cognito: Lacerator Double Barrel Mod - 30,000",
+            "ref": "Challax/Slim Cognito Vendor/Slim Cognito: Lacerator Double Barrel Mod - 30,000"
+          },
+          {
+            "name": "Challax/Slim Cognito Vendor/Slim Cognito: Acid Bomb Acid Burn Mod - 30,000",
+            "ref": "Challax/Slim Cognito Vendor/Slim Cognito: Acid Bomb Acid Burn Mod - 30,000"
+          },
+          {
+            "name": "Challax/Slim Cognito Vendor/Slim Cognito: Acid Bomb Epoxy Mod - 50,000",
+            "ref": "Challax/Slim Cognito Vendor/Slim Cognito: Acid Bomb Epoxy Mod - 50,000"
+          },
+          {
+            "name": "Challax/Slim Cognito Vendor/Slim Cognito: Concussion Gun Lock On Mod - 5,000",
+            "ref": "Challax/Slim Cognito Vendor/Slim Cognito: Concussion Gun Lock On Mod - 5,000"
+          },
+          {
+            "name": "Challax/Slim Cognito Vendor/Slim Cognito: Concussion Gun Charge Up Mod - 50,000",
+            "ref": "Challax/Slim Cognito Vendor/Slim Cognito: Concussion Gun Charge Up Mod - 50,000"
+          },
+          {
+            "name": "Challax/Slim Cognito Vendor/Slim Cognito: Bee Mine Glove Worker Mod - 5,000",
+            "ref": "Challax/Slim Cognito Vendor/Slim Cognito: Bee Mine Glove Worker Mod - 5,000"
+          },
+          {
+            "name": "Challax/Skill Points/Skill Point: High Tech Weapons Master",
+            "ref": "Challax/Skill Points/Skill Point: High Tech Weapons Master"
+          },
+          {
+            "name": "Challax/Skill Points/Skill Point: No More Varmints!",
+            "ref": "Challax/Skill Points/Skill Point: No More Varmints!"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "627",
+            "y": "390"
+          }
+        ]
+      },
+      {
+        "name": "Dayni Moon",
+        "sections": [
+          {
+            "name": "Dayni Moon/T-Bolt: Planting at the Barnyard/T-Bolt: Planting at the Barnyard",
+            "ref": "Dayni Moon/T-Bolt: Planting at the Barnyard/T-Bolt: Planting at the Barnyard"
+          },
+          {
+            "name": "Dayni Moon/T-Bolt: Bounce on the Blue mimic/T-Bolt: Bounce on the Blue mimic",
+            "ref": "Dayni Moon/T-Bolt: Bounce on the Blue mimic/T-Bolt: Bounce on the Blue mimic"
+          },
+          {
+            "name": "Dayni Moon/Mega Bomb Helmet before Luna fight/Mega Bomb Helmet before Luna fight",
+            "ref": "Dayni Moon/Mega Bomb Helmet before Luna fight/Mega Bomb Helmet before Luna fight"
+          },
+          {
+            "name": "Dayni Moon/Catch Luna/Catch Luna",
+            "ref": "Dayni Moon/Catch Luna/Catch Luna"
+          },
+          {
+            "name": "Dayni Moon/Defeat Luna/Defeat Luna",
+            "ref": "Dayni Moon/Defeat Luna/Defeat Luna"
+          },
+          {
+            "name": "Dayni Moon/Luna fight pt 1/Luna fight pt 1",
+            "ref": "Dayni Moon/Luna fight pt 1/Luna fight pt 1"
+          },
+          {
+            "name": "Dayni Moon/Luna fight pt 2/Luna fight pt 2",
+            "ref": "Dayni Moon/Luna fight pt 2/Luna fight pt 2"
+          },
+          {
+            "name": "Dayni Moon/Enter Planet/Enter Planet",
+            "ref": "Dayni Moon/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: The Ultimate Showdown",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: The Ultimate Showdown"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Infinite Improbability",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Infinite Improbability"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Welcome to Dayni",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Welcome to Dayni"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Round Up!",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Round Up!"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Variety Is Shocking",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Variety Is Shocking"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Tom Sawyer",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Tom Sawyer"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Smasherbot Returns!",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Smasherbot Returns!"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: HAY-re We Are!",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: HAY-re We Are!"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Tri-bomb Tournament",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Tri-bomb Tournament"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: A-rooouund the Bend",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: A-rooouund the Bend"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: The Thin Bouncy Line",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: The Thin Bouncy Line"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Two's A Crowd",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Two's A Crowd"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Reverse Into Victory",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Reverse Into Victory"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Emergency Bridge",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Emergency Bridge"
+          },
+          {
+            "name": "Dayni Moon/Clank Challenges/Clank Challenge: Leap Of Faith",
+            "ref": "Dayni Moon/Clank Challenges/Clank Challenge: Leap Of Faith"
+          },
+          {
+            "name": "Dayni Moon/Gadgetron Vendor/Gadgetron Vendor: Shock Rocket - 55,000",
+            "ref": "Dayni Moon/Gadgetron Vendor/Gadgetron Vendor: Shock Rocket - 55,000"
+          },
+          {
+            "name": "Dayni Moon/Gadgetron Vendor/Gadgetron Vendor: Map-O-Matic - 50,000",
+            "ref": "Dayni Moon/Gadgetron Vendor/Gadgetron Vendor: Map-O-Matic - 50,000"
+          },
+          {
+            "name": "Dayni Moon/Skill Points/Skill Point: Ultimate Gladiator",
+            "ref": "Dayni Moon/Skill Points/Skill Point: Ultimate Gladiator"
+          },
+          {
+            "name": "Dayni Moon/Skill Points/Skill Point: Wool Protest",
+            "ref": "Dayni Moon/Skill Points/Skill Point: Wool Protest"
+          },
+          {
+            "name": "Dayni Moon/Skill Points/Skill Point: Bouncy, Bouncy, Bouncy",
+            "ref": "Dayni Moon/Skill Points/Skill Point: Bouncy, Bouncy, Bouncy"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "663",
+            "y": "81"
+          }
+        ]
+      },
+      {
+        "name": "Inside Clank",
+        "sections": [
+          {
+            "name": "Inside Clank/T-Bolt: Walk behind the ladder/T-Bolt: Walk behind the ladder",
+            "ref": "Inside Clank/T-Bolt: Walk behind the ladder/T-Bolt: Walk behind the ladder"
+          },
+          {
+            "name": "Inside Clank/T-Bolt: Wall jumping Technomite/T-Bolt: Wall jumping Technomite",
+            "ref": "Inside Clank/T-Bolt: Wall jumping Technomite/T-Bolt: Wall jumping Technomite"
+          },
+          {
+            "name": "Inside Clank/Mega Bomb Chestplate/Mega Bomb Chestplate",
+            "ref": "Inside Clank/Mega Bomb Chestplate/Mega Bomb Chestplate"
+          },
+          {
+            "name": "Inside Clank/Escape from Clank/Escape from Clank",
+            "ref": "Inside Clank/Escape from Clank/Escape from Clank"
+          },
+          {
+            "name": "Inside Clank/Defeat all Technomites/Defeat all Technomites",
+            "ref": "Inside Clank/Defeat all Technomites/Defeat all Technomites"
+          },
+          {
+            "name": "Inside Clank/Enter Planet/Enter Planet",
+            "ref": "Inside Clank/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Inside Clank/Gadgetron Vendor/Gadgetron Vendor: Static Barrier - 65,000",
+            "ref": "Inside Clank/Gadgetron Vendor/Gadgetron Vendor: Static Barrier - 65,000"
+          },
+          {
+            "name": "Inside Clank/Skill Points/Skill Point: Not the Shock of Me Now",
+            "ref": "Inside Clank/Skill Points/Skill Point: Not the Shock of Me Now"
+          },
+          {
+            "name": "Inside Clank/Skill Points/Skill Point: Ratchet... Just Ratchet",
+            "ref": "Inside Clank/Skill Points/Skill Point: Ratchet... Just Ratchet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "552",
+            "y": "207"
+          }
+        ]
+      },
+      {
+        "name": "Quodrona",
+        "sections": [
+          {
+            "name": "Quodrona/T-Bolt: Ratchet Clones and Dummies/T-Bolt: Ratchet Clones and Dummies",
+            "ref": "Quodrona/T-Bolt: Ratchet Clones and Dummies/T-Bolt: Ratchet Clones and Dummies"
+          },
+          {
+            "name": "Quodrona/Defeat Otto Destruct/Defeat Otto Destruct",
+            "ref": "Quodrona/Defeat Otto Destruct/Defeat Otto Destruct"
+          },
+          {
+            "name": "Quodrona/Find Otto Destruct/Find Otto Destruct",
+            "ref": "Quodrona/Find Otto Destruct/Find Otto Destruct"
+          },
+          {
+            "name": "Quodrona/Clone Wars (Fight the Ratchet Clones)/Clone Wars (Fight the Ratchet Clones)",
+            "ref": "Quodrona/Clone Wars (Fight the Ratchet Clones)/Clone Wars (Fight the Ratchet Clones)"
+          },
+          {
+            "name": "Quodrona/Runnnn from Otto/Runnnn from Otto",
+            "ref": "Quodrona/Runnnn from Otto/Runnnn from Otto"
+          },
+          {
+            "name": "Quodrona/Defeat Mecha Otto/Defeat Mecha Otto",
+            "ref": "Quodrona/Defeat Mecha Otto/Defeat Mecha Otto"
+          },
+          {
+            "name": "Quodrona/Enter Planet/Enter Planet",
+            "ref": "Quodrona/Enter Planet/Enter Planet"
+          },
+          {
+            "name": "Quodrona/Gadgetron Vendor/Gadgetron Vendor: Laser Tracer - 85,000",
+            "ref": "Quodrona/Gadgetron Vendor/Gadgetron Vendor: Laser Tracer - 85,000"
+          },
+          {
+            "name": "Quodrona/Slim Cognito Vendor/Slim Cognito: Agents of Doom Launcher Mod - 20,000",
+            "ref": "Quodrona/Slim Cognito Vendor/Slim Cognito: Agents of Doom Launcher Mod - 20,000"
+          },
+          {
+            "name": "Quodrona/Slim Cognito Vendor/Slim Cognito: Scorcher Spitfire Mod - 15,000",
+            "ref": "Quodrona/Slim Cognito Vendor/Slim Cognito: Scorcher Spitfire Mod - 15,000"
+          },
+          {
+            "name": "Quodrona/Slim Cognito Vendor/Slim Cognito: Sniper Mine Split Beam Mod - 25,000",
+            "ref": "Quodrona/Slim Cognito Vendor/Slim Cognito: Sniper Mine Split Beam Mod - 25,000"
+          },
+          {
+            "name": "Quodrona/Slim Cognito Vendor/Slim Cognito: Shock Rocket Lock On Mod - 5,000",
+            "ref": "Quodrona/Slim Cognito Vendor/Slim Cognito: Shock Rocket Lock On Mod - 5,000"
+          },
+          {
+            "name": "Quodrona/Slim Cognito Vendor/Slim Cognito: Shock Rocket After Shock Mod - 25,000",
+            "ref": "Quodrona/Slim Cognito Vendor/Slim Cognito: Shock Rocket After Shock Mod - 25,000"
+          },
+          {
+            "name": "Quodrona/Skill Points/Skill Point: Elite Annihilation",
+            "ref": "Quodrona/Skill Points/Skill Point: Elite Annihilation"
+          },
+          {
+            "name": "Quodrona/Skill Points/Skill Point: Storm the Front",
+            "ref": "Quodrona/Skill Points/Skill Point: Storm the Front"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "870",
+            "y": "114"
+          }
+        ]
+      },
+      {
+        "name": "Armour Sets",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Equip Wildfire Armor Set",
+            "access_rules": [
+              "wildfire_chestplate,wildfire_helmet,wildfire_gloves,wildfire_boots"
+            ]
+          },
+          {
+            "name": "Equip Wildburst Armor Set",
+            "access_rules": [
+              "wildfire_chestplate,sludge_mk9_helmet,wildfire_gloves,wildfire_boots"
+            ]
+          },
+          {
+            "name": "Equip Sludge Mk9 Armor Set",
+            "access_rules": [
+              "sludge_mk9_chestplate,sludge_mk9_helmet,sludge_mk9_gloves,sludge_mk9_boots"
+            ]
+          },
+          {
+            "name": "Equip Crystallix Armor Set",
+            "access_rules": [
+              "crystallix_chestplate,crystallix_helmet,crystallix_gloves,crystallix_boots"
+            ]
+          },
+          {
+            "name": "Equip Triple Wave Armor Set",
+            "access_rules": [
+              "wildfire_helmet,electroshock_chestplate,sludge_mk9_gloves,electroshock_boots"
+            ]
+          },
+          {
+            "name": "Equip Shock Crystal Armor Set",
+            "access_rules": [
+              "electroshock_helmet,crystallix_chestplate,crystallix_gloves,electroshock_boots"
+            ]
+          },
+          {
+            "name": "Equip Electroshock Armor Set",
+            "access_rules": [
+              "electroshock_chestplate,electroshock_helmet,electroshock_gloves,electroshock_boots"
+            ]
+          },
+          {
+            "name": "Equip Mega Bomb Armor Set",
+            "access_rules": [
+              "mega_bomb_chestplate,mega_bomb_helmet,mega_bomb_gloves,mega_bomb_boots"
+            ]
+          },
+          {
+            "name": "Equip Fire-Bomb Armor Set",
+            "access_rules": [
+              "mega_bomb_chestplate,mega_bomb_helmet,wildfire_gloves,mega_bomb_boots"
+            ]
+          },
+          {
+            "name": "Equip Hyperborean Armor Set",
+            "access_rules": [
+              "hyperborean_chestplate,hyperborean_helmet,hyperborean_gloves,hyperborean_boots"
+            ]
+          },
+          {
+            "name": "Equip Ice II Armor Set",
+            "access_rules": [
+              "hyperborean_chestplate,crystallix_helmet,hyperborean_gloves,hyperborean_boots"
+            ]
+          },
+          {
+            "name": "Equip Chameleon Armor Set",
+            "access_rules": [
+              "chameleon_chestplate,chameleon_helmet,chameleon_gloves,chameleon_boots"
+            ]
+          },
+          {
+            "name": "Equip Stalker Armor Set",
+            "access_rules": [
+              "wildfire_helmet,chameleon_chestplate,sludge_mk9_gloves,chameleon_boots"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Overview",
+            "x": "480",
+            "y": "400"
+          }
+        ]
+      }
+    ]
+  }
+]

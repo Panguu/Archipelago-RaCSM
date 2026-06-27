@@ -1,0 +1,169 @@
+[
+  {
+    "name": "Dreamtime",
+    "chest_unopened_img": "images/icons/Crate.png",
+    "chest_opened_img": "images/icons/Crate.png",
+    "children": [
+      {
+        "name": "T-Bolt: Atop the floating hat",
+        "sections": [
+          {
+            "name": "T-Bolt: Atop the floating hat"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$dreamtime_base"
+        ]
+      },
+      {
+        "name": "T-Bolt: To the left of Ratchet's Garage",
+        "sections": [
+          {
+            "name": "T-Bolt: To the left of Ratchet's Garage"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$dreamtime_base"
+        ]
+      },
+      {
+        "name": "T-Bolt: Apparition of the Scuttle Crab",
+        "sections": [
+          {
+            "name": "T-Bolt: Apparition of the Scuttle Crab"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ],
+        "chest_unopened_img": "images/icons/Titanium_bolt.png",
+        "chest_opened_img": "images/icons/Titanium_bolt.png",
+        "access_rules": [
+          "$dreamtime_crab"
+        ]
+      },
+      {
+        "name": "Crystallix Chestplate after Giant Clank chase",
+        "sections": [
+          {
+            "name": "Crystallix Chestplate after Giant Clank chase"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ],
+        "access_rules": [
+          "$dreamtime_base"
+        ]
+      },
+      {
+        "name": "Complete Dreamtime",
+        "sections": [
+          {
+            "name": "Complete Dreamtime"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ],
+        "access_rules": [
+          "$dreamtime_base"
+        ]
+      },
+      {
+        "name": "Enter Planet",
+        "sections": [
+          {
+            "name": "Enter Planet"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "256",
+            "y": "256"
+          }
+        ]
+      },
+      {
+        "name": "Gadgetron Vendor",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Gadgetron Vendor: Suck Cannon - 30,000",
+            "access_rules": [
+              "$dreamtime_base"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      },
+      {
+        "name": "Skill Points",
+        "chest_unopened_img": "images/icons/Crate.png",
+        "chest_opened_img": "images/icons/Crate.png",
+        "sections": [
+          {
+            "name": "Skill Point: Friends Don't Hurt Friends",
+            "access_rules": [
+              "$dreamtime_base"
+            ]
+          },
+          {
+            "name": "Skill Point: Night Terrors",
+            "access_rules": [
+              "$dreamtime_base"
+            ]
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Dreamtime_map",
+            "x": "50",
+            "y": "380"
+          }
+        ]
+      }
+    ],
+    "access_rules": [
+      "outpost_omega,hypershot,sprout_o_matic"
+    ]
+  }
+]

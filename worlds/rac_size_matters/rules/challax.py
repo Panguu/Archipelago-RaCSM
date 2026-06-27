@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5Gadgets, Rac5Items, Rac5Locations, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5Weapons
-from ._helpers import HasWeapon
+from ..constants import Rac5Gadgets, Rac5Items, Rac5Locations, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations
 from rule_builder.rules import Has, HasAll, True_
 
 if TYPE_CHECKING:
@@ -43,28 +42,13 @@ def set_challax_rules(world: RACSizeMatterWorld) -> None:
     world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_SNIPER, player), _shrink_ray)
     world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_PDA, player), _shrink_ray)
 
-    # Weapon Mod Vendor
-    world.set_rule(
-        mw.get_location(Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE, player),
-        _base & HasWeapon(Rac5Weapons.LACERATOR),
-    )
-    world.set_rule(
-        mw.get_location(Rac5VendorLocations.CHALLAX_ACID_BURN, player),
-        _base & HasWeapon(Rac5Weapons.ACID_BOMB_GLOVE),
-    )
-    world.set_rule(
-        mw.get_location(Rac5VendorLocations.CHALLAX_ACID_EPOXY, player),
-        _base & HasWeapon(Rac5Weapons.ACID_BOMB_GLOVE),
-    )
-    world.set_rule(
-        mw.get_location(Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK, player),
-        _base & HasWeapon(Rac5Weapons.CONCUSSION_GUN),
-    )
-    world.set_rule(
-        mw.get_location(Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE, player),
-        _base & HasWeapon(Rac5Weapons.CONCUSSION_GUN),
-    )
-    world.set_rule(
-        mw.get_location(Rac5VendorLocations.CHALLAX_BEE_WORKER, player),
-        _base & HasWeapon(Rac5Weapons.BEE_MINE_GLOVE),
-    )
+    # Weapon Mod Vendor — purchasable without owning the weapon (mod_unlock_N
+    # is gated purely on this vendor's planet being accessible; see
+    # VendorUnlockState.mod_vendor_unlock_weapons). _base (Shrink Ray +
+    # Polarizer) still gates physically reaching the mod vendor area itself.
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE, player), _base)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_ACID_BURN, player), _base)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_ACID_EPOXY, player), _base)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK, player), _base)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE, player), _base)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_BEE_WORKER, player), _base)

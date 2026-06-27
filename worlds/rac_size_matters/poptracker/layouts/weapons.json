@@ -1,0 +1,48 @@
+{
+  "weapon_grid": {
+    "type": "array",
+    "orientation": "vertical",
+    "margin": "0,0",
+    "content": [
+      {
+        "type": "array",
+        "orientation": "vertical",
+        "margin": "0,0",
+        "content": [
+          {
+            "type": "itemgrid",
+            "item_margin": "2, 2",
+            "h_alignment": "left",
+            "item_h_alignment": "center",
+            "item_v_alignment": "center",
+            "item_height": 48,
+            "item_width": 48,
+            "rows": [
+              [
+                "progressive_lacerator",
+                "progressive_concussion_gun",
+                "progressive_acid_bomb_glove",
+                "progressive_agents_of_doom"
+              ],
+              [
+                "progressive_bee_mine_glove",
+                "progressive_static_barrier",
+                "progressive_shock_rocket",
+                "progressive_sniper_mine"
+              ],
+              [
+                "progressive_scorcher",
+                "progressive_laser_tracer",
+                "progressive_suck_cannon",
+                "progressive_mootator"
+              ],
+              [
+                "progressive_ryno"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

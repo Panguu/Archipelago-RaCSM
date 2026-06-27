@@ -11,6 +11,13 @@ from ..items import GADGET_DISPLAY_TO_INTERNAL, WEAPON_DISPLAY_TO_INTERNAL
 from .address_maps import WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS
 from .weapons import GADGET_ORDER, WEAPON_ORDER
 
+# WEAPON_VENDOR_ITEMS is a flat array immediately followed in memory by
+# WEAPON_VENDOR_SLOTS (the count). The gap between them is the array's full
+# capacity — slots beyond the written count must be zeroed too, otherwise
+# stale entries from a previous, longer write (e.g. the inventory view) keep
+# showing up in the vendor menu instead of disappearing.
+MAX_VENDOR_SLOTS = (WEAPON_VENDOR_SLOTS - WEAPON_VENDOR_ITEMS) // 4
+
 if TYPE_CHECKING:
     from .planets import PlanetUnlockState
     from .weapons import WeaponState
@@ -46,12 +53,28 @@ class WeaponVendorState(BaseState):
     ) -> None:
         super().__init__(accessor, addresses, storage)
         self.active = False
+        # True while D_PAD_RIGHT has swapped the vendor list to show the
+        # player's full AP inventory (for ammo purchase) instead of the
+        # default vendor-unlock ("left view") view.
+        self.showing_inventory = False
+        # True while _check_weapon_vendor_view_toggle()'s own menu.set_menu()
+        # refresh is in flight. The game can briefly cycle the menu
+        # closed->open again in response to that write, which would
+        # otherwise look like a real exit to deactivate() below and wrongly
+        # reset showing_inventory back to the left view mid-refresh — set by
+        # the toggle right before set_menu(), cleared once
+        # on_weapon_vendor_open() re-asserts the view on the other side.
+        self.refreshing = False
 
     def activate(self) -> None:
         self.active = True
 
     def deactivate(self) -> None:
         self.active = False
+        if not self.refreshing:
+            # A real exit (not a refresh-induced blip) — always default back
+            # to the left/purchasable view for the next open.
+            self.showing_inventory = False
 
     def on_menu_open(self) -> None:
         pass
@@ -60,7 +83,7 @@ class WeaponVendorState(BaseState):
         pass
 
     def __repr__(self) -> str:
-        return f"WeaponVendorState(active={self.active})"
+        return f"WeaponVendorState(active={self.active}, showing_inventory={self.showing_inventory})"
 
 
 class ModVendorState(BaseState):
@@ -140,6 +163,13 @@ _DISPLAY_TO_PLANET_KEY: dict[str, str] = {
     "Quodrona":      "QUODRONA",
 }
 
+
+def is_mod_region_accessible(planet_unlock: PlanetUnlockState, region: str) -> bool:
+    """True if ``region`` (a display name like "Kalidon", as used in
+    MOD_UNLOCK_PLANET) has an AP-accessible vendor right now."""
+    planet_key = _DISPLAY_TO_PLANET_KEY.get(region)
+    return bool(planet_key) and planet_unlock.is_vendor_accessible(planet_key)
+
 # internal weapon/gadget name → PlanetUnlockState key
 _WEAPON_TO_PLANET_KEY: dict[str, str] = {
     WEAPON_DISPLAY_TO_INTERNAL["Lacerator"]:      "POKITARU",
@@ -189,10 +219,16 @@ class VendorUnlockState:
         self._pu = planet_unlock
 
 
-    def apply(self, accessor: MemoryAccessor) -> None:
-        ws        = self._ws
+    def unlock_items(self) -> list[int]:
+        """Vendor item IDs for the default (purchasable-only) vendor view.
+
+        Only currently-purchasable slots: planet accessible AND location not
+        yet checked. No ammo-refill slots here regardless of ownership — an
+        owned-but-already-purchased (or owned-but-not-vendor-gated, e.g.
+        Ryno) weapon shows ammo only via the D_PAD_RIGHT inventory view.
+        """
         pu        = self._pu
-        purchased = _purchased_names(ws)
+        purchased = _purchased_names(self._ws)
         seen: set[int] = set()
         items: list[int] = []
 
@@ -202,24 +238,6 @@ class VendorUnlockState:
                 seen.add(vid)
                 items.append(vid)
 
-        # Ammo-refill slots: player owns the weapon AND
-        #   (a) its vendor planet is not yet accessible — remove from inventory would be wrong, or
-        #   (b) the purchase location was already checked (bought from vendor before).
-        for name in _WEAPON_DISPLAY_ORDER:
-            if name not in _WEAPON_TO_PLANET_KEY or not ws.weapons.get(name, False):
-                continue
-            planet_key = _WEAPON_TO_PLANET_KEY[name]
-            if not pu.is_vendor_accessible(planet_key) or name in purchased:
-                _add(name)
-
-        for name in _GADGET_DISPLAY_ORDER:
-            if name not in _GADGET_TO_PLANET_KEY or not ws.gadgets.get(name, False):
-                continue
-            planet_key = _GADGET_TO_PLANET_KEY[name]
-            if not pu.is_vendor_accessible(planet_key) or name in purchased:
-                _add(name)
-
-        # Purchasable slots: planet accessible AND location not yet checked.
         for name, planet_key in _WEAPON_TO_PLANET_KEY.items():
             if pu.is_vendor_accessible(planet_key) and name not in purchased:
                 _add(name)
@@ -227,9 +245,96 @@ class VendorUnlockState:
             if pu.is_vendor_accessible(planet_key) and name not in purchased:
                 _add(name)
 
+        return items
+
+    def owned_names(self) -> frozenset[str]:
+        """Internal names of every weapon/gadget currently owned in the AP
+        inventory, regardless of vendor-unlock state. Passed to
+        WeaponState.apply_vendor_locations() while the inventory view is
+        showing, so the in-game `unlocked` bit matches what's listed —
+        otherwise a listed-but-not-actually-unlocked slot can't sell ammo."""
+        ws = self._ws
+        owned: set[str] = set()
+        for name in _WEAPON_DISPLAY_ORDER:
+            if ws.weapons.get(name, False):
+                owned.add(name)
+        for name in _GADGET_DISPLAY_ORDER:
+            if ws.gadgets.get(name, False):
+                owned.add(name)
+        return frozenset(owned)
+
+    def inventory_items(self) -> list[int]:
+        """Vendor item IDs for every weapon/gadget the player currently owns in
+        their AP inventory, regardless of vendor-unlock state — lets the
+        player buy ammo for anything they own (e.g. a Ryno picked up as an AP
+        item on a planet whose vendor hasn't unlocked it yet)."""
+        owned = self.owned_names()
+        seen: set[int] = set()
+        items: list[int] = []
+
+        def _add(name: str) -> None:
+            vid = WEAPON_VENDOR_IDS.get(name)
+            if vid is not None and vid not in seen:
+                seen.add(vid)
+                items.append(vid)
+
+        for name in _WEAPON_DISPLAY_ORDER + _GADGET_DISPLAY_ORDER:
+            if name in owned:
+                _add(name)
+
+        return items
+
+    def _write_items(self, accessor: MemoryAccessor, items: list[int]) -> None:
         accessor.write_raw(WEAPON_VENDOR_SLOTS, len(items).to_bytes(4, "little"))
         for i, item_id in enumerate(items):
             accessor.write_raw(WEAPON_VENDOR_ITEMS + i * 4, item_id.to_bytes(4, "little"))
+        # Zero every slot past the new count, up to the array's full capacity,
+        # so leftover IDs from a previous (longer) write don't linger in the menu.
+        for i in range(len(items), MAX_VENDOR_SLOTS):
+            accessor.write_raw(WEAPON_VENDOR_ITEMS + i * 4, (0).to_bytes(4, "little"))
+
+    def apply(self, accessor: MemoryAccessor) -> None:
+        self._write_items(accessor, self.unlock_items())
+
+    def apply_inventory(self, accessor: MemoryAccessor) -> None:
+        self._write_items(accessor, self.inventory_items())
+
+    def apply_mod_vendor_weapons(self, accessor: MemoryAccessor) -> None:
+        """Write the vendor list/size array with the weapons that have a
+        purchasable mod here — the mod vendor's weapon-selection list reads
+        from the same WEAPON_VENDOR_ITEMS/SLOTS array the weapons vendor
+        does, it just isn't populated by anything when only on_mod_vendor_open's
+        struct writes run."""
+        names = self.mod_vendor_unlock_weapons()
+        seen: set[int] = set()
+        items: list[int] = []
+        for name in _WEAPON_DISPLAY_ORDER:
+            if name not in names:
+                continue
+            vid = WEAPON_VENDOR_IDS.get(name)
+            if vid is not None and vid not in seen:
+                seen.add(vid)
+                items.append(vid)
+        self._write_items(accessor, items)
+
+    def mod_vendor_unlock_weapons(self) -> frozenset[str]:
+        """Weapons that should show `unlocked` while the mod vendor is open.
+
+        A weapon's mod slot won't render at all if the weapon itself shows
+        as locked, so this can't be gated on having bought that weapon from
+        its own weapons vendor (mods are frequently sold on a different
+        planet than the weapon itself) — just whether one of its mod
+        locations is currently purchasable from this vendor.
+        """
+        from ..locations import MOD_INTERNAL_TO_LOCATION
+        pu = self._pu
+        allowed: set[str] = set()
+        for (weapon, _slot), loc in MOD_INTERNAL_TO_LOCATION.items():
+            planet_display = loc.split(":")[0].strip()
+            planet_key      = _DISPLAY_TO_PLANET_KEY.get(planet_display)
+            if planet_key and pu.is_vendor_accessible(planet_key):
+                allowed.add(weapon)
+        return frozenset(allowed)
 
     def purchasable_loc_names(self, vendor_type: MenuStateValue | None = None) -> list[str]:
         """Return AP location names for items currently purchasable from a vendor.
@@ -295,7 +400,6 @@ class VendorUnlockState:
                 allowed.add(name)
 
         return frozenset(allowed)
-
 
     def debug_lines(self) -> list[str]:
         ws        = self._ws

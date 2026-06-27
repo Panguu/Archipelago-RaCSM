@@ -10,6 +10,7 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5CutsceneLocations,
 )
+from rule_builder.rules import Has, HasAll, True_
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -19,31 +20,28 @@ def set_outpost_omega_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    _facility = lambda state: (state.has(Rac5Gadgets.SHRINK_RAY, player)
-                               and state.has(Rac5Gadgets.HYPERSHOT, player)
-                               and state.has(Rac5Gadgets.SPROUT_O_MATIC, player))
+    _facility = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC)
 
     # Skill Points
     if world.options.enable_skyboard_challenge_skill_points:
-        mw.get_location(Rac5SkillPoints.OUTPOST_OMEGA_AWESOME, player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(Rac5SkillPoints.OUTPOST_OMEGA_AWESOME, player), True_())
 
     # Missions
     if world.options.all_cutscenes:
-        mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA,        player).access_rule = _facility
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA, player), _facility)
     if world.options.all_missions:
-        mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,  player).access_rule = _facility
-        mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE, player), _facility)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player), True_())
 
     # Titanium Bolts
-    mw.get_location(Rac5TBolts.OUTPOST_OMEGA_DREAM, player).access_rule = lambda _: True
+    world.set_rule(mw.get_location(Rac5TBolts.OUTPOST_OMEGA_DREAM, player), True_())
 
     # Skyboard Challenges (skyboard_challenges >= 1)
     if world.options.skyboard_challenges.value >= 1:
-        mw.get_location(RACSMSKY.OUTPOST_OMEGA_VERTIGO,  player).access_rule = lambda _: True
-        mw.get_location(RACSMSKY.OUTPOST_OMEGA_INTERIOR, player).access_rule = lambda _: True
-        mw.get_location(RACSMSKY.OUTPOST_OMEGA_DANGER,   player).access_rule = lambda _: True
-        mw.get_location(RACSMSKY.OUTPOST_OMEGA_VORTEX,   player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_VERTIGO, player), True_())
+        world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_INTERIOR, player), True_())
+        world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_DANGER, player), True_())
+        world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_VORTEX, player), True_())
 
     # Vendors
-    mw.get_location(Rac5VendorLocations.OUTPOST_OMEGA_BEE, player).access_rule = \
-        lambda state: state.has(Rac5Gadgets.SHRINK_RAY, player)
+    world.set_rule(mw.get_location(Rac5VendorLocations.OUTPOST_OMEGA_BEE, player), Has(Rac5Gadgets.SHRINK_RAY))

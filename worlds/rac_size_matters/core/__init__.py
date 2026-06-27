@@ -1,6 +1,6 @@
 from .address_maps import CURRENT_PLANET_ADDRESS, PLAYER_ADDRS, PLAYER_HEALTH, PLAYER_STATE
 from .armour import ARMOUR_FLAG_TO_LOCATION, ARMOUR_SET_CHECKS, ArmourPiece
-from .controller import ButtonState
+from .controller import GlobalButtonState
 from .display_text import SmallTextBoxAddrs, TextColour, colored_text
 from .memory import (
     ARMOUR_ADDRESSES,
@@ -41,10 +41,10 @@ __all__ = [
     "AUTO_UNLOCK_ADDRESSES",
     "ArmourPiece",
     "BOLTS",
-    "ButtonState",
     "CURRENT_PLANET_ADDRESS",
     "GADGETS",
     "GameState",
+    "GlobalButtonState",
     "INFOBOT_ITEM_TO_PLANET",
     "INFOBOT_UNLOCK_VALUE",
     "Int64State",

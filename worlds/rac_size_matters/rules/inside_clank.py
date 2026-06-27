@@ -9,6 +9,7 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5CutsceneLocations,
 )
+from rule_builder.rules import True_
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -20,21 +21,21 @@ def set_inside_clank_rules(world: RACSizeMatterWorld) -> None:
 
     # Skill Points
     if world.options.skill_points.value >= 2:
-        mw.get_location(Rac5SkillPoints.INSIDE_CLANK_SHOCK,   player).access_rule = lambda _: True
-        mw.get_location(Rac5SkillPoints.INSIDE_CLANK_RATCHET, player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(Rac5SkillPoints.INSIDE_CLANK_SHOCK, player), True_())
+        world.set_rule(mw.get_location(Rac5SkillPoints.INSIDE_CLANK_RATCHET, player), True_())
 
     # Missions
     if world.options.all_missions:
-        mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,      player).access_rule = lambda _: True
-        mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES, player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE, player), True_())
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES, player), True_())
 
     # Titanium Bolts
-    mw.get_location(Rac5TBolts.INSIDE_CLANK_LADDER, player).access_rule = lambda _: True
-    mw.get_location(Rac5TBolts.INSIDE_CLANK_WALL,   player).access_rule = lambda _: True
+    world.set_rule(mw.get_location(Rac5TBolts.INSIDE_CLANK_LADDER, player), True_())
+    world.set_rule(mw.get_location(Rac5TBolts.INSIDE_CLANK_WALL, player), True_())
 
     # Armour
-    mw.get_location(Rac5Locations.INSIDE_CLANK_CHESTPLATE, player).access_rule = lambda _: True
+    world.set_rule(mw.get_location(Rac5Locations.INSIDE_CLANK_CHESTPLATE, player), True_())
 
     # Vendors
     # Static Barrier vendor — freely accessible on arrival.
-    mw.get_location(Rac5VendorLocations.INSIDE_CLANK_STATIC, player).access_rule = lambda _: True
+    world.set_rule(mw.get_location(Rac5VendorLocations.INSIDE_CLANK_STATIC, player), True_())

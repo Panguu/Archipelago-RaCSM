@@ -1,0 +1,234 @@
+[
+  {
+    "name": "All Missions",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/all_missions_setting_off.png",
+        "codes": "all_missions_setting,all_missions_setting_off",
+        "inherit_codes": false,
+        "name": "All Missions: off"
+      },
+      {
+        "img": "images/settings/all_missions_setting_on.png",
+        "codes": "all_missions_setting,all_missions_setting_on",
+        "inherit_codes": false,
+        "name": "All Missions: on"
+      }
+    ]
+  },
+  {
+    "name": "All Cutscenes",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/all_cutscenes_setting_off.png",
+        "codes": "all_cutscenes_setting,all_cutscenes_setting_off",
+        "inherit_codes": false,
+        "name": "All Cutscenes: off"
+      },
+      {
+        "img": "images/settings/all_cutscenes_setting_on.png",
+        "codes": "all_cutscenes_setting,all_cutscenes_setting_on",
+        "inherit_codes": false,
+        "name": "All Cutscenes: on"
+      }
+    ]
+  },
+  {
+    "name": "Clank Challenges",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/clank_challenges_setting_0.png",
+        "codes": "clank_challenges_setting,clank_challenges_setting_0",
+        "inherit_codes": false,
+        "name": "Clank Challenges: off"
+      },
+      {
+        "img": "images/settings/clank_challenges_setting_1.png",
+        "codes": "clank_challenges_setting,clank_challenges_setting_1",
+        "inherit_codes": false,
+        "name": "Clank Challenges: item challenges"
+      },
+      {
+        "img": "images/settings/clank_challenges_setting_2.png",
+        "codes": "clank_challenges_setting,clank_challenges_setting_2",
+        "inherit_codes": false,
+        "name": "Clank Challenges: all"
+      }
+    ]
+  },
+  {
+    "name": "Skyboard Challenges",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/skyboard_challenges_setting_0.png",
+        "codes": "skyboard_challenges_setting,skyboard_challenges_setting_0",
+        "inherit_codes": false,
+        "name": "Skyboard Challenges: off"
+      },
+      {
+        "img": "images/settings/skyboard_challenges_setting_1.png",
+        "codes": "skyboard_challenges_setting,skyboard_challenges_setting_1",
+        "inherit_codes": false,
+        "name": "Skyboard Challenges: all"
+      }
+    ]
+  },
+  {
+    "name": "Skill Points",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/skill_points_setting_0.png",
+        "codes": "skill_points_setting,skill_points_setting_0",
+        "inherit_codes": false,
+        "name": "Skill Points: off"
+      },
+      {
+        "img": "images/settings/skill_points_setting_1.png",
+        "codes": "skill_points_setting,skill_points_setting_1",
+        "inherit_codes": false,
+        "name": "Skill Points: easy"
+      },
+      {
+        "img": "images/settings/skill_points_setting_2.png",
+        "codes": "skill_points_setting,skill_points_setting_2",
+        "inherit_codes": false,
+        "name": "Skill Points: hard"
+      }
+    ]
+  },
+  {
+    "name": "Enable Clank Challenge Skill Points",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/clank_skill_points_setting_off.png",
+        "codes": "clank_skill_points_setting,clank_skill_points_setting_off",
+        "inherit_codes": false,
+        "name": "off"
+      },
+      {
+        "img": "images/settings/clank_skill_points_setting_on.png",
+        "codes": "clank_skill_points_setting,clank_skill_points_setting_on",
+        "inherit_codes": false,
+        "name": "on"
+      }
+    ]
+  },
+  {
+    "name": "Enable Skyboard Challenge Skill Points",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/skyboard_skill_points_setting_off.png",
+        "codes": "skyboard_skill_points_setting,skyboard_skill_points_setting_off",
+        "inherit_codes": false,
+        "name": "off"
+      },
+      {
+        "img": "images/settings/skyboard_skill_points_setting_on.png",
+        "codes": "skyboard_skill_points_setting,skyboard_skill_points_setting_on",
+        "inherit_codes": false,
+        "name": "on"
+      }
+    ]
+  },
+  {
+    "name": "Armour Set Checks",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/armour_set_checks_setting_off.png",
+        "codes": "armour_set_checks_setting,armour_set_checks_setting_off",
+        "inherit_codes": false,
+        "name": "off"
+      },
+      {
+        "img": "images/settings/armour_set_checks_setting_on.png",
+        "codes": "armour_set_checks_setting,armour_set_checks_setting_on",
+        "inherit_codes": false,
+        "name": "on"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Weapons",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/progressive_weapons_setting_off.png",
+        "codes": "progressive_weapons_setting,progressive_weapons_setting_off",
+        "inherit_codes": false,
+        "name": "off"
+      },
+      {
+        "img": "images/settings/progressive_weapons_setting_on.png",
+        "codes": "progressive_weapons_setting,progressive_weapons_setting_on",
+        "inherit_codes": false,
+        "name": "on"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Mods",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/progressive_mods_setting_off.png",
+        "codes": "progressive_mods_setting,progressive_mods_setting_off",
+        "inherit_codes": false,
+        "name": "off"
+      },
+      {
+        "img": "images/settings/progressive_mods_setting_on.png",
+        "codes": "progressive_mods_setting,progressive_mods_setting_on",
+        "inherit_codes": false,
+        "name": "on"
+      }
+    ]
+  },
+  {
+    "name": "Progressive Armour",
+    "type": "progressive",
+    "allow_disabled": false,
+    "loop": true,
+    "stages": [
+      {
+        "img": "images/settings/progressive_armour_setting_off.png",
+        "codes": "progressive_armour_setting,progressive_armour_setting_off",
+        "inherit_codes": false,
+        "name": "off"
+      },
+      {
+        "img": "images/settings/progressive_armour_setting_on.png",
+        "codes": "progressive_armour_setting,progressive_armour_setting_on",
+        "inherit_codes": false,
+        "name": "on"
+      }
+    ]
+  }
+]

@@ -11,7 +11,8 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5CutsceneLocations,
 )
-from ._helpers import has_projectile_weapon
+from ._helpers import HasProjectileWeapon
+from rule_builder.rules import Has, True_
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -21,54 +22,53 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    _base       = lambda state: (state.has(Rac5Gadgets.SPROUT_O_MATIC, player)
-                                 and has_projectile_weapon(state, player))
-    _shrink_ray = lambda state: (_base(state) and state.has(Rac5Gadgets.SHRINK_RAY, player))
+    _base       = Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon()
+    _shrink_ray = _base & Has(Rac5Gadgets.SHRINK_RAY)
 
     # Skill Points
     if world.options.skill_points.value >= 1:
-        mw.get_location(Rac5SkillPoints.DAYNI_MOON_BOUNCY, player).access_rule = _base
+        world.set_rule(mw.get_location(Rac5SkillPoints.DAYNI_MOON_BOUNCY, player), _base)
     if world.options.skill_points.value >= 2:
-        mw.get_location(Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST, player).access_rule = _base
+        world.set_rule(mw.get_location(Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST, player), _base)
     if world.options.enable_clank_challenge_skill_points:
-        mw.get_location(Rac5SkillPoints.DAYNI_MOON_GLADIATOR, player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(Rac5SkillPoints.DAYNI_MOON_GLADIATOR, player), True_())
 
     # Missions
     if world.options.all_missions:
-        mw.get_location(Rac5CutsceneLocations.DAYNI_MOON,      player).access_rule = _shrink_ray
-        mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_LUNA, player).access_rule = _shrink_ray
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON, player), _shrink_ray)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_LUNA, player), _shrink_ray)
     if world.options.all_cutscenes:
-        mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT1, player).access_rule = _shrink_ray
-        mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT2, player).access_rule = _shrink_ray
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT1, player), _shrink_ray)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT2, player), _shrink_ray)
 
     # Titanium Bolts
-    mw.get_location(Rac5TBolts.DAYNI_MOON_BARN,  player).access_rule = _base
-    mw.get_location(Rac5TBolts.DAYNI_MOON_MIMIC, player).access_rule = _shrink_ray
+    world.set_rule(mw.get_location(Rac5TBolts.DAYNI_MOON_BARN, player), _base)
+    world.set_rule(mw.get_location(Rac5TBolts.DAYNI_MOON_MIMIC, player), _shrink_ray)
 
     # Armour
-    mw.get_location(Rac5Locations.DAYNI_MOON_HELMET, player).access_rule = _base
+    world.set_rule(mw.get_location(Rac5Locations.DAYNI_MOON_HELMET, player), _base)
 
     # Clank Challenges — item rewards (clank_challenges >= 1)
     if world.options.clank_challenges.value >= 1:
-        mw.get_location(RACSMCLANK.DAYNI_MOON_SHOWDOWN,  player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_INFINITE,  player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_SHOWDOWN, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_INFINITE, player), True_())
 
     # Clank Challenges — individual completions (clank_challenges >= 2)
     if world.options.clank_challenges.value >= 2:
-        mw.get_location(RACSMCLANK.DAYNI_MOON_CROWD,      player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_REVERSE,    player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_BRIDGE,     player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_LEAP,       player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_WELCOME,    player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_ROUND,      player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_VARIETY,    player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_SAWYER,     player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_SMASHER,    player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_TOURNAMENT, player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_AROUND,     player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_LINE,       player).access_rule = lambda _: True
-        mw.get_location(RACSMCLANK.DAYNI_MOON_HAY,        player).access_rule = lambda _: True
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_CROWD, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_REVERSE, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_BRIDGE, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_LEAP, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_WELCOME, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_ROUND, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_VARIETY, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_SAWYER, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_SMASHER, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_TOURNAMENT, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_AROUND, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_LINE, player), True_())
+        world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_HAY, player), True_())
 
     # Vendors
-    mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player).access_rule = lambda _: True
-    mw.get_location(Rac5VendorLocations.DAYNI_MOON_MAP,   player).access_rule = lambda _: True
+    world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player), True_())
+    world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_MAP, player), True_())

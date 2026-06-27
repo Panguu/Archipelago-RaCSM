@@ -435,15 +435,15 @@ class InventoryMixin:
 
     def _apply_mod_unlock_flags(self) -> None:
         """Write the mod_unlock_N "purchasable" byte for every weapon mod slot
-        in the game — 1 once the player owns the weapon (and, for whichever
-        of those slots is sold on Challax, Shrink Ray + Polarizer too,
-        mirroring rules/challax.py). Not filtered by current planet: each
-        slot's requirement is tied to its own vendor, not to wherever you're
-        currently standing, so they should all reflect ownership regardless
-        of which vendor you're physically at."""
+        in the game — 1 once that mod's vendor planet is AP-accessible
+        (regardless of whether the player owns the parent weapon yet,
+        matching VendorUnlockState.mod_vendor_unlock_weapons()), and, for
+        whichever of those slots is sold on Challax, Shrink Ray + Polarizer
+        too, mirroring rules/challax.py."""
         # Local import: these are populated lazily by WeaponState's
         # _ensure_loc_data() — importing at module top-level here would bind
         # to the pre-population empty dicts and never see the real values.
+        from ..core.vendor import is_mod_region_accessible
         from ..core.weapons import MOD_UNLOCK_EXTRA_GADGETS, MOD_UNLOCK_PLANET
         for (weapon, attr), region in MOD_UNLOCK_PLANET.items():
             if weapon not in WEAPONS:
@@ -452,14 +452,14 @@ class InventoryMixin:
                     f"current planet {self.current_planet!r} (WEAPONS keys={list(WEAPONS)})"
                 )
                 continue
-            has_weapon = self._gs.tracked_weapons.get(weapon, False)
+            accessible = is_mod_region_accessible(self._wiring.planet_unlock, region)
             extra_gadgets = MOD_UNLOCK_EXTRA_GADGETS.get(region, ())
             gadget_state = {g: self._gs.tracked_gadgets.get(g, False) for g in extra_gadgets}
-            unlocked = has_weapon and all(gadget_state.values())
+            unlocked = accessible and all(gadget_state.values())
             addr = getattr(WEAPONS[weapon], attr)
             self._log(
                 f"[RAC] _apply_mod_unlock_flags: {weapon}.{attr} (sold on {region}) @ {addr:#010x} "
-                f"has_weapon={has_weapon} extra_gadgets={gadget_state} -> writing {int(unlocked)}"
+                f"accessible={accessible} extra_gadgets={gadget_state} -> writing {int(unlocked)}"
             )
             self.pine.write_int8(addr, 1 if unlocked else 0)
 

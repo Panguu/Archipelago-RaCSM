@@ -69,3 +69,12 @@ class RACCommandProcessor(ClientCommandProcessor):
         state = "enabled" if self.ctx._debug_messages else "disabled"
         logger.info(f"[RAC] Debug messages {state}.")
         return True
+
+    def _cmd_debug_buttons(self) -> bool:
+        """Toggle printing of the controller button state whenever it changes."""
+        wiring = self.ctx._wiring
+        enabled = not wiring._debug_buttons_enabled
+        wiring.set_debug_buttons(enabled)
+        state = "enabled" if enabled else "disabled"
+        logger.info(f"[RAC] Button debug logging {state}.")
+        return True

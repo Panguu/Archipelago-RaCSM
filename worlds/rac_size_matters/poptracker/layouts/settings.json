@@ -1,0 +1,44 @@
+{
+  "setting_grid": {
+    "type": "array",
+    "orientation": "vertical",
+    "margin": "0,0",
+    "content": [
+      {
+        "type": "array",
+        "orientation": "vertical",
+        "margin": "0,0",
+        "content": [
+          {
+            "type": "itemgrid",
+            "item_margin": "2, 2",
+            "h_alignment": "left",
+            "item_h_alignment": "center",
+            "item_v_alignment": "center",
+            "item_height": 48,
+            "item_width": 48,
+            "rows": [
+              [
+                "all_missions_setting",
+                "all_cutscenes_setting",
+                "clank_challenges_setting",
+                "skyboard_challenges_setting"
+              ],
+              [
+                "skill_points_setting",
+                "clank_skill_points_setting",
+                "skyboard_skill_points_setting",
+                "armour_set_checks_setting"
+              ],
+              [
+                "progressive_weapons_setting",
+                "progressive_mods_setting",
+                "progressive_armour_setting"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

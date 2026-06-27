@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5Gadgets, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5CutsceneLocations, Rac5Weapons
-from ._helpers import has_weapon
+from ..constants import Rac5Gadgets, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5CutsceneLocations
+from rule_builder.rules import HasAll, True_
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -13,39 +13,35 @@ def set_quodrona_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    _checks = lambda state: (state.has(Rac5Gadgets.SHRINK_RAY, player)
-                             and state.has(Rac5Gadgets.HYPERSHOT, player))
+    _checks = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT)
 
     # Skill Points
     if world.options.skill_points.value >= 2:
-        mw.get_location(Rac5SkillPoints.QUODRONA_ELITE,  player).access_rule = _checks
-        mw.get_location(Rac5SkillPoints.QUODRONA_STORM,  player).access_rule = _checks
+        world.set_rule(mw.get_location(Rac5SkillPoints.QUODRONA_ELITE, player), _checks)
+        world.set_rule(mw.get_location(Rac5SkillPoints.QUODRONA_STORM, player), _checks)
 
     # Missions
     if world.options.all_cutscenes:
-        mw.get_location(Rac5CutsceneLocations.QUODRONA_CLONE, player).access_rule = _checks
-        mw.get_location(Rac5CutsceneLocations.QUODRONA_CHASE, player).access_rule = _checks
-        mw.get_location(Rac5CutsceneLocations.QUODRONA_MECHA, player).access_rule = _checks
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_CLONE, player), _checks)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_CHASE, player), _checks)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_MECHA, player), _checks)
     if world.options.all_missions:
-        mw.get_location(Rac5CutsceneLocations.QUODRONA_FIND,  player).access_rule = _checks
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_FIND, player), _checks)
 
     # Titanium Bolts
-    mw.get_location(Rac5TBolts.QUODRONA_DUMMIES, player).access_rule = _checks
+    world.set_rule(mw.get_location(Rac5TBolts.QUODRONA_DUMMIES, player), _checks)
 
     # Boss
-    mw.get_location(Rac5CutsceneLocations.QUODRONA_GOAL, player).access_rule = _checks
+    world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_GOAL, player), _checks)
 
     # Vendors
-    mw.get_location(Rac5VendorLocations.QUODRONA_LASER, player).access_rule = lambda _: True
+    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_LASER, player), True_())
 
-    # Weapon Mod Vendor
-    mw.get_location(Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER,  player).access_rule = \
-        lambda state: has_weapon(state, player, Rac5Weapons.AGENTS_OF_DOOM)
-    mw.get_location(Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE, player).access_rule = \
-        lambda state: has_weapon(state, player, Rac5Weapons.SCORCHER)
-    mw.get_location(Rac5VendorLocations.QUODRONA_SNIPER_SPLIT,     player).access_rule = \
-        lambda state: has_weapon(state, player, Rac5Weapons.SNIPER_MINE)
-    mw.get_location(Rac5VendorLocations.QUODRONA_SHOCK_LOCK,       player).access_rule = \
-        lambda state: has_weapon(state, player, Rac5Weapons.SHOCK_ROCKET)
-    mw.get_location(Rac5VendorLocations.QUODRONA_SHOCK_AFTER,      player).access_rule = \
-        lambda state: has_weapon(state, player, Rac5Weapons.SHOCK_ROCKET)
+    # Weapon Mod Vendor — purchasable without owning the weapon (mod_unlock_N
+    # is gated purely on this vendor's planet being accessible; see
+    # VendorUnlockState.mod_vendor_unlock_weapons).
+    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER, player), True_())
+    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE, player), True_())
+    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SNIPER_SPLIT, player), True_())
+    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SHOCK_LOCK, player), True_())
+    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SHOCK_AFTER, player), True_())
