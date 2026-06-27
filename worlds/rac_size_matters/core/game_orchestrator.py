@@ -402,12 +402,19 @@ class GameOrchestrator(APSyncMixin, PlanetLifecycleMixin, HooksMixin):
 
     def _check_planet_menu_hotkey(self) -> None:
         """Force the Planet Menu open on the rising edge of the L1+L2+R1+R2+START
-        combo (held, not re-fired every tick while held)."""
+        combo (held, not re-fired every tick while held).
+
+        Only writes when the menu isn't already open. A 5-button combo is easy
+        to fumble — re-triggering a rising edge while the player is already on
+        the Planet Menu would re-send set_menu() and stomp whatever they just
+        selected before the game acts on it. Once the menu is reached, this
+        does nothing else until it's left (menu.current != PLANET_MENU again).
+        """
         planet = PLANET_ADDRESSES.get(self._active_planet_id)
         if planet is None or planet.controller_pause_select_v2 is None:
             return
         held = GlobalButtonState.read(self._pine, self._active_planet_id).opens_planet_menu
-        if held and not self._planet_menu_hotkey_held:
+        if held and not self._planet_menu_hotkey_held and self.menu.current != MenuStateValue.PLANET_MENU:
             self.menu.set_menu(MenuStateValue.PLANET_MENU)
         self._planet_menu_hotkey_held = held
 

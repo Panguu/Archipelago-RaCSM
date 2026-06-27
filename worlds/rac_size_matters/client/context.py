@@ -232,6 +232,16 @@ class RACContext(
             ))
             if not self.pine_connected:
                 asyncio.create_task(self._attempt_pine_connect(), name="PCSX2 PINE connect")
+            else:
+                # PCSX2 never dropped, so _attempt_pine_connect's own
+                # _send_map_page call (which only fires on a PINE reconnect)
+                # won't run here. current_planet is always kept fresh by the
+                # independent PINE poll loop regardless of the AP server
+                # connection, so re-push it now rather than leaving the
+                # server's stored value stuck at whatever it was before this
+                # AP (re)connect — it's not something to persist and trust,
+                # it's something to always re-check and re-send on connect.
+                asyncio.create_task(self._send_map_page(self.current_planet))
             # Fetch the persisted filler-applied checkpoint from the AP server
             # (see _filler_applied_key/_filler_checkpoint_synced). team/slot
             # are only known now that the base handler above has set them, so
