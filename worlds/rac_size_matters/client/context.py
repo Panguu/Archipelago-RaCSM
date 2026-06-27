@@ -104,6 +104,19 @@ class RACContext(
         self._pending_armour_pickup_locs: list[str] = []
         self._processed_item_count = 0
         self._processed_trap_count = 0
+        # Whether the persisted "how many items_received have already had
+        # their bolts/traps granted to the live PS2 memory" checkpoint has
+        # been fetched from the AP server's data storage yet (see
+        # _filler_applied_key). items_received alone can't tell us what's
+        # actually been written to the game, since a fresh client process
+        # always replays the entire history from index 0 — without this, a
+        # client restart would either re-grant every historical bolt/trap (no
+        # local counter survives the restart) or, with the old "assume a full
+        # resync means everything already happened" heuristic, silently skip
+        # ones that were received but never actually applied (e.g. PCSX2
+        # wasn't connected yet). Granting is gated on this being True so we
+        # never grant against the wrong (zero) starting point.
+        self._filler_checkpoint_synced = False
         self._starting_bolts_granted = False
         self._death_count = 0
         self._weapon_array_base: int | None = None
@@ -149,6 +162,11 @@ class RACContext(
                 logger.warning(f"[RAC] PINE call failed during wiring sync: {exc}. "
                                 "If syncing stops working, use /reconnect.")
                 self.pine_connected = False
+
+    def _filler_applied_key(self) -> str:
+        """AP data-storage key for the persisted bolts/traps-applied checkpoint,
+        scoped per team+slot so it survives client process restarts."""
+        return f"racsm_filler_applied_{self.team}_{self.slot}"
 
     def _checked_location_names(self) -> set[str]:
         id_to_name = {v: k for k, v in self._location_name_to_id.items()}
@@ -214,6 +232,26 @@ class RACContext(
             ))
             if not self.pine_connected:
                 asyncio.create_task(self._attempt_pine_connect(), name="PCSX2 PINE connect")
+            # Fetch the persisted filler-applied checkpoint from the AP server
+            # (see _filler_applied_key/_filler_checkpoint_synced). team/slot
+            # are only known now that the base handler above has set them, so
+            # this can't be registered any earlier than here. set_notify keeps
+            # it up to date for the rest of this connection; the explicit Get
+            # is needed because set_notify's own Get/SetNotify batch already
+            # fired inside super().on_package() before this key existed.
+            self.set_notify(self._filler_applied_key())
+            asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [self._filler_applied_key()]}]))
+            return
+
+        if cmd in ("Retrieved", "SetReply") and not self._filler_checkpoint_synced:
+            key = self._filler_applied_key()
+            if key in self.stored_data:
+                checkpoint = min(int(self.stored_data[key] or 0), len(self.items_received))
+                self._processed_item_count = checkpoint
+                self._processed_trap_count = checkpoint
+                self._filler_checkpoint_synced = True
+                self._pending_item_apply = True
+                asyncio.create_task(self._apply_received_items())
             return
 
         if cmd == "ReceivedItems":
@@ -221,10 +259,12 @@ class RACContext(
                 # Full resync (initial connect or reconnect). The base handler
                 # just rebuilt items_received from scratch with the player's
                 # entire history — none of these are newly received this
-                # session, so baseline the one-shot-effect counters past them
-                # to avoid replaying old notifications/traps that already fired.
+                # session, so baseline the notification index past them to
+                # avoid replaying old notifications. Bolts/traps are NOT
+                # baselined here — _filler_checkpoint_synced gates their
+                # granting until the real server-persisted checkpoint (above)
+                # arrives, instead of guessing.
                 self._notification_item_index = len(self.items_received)
-                self._processed_trap_count = len(self.items_received)
             checked = self._checked_location_names()
             asyncio.create_task(self._guarded_wiring_call(
                 lambda: self._wiring.on_ap_received_items(checked)

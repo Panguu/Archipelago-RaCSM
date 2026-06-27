@@ -41,11 +41,22 @@ TRAP_DURATIONS: dict[str, float] = {
 
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
 
+# Per-trap-name bookkeeping so repeated activations of the same trap stack
+# (extend the revert deadline) instead of racing independent timers, where
+# the first trap's revert would fire early and cancel the effect while a
+# later-activated copy is still supposed to be running.
+_active_deadlines: dict[str, float] = {}
+_revert_handles: dict[str, asyncio.TimerHandle] = {}
+
 
 # Activation
 
 def activate_trap(pine: Pine, trap_name: str) -> None:
     """Activate a trap by name and schedule it to automatically revert.
+
+    A trap activated again while still active extends its revert deadline by
+    another full duration (e.g. two Feverdream traps in a row keep the effect
+    active for 140s total) rather than reverting at the first trap's deadline.
 
     Unknown/unimplemented traps (e.g. Reset Level) are silently ignored.
     """
@@ -53,10 +64,25 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     if duration is None:
         return
 
+    loop = asyncio.get_event_loop()
+    now = loop.time()
+    new_deadline = max(_active_deadlines.get(trap_name, now), now) + duration
+    _active_deadlines[trap_name] = new_deadline
+
+    existing_handle = _revert_handles.pop(trap_name, None)
+    if existing_handle is not None:
+        existing_handle.cancel()
+
     if trap_name in _DIRECT_ADDRESSES:
         address = _DIRECT_ADDRESSES[trap_name]
         pine.write_int8(address, 1)
-        asyncio.get_event_loop().call_later(duration, lambda: pine.write_int8(address, 0))
+
+        def _revert() -> None:
+            _active_deadlines.pop(trap_name, None)
+            _revert_handles.pop(trap_name, None)
+            pine.write_int8(address, 0)
+
+        _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
         return
 
     bit = _CHEAT_BITS.get(trap_name)
@@ -66,7 +92,9 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     pine.write_int8(CHEATS, current | bit)
 
     def _revert() -> None:
+        _active_deadlines.pop(trap_name, None)
+        _revert_handles.pop(trap_name, None)
         latest = pine.read_int8(CHEATS)
         pine.write_int8(CHEATS, latest & ~bit)
 
-    asyncio.get_event_loop().call_later(duration, _revert)
+    _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)

@@ -169,14 +169,34 @@ class InventoryMixin:
             # is_picking_up — otherwise a trap received mid-pickup-animation
             # sits pending indefinitely (the post-pickup retry path doesn't
             # re-check for new bolts/traps).
-            self._grant_new_bolt_items()
-            self._grant_new_trap_items()
+            if self._filler_checkpoint_synced:
+                self._grant_new_bolt_items()
+                self._grant_new_trap_items()
+                await self._persist_filler_checkpoint()
             if self._wiring.is_picking_up:
                 self._pending_item_apply = True
                 return
             await loop.run_in_executor(None, self._apply_world_states_sync)
         self._show_new_item_notifications()
         self._pending_item_apply = False
+
+    async def _persist_filler_checkpoint(self) -> None:
+        """Persist how far into items_received bolts/traps have been granted,
+        so a client restart can resume from here instead of re-granting
+        everything or losing track of what's actually been applied (see
+        _filler_applied_key/_filler_checkpoint_synced in context.py).
+
+        "max" rather than "replace" guards against this client racing a
+        slightly-behind stale read of its own previous checkpoint.
+        """
+        checkpoint = max(self._processed_item_count, self._processed_trap_count)
+        await self.send_msgs([{
+            "cmd": "Set",
+            "key": self._filler_applied_key(),
+            "default": 0,
+            "want_reply": False,
+            "operations": [{"operation": "max", "value": checkpoint}],
+        }])
 
     # Rebuild from received AP items
 
