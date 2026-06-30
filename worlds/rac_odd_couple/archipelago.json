@@ -1,0 +1,9 @@
+{
+  "compatible_version": 7,
+  "version": 7,
+  "game": "Ratchet & Clank: Odd Couple",
+  "world_version": "0.0.1",
+  "authors": [
+    "Pangu"
+  ]
+}
