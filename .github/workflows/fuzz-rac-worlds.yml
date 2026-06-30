@@ -1,20 +1,28 @@
-name: Fuzz RaC Size Matters
+name: Fuzz RaC Worlds
 
 on:
   pull_request:
     paths:
       - 'worlds/rac_size_matters/**'
+      - 'worlds/rac_odd_couple/**'
       - 'fuzz.py'
       - 'hooks/**'
-      - '.github/workflows/fuzz-rac-size-matters.yml'
+      - '.github/workflows/fuzz-rac-worlds.yml'
   workflow_dispatch:
     inputs:
+      world:
+        description: "World to fuzz"
+        required: true
+        type: choice
+        options:
+          - rac_size_matters
+          - rac_odd_couple
       runs:
         description: "Number of fuzz runs per hook"
         required: false
         default: "150"
       pr_number:
-        description: "Optional PR number to post the results comment to (leave blank to only get a job summary)"
+        description: "Optional PR number to post results to (leave blank for job summary only)"
         required: false
 
 permissions:
@@ -22,10 +30,53 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: "fuzz-rac-size-matters-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}"
+  group: "fuzz-rac-worlds-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}"
   cancel-in-progress: true
 
 jobs:
+  detect-worlds:
+    runs-on: ubuntu-latest
+    outputs:
+      worlds: ${{ steps.detect.outputs.worlds }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed worlds
+        id: detect
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            worlds='["${{ github.event.inputs.world }}"]'
+          else
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            changed=$(git diff --name-only "$BASE" "$HEAD")
+
+            worlds_arr=()
+
+            # fuzz infrastructure changes affect all worlds
+            if echo "$changed" | grep -qE '^(fuzz\.py|hooks/)'; then
+              worlds_arr=("rac_size_matters" "rac_odd_couple")
+            else
+              if echo "$changed" | grep -q '^worlds/rac_size_matters/'; then
+                worlds_arr+=("rac_size_matters")
+              fi
+              if echo "$changed" | grep -q '^worlds/rac_odd_couple/'; then
+                worlds_arr+=("rac_odd_couple")
+              fi
+            fi
+
+            if [[ ${#worlds_arr[@]} -eq 0 ]]; then
+              worlds='[]'
+            else
+              worlds=$(printf '%s\n' "${worlds_arr[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            fi
+          fi
+          echo "worlds=$worlds" >> "$GITHUB_OUTPUT"
+          echo "Worlds to fuzz: $worlds"
+
   discover-hooks:
     runs-on: ubuntu-latest
     outputs:
@@ -42,11 +93,13 @@ jobs:
           echo "hooks=$hooks" >> "$GITHUB_OUTPUT"
 
   fuzz:
-    needs: discover-hooks
+    needs: [detect-worlds, discover-hooks]
+    if: needs.detect-worlds.outputs.worlds != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        world: ${{ fromJson(needs.detect-worlds.outputs.worlds) }}
         hook: ${{ fromJson(needs.discover-hooks.outputs.hooks) }}
     steps:
       - name: Checkout repository
@@ -62,15 +115,16 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-      - name: Run fuzz hook ${{ matrix.hook }}
+      - name: Run fuzz hook ${{ matrix.hook }} against ${{ matrix.world }}
         id: run_fuzz
         shell: bash
         env:
           HOOK: ${{ matrix.hook }}
+          WORLD: ${{ matrix.world }}
           RUNS: ${{ github.event.inputs.runs || '150' }}
         run: |
           set +e
-          python fuzz.py -g rac_size_matters -r "$RUNS" -j 4 -t 30 \
+          python fuzz.py -g "$WORLD" -r "$RUNS" -j 4 -t 30 \
             --hook "hooks.${HOOK}:Hook" --dump-ignored
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           set -e
@@ -80,6 +134,7 @@ jobs:
         shell: bash
         env:
           HOOK: ${{ matrix.hook }}
+          WORLD: ${{ matrix.world }}
           EXIT_CODE: ${{ steps.run_fuzz.outputs.exit_code }}
         run: |
           python3 - <<'EOF'
@@ -87,6 +142,7 @@ jobs:
           import os
 
           hook = os.environ["HOOK"]
+          world = os.environ["WORLD"]
           exit_code = os.environ["EXIT_CODE"]
           report_path = "fuzz_output/report.json"
 
@@ -97,7 +153,7 @@ jobs:
               with open(report_path, encoding="utf-8") as fd:
                   report = json.load(fd)
               stats = report.get("stats", stats)
-              errors = report.get("errors", {}).get("rac_size_matters", {})
+              errors = report.get("errors", {}).get(world, {})
 
           ok = exit_code == "0"
           icon = "✅" if ok else "❌"
@@ -123,8 +179,8 @@ jobs:
           lines.append("")
           lines.append("</details>")
 
-          os.makedirs("fragments", exist_ok=True)
-          with open(f"fragments/{hook}.md", "w", encoding="utf-8") as fd:
+          os.makedirs(f"fragments/{world}", exist_ok=True)
+          with open(f"fragments/{world}/{hook}.md", "w", encoding="utf-8") as fd:
               fd.write("\n".join(lines))
           EOF
 
@@ -132,12 +188,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fuzz-fragment-${{ matrix.hook }}
+          name: fuzz-fragment-${{ matrix.world }}-${{ matrix.hook }}
           path: fragments/
 
   comment:
-    needs: fuzz
-    if: always()
+    needs: [detect-worlds, fuzz]
+    if: always() && needs.detect-worlds.outputs.worlds != '[]'
     runs-on: ubuntu-latest
     steps:
       - name: Download all hook fragments
@@ -147,22 +203,25 @@ jobs:
           path: fragments
           merge-multiple: true
 
-      - name: Assemble PR comment body
+      - name: Assemble comment body per world
         shell: bash
         run: |
-          {
-            echo "<!-- fuzz-results-rac_size_matters -->"
-            echo "## Fuzz results: rac_size_matters"
-            echo ""
-            echo "Each section below corresponds to one fuzz hook run against \`rac_size_matters\`."
-            echo ""
-            for f in $(ls fragments/*.md | sort); do
-              cat "$f"
+          for world_dir in fragments/*/; do
+            world=$(basename "$world_dir")
+            {
+              echo "<!-- fuzz-results-${world} -->"
+              echo "## Fuzz results: ${world}"
               echo ""
-            done
-          } > comment_body.md
-          cat comment_body.md
-          cat comment_body.md >> "$GITHUB_STEP_SUMMARY"
+              echo "Each section below corresponds to one fuzz hook run against \`${world}\`."
+              echo ""
+              for f in $(ls "${world_dir}"*.md 2>/dev/null | sort); do
+                cat "$f"
+                echo ""
+              done
+            } > "comment_body_${world}.md"
+            cat "comment_body_${world}.md"
+            cat "comment_body_${world}.md" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Determine target PR number
         id: target
@@ -174,17 +233,17 @@ jobs:
           fi
           echo "number=$number" >> "$GITHUB_OUTPUT"
 
-      - name: Post or update PR comment
+      - name: Post or update PR comments
         if: steps.target.outputs.number != ''
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ steps.target.outputs.number }}
+          WORLDS: ${{ needs.detect-worlds.outputs.worlds }}
         with:
           script: |
             const fs = require('fs');
-            const body = fs.readFileSync('comment_body.md', 'utf8');
-            const marker = '<!-- fuzz-results-rac_size_matters -->';
             const issue_number = parseInt(process.env.PR_NUMBER, 10);
+            const worlds = JSON.parse(process.env.WORLDS);
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -192,20 +251,25 @@ jobs:
               issue_number,
             });
 
-            const existing = comments.find(c => c.body.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number,
-                body,
-              });
+            for (const world of worlds) {
+              const commentFile = `comment_body_${world}.md`;
+              if (!fs.existsSync(commentFile)) continue;
+              const body = fs.readFileSync(commentFile, 'utf8');
+              const marker = `<!-- fuzz-results-${world} -->`;
+              const existing = comments.find(c => c.body.includes(marker));
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number,
+                  body,
+                });
+              }
             }

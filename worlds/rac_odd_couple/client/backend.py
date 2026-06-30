@@ -120,6 +120,23 @@ class OddCoupleServer:
                 self.end_headers()
                 self.wfile.write(data)
 
+            def _send_package_file(self, path: str, content_type: str) -> None:
+                # Frontend assets ship inside this world's package, which may be a
+                # real directory (dev checkout) or a zipimport-loaded .apworld - a
+                # plain open() can't read the latter, since __file__ there is a
+                # virtual path into the zip. __loader__.get_data() uses the same
+                # path convention __file__ does and works for both cases.
+                try:
+                    data = __loader__.get_data(path)
+                except OSError:
+                    self._send_text(404, "Not found")
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
             def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
                 parsed = urlparse(self.path)
                 path, query = parsed.path, parse_qs(parsed.query)
@@ -144,7 +161,7 @@ class OddCoupleServer:
 
                 rel = path.lstrip("/") or "index.html"
                 content_type = _CONTENT_TYPES.get(os.path.splitext(rel)[1], "application/octet-stream")
-                self._send_file(os.path.join(FRONTEND_DIR, rel), content_type)
+                self._send_package_file(os.path.join(FRONTEND_DIR, rel), content_type)
 
             def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
                 length = int(self.headers.get("Content-Length", 0))
