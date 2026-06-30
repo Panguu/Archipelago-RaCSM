@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Ratchet &amp; Clank: The Odd Couple</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+</head>
+<body>
+  <header>
+    <h1>Ratchet &amp; Clank: The Odd Couple</h1>
+    <div class="controls">
+      <span id="conn-status" class="status">connecting...</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="player-container">
+      <div id="player-wrapper"></div>
+      <div id="click-blocker"></div>
+
+      <button id="items-toggle" type="button">Items</button>
+      <aside id="items-panel" class="hidden">
+        <h2>Unlocked</h2>
+        <ul id="items-list"></ul>
+      </aside>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

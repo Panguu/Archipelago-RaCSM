@@ -1,8 +1,15 @@
-name: Build and Release RaC Size Matters APWorld
+name: Build and Release RaC APWorld
 
 on:
   workflow_dispatch:
     inputs:
+      world:
+        description: "World to build"
+        required: true
+        type: choice
+        options:
+          - rac_size_matters
+          - rac_odd_couple
       prerelease:
         description: "Is this a pre-release?"
         type: boolean
@@ -12,13 +19,49 @@ on:
         description: "Optional exact version (leave blank to auto-generate)"
         required: false
 
+permissions:
+  contents: read
+
 concurrency:
-  group: "build-release-rac-size-matters"
+  group: "build-release-${{ github.event.inputs.world }}"
   cancel-in-progress: false
 
 jobs:
-  build:
+  config:
     runs-on: ubuntu-latest
+    if: github.actor == github.repository_owner
+    outputs:
+      world_folder: ${{ steps.set.outputs.world_folder }}
+      apworld_file: ${{ steps.set.outputs.apworld_file }}
+      game_name: ${{ steps.set.outputs.game_name }}
+      tag_prefix: ${{ steps.set.outputs.tag_prefix }}
+      display_name: ${{ steps.set.outputs.display_name }}
+    steps:
+      - name: Set world config
+        id: set
+        shell: bash
+        run: |
+          case "${{ github.event.inputs.world }}" in
+            rac_size_matters)
+              echo "world_folder=worlds/rac_size_matters"   >> "$GITHUB_OUTPUT"
+              echo "apworld_file=rac_size_matters.apworld"  >> "$GITHUB_OUTPUT"
+              echo "game_name=Ratchet & Clank: Size Matters" >> "$GITHUB_OUTPUT"
+              echo "tag_prefix=rac-size-matters/v"          >> "$GITHUB_OUTPUT"
+              echo "display_name=RaC Size Matters"          >> "$GITHUB_OUTPUT"
+              ;;
+            rac_odd_couple)
+              echo "world_folder=worlds/rac_odd_couple"                      >> "$GITHUB_OUTPUT"
+              echo "apworld_file=rac_odd_couple.apworld"                     >> "$GITHUB_OUTPUT"
+              echo "game_name=Ratchet & Clank: Size Matters - Odd Couple"   >> "$GITHUB_OUTPUT"
+              echo "tag_prefix=rac-odd-couple/v"                             >> "$GITHUB_OUTPUT"
+              echo "display_name=RaC Odd Couple"                             >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+  build:
+    needs: config
+    runs-on: ubuntu-latest
+    if: github.actor == github.repository_owner
 
     outputs:
       branch: ${{ steps.branch.outputs.branch }}
@@ -50,20 +93,30 @@ jobs:
           pip install pytest pytest-xdist
 
       - name: Run tests
-        run: pytest worlds/rac_size_matters/test -n auto
+        run: pytest ${{ needs.config.outputs.world_folder }}/test -n auto
 
-      - name: Build .apworld for rac_size_matters
+      - name: Build .apworld
         shell: bash
+        env:
+          WORLD_NAME: ${{ github.event.inputs.world }}
+          WORLD_FOLDER: ${{ needs.config.outputs.world_folder }}
+          APWORLD_FILE: ${{ needs.config.outputs.apworld_file }}
+          GAME_NAME: ${{ needs.config.outputs.game_name }}
         run: |
-          echo "Building rac_size_matters.apworld..."
+          echo "Building ${APWORLD_FILE}..."
           python3 - <<'EOF'
           import fnmatch, json, sys, os, zipfile
           sys.path.insert(0, os.path.abspath("."))
           from worlds import Files
           from Utils import Version
 
-          def load_ignore_patterns(world_folder):
-              ignore_path = os.path.join(world_folder, "apworld.ignore")
+          world_name   = os.environ["WORLD_NAME"]
+          world_folder = os.environ["WORLD_FOLDER"]
+          apworld_file = os.environ["APWORLD_FILE"]
+          game_name    = os.environ["GAME_NAME"]
+
+          def load_ignore_patterns(folder):
+              ignore_path = os.path.join(folder, "apworld.ignore")
               patterns = []
               if os.path.isfile(ignore_path):
                   with open(ignore_path, encoding="utf-8") as f:
@@ -78,11 +131,6 @@ jobs:
 
           class MyWorldContainer(Files.APWorldContainer):
               def get_manifest(self):
-                  # Start from the project's own archipelago.json (authors,
-                  # etc.) instead of the bare manifest APWorldContainer would
-                  # otherwise generate from scratch, then layer on the fields
-                  # the build computes (version gets overwritten again later
-                  # by the release job once the real semver is known).
                   manifest_path = os.path.join(self.world_folder, "archipelago.json")
                   with open(manifest_path, encoding="utf-8") as f:
                       manifest = json.load(f)
@@ -93,7 +141,6 @@ jobs:
                   super().write_contents(opened_zipfile)
                   patterns = load_ignore_patterns(self.world_folder)
                   for root, dirs, files in os.walk(self.world_folder):
-                      # Prune ignored directories in-place so os.walk doesn't descend into them.
                       dirs[:] = [d for d in dirs if not is_ignored(d, patterns)]
                       for file in files:
                           if file.endswith(".pyc") or file == "archipelago.json":
@@ -101,32 +148,29 @@ jobs:
                           if is_ignored(file, patterns):
                               continue
                           full_path = os.path.join(root, file)
-                          rel_path = os.path.relpath(full_path, self.world_folder)
-                          zip_path = os.path.join("rac_size_matters", rel_path).replace("\\", "/")
+                          rel_path  = os.path.relpath(full_path, self.world_folder)
+                          zip_path  = os.path.join(world_name, rel_path).replace("\\", "/")
                           opened_zipfile.write(full_path, zip_path)
 
-          src_folder = "worlds/rac_size_matters"
-          dest_file = "rac_size_matters.apworld"
-
-          world = MyWorldContainer(dest_file)
-          world.game = "Ratchet & Clank: Size Matters"
-          world.world_folder = src_folder
-          world.world_version = Version(1, 0, 0)
+          world = MyWorldContainer(apworld_file)
+          world.game         = game_name
+          world.world_folder = world_folder
+          world.world_version      = Version(1, 0, 0)
           world.minimum_ap_version = Version(0, 5, 0)
-
           world.write()
-          print(f"Successfully created {dest_file}")
+          print(f"Successfully created {apworld_file}")
           EOF
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rac_size_matters.apworld
-          path: ./rac_size_matters.apworld
+          name: ${{ needs.config.outputs.apworld_file }}
+          path: ./${{ needs.config.outputs.apworld_file }}
 
   release:
-    needs: build
+    needs: [config, build]
     runs-on: ubuntu-latest
+    if: github.actor == github.repository_owner
     permissions:
       contents: write
 
@@ -140,7 +184,7 @@ jobs:
       - name: Download built artifact
         uses: actions/download-artifact@v4
         with:
-          name: rac_size_matters.apworld
+          name: ${{ needs.config.outputs.apworld_file }}
           path: .
 
       - name: Install jq
@@ -149,6 +193,8 @@ jobs:
       - name: Determine next semantic version
         id: semver
         shell: bash
+        env:
+          TAG_PREFIX: ${{ needs.config.outputs.tag_prefix }}
         run: |
           set -e
           branch="${{ needs.build.outputs.branch }}"
@@ -156,11 +202,11 @@ jobs:
 
           echo "Determining next semantic version for branch: $branch"
 
-          latest_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | head -n 1 || true)
-          [[ -z "$latest_tag" ]] && latest_tag="rac-size-matters-v0.0.0"
+          latest_tag=$(git tag --sort=-v:refname | grep -E "^${TAG_PREFIX}" | head -n 1 || true)
+          [[ -z "$latest_tag" ]] && latest_tag="${TAG_PREFIX}0.0.0"
           echo "Latest tag: $latest_tag"
 
-          tag_stripped="${latest_tag#rac-size-matters-v}"
+          tag_stripped="${latest_tag#"${TAG_PREFIX}"}"
           IFS='.' read -r major minor patch <<< "$tag_stripped"
           major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
 
@@ -170,16 +216,14 @@ jobs:
           if [[ -n "$custom_version" ]]; then
               custom_version="$(echo -n "$custom_version" | xargs)"
               echo "Custom version provided: $custom_version"
-
               if [[ "$custom_version" == *"-pre" ]]; then
                   is_pre="true"
               else
                   is_pre="false"
               fi
-
               echo "version=$custom_version" >> "$GITHUB_OUTPUT"
-              echo "is_pre=$is_pre" >> "$GITHUB_OUTPUT"
-              echo "branch=$branch" >> "$GITHUB_OUTPUT"
+              echo "is_pre=$is_pre"          >> "$GITHUB_OUTPUT"
+              echo "branch=$branch"          >> "$GITHUB_OUTPUT"
               exit 0
           fi
 
@@ -196,11 +240,14 @@ jobs:
 
           echo "Next version: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-          echo "is_pre=$is_pre" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch"   >> "$GITHUB_OUTPUT"
+          echo "is_pre=$is_pre"   >> "$GITHUB_OUTPUT"
 
       - name: Update archipelago.json manifest version
         shell: bash
+        env:
+          APWORLD_FILE: ${{ needs.config.outputs.apworld_file }}
+          WORLD_NAME: ${{ github.event.inputs.world }}
         run: |
           set -e
           version="${{ steps.semver.outputs.version }}"
@@ -208,17 +255,17 @@ jobs:
           version="${version%-pre}"
 
           mkdir -p tmp_unzip
-          unzip -o -q rac_size_matters.apworld -d tmp_unzip
+          unzip -o -q "$APWORLD_FILE" -d tmp_unzip
 
           jq --arg world_version "$version" \
              '.world_version = $world_version' \
              tmp_unzip/archipelago.json > tmp_unzip/archipelago.json.tmp
           mv tmp_unzip/archipelago.json.tmp tmp_unzip/archipelago.json
 
-          find tmp_unzip/rac_size_matters -type f -name 'archipelago.json' -exec rm {} \;
+          find "tmp_unzip/${WORLD_NAME}" -type f -name 'archipelago.json' -exec rm {} \;
 
           cd tmp_unzip
-          zip -qr ../rac_size_matters.apworld *
+          zip -qr "../${APWORLD_FILE}" *
           cd ..
 
           echo "Updated archipelago.json with version $version"
@@ -226,9 +273,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: rac_size_matters.apworld
-          tag_name: rac-size-matters-v${{ steps.semver.outputs.version }}
-          name: "RaC Size Matters APWorld v${{ steps.semver.outputs.version }}"
+          files: ${{ needs.config.outputs.apworld_file }}
+          tag_name: ${{ needs.config.outputs.tag_prefix }}${{ steps.semver.outputs.version }}
+          name: "${{ needs.config.outputs.display_name }} APWorld v${{ steps.semver.outputs.version }}"
           body: "Generating release notes..."
           prerelease: ${{ steps.semver.outputs.is_pre == 'true' }}
           target_commitish: ${{ needs.build.outputs.branch }}
@@ -237,26 +284,30 @@ jobs:
 
       - name: Generate release notes
         shell: bash
+        env:
+          TAG_PREFIX: ${{ needs.config.outputs.tag_prefix }}
+          WORLD_FOLDER: ${{ needs.config.outputs.world_folder }}
+          DISPLAY_NAME: ${{ needs.config.outputs.display_name }}
         run: |
           set -e
           repo_url="https://github.com/${{ github.repository }}"
           branch="${{ steps.semver.outputs.branch }}"
-          new_tag="rac-size-matters-v${{ steps.semver.outputs.version }}"
+          new_tag="${TAG_PREFIX}${{ steps.semver.outputs.version }}"
 
           git fetch --tags
 
           if [[ "$branch" == "main" ]]; then
-            prev_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | grep -v -- '-pre' | grep -v "^$new_tag\$" | head -n 1 || true)
+            prev_tag=$(git tag --sort=-v:refname | grep -E "^${TAG_PREFIX}" | grep -v -- '-pre' | grep -v "^${new_tag}\$" | head -n 1 || true)
           else
-            prev_tag=$(git tag --sort=-v:refname | grep -E '^rac-size-matters-v' | grep -v "^$new_tag\$" | head -n 1 || true)
+            prev_tag=$(git tag --sort=-v:refname | grep -E "^${TAG_PREFIX}" | grep -v "^${new_tag}\$" | head -n 1 || true)
           fi
 
           if [[ -z "$prev_tag" ]]; then
             changelog="${repo_url}/commits/${branch}"
-            commit_list=$(git log "$new_tag" --pretty=format:"- %s (%h)" -- "worlds/rac_size_matters/")
+            commit_list=$(git log "$new_tag" --pretty=format:"- %s (%h)" -- "${WORLD_FOLDER}/")
           else
             changelog="${repo_url}/compare/${prev_tag}...${new_tag}"
-            commit_list=$(git log "${prev_tag}..${new_tag}" --pretty=format:"- %s (%h)" -- "worlds/rac_size_matters/")
+            commit_list=$(git log "${prev_tag}..${new_tag}" --pretty=format:"- %s (%h)" -- "${WORLD_FOLDER}/")
           fi
 
           if [[ -z "$commit_list" ]]; then
@@ -264,7 +315,7 @@ jobs:
           fi
 
           cat <<EOF > release_notes.md
-          ## RaC Size Matters APWorld ${new_tag}
+          ## ${DISPLAY_NAME} APWorld ${new_tag}
 
           **Branch:** ${branch}
           **Date:** $(date -u +"%Y-%m-%d %H:%M UTC")
@@ -285,8 +336,9 @@ jobs:
 
       - name: Update GitHub Release with generated notes
         shell: bash
-        run: |
-          new_tag="rac-size-matters-v${{ steps.semver.outputs.version }}"
-          gh release edit "$new_tag" --notes-file release_notes.md
         env:
+          TAG_PREFIX: ${{ needs.config.outputs.tag_prefix }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          new_tag="${TAG_PREFIX}${{ steps.semver.outputs.version }}"
+          gh release edit "$new_tag" --notes-file release_notes.md
