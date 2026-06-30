@@ -93,7 +93,15 @@ jobs:
           pip install pytest pytest-xdist
 
       - name: Run tests
-        run: pytest ${{ needs.config.outputs.world_folder }}/test -n auto
+        shell: bash
+        run: |
+          set +e
+          pytest ${{ needs.config.outputs.world_folder }}/test -n auto
+          exit_code=$?
+          set -e
+          if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 5 ]; then
+            exit "$exit_code"
+          fi
 
       - name: Build .apworld
         shell: bash
