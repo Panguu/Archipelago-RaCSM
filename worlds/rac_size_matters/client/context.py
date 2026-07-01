@@ -136,6 +136,7 @@ class RACContext(
             self.pine, log=self._log,
             expected_game_id=EXPECTED_GAME_ID,
             on_wrong_game=self._on_wrong_game_detected,
+            pine_lock=self._pine_lock,
         )
 
     async def _guarded_wiring_call(self, fn: Callable[[], None]) -> None:
@@ -149,11 +150,17 @@ class RACContext(
         same "Connected" handler that calls this. A connection drop mid-call
         (for callers that do touch self.pine, e.g. reapply_inv) is still
         treated as a soft flag, not a crash, same as game_watcher's poll loop.
+
+        Runs fn() in-line rather than via run_in_executor — same reasoning as
+        PineMixin._attempt_pine_connect: a thread-pool worker stuck inside a
+        slow/timing-out PINE call would hold _pine_lock for the entire 5s
+        socket timeout, freezing every other PINE consumer (poll loop, vendor
+        sync, deathlink) behind it for that whole window. RAC3's equivalent
+        calls are all in-line on its single coroutine for the same reason.
         """
-        loop = asyncio.get_event_loop()
         async with self._pine_lock:
             try:
-                await loop.run_in_executor(None, fn)
+                fn()
             except Exception as exc:
                 # Not a full disconnect — GameWiring's own poll loop keeps running
                 # independently of pine_connected, so pickup detection isn't
@@ -167,6 +174,34 @@ class RACContext(
         """AP data-storage key for the persisted bolts/traps-applied checkpoint,
         scoped per team+slot so it survives client process restarts."""
         return f"racsm_filler_applied_{self.team}_{self.slot}"
+
+    def _qs_storage_key(self) -> str:
+        return f"racsm_quickselect_{self.team}_{self.slot}"
+
+    def _armour_slots_storage_key(self) -> str:
+        return f"racsm_armour_slots_{self.team}_{self.slot}"
+
+    async def _persist_quick_select(self, data: dict) -> None:
+        if self.slot is None:
+            return
+        await self.send_msgs([{
+            "cmd": "Set",
+            "key": self._qs_storage_key(),
+            "default": {},
+            "want_reply": False,
+            "operations": [{"operation": "replace", "value": data}],
+        }])
+
+    async def _persist_armour_slots(self, data: dict) -> None:
+        if self.slot is None:
+            return
+        await self.send_msgs([{
+            "cmd": "Set",
+            "key": self._armour_slots_storage_key(),
+            "default": {},
+            "want_reply": False,
+            "operations": [{"operation": "replace", "value": data}],
+        }])
 
     def _checked_location_names(self) -> set[str]:
         id_to_name = {v: k for k, v in self._location_name_to_id.items()}
@@ -220,6 +255,8 @@ class RACContext(
                 on_vendor_open     = lambda: asyncio.create_task(self._send_vendor_hints()),
                 on_vendor_close    = self._on_menu_close_for_armour_sets,
                 on_bonus_weapon_pickup = self._grant_random_bonus_item,
+                on_scripted_gadget_pickup = self._handle_scripted_gadget_pickup,
+                on_initial_load    = lambda: asyncio.create_task(self._send_playing_status()),
             )
             checked = self._checked_location_names()
             asyncio.create_task(self._guarded_wiring_call(
@@ -242,26 +279,50 @@ class RACContext(
                 # AP (re)connect — it's not something to persist and trust,
                 # it's something to always re-check and re-send on connect.
                 asyncio.create_task(self._send_map_page(self.current_planet))
-            # Fetch the persisted filler-applied checkpoint from the AP server
-            # (see _filler_applied_key/_filler_checkpoint_synced). team/slot
-            # are only known now that the base handler above has set them, so
-            # this can't be registered any earlier than here. set_notify keeps
-            # it up to date for the rest of this connection; the explicit Get
-            # is needed because set_notify's own Get/SetNotify batch already
-            # fired inside super().on_package() before this key existed.
-            self.set_notify(self._filler_applied_key())
-            asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [self._filler_applied_key()]}]))
+            # Wire save callbacks for quick select and armour slots so changes
+            # in-game are pushed to AP data storage immediately.
+            self._wiring.quick_select.on_save = (
+                lambda data: asyncio.create_task(self._persist_quick_select(data))
+            )
+            self._wiring.armour.on_slots_save = (
+                lambda data: asyncio.create_task(self._persist_armour_slots(data))
+            )
+            # Fetch persisted state from AP server. team/slot are only known now
+            # (after super().on_package() set them), so registration must happen here.
+            # set_notify keeps values current for the rest of the connection;
+            # the explicit Get is needed because the set_notify batch already
+            # fired before these keys were registered.
+            for key in (
+                self._filler_applied_key(),
+                self._qs_storage_key(),
+                self._armour_slots_storage_key(),
+            ):
+                self.set_notify(key)
+            asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [
+                self._filler_applied_key(),
+                self._qs_storage_key(),
+                self._armour_slots_storage_key(),
+            ]}]))
             return
 
-        if cmd in ("Retrieved", "SetReply") and not self._filler_checkpoint_synced:
-            key = self._filler_applied_key()
-            if key in self.stored_data:
-                checkpoint = min(int(self.stored_data[key] or 0), len(self.items_received))
-                self._processed_item_count = checkpoint
-                self._processed_trap_count = checkpoint
-                self._filler_checkpoint_synced = True
-                self._pending_item_apply = True
-                asyncio.create_task(self._apply_received_items())
+        if cmd in ("Retrieved", "SetReply") and self.slot is not None:
+            qs_key = self._qs_storage_key()
+            if qs_key in self.stored_data and isinstance(self.stored_data[qs_key], dict):
+                self._wiring.quick_select.load(self.stored_data[qs_key])
+            armour_key = self._armour_slots_storage_key()
+            if armour_key in self.stored_data and isinstance(self.stored_data[armour_key], dict):
+                self._wiring.armour.load_slots(self.stored_data[armour_key])
+                if self._wiring._initial_load_done:
+                    self._wiring.armour.restore_equipped_slots()
+            if not self._filler_checkpoint_synced:
+                key = self._filler_applied_key()
+                if key in self.stored_data:
+                    checkpoint = min(int(self.stored_data[key] or 0), len(self.items_received))
+                    self._processed_item_count = checkpoint
+                    self._processed_trap_count = checkpoint
+                    self._filler_checkpoint_synced = True
+                    self._pending_item_apply = True
+                    asyncio.create_task(self._apply_received_items())
             return
 
         if cmd == "ReceivedItems":

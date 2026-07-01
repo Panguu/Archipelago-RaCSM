@@ -199,7 +199,7 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.DREAMTIME_ENTER,          Rac5Planets.DREAMTIME,     True),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,      Rac5Planets.OUTPOST_OMEGA, True),
     (Rac5CutsceneLocations.CHALLAX_ENTER,            Rac5Planets.CHALLAX,       True),
-    (Rac5CutsceneLocations.DAYNI_MOON_ENTER,         Rac5Planets.DAYNI_MOON,    True),
+
     (Rac5CutsceneLocations.INSIDE_CLANK_ENTER,       Rac5Planets.INSIDE_CLANK,  True),
     (Rac5CutsceneLocations.QUODRONA_ENTER,           Rac5Planets.QUODRONA,      True),
 ]
@@ -281,11 +281,11 @@ _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
     ("concussion_gun",  3, Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK),
     ("concussion_gun",  2, Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE),
     ("bee_mine_glove",  1, Rac5VendorLocations.CHALLAX_BEE_WORKER),
-    ("agents_of_doom",  1, Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER),
+    ("agents_of_doom",  2, Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER),
     ("scorcher",        2, Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE),
     ("sniper_mine",     1, Rac5VendorLocations.QUODRONA_SNIPER_SPLIT),
-    ("shock_rocket",    1, Rac5VendorLocations.QUODRONA_SHOCK_LOCK),
-    ("shock_rocket",    2, Rac5VendorLocations.QUODRONA_SHOCK_AFTER),
+    ("shock_rocket",    3, Rac5VendorLocations.QUODRONA_SHOCK_LOCK),
+    ("shock_rocket",    1, Rac5VendorLocations.QUODRONA_SHOCK_AFTER),
 ]
 
 _ATTR_NAMES = ("mod_slot_one", "mod_slot_two", "mod_slot_three")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
@@ -29,9 +30,16 @@ class QuickSelectState(BaseState):
         self._snapshot: dict[str, int] = dict.fromkeys(QuickSelectStruct.SLOT_ORDER, 0)
         self._polling = False
         self._write_time: float = 0.0
+        self.on_save: Callable[[dict[str, int]], None] = lambda _: None
 
     def on_exit(self) -> None:
         self._stop_polling()
+
+    def load(self, data: dict[str, int]) -> None:
+        """Load a saved quick-select snapshot (e.g. from AP data storage)."""
+        for name in QuickSelectStruct.SLOT_ORDER:
+            if name in data:
+                self._snapshot[name] = int(data[name])
 
     # Starts frozen — polling only begins after zero() is called on first planet load.
     def _register_handlers(self) -> None:
@@ -68,6 +76,7 @@ class QuickSelectState(BaseState):
         instance = QuickSelectStruct.from_bytes(new_bytes)
         for name in QuickSelectStruct.SLOT_ORDER:
             self._snapshot[name] = getattr(instance, name)
+        self.on_save(dict(self._snapshot))
 
     def sync(self) -> None:
         instance = self.accessor.read_struct(QuickSelectStruct)
@@ -75,11 +84,13 @@ class QuickSelectState(BaseState):
             self._snapshot[name] = getattr(instance, name)
 
     def zero(self) -> None:
-        """Zero all slots in memory and snapshot, then start polling."""
+        """Zero all slots in memory, then start polling.
+
+        The in-memory snapshot is preserved so that a previously saved loadout
+        (restored via on_enter) can be written back by the following restore().
+        """
         self._write_time = time.monotonic()
         self.accessor.write_raw(QuickSelectStruct.BASE_ADDRESS, _ZERO_BYTES)
-        for name in QuickSelectStruct.SLOT_ORDER:
-            self._snapshot[name] = 0
         self._start_polling()
 
     def restore(self) -> None:

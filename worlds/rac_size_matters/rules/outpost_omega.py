@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..constants import (
     Rac5Gadgets,
+    Rac5Items,
     Rac5SkillPoints,
     Rac5SkyboardChallenges as RACSMSKY,
     Rac5TBolts,
@@ -28,6 +29,7 @@ def set_outpost_omega_rules(world: RACSizeMatterWorld) -> None:
 
     # Missions
     if world.options.all_cutscenes:
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER, player), _facility)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA, player), _facility)
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE, player), _facility)
