@@ -73,7 +73,7 @@ CUTSCENE_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Dreamtime"],     0x0001): Rac5CutsceneLocations.DREAMTIME_ENTER,
     (_ADDRS["Outpost Omega"], 0x0001): Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,
     (_ADDRS["Challax"],       0x0001): Rac5CutsceneLocations.CHALLAX_ENTER,
-    (_ADDRS["Dayni Moon"],    0x0001): Rac5CutsceneLocations.DAYNI_MOON_ENTER,
+
     (_ADDRS["Inside Clank"],  0x0001): Rac5CutsceneLocations.INSIDE_CLANK_ENTER,
     (_ADDRS["Quodrona"],      0x0001): Rac5CutsceneLocations.QUODRONA_ENTER,
 

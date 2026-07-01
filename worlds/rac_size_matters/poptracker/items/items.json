@@ -786,6 +786,13 @@
         "codes": "progressive_ryno,ryno",
         "inherit_codes": false,
         "name": "Progressive RYNO: 4"
+      },
+      {
+        "img": "images/items/RYNO.png",
+        "img_mods": "",
+        "codes": "progressive_ryno,ryno",
+        "inherit_codes": false,
+        "name": "Progressive RYNO: 5"
       }
     ]
   },

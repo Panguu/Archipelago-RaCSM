@@ -73,7 +73,7 @@ WEAPON_DATA: dict[str, WeaponData] = {
         is_projectile=False, classification=ItemClassification.progression, max_level=1, mod_count=0,
     ),
     Rac5WeaponKeys.RYNO: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
+        is_projectile=True, classification=ItemClassification.progression, max_level=5, mod_count=0,
     ),
 }
 

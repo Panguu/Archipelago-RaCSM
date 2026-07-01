@@ -158,8 +158,8 @@ WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
         Rac5WeaponMods.ACID_BOMB_GLOVE_MOD_EPOXY,
     ],
     Rac5Weapons.AGENTS_OF_DOOM: [
-        Rac5WeaponMods.AGENTS_OF_DOOM_MOD_LAUNCHER,
         Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
+        Rac5WeaponMods.AGENTS_OF_DOOM_MOD_LAUNCHER,
     ],
     Rac5Weapons.BEE_MINE_GLOVE: [
         Rac5WeaponMods.BEE_MINE_GLOVE_MOD_WORKER,
@@ -170,9 +170,9 @@ WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
         Rac5WeaponMods.STATIC_BARRIER_MOD_MIRAGE,
     ],
     Rac5Weapons.SHOCK_ROCKET: [
-        Rac5WeaponMods.SHOCK_ROCKET_MOD_LOCK_ON,
         Rac5WeaponMods.SHOCK_ROCKET_MOD_AFTER_SHOCK,
         Rac5WeaponMods.SHOCK_ROCKET_MOD_MULTI_LAUNCHER,
+        Rac5WeaponMods.SHOCK_ROCKET_MOD_LOCK_ON,
     ],
     Rac5Weapons.SNIPER_MINE: [
         Rac5WeaponMods.SNIPER_MINE_MOD_SPLIT_BEAM,

@@ -45,7 +45,6 @@ class Rac5CutsceneLocations:
     CHALLAX_CLANK  = "Challax: Destroy the space fortress (Giant Clank)"
 
     # Dayni Moon
-    DAYNI_MOON_ENTER  = "Dayni Moon: Enter Planet"
     DAYNI_MOON_FIGHT1 = "Dayni Moon: Luna fight pt 1"
     DAYNI_MOON_FIGHT2 = "Dayni Moon: Luna fight pt 2"
     DAYNI_MOON        = "Dayni Moon: Catch Luna"

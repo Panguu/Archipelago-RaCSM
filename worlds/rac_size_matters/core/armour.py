@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, IntFlag
 from typing import NamedTuple
@@ -273,10 +274,19 @@ class ArmourState(BaseState):
         self.equipped: dict[str, int]  = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
         # Stable snapshot — only updated by freeze_slots()/sync_slots()/sync().
         self._stable_slots: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
+        self.on_slots_save: Callable[[dict[str, int]], None] = lambda _: None
         self.sets_unlocked: dict[str, bool]    = dict.fromkeys(ArmourStruct.SET_FIELDS, False)
         self.sets_bitmask: dict[str, int]      = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
         self.world_collected_armour: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
         self.ap_armour: dict[str, int]                 = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
+
+    def load_slots(self, data: dict[str, int]) -> None:
+        """Load saved slot values (e.g. from AP data storage)."""
+        for name in ArmourStruct.SLOT_FIELDS:
+            if name in data:
+                val = int(data[name])
+                self.equipped[name]      = val
+                self._stable_slots[name] = val
 
     def _register_handlers(self) -> None:
         self.accessor.on_struct_change(ArmourStruct, self._on_armour_change)
@@ -286,12 +296,15 @@ class ArmourState(BaseState):
 
     def _on_armour_change(self, _address: int, new_bytes: bytes) -> None:
         instance = ArmourStruct.from_bytes(new_bytes)
+        old_slots = dict(self.equipped)
         for name in ArmourStruct.SLOT_FIELDS:
             self.equipped[name] = getattr(instance, name)
         for name in ArmourStruct.SET_FIELDS:
             raw = getattr(instance, name)
             self.sets_bitmask[name]  = raw
             self.sets_unlocked[name] = bool(raw)
+        if self.equipped != old_slots:
+            self.on_slots_save(dict(self.equipped))
 
     def sync(self) -> None:
         instance = self.accessor.read_struct(ArmourStruct)
@@ -321,6 +334,7 @@ class ArmourState(BaseState):
         for i, name in enumerate(ArmourStruct.SLOT_FIELDS):
             self.equipped[name]      = raw[i]
             self._stable_slots[name] = raw[i]
+        self.on_slots_save(dict(self._stable_slots))
 
     def freeze_slots(self) -> None:
         """Snapshot equipped into _stable_slots from the live dict, not from memory.
