@@ -52,7 +52,7 @@ jobs:
             rac_odd_couple)
               echo "world_folder=worlds/rac_odd_couple"                      >> "$GITHUB_OUTPUT"
               echo "apworld_file=rac_odd_couple.apworld"                     >> "$GITHUB_OUTPUT"
-              echo "game_name=Ratchet & Clank: Size Matters - Odd Couple"   >> "$GITHUB_OUTPUT"
+              echo "game_name=Ratchet & Clank: The Odd Couple"              >> "$GITHUB_OUTPUT"
               echo "tag_prefix=rac-odd-couple/v"                             >> "$GITHUB_OUTPUT"
               echo "display_name=RaC Odd Couple"                             >> "$GITHUB_OUTPUT"
               ;;
