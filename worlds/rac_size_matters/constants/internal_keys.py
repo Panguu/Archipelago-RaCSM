@@ -6,6 +6,10 @@ player-facing display names in Rac5Items. Kept import-free so both
 core/weapons.py and items.py can depend on it without a circular import.
 """
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
 class Rac5WeaponKeys:
     LACERATOR = "lacerator"
     CONCUSSION_GUN = "concussion_gun"
@@ -22,6 +26,7 @@ class Rac5WeaponKeys:
     RYNO = "ryno"
 
 
+@dataclass(frozen=True)
 class Rac5GadgetKeys:
     HYPERSHOT = "hypershot"
     SPROUT_O_MATIC = "sprout_o_matic"

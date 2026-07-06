@@ -1,7 +1,12 @@
 """This module contains string constants used for planets"""
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
 class Rac5Planets:
     """String constants for each planet"""
+
     POKITARU = "Pokitaru"
     RYLLUS = "Ryllus"
     KALIDON = "Kalidon"

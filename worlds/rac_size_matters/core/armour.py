@@ -1,66 +1,41 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, IntFlag
 from typing import NamedTuple
 
 from ..constants import (
+    Rac5ArmourSet,
     Rac5ClankChallenges as RACSMCLANK,
     Rac5Locations,
     Rac5Planets,
     Rac5SkyboardChallenges as RACSMSKY,
-    Rac5ArmourSet,
 )
 from ..interface_orchestrator.memory.accessor import MemoryAccessor
 from ..interface_orchestrator.state.base_state import BaseState
 from ..interface_orchestrator.storage.local import LocalStorage
 from ..interface_orchestrator.structs.address_map import AddressMap
+from ..pypine import Pine
 from .structs.pickups import ArmourSetCollectedStruct, ArmourStruct
 
 # Armour address resolvers
+_BOOTS_MASK = 0xF0  # module-level, not inside the enum body
 
-class ArmourAddresses:
+
+class ArmourSet(IntEnum):
     """
-    Armour Address Struct
-    This is the layout of Armour in Static Memory
-    Slot Offsets are the currently equiped armour pieces
-    Set Offsets are the unlock addresses for the Armour
-    We only need one read and one write to handle these addresses as they are next to eachother in memory
+    Enum representing different armour sets in the game.
+    This is the value which is set in armour slots to represent what armour is currently equiped.
     """
 
-    _SLOT_OFFSETS: dict[str, int] = {
-        "chestplate":   0x00,
-        "helmet":       0x01,
-        "gloves_left":  0x02,
-        "gloves_right": 0x03,
-        "boots_left":   0x04,
-        "boots_right":  0x05,
-    }
-
-    _SET_OFFSETS: dict[str, int] = {
-        "wildfire":     0x06,
-        "sludge":       0x07,
-        "crystallix":   0x08,
-        "electroshock": 0x09,
-        "mega_bomb":    0x0A,
-        "hyperborean":  0x0B,
-        "chameleon":    0x0C,
-    }
-
-    def __init__(self, base: int) -> None:
-        self.base = base
-        for name, offset in {**self._SLOT_OFFSETS, **self._SET_OFFSETS}.items():
-            setattr(self, name, base + offset)
-
-    @property
-    def slots(self) -> dict[str, int]:
-        return {name: getattr(self, name) for name in self._SLOT_OFFSETS}
-
-    @property
-    def sets(self) -> dict[str, int]:
-        return {name: getattr(self, name) for name in self._SET_OFFSETS}
+    Wildfire = 1
+    Sludge = 2
+    Crystallix = 3
+    Electroshock = 4
+    MegaBomb = 5
+    Hyperborean = 6
+    Chameleon = 7
 
 
 class ArmourPiece(IntFlag):
@@ -71,67 +46,132 @@ class ArmourPiece(IntFlag):
     - Bit 2 (0x04): Gloves
     - Bit 4 (0x10): Boots (any value with bit 4 set is considered to have boots equipped)
     """
-    NONE       = 0
+
+    NONE = 0
     CHESTPLATE = 0x01
-    HELMET     = 0x02
-    GLOVES     = 0x04
+    HELMET = 0x02
+    GLOVES = 0x04
     # Boots changes: it's any value with bit 4 set, because the game treats left and
     # right boots as one piece, so any value with bit 4 set is considered equipped.
-    BOOTS      = 0x10
-    ALL        = 0x17
-
-
-@dataclass(frozen=True)
-class PlayerArmour:
-    """
-    Wrapper for armour piece bitmask.
-    This sets up named boolean properties for each piece and helper methods for working with the bitmask.
-    """
-    pieces: ArmourPiece
+    BOOTS = 0x10
+    ALL = 0x17
 
     @classmethod
-    def from_value(cls, value: int) -> PlayerArmour:
-        return cls(pieces=ArmourPiece(value))
+    def from_raw(cls, value: int) -> ArmourPiece:
+        """Normalize raw value of armour piece because boots are represented by any value with bit 4 set"""
+        normalized = value & 0x0F
+        if value & _BOOTS_MASK:
+            normalized |= cls.BOOTS
+        return cls(normalized)
 
-    @property
-    def chestplate(self) -> bool:
-        return ArmourPiece.CHESTPLATE in self.pieces
 
-    @property
-    def helmet(self) -> bool:
-        return ArmourPiece.HELMET in self.pieces
+class ArmourSlot:
+    """Descriptor for equiped armour slot"""
 
-    @property
-    def gloves(self) -> bool:
-        return ArmourPiece.GLOVES in self.pieces
+    def __init__(self, slot_name: str) -> None:
+        self.slot_name = slot_name
 
-    @property
-    def boots(self) -> bool:
-        return ArmourPiece.BOOTS in self.pieces
+    def _address(self, instance) -> int:
+        return instance.base + instance._SLOT_OFFSETS[self.slot_name]
 
-    def has(self, piece: ArmourPiece) -> bool:
-        return piece in self.pieces
+    def __get__(self, instance, owner) -> ArmourSet | None:
+        if instance is None:
+            return None
+        value = instance.pine.read_int8(instance._address(instance))
+        return ArmourSet(value)
 
-    def with_piece(self, piece: ArmourPiece) -> PlayerArmour:
-        return PlayerArmour(self.pieces | piece)
+    def __set__(self, instance, value) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(instance._address(instance), value)
 
-    def without_piece(self, piece: ArmourPiece) -> PlayerArmour:
-        return PlayerArmour(self.pieces & ~piece)
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(instance._address(instance), 0)
 
-    def to_value(self) -> int:
-        return int(self.pieces)
 
-    def __repr__(self) -> str:
-        return f"PlayerArmour({self.pieces!r})"
+class ArmourUnlock:
+    """Descriptor for unlocked armour slots"""
+
+    def __init__(self, slot_name: str) -> None:
+        self.slot_name = slot_name
+
+    def _address(self, instance) -> int:
+        return instance.base + instance._SLOT_OFFSETS[self.slot_name]
+
+    def __get__(self, instance, owner) -> ArmourPiece | None:
+        if instance is None:
+            return None
+        value = instance.pine.read_int8(instance._address(instance))
+        return ArmourPiece.from_raw(value)
+
+    def __set__(self, instance, value) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(instance._address(instance), value)
+
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(instance._address(instance), 0)
+
+
+class EquippedArmour:
+    _EQUIPED_OFFSETS: dict[str, int] = {
+        "chestplate": 0x00,
+        "helmet": 0x01,
+        "gloves_left": 0x02,
+        "gloves_right": 0x03,
+        "boots_left": 0x04,
+        "boots_right": 0x05,
+    }
+
+    chestplate = ArmourSlot("chestplate")
+    helmet = ArmourSlot("helmet")
+    gloves_left = ArmourSlot("gloves_left")
+    gloves_right = ArmourSlot("gloves_right")
+    boots_left = ArmourSlot("boots_left")
+    boots_right = ArmourSlot("boots_right")
+
+    def __init__(self, base: int, pine: Pine) -> None:
+        self.base = base
+        self.pine = pine
+
+
+class ArmourUnlocks:
+    _SET_OFFSETS: dict[str, int] = {
+        "wildfire": 0x06,
+        "sludge": 0x07,
+        "crystallix": 0x08,
+        "electroshock": 0x09,
+        "mega_bomb": 0x0A,
+        "hyperborean": 0x0B,
+        "chameleon": 0x0C,
+    }
+
+    wildfire = ArmourUnlock("wildfire")
+    sludge = ArmourUnlock("sludge")
+    crystallix = ArmourUnlock("crystallix")
+    electroshock = ArmourUnlock("electroshock")
+    mega_bomb = ArmourUnlock("mega_bomb")
+    hyperborean = ArmourUnlock("hyperborean")
+    chameleon = ArmourUnlock("chameleon")
+
+    def __init__(self, base: int, pine: Pine) -> None:
+        self.base = base
+        self.pine = pine
 
 
 # Armour pickups
+
 
 class ArmourPickup(NamedTuple):
     """
     Data record for an armour pickup's information.
     This is used for monitoring and modifying armour pickups in the game.
     """
+
     set_key: str
     piece: ArmourPiece
     name: str
@@ -141,67 +181,51 @@ class ArmourPickup(NamedTuple):
 ARMOUR_PICKUPS: list[ArmourPickup] = [
     # Pokitaru
     ArmourPickup("wildfire", ArmourPiece.CHESTPLATE, Rac5Locations.POKITARU_CHESTPLATE, Rac5Planets.POKITARU),
-    ArmourPickup("wildfire", ArmourPiece.GLOVES,     Rac5Locations.POKITARU_GLOVES,     Rac5Planets.POKITARU),
+    ArmourPickup("wildfire", ArmourPiece.GLOVES, Rac5Locations.POKITARU_GLOVES, Rac5Planets.POKITARU),
     # Ryllus
-    ArmourPickup("sludge",   ArmourPiece.BOOTS,      Rac5Locations.RYLLUS_BOOTS,        Rac5Planets.RYLLUS),
-    ArmourPickup("wildfire", ArmourPiece.HELMET,     Rac5Locations.RYLLUS_HELMET,       Rac5Planets.RYLLUS),
+    ArmourPickup("sludge", ArmourPiece.BOOTS, Rac5Locations.RYLLUS_BOOTS, Rac5Planets.RYLLUS),
+    ArmourPickup("wildfire", ArmourPiece.HELMET, Rac5Locations.RYLLUS_HELMET, Rac5Planets.RYLLUS),
     # Kalidon
-    ArmourPickup("sludge",   ArmourPiece.CHESTPLATE, Rac5Locations.KALIDON_CHESTPLATE,  Rac5Planets.KALIDON),
-    ArmourPickup("wildfire", ArmourPiece.BOOTS,      Rac5Locations.KALIDON_BOOTS,       Rac5Planets.KALIDON),
+    ArmourPickup("sludge", ArmourPiece.CHESTPLATE, Rac5Locations.KALIDON_CHESTPLATE, Rac5Planets.KALIDON),
+    ArmourPickup("wildfire", ArmourPiece.BOOTS, Rac5Locations.KALIDON_BOOTS, Rac5Planets.KALIDON),
     # Metalis
     # ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES,
     #              Rac5Planets.METALIS),  # currently unreachable
     # Dreamtime
     ArmourPickup("crystallix", ArmourPiece.CHESTPLATE, Rac5Locations.DREAMTIME_CHESTPLATE, Rac5Planets.DREAMTIME),
     # Outpost Omega
-    ArmourPickup("crystallix", ArmourPiece.BOOTS,    Rac5Locations.OUTPOST_OMEGA_BOOTS, Rac5Planets.OUTPOST_OMEGA),
+    ArmourPickup("crystallix", ArmourPiece.BOOTS, Rac5Locations.OUTPOST_OMEGA_BOOTS, Rac5Planets.OUTPOST_OMEGA),
     # Challax
     # ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, "Challax: Electroshock Chestplate",
     #              Rac5Planets.CHALLAX),  # not reachable
-    ArmourPickup("electroshock", ArmourPiece.HELMET, Rac5Locations.CHALLAX_HELMET,      Rac5Planets.CHALLAX),
+    ArmourPickup("electroshock", ArmourPiece.HELMET, Rac5Locations.CHALLAX_HELMET, Rac5Planets.CHALLAX),
     # Dayni Moon
-    ArmourPickup("mega_bomb", ArmourPiece.HELMET,    Rac5Locations.DAYNI_MOON_HELMET,   Rac5Planets.DAYNI_MOON),
+    ArmourPickup("mega_bomb", ArmourPiece.HELMET, Rac5Locations.DAYNI_MOON_HELMET, Rac5Planets.DAYNI_MOON),
     # Inside Clank
     ArmourPickup("mega_bomb", ArmourPiece.CHESTPLATE, Rac5Locations.INSIDE_CLANK_CHESTPLATE, Rac5Planets.INSIDE_CLANK),
 ]
 
-ARMOUR_FLAG_TO_LOCATION: dict[tuple[str, ArmourPiece], str] = {
-    (ap.set_key, ap.piece): ap.name
-    for ap in ARMOUR_PICKUPS
-}
+ARMOUR_FLAG_TO_LOCATION: dict[tuple[str, ArmourPiece], str] = {(ap.set_key, ap.piece): ap.name for ap in ARMOUR_PICKUPS}
 
 CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
-    RACSMCLANK.METALIS_REVENGE:    ("crystallix",   ArmourPiece.HELMET),
-    RACSMCLANK.METALIS_UBER:       ("crystallix",   ArmourPiece.GLOVES),
-    RACSMCLANK.METALIS_NIGHT:      ("sludge",       ArmourPiece.GLOVES),
-    RACSMCLANK.DAYNI_MOON_SHOWDOWN:("mega_bomb",    ArmourPiece.GLOVES),
-    RACSMCLANK.DAYNI_MOON_INFINITE:("mega_bomb",    ArmourPiece.BOOTS),
-    RACSMSKY.OUTPOST_OMEGA_VERTIGO:("electroshock", ArmourPiece.BOOTS),
+    RACSMCLANK.METALIS_REVENGE: ("crystallix", ArmourPiece.HELMET),
+    RACSMCLANK.METALIS_UBER: ("crystallix", ArmourPiece.GLOVES),
+    RACSMCLANK.METALIS_NIGHT: ("sludge", ArmourPiece.GLOVES),
+    RACSMCLANK.DAYNI_MOON_SHOWDOWN: ("mega_bomb", ArmourPiece.GLOVES),
+    RACSMCLANK.DAYNI_MOON_INFINITE: ("mega_bomb", ArmourPiece.BOOTS),
+    RACSMSKY.OUTPOST_OMEGA_VERTIGO: ("electroshock", ArmourPiece.BOOTS),
 }
 
 
 # Armour set checks
 
-class ArmourSets(IntEnum):
-    """
-    Enum representing different armour sets in the game.
-    This is the value which is set in armour slots to represent what armour is currently equiped.
-    """
-    Wildfire     = 1
-    Sludge       = 2
-    Crystallix   = 3
-    Electroshock = 4
-    MegaBomb     = 5
-    Hyperborean  = 6
-    Chameleon    = 7
-
 
 @dataclass(frozen=True)
 class ArmourSetCheck:
-    chestplate: int | None = None
-    helmet:     int | None = None
-    gloves:     int | None = None
-    boots:      int | None = None
+    chestplate: ArmourSet | None = None
+    helmet: ArmourSet | None = None
+    gloves: ArmourSet | None = None
+    boots: ArmourSet | None = None
 
     def required_mask(self) -> int:
         mask = 0
@@ -209,60 +233,119 @@ class ArmourSetCheck:
             mask |= 1 << (val - 1)
         return mask
 
-    def matches(self, slot_values: dict[str, int]) -> bool:
-        if self.chestplate is not None:
-            if slot_values.get("chestplate", 0) != self.chestplate:
-                return False
-        if self.helmet is not None:
-            if slot_values.get("helmet", 0) != self.helmet:
-                return False
+    def is_unlocked(self, unlocks: ArmourUnlocks) -> bool:
+        """True if every base armour set this cosmetic combo requires is fully owned."""
+        required = self.required_mask()
+        return (required & unlocks.owned_mask()) == required
+
+    def matches(self, equipped: EquippedArmour) -> bool:
+        """True if the currently equipped pieces match this combo exactly."""
+        if self.chestplate is not None and equipped.chestplate != self.chestplate:
+            return False
+        if self.helmet is not None and equipped.helmet != self.helmet:
+            return False
         if self.gloves is not None:
-            if slot_values.get("gloves_left",  0) != self.gloves:
-                return False
-            if slot_values.get("gloves_right", 0) != self.gloves:
+            if equipped.gloves_left != self.gloves or equipped.gloves_right != self.gloves:
                 return False
         if self.boots is not None:
-            if slot_values.get("boots_left",  0) != self.boots:
-                return False
-            if slot_values.get("boots_right", 0) != self.boots:
+            if equipped.boots_left != self.boots or equipped.boots_right != self.boots:
                 return False
         return True
 
+
 ARMOUR_SET_CHECKS: dict[str, ArmourSetCheck] = {
-    Rac5ArmourSet.WILDFIRE:      ArmourSetCheck(chestplate=ArmourSets.Wildfire,     helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Wildfire,     boots=ArmourSets.Wildfire),
-    Rac5ArmourSet.WILDBURST:     ArmourSetCheck(chestplate=ArmourSets.Wildfire,     helmet=ArmourSets.Sludge,       gloves=ArmourSets.Wildfire,     boots=ArmourSets.Wildfire),
-    Rac5ArmourSet.SLUDGE_MK9:    ArmourSetCheck(chestplate=ArmourSets.Sludge,       helmet=ArmourSets.Sludge,       gloves=ArmourSets.Sludge,       boots=ArmourSets.Sludge),
-    Rac5ArmourSet.CRYSTALLIX:    ArmourSetCheck(chestplate=ArmourSets.Crystallix,   helmet=ArmourSets.Crystallix,   gloves=ArmourSets.Crystallix,   boots=ArmourSets.Crystallix),
-    Rac5ArmourSet.TRIPLE_WAVE:   ArmourSetCheck(chestplate=ArmourSets.Electroshock, helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Sludge,       boots=ArmourSets.Electroshock),
-    Rac5ArmourSet.SHOCK_CRYSTAL: ArmourSetCheck(chestplate=ArmourSets.Crystallix,   helmet=ArmourSets.Electroshock, gloves=ArmourSets.Crystallix,   boots=ArmourSets.Electroshock),
-    Rac5ArmourSet.ELECTROSHOCK:  ArmourSetCheck(chestplate=ArmourSets.Electroshock, helmet=ArmourSets.Electroshock, gloves=ArmourSets.Electroshock, boots=ArmourSets.Electroshock),
-    Rac5ArmourSet.MEGA_BOMB:     ArmourSetCheck(chestplate=ArmourSets.MegaBomb,     helmet=ArmourSets.MegaBomb,     gloves=ArmourSets.MegaBomb,     boots=ArmourSets.MegaBomb),
-    Rac5ArmourSet.FIRE_BOMB:     ArmourSetCheck(chestplate=ArmourSets.MegaBomb,     helmet=ArmourSets.MegaBomb,     gloves=ArmourSets.Wildfire,     boots=ArmourSets.MegaBomb),
-    Rac5ArmourSet.HYPERBOREAN:   ArmourSetCheck(chestplate=ArmourSets.Hyperborean,  helmet=ArmourSets.Hyperborean,  gloves=ArmourSets.Hyperborean,  boots=ArmourSets.Hyperborean),
-    Rac5ArmourSet.ICE_II:        ArmourSetCheck(chestplate=ArmourSets.Hyperborean,  helmet=ArmourSets.Crystallix,   gloves=ArmourSets.Hyperborean,  boots=ArmourSets.Hyperborean),
-    Rac5ArmourSet.CHAMELEON:     ArmourSetCheck(chestplate=ArmourSets.Chameleon,    helmet=ArmourSets.Chameleon,    gloves=ArmourSets.Chameleon,    boots=ArmourSets.Chameleon),
-    Rac5ArmourSet.STALKER:       ArmourSetCheck(chestplate=ArmourSets.Chameleon,    helmet=ArmourSets.Wildfire,     gloves=ArmourSets.Sludge,       boots=ArmourSets.Chameleon),
+    Rac5ArmourSet.WILDFIRE: ArmourSetCheck(
+        chestplate=ArmourSets.Wildfire,
+        helmet=ArmourSets.Wildfire,
+        gloves=ArmourSets.Wildfire,
+        boots=ArmourSets.Wildfire,
+    ),
+    Rac5ArmourSet.WILDBURST: ArmourSetCheck(
+        chestplate=ArmourSets.Wildfire, helmet=ArmourSets.Sludge, gloves=ArmourSets.Wildfire, boots=ArmourSets.Wildfire
+    ),
+    Rac5ArmourSet.SLUDGE_MK9: ArmourSetCheck(
+        chestplate=ArmourSets.Sludge, helmet=ArmourSets.Sludge, gloves=ArmourSets.Sludge, boots=ArmourSets.Sludge
+    ),
+    Rac5ArmourSet.CRYSTALLIX: ArmourSetCheck(
+        chestplate=ArmourSets.Crystallix,
+        helmet=ArmourSets.Crystallix,
+        gloves=ArmourSets.Crystallix,
+        boots=ArmourSets.Crystallix,
+    ),
+    Rac5ArmourSet.TRIPLE_WAVE: ArmourSetCheck(
+        chestplate=ArmourSets.Electroshock,
+        helmet=ArmourSets.Wildfire,
+        gloves=ArmourSets.Sludge,
+        boots=ArmourSets.Electroshock,
+    ),
+    Rac5ArmourSet.SHOCK_CRYSTAL: ArmourSetCheck(
+        chestplate=ArmourSets.Crystallix,
+        helmet=ArmourSets.Electroshock,
+        gloves=ArmourSets.Crystallix,
+        boots=ArmourSets.Electroshock,
+    ),
+    Rac5ArmourSet.ELECTROSHOCK: ArmourSetCheck(
+        chestplate=ArmourSets.Electroshock,
+        helmet=ArmourSets.Electroshock,
+        gloves=ArmourSets.Electroshock,
+        boots=ArmourSets.Electroshock,
+    ),
+    Rac5ArmourSet.MEGA_BOMB: ArmourSetCheck(
+        chestplate=ArmourSets.MegaBomb,
+        helmet=ArmourSets.MegaBomb,
+        gloves=ArmourSets.MegaBomb,
+        boots=ArmourSets.MegaBomb,
+    ),
+    Rac5ArmourSet.FIRE_BOMB: ArmourSetCheck(
+        chestplate=ArmourSets.MegaBomb,
+        helmet=ArmourSets.MegaBomb,
+        gloves=ArmourSets.Wildfire,
+        boots=ArmourSets.MegaBomb,
+    ),
+    Rac5ArmourSet.HYPERBOREAN: ArmourSetCheck(
+        chestplate=ArmourSets.Hyperborean,
+        helmet=ArmourSets.Hyperborean,
+        gloves=ArmourSets.Hyperborean,
+        boots=ArmourSets.Hyperborean,
+    ),
+    Rac5ArmourSet.ICE_II: ArmourSetCheck(
+        chestplate=ArmourSets.Hyperborean,
+        helmet=ArmourSets.Crystallix,
+        gloves=ArmourSets.Hyperborean,
+        boots=ArmourSets.Hyperborean,
+    ),
+    Rac5ArmourSet.CHAMELEON: ArmourSetCheck(
+        chestplate=ArmourSets.Chameleon,
+        helmet=ArmourSets.Chameleon,
+        gloves=ArmourSets.Chameleon,
+        boots=ArmourSets.Chameleon,
+    ),
+    Rac5ArmourSet.STALKER: ArmourSetCheck(
+        chestplate=ArmourSets.Chameleon,
+        helmet=ArmourSets.Wildfire,
+        gloves=ArmourSets.Sludge,
+        boots=ArmourSets.Chameleon,
+    ),
 }
 
 _HYBRID_BYTE1_BITS: dict[str, int] = {
     Rac5ArmourSet.SHOCK_CRYSTAL: 0x01,
-    Rac5ArmourSet.WILDBURST:     0x02,
-    Rac5ArmourSet.TRIPLE_WAVE:   0x04,
-    Rac5ArmourSet.ICE_II:        0x08,
-    Rac5ArmourSet.STALKER:       0x10,
+    Rac5ArmourSet.WILDBURST: 0x02,
+    Rac5ArmourSet.TRIPLE_WAVE: 0x04,
+    Rac5ArmourSet.ICE_II: 0x08,
+    Rac5ArmourSet.STALKER: 0x10,
 }
 
 ARMOUR_SET_CHECK_MASKS: dict[str, int] = {
-    name: (_HYBRID_BYTE1_BITS[name] << 8) if name in _HYBRID_BYTE1_BITS
-          else check.required_mask()
+    name: (_HYBRID_BYTE1_BITS[name] << 8) if name in _HYBRID_BYTE1_BITS else check.required_mask()
     for name, check in ARMOUR_SET_CHECKS.items()
 }
 
 
 # Armour state (runtime)
 
-class ArmourState(BaseState):
 
+class ArmourState(BaseState):
     def __init__(
         self,
         accessor: MemoryAccessor,
@@ -271,21 +354,21 @@ class ArmourState(BaseState):
     ) -> None:
         super().__init__(accessor, addresses, storage)
         # Slot bytes store set indices (1-7), not ArmourPiece bitmask values — keep as int.
-        self.equipped: dict[str, int]  = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
+        self.equipped: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
         # Stable snapshot — only updated by freeze_slots()/sync_slots()/sync().
         self._stable_slots: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
         self.on_slots_save: Callable[[dict[str, int]], None] = lambda _: None
-        self.sets_unlocked: dict[str, bool]    = dict.fromkeys(ArmourStruct.SET_FIELDS, False)
-        self.sets_bitmask: dict[str, int]      = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
+        self.sets_unlocked: dict[str, bool] = dict.fromkeys(ArmourStruct.SET_FIELDS, False)
+        self.sets_bitmask: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
         self.world_collected_armour: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
-        self.ap_armour: dict[str, int]                 = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
+        self.ap_armour: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
 
     def load_slots(self, data: dict[str, int]) -> None:
         """Load saved slot values (e.g. from AP data storage)."""
         for name in ArmourStruct.SLOT_FIELDS:
             if name in data:
                 val = int(data[name])
-                self.equipped[name]      = val
+                self.equipped[name] = val
                 self._stable_slots[name] = val
 
     def push_slots_save(self) -> None:
@@ -307,18 +390,18 @@ class ArmourState(BaseState):
             self.equipped[name] = getattr(instance, name)
         for name in ArmourStruct.SET_FIELDS:
             raw = getattr(instance, name)
-            self.sets_bitmask[name]  = raw
+            self.sets_bitmask[name] = raw
             self.sets_unlocked[name] = bool(raw)
 
     def sync(self) -> None:
         instance = self.accessor.read_struct(ArmourStruct)
         for name in ArmourStruct.SLOT_FIELDS:
             raw = getattr(instance, name)
-            self.equipped[name]      = raw
+            self.equipped[name] = raw
             self._stable_slots[name] = raw
         for name in ArmourStruct.SET_FIELDS:
             raw = getattr(instance, name)
-            self.sets_bitmask[name]  = raw
+            self.sets_bitmask[name] = raw
             self.sets_unlocked[name] = bool(raw)
 
     def sync_bitmasks(self) -> None:
@@ -330,13 +413,13 @@ class ArmourState(BaseState):
         instance = self.accessor.read_struct(ArmourStruct)
         for name in ArmourStruct.SET_FIELDS:
             raw = getattr(instance, name)
-            self.sets_bitmask[name]  = raw
+            self.sets_bitmask[name] = raw
             self.sets_unlocked[name] = bool(raw)
 
     def sync_slots(self) -> None:
         raw = self.accessor.read_raw(ArmourStruct.BASE_ADDRESS, len(ArmourStruct.SLOT_FIELDS))
         for i, name in enumerate(ArmourStruct.SLOT_FIELDS):
-            self.equipped[name]      = raw[i]
+            self.equipped[name] = raw[i]
             self._stable_slots[name] = raw[i]
 
     def freeze_slots(self) -> None:
@@ -389,9 +472,7 @@ class ArmourState(BaseState):
         checked_locations: set[str],
         armour_item_pickups: set[tuple[str, ArmourPiece]] = frozenset(),
     ) -> None:
-        _loc_to_flag: dict[str, tuple[str, ArmourPiece]] = {
-            v: k for k, v in ARMOUR_FLAG_TO_LOCATION.items()
-        }
+        _loc_to_flag: dict[str, tuple[str, ArmourPiece]] = {v: k for k, v in ARMOUR_FLAG_TO_LOCATION.items()}
         for key in ArmourStruct.SET_FIELDS:
             self.world_collected_armour[key] = 0
             self.ap_armour[key] = 0
@@ -406,15 +487,15 @@ class ArmourState(BaseState):
                 self.ap_armour[set_key] |= int(piece)
 
     def __repr__(self) -> str:
-        unlocked  = [n for n, v in self.sets_unlocked.items() if v]
+        unlocked = [n for n, v in self.sets_unlocked.items() if v]
         slots = {k: v for k, v in self.equipped.items() if v}
         return f"ArmourState(sets_unlocked={unlocked}, equipped_slots={slots})"
 
 
 # Armour set collected state (runtime)
 
-class ArmourSetCollectedState(BaseState):
 
+class ArmourSetCollectedState(BaseState):
     def __init__(
         self,
         accessor: MemoryAccessor,
@@ -422,8 +503,8 @@ class ArmourSetCollectedState(BaseState):
         storage: LocalStorage,
     ) -> None:
         super().__init__(accessor, addresses, storage)
-        self._prev:      int       = 0
-        self._completed: set[str]  = set()
+        self._prev: int = 0
+        self._completed: set[str] = set()
         self.on_location_check: Callable[[str], None] = lambda _: None
 
     def on_exit(self) -> None:
@@ -458,9 +539,7 @@ class ArmourSetCollectedState(BaseState):
         self._check(self._prev)
 
     def sync_from_ap(self, checked_locations: set[str]) -> None:
-        self._completed.update(
-            name for name in checked_locations if name in ARMOUR_SET_CHECK_MASKS
-        )
+        self._completed.update(name for name in checked_locations if name in ARMOUR_SET_CHECK_MASKS)
 
     def __repr__(self) -> str:
         return f"ArmourSetCollectedState(prev=0x{self._prev:02X}, completed={len(self._completed)})"

@@ -1,6 +1,9 @@
 """String constants for every in-game cutscene and mission event, grouped by planet."""
 
+from dataclasses import dataclass
 
+
+@dataclass(frozen=True)
 class Rac5CutsceneLocations:
     """String constants for cutscene and mission location names.
 
@@ -9,56 +12,59 @@ class Rac5CutsceneLocations:
     mission completions in narrative order.
     """
 
-    #Pokitaru
+    # Pokitaru
     POKITARU_ENTER = "Pokitaru: Enter Planet"
     POKITARU_FIGHT = "Pokitaru: Fight some robots (Complete Luna's photoshoot)"
 
     # RYLLUS
-    RYLLUS_ENTER    = "Ryllus: Enter Planet"
-    RYLLUS_BUZZING  = "Ryllus: Buzzing Cameras"
+    RYLLUS_ENTER = "Ryllus: Enter Planet"
+    RYLLUS_BUZZING = "Ryllus: Buzzing Cameras"
     RYLLUS_ARTIFACT = "Ryllus: Investigate the artifact (Reach the temple)"
-    RYLLUS_TEMPLE   = "Ryllus: Unlock the temple"
+    RYLLUS_TEMPLE = "Ryllus: Unlock the temple"
 
     # Kalidon
-    KALIDON_ENTER   = "Kalidon: Enter Planet"
+    KALIDON_ENTER = "Kalidon: Enter Planet"
     KALIDON_EXPLORE = "Kalidon: Explore the planet"
-    KALIDON_WIN     = "Kalidon: Win the skyboard race (Complete Learner's Permit)"
+    KALIDON_WIN = "Kalidon: Win the skyboard race (Complete Learner's Permit)"
 
     # Metalis
-    METALIS_ENTER  = "Metalis: Enter Planet"
-    METALIS_WAR    = "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)"
+    METALIS_ENTER = "Metalis: Enter Planet"
+    METALIS_WAR = "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)"
     METALIS_ESCAPE = "Metalis: Escape the planet (Giant Clank)"
 
     # Dreamtime
-    DREAMTIME_ENTER    = "Dreamtime: Enter Planet"
+    # TODO: add in missing cutscenes
+    DREAMTIME_ENTER = "Dreamtime: Enter Planet"
     DREAMTIME_COMPLETE = "Dreamtime: Complete Dreamtime"
 
     # Outpost Omega
-    OUTPOST_OMEGA_ENTER   = "Outpost Omega: Enter Planet"
-    OUTPOST_OMEGA         = "Outpost Omega: Escape from facility pt 1"
-    OUTPOST_OMEGA_ESCAPE  = "Outpost Omega: Escape the medical facility"
+    # TODO: One Cutscene is missing from this list
+    OUTPOST_OMEGA_ENTER = "Outpost Omega: Enter Planet"
+    OUTPOST_OMEGA = "Outpost Omega: Escape from facility pt 1"
+    OUTPOST_OMEGA_ESCAPE = "Outpost Omega: Escape the medical facility"
     OUTPOST_OMEGA_REMATCH = "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)"
 
     # Challax
-    CHALLAX_ENTER  = "Challax: Enter Planet"
-    METALIS_CLANK  = "Metalis: Start Giant Clank"
-    CHALLAX_CLANK  = "Challax: Destroy the space fortress (Giant Clank)"
+    CHALLAX_ENTER = "Challax: Enter Planet"
+    METALIS_CLANK = "Metalis: Start Giant Clank"
+    CHALLAX_CLANK = "Challax: Destroy the space fortress (Giant Clank)"
 
     # Dayni Moon
     DAYNI_MOON_FIGHT1 = "Dayni Moon: Luna fight pt 1"
     DAYNI_MOON_FIGHT2 = "Dayni Moon: Luna fight pt 2"
-    DAYNI_MOON        = "Dayni Moon: Catch Luna"
-    DAYNI_MOON_LUNA   = "Dayni Moon: Defeat Luna"
+    DAYNI_MOON = "Dayni Moon: Catch Luna"
+    DAYNI_MOON_LUNA = "Dayni Moon: Defeat Luna"
 
     # Inside Clank
-    INSIDE_CLANK_ENTER        = "Inside Clank: Enter Planet"
-    INSIDE_CLANK_ESCAPE       = "Inside Clank: Escape from Clank"
-    INSIDE_CLANK_TECHNOMITES  = "Inside Clank: Defeat all Technomites"
+    # TODO: One Cutscene is missing from this list
+    INSIDE_CLANK_ENTER = "Inside Clank: Enter Planet"
+    INSIDE_CLANK_ESCAPE = "Inside Clank: Escape from Clank"
+    INSIDE_CLANK_TECHNOMITES = "Inside Clank: Defeat all Technomites"
 
     # Quodrona
     QUODRONA_ENTER = "Quodrona: Enter Planet"
     QUODRONA_CLONE = "Quodrona: Clone Wars (Fight the Ratchet Clones)"
     QUODRONA_CHASE = "Quodrona: Runnnn from Otto"
     QUODRONA_MECHA = "Quodrona: Defeat Mecha Otto"
-    QUODRONA_FIND  = "Quodrona: Find Otto Destruct"
-    QUODRONA_GOAL  = "Quodrona: Defeat Otto Destruct"
+    QUODRONA_FIND = "Quodrona: Find Otto Destruct"
+    QUODRONA_GOAL = "Quodrona: Defeat Otto Destruct"
