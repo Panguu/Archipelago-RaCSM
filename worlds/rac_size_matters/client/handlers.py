@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import asyncio
+
+from CommonClient import logger
 from NetUtils import ClientStatus
 
 from ..core import ARMOUR_SET_CHECKS
+from ..core.address_maps import PLAYER_BOLT_COUNT
 
 # Challenge handler
 
@@ -28,18 +32,58 @@ class EventsHandlerMixin:
         """Tell the server we're actually in-game, not sitting at the main
         menu. Matches RAC3's pcsx2_sync_task, which sends CLIENT_PLAYING the
         moment its main_menu flag flips False -> True (i.e. a save was just
-        loaded) — fired here from GameOrchestrator's on_initial_load hook,
-        our equivalent edge."""
+        loaded) — fired here from Core's on_initial_load hook, our
+        equivalent edge."""
         await self.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_PLAYING}])
 
-    def _on_armour_pickup_update(self, key: str, new_value: int) -> None:
-        del key, new_value
+    def _on_planet_ready(self) -> None:
+        """Fired every time a planet finishes loading (Core's on_planet_ready
+        hook — every transition, not just the first). Re-applies received
+        items as before, and also (re)attempts the starting-bolts grant:
+        gated on a flag persisted to AP data storage rather than run once at
+        PINE-connect time, since writing PLAYER_BOLT_COUNT before any planet
+        has actually loaded doesn't reliably stick. Firing on every
+        transition, not just the very first, gives it a free retry if an
+        earlier attempt failed (e.g. a transient PINE error) without needing
+        its own retry/backoff logic."""
+        asyncio.create_task(self._apply_received_items())
+        asyncio.create_task(self._grant_starting_items())
+
+    async def _grant_starting_items(self) -> None:
+        if self._starting_items_sent or not self.pine_connected:
+            return
+        starting_bolts = int(self.slot_data.get("starting_bolts", 0))
+        if starting_bolts <= 0:
+            self._starting_items_sent = True
+            asyncio.create_task(self._persist_starting_items_sent())
+            return
+        async with self._pine_lock:
+            try:
+                current = self.pine.read_int32(PLAYER_BOLT_COUNT)
+                self.pine.write_int32(PLAYER_BOLT_COUNT, current + starting_bolts)
+            except Exception as exc:
+                logger.warning(f"[RAC] Could not grant starting bolts: {exc}")
+                self.pine_connected = False
+                return
+        self._starting_items_sent = True
+        asyncio.create_task(self._persist_starting_items_sent())
+
+    def _on_vendor_close(self) -> None:
+        """Fired when a weapons/mod vendor menu closes. While the vendor is
+        open, memory only reflects that vendor's own restricted view
+        (apply_vendor_locations() zeroes everything not purchased from it
+        or explicitly allowed) — leaving the game that way after the player
+        walks away would lock them out of AP-owned weapons/gadgets/mods
+        that vendor never granted (e.g. received from another world).
+        Re-applying the full AP inventory snapshot restores true ownership
+        for actual gameplay."""
+        self._on_menu_close_for_armour_sets()
+        asyncio.create_task(self._apply_received_items())
 
     def _on_menu_close_for_armour_sets(self) -> None:
         if not self._armour_set_checks_enabled:
             return
-        self._armour_slot_state.update(self.pine)
-        slot_values = self._armour_slot_state.memory_values
+        equipped = self._wiring.armour.EquipedArmour
         for name, check in ARMOUR_SET_CHECKS.items():
-            if check.matches(slot_values):
+            if check.matches(equipped):
                 self._append_location_by_name(name)

@@ -7,7 +7,7 @@ from BaseClasses import Item, ItemClassification, Location, Tutorial
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
-from .constants import Rac5Items, Rac5Weapons
+from .constants import Rac5Infobots, Rac5Weapons
 from .core.weapons import WEAPON_MOD_COUNTS
 from .items import (
     ALL_ITEMS,
@@ -206,8 +206,8 @@ class RACSizeMatterWorld(World):
 
     def generate_basic(self) -> None:
         # Pokitaru and Ryllus are always the starting planets.
-        self._precollect(Rac5Items.POKITARU)
-        self._precollect(Rac5Items.RYLLUS)
+        self._precollect(Rac5Infobots.POKITARU)
+        self._precollect(Rac5Infobots.RYLLUS)
 
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))

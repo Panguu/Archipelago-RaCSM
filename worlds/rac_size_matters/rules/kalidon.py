@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..constants import (
     Rac5Gadgets,
     Rac5Locations,
+    Rac5ModVendorLocations,
     Rac5SkillPoints,
     Rac5SkyboardChallenges as RACSMSKY,
     Rac5TBolts,
@@ -59,5 +60,5 @@ def set_kalidon_rules(world: RACSizeMatterWorld) -> None:
     # Weapon Mod Vendor — purchasable without owning the weapon (mod_unlock_N
     # is gated purely on this vendor's planet being accessible; see
     # VendorUnlockState.mod_vendor_unlock_weapons).
-    world.set_rule(mw.get_location(Rac5VendorLocations.KALIDON_LACERATOR_LOCK, player), True_())
-    world.set_rule(mw.get_location(Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT, player), True_())

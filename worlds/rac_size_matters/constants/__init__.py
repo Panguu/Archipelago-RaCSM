@@ -10,7 +10,7 @@ from .planets import Rac5Planets
 from .skillpoints import Rac5SkillPoints
 from .skyboard_challenges import Rac5SkyboardChallenges
 from .tbolts import Rac5TBolts
-from .vendors import Rac5VendorLocations
+from .vendors import Rac5ModVendorLocations, Rac5VendorLocations
 from .weapons import (
     Rac5ProgressiveWeaponMods,
     Rac5ProgressiveWeapons,
@@ -36,6 +36,7 @@ __all__ = [
     "Rac5SkyboardChallenges",
     "Rac5ArmourSet",
     "Rac5TBolts",
+    "Rac5ModVendorLocations",
     "Rac5VendorLocations",
     "Rac5WeaponKeys",
     "Rac5WeaponMods",

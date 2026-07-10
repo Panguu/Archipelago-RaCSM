@@ -2,13 +2,14 @@ from typing import NamedTuple
 
 from .constants import (
     Rac5Locations,
+    Rac5ModVendorLocations,
     Rac5Planets,
     Rac5SkyboardChallenges as RACSMSKY,
     Rac5VendorLocations,
     Rac5CutsceneLocations,
 )
 from .core.armour import ARMOUR_PICKUPS
-from .core.challenges import (
+from .core.locations.challenge_locations import (
     CHALLENGE_PICKUPS,
     DERBY_CLANK_PICKUPS,
     GADGETBOT_CLANK_PICKUPS,
@@ -71,22 +72,22 @@ GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
 
 # Weapon mod vendor locations
 WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5VendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
-    Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
-    Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE:  RACLocationData(BASE_ID + 2201, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_ACID_BURN:         RACLocationData(BASE_ID + 2203, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_ACID_EPOXY:        RACLocationData(BASE_ID + 2204, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK:   RACLocationData(BASE_ID + 2206, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE: RACLocationData(BASE_ID + 2207, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_BEE_WORKER:        RACLocationData(BASE_ID + 2211, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER:  RACLocationData(BASE_ID + 2209, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE: RACLocationData(BASE_ID + 2210, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(BASE_ID + 2212, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(BASE_ID + 2213, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(BASE_ID + 2214, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE:  RACLocationData(BASE_ID + 2201, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_ACID_BURN:         RACLocationData(BASE_ID + 2203, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_ACID_EPOXY:        RACLocationData(BASE_ID + 2204, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK:   RACLocationData(BASE_ID + 2206, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE: RACLocationData(BASE_ID + 2207, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_BEE_WORKER:        RACLocationData(BASE_ID + 2211, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER:  RACLocationData(BASE_ID + 2209, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE: RACLocationData(BASE_ID + 2210, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(BASE_ID + 2212, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(BASE_ID + 2213, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(BASE_ID + 2214, Rac5Planets.QUODRONA),
 }
 
-from .core.armour import ARMOUR_SET_CHECKS
+from .core.locations.armour_set_locations import ARMOUR_SET_CHECKS
 
 ARMOUR_SET_CHECK_LOCATIONS: dict[str, RACLocationData] = {
     name: RACLocationData(BASE_ID + 1500 + idx, Rac5Planets.POKITARU)
@@ -273,24 +274,24 @@ GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_GADGET_LO
 # Slot 1 = mod_slot_one, 2 = mod_slot_two, 3 = mod_slot_three in the weapon struct.
 # Scorcher Spitfire is confirmed in slot 2; all others use the first available slot.
 _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
-    ("lacerator",       2, Rac5VendorLocations.KALIDON_LACERATOR_LOCK),
-    ("lacerator",       1, Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE),
-    ("acid_bomb_glove", 1, Rac5VendorLocations.CHALLAX_ACID_BURN),
-    ("acid_bomb_glove", 2, Rac5VendorLocations.CHALLAX_ACID_EPOXY),
-    ("concussion_gun",  1, Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT),
-    ("concussion_gun",  3, Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK),
-    ("concussion_gun",  2, Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE),
-    ("bee_mine_glove",  1, Rac5VendorLocations.CHALLAX_BEE_WORKER),
-    ("agents_of_doom",  2, Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER),
-    ("scorcher",        2, Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE),
-    ("sniper_mine",     1, Rac5VendorLocations.QUODRONA_SNIPER_SPLIT),
-    ("shock_rocket",    3, Rac5VendorLocations.QUODRONA_SHOCK_LOCK),
-    ("shock_rocket",    1, Rac5VendorLocations.QUODRONA_SHOCK_AFTER),
+    ("lacerator",       2, Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK),
+    ("lacerator",       1, Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE),
+    ("acid_bomb_glove", 1, Rac5ModVendorLocations.CHALLAX_ACID_BURN),
+    ("acid_bomb_glove", 2, Rac5ModVendorLocations.CHALLAX_ACID_EPOXY),
+    ("concussion_gun",  1, Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT),
+    ("concussion_gun",  3, Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK),
+    ("concussion_gun",  2, Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE),
+    ("bee_mine_glove",  1, Rac5ModVendorLocations.CHALLAX_BEE_WORKER),
+    ("agents_of_doom",  2, Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER),
+    ("scorcher",        2, Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE),
+    ("sniper_mine",     1, Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT),
+    ("shock_rocket",    3, Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK),
+    ("shock_rocket",    1, Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER),
 ]
 
 _ATTR_NAMES = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
-# For WeaponState / HooksMixin: slot key matches struct field name ("mod_slot_one" etc.)
+# For WeaponInventory.set_mod(): slot key matches struct field name ("mod_slot_one" etc.)
 MOD_INTERNAL_TO_LOCATION: dict[tuple[str, str], str] = {
     (w, _ATTR_NAMES[i - 1]): loc for w, i, loc in _MOD_SLOT_ASSIGNMENT
 }

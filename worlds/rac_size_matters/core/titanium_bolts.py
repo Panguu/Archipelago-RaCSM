@@ -1,137 +1,123 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from ..constants import Rac5Planets, Rac5TBolts
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
-from .structs.pickups import TitaniumBoltStruct
+from .address_maps import TITANIUM_BOLT_BASE
+from .locations.titanium_bolt_locations import BOLT_BY_PLANET_AND_DELTA, TITANIUM_BOLTS, TitaniumBolt
+
+if TYPE_CHECKING:
+    from ..pypine import Pine
 
 __all__ = [
     "TitaniumBolt",
-    "TitaniumBoltAddresses",
     "TITANIUM_BOLTS",
     "BOLT_BY_PLANET_AND_DELTA",
-    "TitaniumBoltState",
+    "TitaniumBoltInventory",
 ]
 
-
-# Address resolver
-
-class TitaniumBoltAddresses:
-    """Resolves titanium bolt field addresses from a single base address.
-
-    Layout (identical on PSP and PS2):
-      +0x00  pickup  — increments each time a bolt is picked up
-      +0x05  total   — cumulative bolt count
-    """
-
-    def __init__(self, base: int) -> None:
-        self.base   = base
-        self.pickup = base + 0x00
-        self.total  = base + 0x05
+# Layout (identical on PSP and PS2), relative to TITANIUM_BOLT_BASE:
+#   +0x00  pickup  — 5-byte little-endian bitmask, one bit per bolt (see TitaniumBolt.bit)
+#   +0x05  total   — cumulative bolt count (informational, not location-tracked)
+_PICKUP_ADDR = TITANIUM_BOLT_BASE + 0x00
+_TOTAL_ADDR  = TITANIUM_BOLT_BASE + 0x05
 
 
-# Data
+class TitaniumBoltSlot:
+    """Pine-backed accessor for the 5-byte cumulative bolt-pickup bitmask."""
 
-@dataclass(frozen=True)
-class TitaniumBolt:
-    # Usually a single planet ID; some locations (e.g. Outpost Omega Dream,
-    # reachable from both the first and second Outpost Omega visit) can be
-    # picked up while registered under more than one planet ID for the same
-    # physical location — pass a tuple in that case.
-    planet_id: int | tuple[int, ...]
-    bit:       int  # bit position in the pickup int64
-    region:    str  # AP region name
+    def __init__(self, address: int) -> None:
+        self.address = address
 
-    @property
-    def delta(self) -> int:
-        return 1 << self.bit
+    def __get__(self, instance, owner) -> int | None:
+        if instance is None:
+            return None
+        return int.from_bytes(instance.pine.read_bytes(self.address, 5), "little")
 
-    @property
-    def planet_ids(self) -> tuple[int, ...]:
-        return self.planet_id if isinstance(self.planet_id, tuple) else (self.planet_id,)
+    def __set__(self, instance, value: int) -> None:
+        if instance is None:
+            return
+        instance.pine.write_bytes(self.address, value.to_bytes(5, "little"))
 
-
-TITANIUM_BOLTS: dict[str, TitaniumBolt] = {
-    Rac5TBolts.POKITARU_ZIPLINE:   TitaniumBolt(0x01,  0, Rac5Planets.POKITARU),
-    Rac5TBolts.POKITARU_HUT:       TitaniumBolt(0x01,  1, Rac5Planets.POKITARU),
-    Rac5TBolts.RYLLUS_CLIFF:       TitaniumBolt(0x02,  4, Rac5Planets.RYLLUS),
-    Rac5TBolts.RYLLUS_WALL:        TitaniumBolt(0x02,  5, Rac5Planets.RYLLUS),
-    Rac5TBolts.KALIDON_SHIP:       TitaniumBolt(0x03,  8, Rac5Planets.KALIDON),
-    Rac5TBolts.KALIDON_FACTORY:    TitaniumBolt(0x03, 10, Rac5Planets.KALIDON),
-    Rac5TBolts.KALIDON_RAMP:       TitaniumBolt(0x03,  9, Rac5Planets.KALIDON),
-    Rac5TBolts.METALIS_DOOR:       TitaniumBolt(0x04, 12, Rac5Planets.METALIS),
-    Rac5TBolts.DREAMTIME_HAT:      TitaniumBolt(0x05, 16, Rac5Planets.DREAMTIME),
-    Rac5TBolts.DREAMTIME_GARAGE:   TitaniumBolt(0x05, 17, Rac5Planets.DREAMTIME),
-    Rac5TBolts.DREAMTIME_CRAB:     TitaniumBolt(0x05, 18, Rac5Planets.DREAMTIME),
-    Rac5TBolts.OUTPOST_OMEGA_DREAM:TitaniumBolt((0x06, 0x17), 20, Rac5Planets.OUTPOST_OMEGA),
-    Rac5TBolts.CHALLAX_MECH_PAD:   TitaniumBolt(0x07, 24, Rac5Planets.CHALLAX),
-    Rac5TBolts.CHALLAX_ROOM:       TitaniumBolt(0x07, 25, Rac5Planets.CHALLAX),
-    Rac5TBolts.CHALLAX_PLANT:      TitaniumBolt(0x07, 26, Rac5Planets.CHALLAX),
-    Rac5TBolts.DAYNI_MOON_BARN:    TitaniumBolt(0x08, 28, Rac5Planets.DAYNI_MOON),
-    Rac5TBolts.DAYNI_MOON_MIMIC:   TitaniumBolt(0x08, 29, Rac5Planets.DAYNI_MOON),
-    Rac5TBolts.INSIDE_CLANK_LADDER:TitaniumBolt(0x09, 32, Rac5Planets.INSIDE_CLANK),
-    Rac5TBolts.INSIDE_CLANK_WALL:  TitaniumBolt(0x09, 33, Rac5Planets.INSIDE_CLANK),
-    Rac5TBolts.QUODRONA_DUMMIES:   TitaniumBolt(0x0A, 36, Rac5Planets.QUODRONA),
-}
-
-# (planet_id, delta) → location name — used by the client for unambiguous detection
-BOLT_BY_PLANET_AND_DELTA: dict[tuple[int, int], str] = {
-    (planet_id, bolt.delta): name
-    for name, bolt in TITANIUM_BOLTS.items()
-    for planet_id in bolt.planet_ids
-}
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_bytes(self.address, (0).to_bytes(5, "little"))
 
 
-# State (runtime)
+class TitaniumBoltTotalSlot:
+    """Pine-backed accessor for the single-byte cumulative bolt count."""
 
-class TitaniumBoltState(BaseState):
+    def __init__(self, address: int) -> None:
+        self.address = address
 
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self._poll_last:   int = 0
+    def __get__(self, instance, owner) -> int | None:
+        if instance is None:
+            return None
+        return instance.pine.read_int8(self.address)
+
+    def __set__(self, instance, value: int) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(self.address, value)
+
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(self.address, 0)
+
+
+class TitaniumBoltInventory:
+    """Pine-backed live accessor + completion tracking for titanium bolts,
+    replacing TitaniumBoltState. Global fixed address — no per-planet base."""
+
+    pickup = TitaniumBoltSlot(_PICKUP_ADDR)
+    total  = TitaniumBoltTotalSlot(_TOTAL_ADDR)
+
+    def __init__(self, pine: Pine) -> None:
+        self.pine = pine
+        self.completed: set[str] = set()
+        self._last: int = 0
         self._synced_mask: int = 0
 
-    def _register_handlers(self) -> None:
-        self.accessor.on_struct_change(TitaniumBoltStruct, self._on_struct_change)
+    def get(self, name: str) -> bool:
+        return bool(self.pickup & TITANIUM_BOLTS[name].delta)
 
-    def _unregister_handlers(self) -> None:
-        self.accessor.remove_struct_handler(TitaniumBoltStruct, self._on_struct_change)
+    def set(self, name: str, value: bool) -> None:
+        bolt = TITANIUM_BOLTS[name]
+        current = self.pickup
+        self.pickup = (current | bolt.delta) if value else (current & ~bolt.delta)
 
-    def _on_struct_change(self, address: int, new_bytes: bytes) -> None:
-        del address
-        current = int.from_bytes(new_bytes[:5], "little")
-        delta   = current - self._poll_last
-        self._poll_last = current
-        if delta > 0 and (delta & (delta - 1)) == 0:
-            self.on_bolt_delta(delta)
+    def delete(self, name: str) -> None:
+        self.set(name, False)
+
+    def check(self) -> list[str]:
+        """Read the cumulative bitmask and return newly completed AP location names for this call."""
+        current = self.pickup
+        delta = current & ~self._last
+        self._last = current
+        newly: list[str] = []
+        if delta:
+            for name, bolt in TITANIUM_BOLTS.items():
+                if name not in self.completed and (delta & bolt.delta):
+                    self.completed.add(name)
+                    newly.append(name)
+        return newly
 
     def sync(self) -> None:
-        raw     = self.accessor.read_raw(TitaniumBoltStruct.BASE_ADDRESS, 5)
-        current = int.from_bytes(raw, "little") if raw else 0
-        self._poll_last = current
+        """Baseline read, applying any AP-synced bits, without reporting anything as newly completed."""
+        current = self.pickup
         new_val = current | self._synced_mask
         if new_val != current:
-            self.accessor.write_raw(TitaniumBoltStruct.BASE_ADDRESS, new_val.to_bytes(5, "little"))
+            self.pickup = new_val
+        self._last = new_val
 
     def sync_from_ap(self, checked_location_names: set[str]) -> None:
         mask = 0
-        for loc_name, bolt in TITANIUM_BOLTS.items():
-            if loc_name in checked_location_names:
+        for name, bolt in TITANIUM_BOLTS.items():
+            if name in checked_location_names:
                 mask |= bolt.delta
+                self.completed.add(name)
         self._synced_mask = mask
 
-    def on_bolt_delta(self, _delta: int) -> None:
-        del _delta
-
     def __repr__(self) -> str:
-        collected = bin(self._poll_last).count("1")
-        return f"TitaniumBoltState(collected={collected}/{len(TITANIUM_BOLTS)})"
+        return f"TitaniumBoltInventory(completed={len(self.completed)}/{len(TITANIUM_BOLTS)})"

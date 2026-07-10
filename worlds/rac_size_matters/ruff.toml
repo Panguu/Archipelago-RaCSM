@@ -18,8 +18,8 @@ ignore = [
     "PLE1141", # Gives false positives when the dict keys are tuples, but does not mention this in the suggested fix.
     "PERF203", # notify_change's per-handler try/except is intentional: one bad handler must not stop the others.
     "PLW0108", # Lambdas passed to MemoryState/PollAddress need to be lazy; inlining would evaluate eagerly.
-    "PLW0603", # core.weapons._ensure_loc_data rebinds module globals deliberately, to lazy-load data without
-               # a circular import between core.weapons/items.py/locations.py (see comments at top of weapons.py).
+    "PLW0603", # core.locations.weapon_locations._ensure_loc_data rebinds module globals deliberately, to
+               # lazy-load data without a circular import between core.weapons/items.py/locations.py.
     "RUF006",  # asyncio.create_task fire-and-forget is the standard AP client pattern.
     "RUF012",  # Mutable class attributes (options dicts, name→id maps) are the standard AP World/test pattern.
     "RUF022",  # __all__ is grouped by category, not sorted alphabetically.

@@ -1,33 +1,40 @@
 from __future__ import annotations
 
-import contextlib
 import logging
-import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5Items
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
+from ..constants import Rac5Infobots
 from .address_maps import (
+    CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
+    PLANET_MISSION_ADDRESSES,
     PLANET_STATE_OFFSET,
     PLANET_UNLOCK_ADDRESSES,
+    WEAPON_ARRAY_BASE_BY_PLANET,
 )
-from .armour import ArmourPiece
-from .structs.game import PlanetLoadStruct, PlanetProgressStruct
+from .armour import ArmourUnlocks, EquippedArmour
+from .controller import GlobalButtonState
+from .display_text import small_text_box_inventory, multi_line_text_box_inventory
+from .menu import MenuInventory, MenuStateValue
+from .player import PlayerInventory
+from .states.base_state import BaseState
+from .structs.game import (
+    TRANSITION_GATE_ARRIVED,
+    TRANSITION_GATE_IDLE,
+    LoadingPlanetStruct,
+    PlanetProgressStruct,
+    TransitionGateStruct,
+)
+from .traps import activate_trap as _activate_trap
+from .weapons import WeaponInventory
 
 if TYPE_CHECKING:
-    from .armour import ArmourState
-    from .display_text import DisplayTextBoxState, TextBoxConfig, TextBoxConfigState
-    from .menu import MenuState
-    from .player import PlayerState
-    from .vendor import ModVendorState, VendorUnlockState, WeaponVendorState
-    from .weapons import WeaponState
+    from ..pypine import Pine
+    from .armour import ArmourInventory
+    from .quick_select import QuickSelectState
 
 
 # Planet data
@@ -104,14 +111,14 @@ INFOBOT_UNLOCK_VALUE = 3  # value written to the planet status address
 
 # Display name -> planet key used in PLANET_STATE_ADDRESSES
 INFOBOT_ITEM_TO_PLANET: dict[str, str] = {
-    Rac5Items.POKITARU:     "pokitaru",
-    Rac5Items.RYLLUS:       "ryllus",
-    Rac5Items.KALIDON:      "kalidon",
-    Rac5Items.METALIS:      "metalis",
-    Rac5Items.OUTPOST_OMEGA: "outpost_omega",
-    Rac5Items.CHALLAX:      "challax",
-    Rac5Items.DAYNI_MOON:   "dayni_moon",
-    Rac5Items.QUODRONA:     "quodrona",
+    Rac5Infobots.POKITARU:     "pokitaru",
+    Rac5Infobots.RYLLUS:       "ryllus",
+    Rac5Infobots.KALIDON:      "kalidon",
+    Rac5Infobots.METALIS:      "metalis",
+    Rac5Infobots.OUTPOST_OMEGA: "outpost_omega",
+    Rac5Infobots.CHALLAX:      "challax",
+    Rac5Infobots.DAYNI_MOON:   "dayni_moon",
+    Rac5Infobots.QUODRONA:     "quodrona",
 }
 
 PLANET_STATE_ADDRESSES: dict[str, int] = {
@@ -139,344 +146,293 @@ AUTO_UNLOCK_ADDRESSES: list[int] = [
 
 logger = logging.getLogger("CommonClient")
 
-_PIECE_ORDER = [ArmourPiece.CHESTPLATE, ArmourPiece.HELMET, ArmourPiece.GLOVES, ArmourPiece.BOOTS]
+_METALIS_ID: int = 0x04
+
+# Giant Clank on Metalis is unreachable/disabled (no AP location for it — see
+# locations.py). Tracked via a bit on the Challax mission address (the game
+# shares that progress word between the two Giant Clank sequences); forcing
+# it set on every Metalis entry stops the game from triggering the sequence.
+_GIANT_CLANK_ADDR: int = PLANET_MISSION_ADDRESSES["Challax"]
+_GIANT_CLANK_MASK: int = 0x0010
 
 
+class PlanetInventory:
+    """Single home for planet-specific runtime logic.
 
-class PlanetState(BaseState):
+    Owns every planet-dependent Inventory (player, menu, weapons, text boxes)
+    and rebinds them via set_base()/set_planet() on planet_enter(). Only ever
+    calls the get/set/delete/check methods already implemented on each
+    Inventory — never pokes memory directly itself.
+    """
+
     def __init__(
         self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-        name: str,
-        planet_id: int,
-        menu_addr: int | None = None,
-        log: Callable[..., None] | None = None,
+        pine: Pine,
+        armour: ArmourInventory,
+        quick_select: QuickSelectState,
     ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self.name      = name
+        self.pine         = pine
+        self.armour       = armour
+        self.quick_select = quick_select
+
+        # Planet-specific — owned and rebound here, not passed in.
+        self.player           = PlayerInventory(pine)
+        self.menu             = MenuInventory(pine)
+        self.weapons          = WeaponInventory(pine)
+        self.small_text       = small_text_box_inventory(pine)
+        self.multi_line_text  = multi_line_text_box_inventory(pine)
+
+        self.planet_id: int | None = None
+        # True once the current planet has fully loaded and every
+        # planet-dependent Inventory has its base address rebound. False
+        # while a planet transition is in flight — every read/write below
+        # is gated on this, since addresses are stale/unbound until then.
+        self.is_ready: bool = False
+        self._pending_planet_id: int | None = None
+        self._prev_gate: int = TRANSITION_GATE_IDLE
+        # Quick select starts frozen; the first time a planet becomes ready
+        # it's zeroed (fresh boot), every time after that it's restored from
+        # the in-memory snapshot — same start/restore split QuickSelectState
+        # itself already exposes.
+        self._quick_select_primed: bool = False
+
+        # Armour tracking: collected_armour is what's been picked up in-game
+        # this session, unlock_armour is what Archipelago has granted — kept
+        # separate the same way ArmourState used to split world/ap armour.
+        # equipped_armour only ever updates when the pause menu closes (see
+        # check_equipped_armour()) — never on any other tick.
+        self.collected_armour: dict[str, int] = dict.fromkeys(ArmourUnlocks._OFFSETS, 0)
+        self.unlock_armour:    dict[str, int] = dict.fromkeys(ArmourUnlocks._OFFSETS, 0)
+        self.equipped_armour:  dict[str, int] = dict.fromkeys(EquippedArmour._OFFSETS, 0)
+        # Armour-pickup detection is gated to the player's pickup-animation
+        # window (see check_collected_armour()) so an AP inventory resync —
+        # which writes the same UnlockedArmour bytes outside of any pickup
+        # animation, e.g. on every planet load — is never misread as a
+        # genuine in-game pickup.
+        self._was_picking_up:    bool = False
+        self._armour_pickup_baseline: dict[str, int] | None = None
+        # Picking up a new armour piece can auto-equip it for the pickup
+        # animation — snapshot the equipped slots at pickup-start and
+        # restore them at pickup-end so a mere pickup never silently changes
+        # what the player has equipped; equipping stays a deliberate action
+        # (quick select / pause menu).
+        self._equipped_pickup_baseline: dict[str, int] | None = None
+
+        self.on_death:                 Callable[[], None]              = lambda: None
+        self.on_respawn:               Callable[[], None]              = lambda: None
+        self.on_equipped_armour_saved: Callable[[dict[str, int]], None] = lambda _: None
+        # Fires whenever the pause menu closes — alongside the equipped-armour
+        # save above, so anything else that should only persist on pause-close
+        # (e.g. quick select) can hook the same edge without its own tracking.
+        self.on_pause_close:           Callable[[], None]              = lambda: None
+
+        self._prev_dead: bool = False
+        self._prev_menu: MenuStateValue | None = None
+
+    def set_planet(self, planet_id: int) -> None:
+        """Rebind every planet-dependent Inventory to the newly loaded planet."""
         self.planet_id = planet_id
-        self.menu_addr = menu_addr
-        self._log      = log or logger.info
+        self.player.set_base(planet_id)
+        self.menu.set_base(planet_id)
+        self.small_text.set_base(planet_id)
+        self.multi_line_text.set_base(planet_id)
+        array_base = WEAPON_ARRAY_BASE_BY_PLANET.get(planet_id)
+        if array_base is not None:
+            self.weapons.set_base(array_base)
 
-        self._armour:             ArmourState | None           = None
-        self._weapons:            WeaponState | None           = None
-        self._player:             PlayerState | None           = None
-        self._menu:               MenuState | None             = None
-        self._weapon_vendor:      WeaponVendorState | None     = None
-        self._mod_vendor:         ModVendorState | None        = None
-        self._vendor_unlock:      VendorUnlockState | None     = None
-        self._display_text:       DisplayTextBoxState | None   = None
-        self._displayed_text_box: TextBoxConfigState | None = None
-        self._display_text_cfg:   TextBoxConfig | None     = None
+    def check_transition(self) -> bool:
+        """Pull-based transition detector — call every tick.
 
-        self._reapply_inv:        Callable[[], None]     | None = None
-        self._get_checked_locs:   Callable[[], set[str]] | None = None
-        self._on_enter_callbacks: list[Callable[[], None]] = []
-        self._on_exit_callbacks:  list[Callable[[], None]] = []
-        self._vendor_write_lock:  threading.Lock | None = None
+        Primary signal is the transition gate (0x1EDDAD4), the authoritative
+        source for when writes must stop/resume: any change away from idle
+        blocks writes immediately (is_ready False), TRANSITION_GATE_ARRIVED
+        latches the destination planet id from LoadingPlanetStruct (a local
+        bookkeeping read, not a write), and settling back to idle is the only
+        moment set_planet() actually rebinds every planet-dependent Inventory
+        and is_ready goes back to True.
 
-        # on_menu_open() temporarily redirects WeaponState's acquisition hooks
-        # to vendor-purchase tracking; these hold whatever was wired there
-        # before (e.g. the bonus-weapon-pickup chain from _wire_bonus_weapon_hooks)
-        # so on_menu_close() can restore it instead of nulling it out forever.
-        self._prev_on_weapon_acquired: Callable[[str], None]         | None = None
-        self._prev_on_gadget_acquired: Callable[[str], None]         | None = None
-        self._prev_on_mod_acquired:    Callable[[str, str], None]    | None = None
+        Falls back to a raw CURRENT_PLANET_ADDRESS comparison for the rare
+        planet swap that never touches the gate at all (e.g. the scripted
+        Outpost Omega 1 -> 2 area change) — same catch-up role the old
+        sync_active_planet() played.
 
-    def set_vendor_write_lock(self, lock: threading.Lock) -> None:
-        self._vendor_write_lock = lock
+        Quick select is frozen the moment writes are blocked, and restored
+        (or zeroed, the very first time) the moment the new planet is ready
+        — same lifecycle QuickSelectState.freeze()/restore()/zero() already
+        implements, just called at the right transition edges.
 
-    def set_player_state(self, player: PlayerState) -> None:
-        self._player = player
+        Planet ID 0x00 is never treated as ready, no matter what else reads
+        true, since there's nothing valid to bind addresses to.
 
-    def set_weapon_state(self, weapons: WeaponState) -> None:
-        self._weapons = weapons
+        Returns True exactly once, the tick the new planet becomes ready.
+        """
+        gate = self.pine.read_int32(TransitionGateStruct.BASE_ADDRESS)
+        if gate != self._prev_gate:
+            prev = self._prev_gate
+            self._prev_gate = gate
+            left_idle    = prev == TRANSITION_GATE_IDLE and gate != TRANSITION_GATE_IDLE
+            back_to_idle = prev != TRANSITION_GATE_IDLE and gate == TRANSITION_GATE_IDLE
 
-    def set_armour(self, armour: ArmourState) -> None:
-        self._armour = armour
+            if left_idle:
+                self.is_ready = False
+                self.quick_select.freeze()
 
-    def set_menu_state(
-        self,
-        menu: MenuState,
-        weapon_vendor: WeaponVendorState,
-        mod_vendor: ModVendorState,
-    ) -> None:
-        self._menu          = menu
-        self._weapon_vendor  = weapon_vendor
-        self._mod_vendor     = mod_vendor
+            if gate == TRANSITION_GATE_ARRIVED:
+                planet_id = self.pine.read_int8(LoadingPlanetStruct.BASE_ADDRESS)
+                if planet_id != 0:
+                    self._pending_planet_id = planet_id
 
-    def set_vendor_unlock(self, vendor_unlock: VendorUnlockState) -> None:
-        self._vendor_unlock = vendor_unlock
+            if back_to_idle and self._pending_planet_id:
+                self._ready_on_planet(self._pending_planet_id)
+                self._pending_planet_id = None
+                return True
 
-    def set_display_text_box(
-        self,
-        display_text: DisplayTextBoxState,
-        config: TextBoxConfig,
-    ) -> None:
-        self._display_text     = display_text
-        self._display_text_cfg = config
+            return False
 
-    def set_displayed_text_box(self, displayed_text_box: TextBoxConfigState) -> None:
-        self._displayed_text_box = displayed_text_box
+        # Fallback: an out-of-band planet change that never touched the gate.
+        current_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
+        if current_id != 0 and current_id != self.planet_id and self._pending_planet_id is None:
+            self._ready_on_planet(current_id)
+            return True
 
-    def set_inventory_callbacks(
-        self,
-        reapply_inv: Callable[[], None],
-        get_checked_locations: Callable[[], set[str]],
-    ) -> None:
-        self._reapply_inv      = reapply_inv
-        self._get_checked_locs = get_checked_locations
+        return False
 
-    def add_enter_callback(self, fn: Callable[[], None]) -> None:
-        self._on_enter_callbacks.append(fn)
+    def _ready_on_planet(self, planet_id: int) -> None:
+        self.set_planet(planet_id)
+        self.is_ready = True
+        if not self._quick_select_primed:
+            self._quick_select_primed = True
+            self.quick_select.zero()
+        else:
+            self.quick_select.restore()
+            self.quick_select.unfreeze()
+        if planet_id == _METALIS_ID:
+            self._suppress_giant_clank()
 
-    def add_exit_callback(self, fn: Callable[[], None]) -> None:
-        self._on_exit_callbacks.append(fn)
+    def _suppress_giant_clank(self) -> None:
+        """Force the Giant Clank trigger bit already set so the game treats
+        it as done and never starts the (unreachable) sequence."""
+        value = self.pine.read_int16(_GIANT_CLANK_ADDR)
+        if not value & _GIANT_CLANK_MASK:
+            self.pine.write_int16(_GIANT_CLANK_ADDR, value | _GIANT_CLANK_MASK)
 
-    # planet_enter()/planet_exit() are no longer self-triggered from
-    # GameStatusStruct — they're called externally by the transition-gate
-    # handler in orchestration/_planet_lifecycle.py, which still reads
-    # CURRENT_PLANET_ADDRESS to determine which planet was entered.
-
-    def planet_enter(self) -> None:
-        self._log(f"[RAC] [{self.name}] planet_enter")
-        for cb in self._on_enter_callbacks:
-            cb()
-        if self._player is not None:
-            self._player.set_planet(self.planet_id)
-        if self._menu is not None and self._weapon_vendor is not None and self._mod_vendor is not None:
-            self._menu.bind(self._weapon_vendor, self._mod_vendor, self)
-        if self._display_text is not None and self._display_text_cfg is not None:
-            self._display_text.activate(self._display_text_cfg)
-        if self._displayed_text_box is not None and self._display_text_cfg is not None:
-            self._displayed_text_box.activate(self._display_text_cfg)
-        if self._get_checked_locs is not None and self._weapons is not None:
-            self._weapons.sync_from_ap(self._get_checked_locs())
-        if self._reapply_inv is not None:
-            self._reapply_inv()
-
-    def planet_exit(self) -> None:
-        self._log(f"[RAC] [{self.name}] planet_exit")
-        for cb in self._on_exit_callbacks:
-            cb()
-        if self._menu is not None:
-            self._menu.on_exit()
-        if self._display_text is not None:
-            self._display_text.deactivate()
-        if self._displayed_text_box is not None:
-            self._displayed_text_box.deactivate()
-
-    def _pine_proxy(self):
-        accessor = self.accessor
-
-        class _Proxy:
-            def read_int8(self, addr: int) -> int:
-                raw = accessor.read_raw(addr, 1)
-                return raw[0] if raw else 0
-            def write_int8(self, addr: int, val: int) -> None:
-                accessor.write_raw(addr, bytes([val & 0xFF]))
-            def read_int16(self, addr: int) -> int:
-                raw = accessor.read_raw(addr, 2)
-                return int.from_bytes(raw, "little", signed=True) if len(raw) >= 2 else 0
-            def write_int16(self, addr: int, val: int) -> None:
-                accessor.write_raw(addr, val.to_bytes(2, "little", signed=True))
-            def read_int32(self, addr: int) -> int:
-                raw = accessor.read_raw(addr, 4)
-                return int.from_bytes(raw, "little", signed=True) if len(raw) >= 4 else 0
-            def write_int32(self, addr: int, val: int) -> None:
-                accessor.write_raw(addr, val.to_bytes(4, "little", signed=False))
-            def read_int64(self, addr: int) -> int:
-                raw = accessor.read_raw(addr, 8)
-                return int.from_bytes(raw, "little") if len(raw) >= 8 else 0
-            def write_int64(self, addr: int, val: int) -> None:
-                accessor.write_raw(addr, val.to_bytes(8, "little"))
-            def read_bytes(self, addr: int, size: int) -> bytes:
-                return accessor.read_raw(addr, size)
-            def write_bytes(self, addr: int, data: bytes) -> None:
-                accessor.write_raw(addr, data)
-
-        return _Proxy()
-
-    def on_pickup_start(self) -> None:
-        self._log(f"[RAC] [{self.name}] Pickup start — zeroing armour for clean pickup read")
-        if self._armour is not None:
-            self._armour.sync_slots()
-            self._armour.clear_all_memory()
-
-    def on_pickup_end(self) -> None:
-        self._log(f"[RAC] [{self.name}] Pickup end — reading armour state")
-        if self._armour is None:
+    # Text chat — the entry point external code calls to show a message.
+    # Deciding *when* to call it is entirely external.
+    def show_text(self, text: bytes | str, *, multi_line: bool = False) -> None:
+        if not self.is_ready:
             return
-        self._armour.sync_bitmasks()
-        bitmask_summary = {k: hex(v) for k, v in self._armour.sets_bitmask.items() if v}
-        self._log(f"[RAC] [{self.name}] Pickup end sets_bitmask: {bitmask_summary}")
-        for name, mask in self._armour.sets_bitmask.items():
-            new_bits = mask & ~self._armour.world_collected_armour.get(name, 0)
-            for piece in _PIECE_ORDER:
-                if new_bits & int(piece):
-                    self.on_armour_acquired(name, piece)
+        box = self.multi_line_text if multi_line else self.small_text
+        box.set(text)
 
-    def on_armour_acquired(self, _name: str, _piece: ArmourPiece) -> None:
-        del _name, _piece
+    # Death — pull-based, call whenever you want to check for a transition.
+    def check_death(self) -> bool:
+        if not self.is_ready:
+            return False
+        is_dead = self.player.is_dead
+        newly_dead    = is_dead and not self._prev_dead
+        newly_revived = self._prev_dead and not is_dead
+        self._prev_dead = is_dead
+        if newly_dead:
+            self.on_death()
+        elif newly_revived:
+            self.on_respawn()
+        return newly_dead
 
-    def _wire_vendor_purchase_callbacks(self, allowed: frozenset[str] | None = None) -> None:
-        if self._weapons is None:
+    # Controller — force the planet menu open while the hotkey combo is held.
+    def check_controller(self) -> None:
+        if not self.is_ready or self.planet_id is None:
             return
-        if allowed is None:
-            allowed = (
-                self._vendor_unlock.allowed_weapons_for_inventory()
-                if self._vendor_unlock is not None else frozenset()
-            )
-        with self._vendor_write_lock or contextlib.nullcontext():
-            self._weapons.apply_vendor_locations(allowed)
-        self._prev_on_weapon_acquired = self._weapons.on_weapon_acquired
-        self._prev_on_gadget_acquired = self._weapons.on_gadget_acquired
-        self._prev_on_mod_acquired    = self._weapons.on_mod_acquired
-        self._weapons.on_weapon_acquired = lambda name: self.on_vendor_weapon_purchased(name)
-        self._weapons.on_gadget_acquired = lambda name: self.on_vendor_gadget_purchased(name)
-        self._weapons.on_mod_acquired    = lambda weapon, slot: self.on_vendor_mod_purchased(weapon, slot)
-        self._log(
-            f"[RAC] [{self.name}] Vendor purchase callbacks wired "
-            f"(on_weapon_acquired/on_gadget_acquired/on_mod_acquired)."
-        )
+        buttons = GlobalButtonState.read(self.pine, self.planet_id)
+        if buttons.opens_planet_menu:
+            self.menu.set(MenuStateValue.PLANET_MENU)
 
-    def on_weapon_vendor_open(self) -> None:
-        active            = self._weapon_vendor.active if self._weapon_vendor is not None else None
-        showing_inventory = bool(self._weapon_vendor is not None and self._weapon_vendor.showing_inventory)
-        self._log(
-            f"[RAC] [{self.name}] Weapon vendor open "
-            f"(weapon_vendor.active={active}, showing_inventory={showing_inventory})."
-        )
-        if showing_inventory:
-            # The D_PAD_RIGHT inventory-view refresh (menu.set_menu) can make
-            # the game re-run its own open sequence, which re-fires this same
-            # transition. Re-assert the inventory view instead of falling
-            # back to _wire_vendor_purchase_callbacks()'s default-view
-            # zero/restore and re-wiring purchase tracking back on — that
-            # would undo what the D_PAD toggle deliberately set up.
-            if self._vendor_unlock is not None:
-                self._vendor_unlock.apply_inventory(self.accessor)
-            if self._weapons is not None:
-                with self._vendor_write_lock or contextlib.nullcontext():
-                    self._weapons.sync()
+    # Quick select / traps
+    def activate_trap(self, trap_name: str) -> None:
+        if not self.is_ready:
             return
-        self._wire_vendor_purchase_callbacks()
-        # Weapon vendor only: writes the vendor list/size array
-        # (WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS). The mod vendor has no
-        # equivalent array — mod purchasability lives on the weapon structs
-        # themselves (mod_unlock_N), kept correct by the existing inventory
-        # sync, not by anything here.
-        if self._vendor_unlock is not None:
-            self._vendor_unlock.apply(self.accessor)
-            for line in self._vendor_unlock.debug_lines():
-                self._log(line)
+        _activate_trap(self.pine, trap_name)
 
-    def on_mod_vendor_open(self) -> None:
-        self._log(f"[RAC] [{self.name}] Mod vendor open.")
-        # Unlike the weapons vendor, weapon_unlocked here isn't gated on having
-        # bought the weapon from ITS OWN vendor — a weapon's mod slot won't
-        # render at all if the weapon shows locked, and mods are frequently
-        # sold on a different planet than the weapon itself. mod_slot_* (does
-        # the player own the mod) is still only restored if purchased from
-        # this vendor — owning it via an AP item received elsewhere doesn't
-        # restore it (apply_vendor_locations, called below, already does
-        # this part unchanged).
-        allowed = (
-            self._vendor_unlock.mod_vendor_unlock_weapons()
-            if self._vendor_unlock is not None else frozenset()
-        )
-        self._wire_vendor_purchase_callbacks(allowed)
-        if self._weapons is not None:
-            with self._vendor_write_lock or contextlib.nullcontext():
-                self._weapons.zero_unpurchased_mod_slots(allowed)
-        if self._vendor_unlock is not None:
-            self._vendor_unlock.apply_mod_vendor_weapons(self.accessor)
-        # The menu reads unlocked/mod_unlock_N to decide what to render when it
-        # opens — our writes above land slightly after that initial read (we're
-        # reacting to the same state-change event), so without this the mod
-        # vendor can display stale (pre-write) slot visibility. Forcing a
-        # refresh here makes it redraw with what we just wrote.
-        if self._menu is not None:
-            from .menu import MenuStateValue
-            self._menu.set_menu(MenuStateValue.MOD_VENDOR)
+    # Armour
+    def check_collected_armour(self) -> None:
+        """Detect a genuine in-game armour pickup by watching the player's
+        pickup-animation window (player.is_picking_up), not by polling
+        UnlockedArmour continuously — apply_inventory() writes those same
+        bytes any time AP-owned armour gets re-synced (e.g. on every planet
+        load), completely outside of any pickup animation, and treating
+        every appeared bit as "new" would misreport that resync as a real
+        pickup the first time each session it happens.
 
-    def on_menu_close(self) -> None:
-        self._log(f"[RAC] [{self.name}] Vendor menu closed — restoring AP inventory.")
-        if self._weapons is not None:
-            # Restore whatever on_menu_open() displaced (e.g. the bonus-weapon-pickup
-            # chain) — resetting to a bare no-op here would permanently kill world
-            # pickup detection for the rest of the session after the first vendor visit.
-            self._weapons.on_weapon_acquired = self._prev_on_weapon_acquired or (lambda _: None)
-            self._weapons.on_gadget_acquired = self._prev_on_gadget_acquired or (lambda _: None)
-            self._weapons.on_mod_acquired    = self._prev_on_mod_acquired or (lambda *_: None)
-            self._prev_on_weapon_acquired = None
-            self._prev_on_gadget_acquired = None
-            self._prev_on_mod_acquired    = None
-        if self._reapply_inv is not None:
-            self._reapply_inv()
+        On entering the animation, snapshot the current bytes as a
+        baseline. On leaving it, whatever's new relative to that baseline
+        is a genuine pickup this session: OR it into collected_armour (so
+        it's never reported twice) and immediately rewrite memory for any
+        set that changed back to only what Archipelago has actually granted
+        (unlock_armour) — a local pickup only proves the *location* was
+        visited, it doesn't grant ownership, so the raw bits the game just
+        wrote must not be left sitting in memory as if they were owned.
+        Never touches unlock_armour itself — that's only ever set by
+        sync_unlock_armour() from AP data.
 
-    def on_vendor_weapon_purchased(self, _name: str) -> None:
-        del _name
+        Also snapshots/restores the equipped-slot bytes across the same
+        window — picking up a piece can auto-equip it for the animation,
+        which must not silently change the player's actual loadout."""
+        if not self.is_ready:
+            return
+        is_picking_up = self.player.is_picking_up
+        if is_picking_up and not self._was_picking_up:
+            self._armour_pickup_baseline = {
+                name: int(getattr(self.armour.UnlockedArmour, name))
+                for name in ArmourUnlocks._OFFSETS
+            }
+            self._equipped_pickup_baseline = {
+                name: int(getattr(self.armour.EquipedArmour, name) or 0)
+                for name in EquippedArmour._OFFSETS
+            }
+        elif not is_picking_up and self._was_picking_up and self._armour_pickup_baseline is not None:
+            baseline = self._armour_pickup_baseline
+            self._armour_pickup_baseline = None
+            changed: dict[str, int] = {}
+            for name in ArmourUnlocks._OFFSETS:
+                raw = int(getattr(self.armour.UnlockedArmour, name))
+                new_bits = raw & ~baseline.get(name, 0) & ~self.collected_armour[name]
+                if new_bits:
+                    self.collected_armour[name] |= new_bits
+                changed[name] = self.unlock_armour.get(name, 0)
+            self.armour.sync_unlocked(changed)
 
-    def on_vendor_gadget_purchased(self, _name: str) -> None:
-        del _name
+            if self._equipped_pickup_baseline is not None:
+                self.armour.sync_equipped(self._equipped_pickup_baseline)
+                self._equipped_pickup_baseline = None
+        self._was_picking_up = is_picking_up
 
-    def on_vendor_mod_purchased(self, _weapon: str, _slot: str) -> None:
-        del _weapon, _slot
+    def sync_unlock_armour(self, ap_armour: dict[str, int]) -> None:
+        """Record what Archipelago has granted, separate from collected_armour.
+        Not gated on is_ready — this only touches the in-memory dict, not the game."""
+        self.unlock_armour.update(ap_armour)
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, PlanetState):
-            return NotImplemented
-        return self.planet_id == other.planet_id
+    def check_equipped_armour(self) -> bool:
+        """Pull-based: call whenever you want to check for a pause-menu-close
+        transition. Only then does it snapshot + save EquipedArmour."""
+        if not self.is_ready:
+            return False
+        current = self.menu.get()
+        left_pause_menu = self._prev_menu == MenuStateValue.PAUSE_MENU and current != MenuStateValue.PAUSE_MENU
+        self._prev_menu = current
+        if left_pause_menu:
+            for name in EquippedArmour._OFFSETS:
+                self.equipped_armour[name] = int(getattr(self.armour.EquipedArmour, name) or 0)
+            self.on_equipped_armour_saved(dict(self.equipped_armour))
+            self.on_pause_close()
+        return left_pause_menu
 
-    def __hash__(self) -> int:  # type: ignore[override]
-        return hash(self.planet_id)
+    # Weapons
+    def check_weapons(self) -> dict[str, list]:
+        if not self.is_ready:
+            return {"weapons": [], "gadgets": [], "mods": []}
+        return self.weapons.check()
 
     def __repr__(self) -> str:
-        return f"PlanetState(name={self.name!r}, planet_id={self.planet_id:#04x})"
-
-
-# Planet load state (runtime)
-
-class PlanetLoadState(BaseState):
-
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self._start_prev:    int = 0
-        self._complete_prev: int = 0
-
-        self.on_start_load:    Callable[[], None] = lambda: None
-        self.on_load_complete: Callable[[], None] = lambda: None
-
-    def _register_handlers(self) -> None:
-        self.accessor.on_struct_change(PlanetLoadStruct, self._on_change)
-
-    def _unregister_handlers(self) -> None:
-        self.accessor.remove_struct_handler(PlanetLoadStruct, self._on_change)
-
-    def _on_change(self, _address: int, new_bytes: bytes) -> None:
-        instance = PlanetLoadStruct.from_bytes(new_bytes)
-
-        if instance.start_load and not self._start_prev:
-            self.on_start_load()
-
-        if instance.load_complete and not self._complete_prev:
-            self.on_load_complete()
-
-        self._start_prev    = instance.start_load
-        self._complete_prev = instance.load_complete
-
-    def sync(self) -> None:
-        instance            = self.accessor.read_struct(PlanetLoadStruct)
-        self._start_prev    = instance.start_load
-        self._complete_prev = instance.load_complete
+        return f"PlanetInventory(planet_id={self.planet_id})"
 
 
 # Planet unlock state (runtime)
@@ -512,13 +468,9 @@ _COUNT = len(PLANET_UNLOCK_ORDER)
 
 class PlanetUnlockState(BaseState):
 
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
+    def __init__(self, pine: Pine) -> None:
+        super().__init__()
+        self.pine = pine
         self.unlocked: dict[str, bool] = dict.fromkeys(PLANET_UNLOCK_ORDER, False)
         self._desired: dict[str, bool] = {p: p in _AUTO_UNLOCK_NAMES for p in PLANET_UNLOCK_ORDER}
         self._desired["RYLLUS"]        = True
@@ -526,15 +478,15 @@ class PlanetUnlockState(BaseState):
         self._ryllus_released: bool    = False
         self._infobot_planets: set[str] = set()
 
-    def _register_handlers(self) -> None:
-        self.accessor.on_struct_change(PlanetProgressStruct, self._on_struct_change)
+    def _read_struct(self) -> PlanetProgressStruct:
+        raw = self.pine.read_bytes(PlanetProgressStruct.BASE_ADDRESS, PlanetProgressStruct.size())
+        return PlanetProgressStruct.from_bytes(raw)
 
-    def _unregister_handlers(self) -> None:
-        self.accessor.remove_struct_handler(PlanetProgressStruct, self._on_struct_change)
-
-    def _on_struct_change(self, address: int, new_bytes: bytes) -> None:
-        del address
-        instance = PlanetProgressStruct.from_bytes(new_bytes)
+    def check(self) -> None:
+        """Pull-based: call whenever you want to re-check + enforce planet
+        unlock state, firing on_planet_unlocked/on_planet_locked for whatever
+        changed since the last call."""
+        instance = self._read_struct()
         prev = dict(self.unlocked)
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
             self.unlocked[name] = getattr(instance, field) == PlanetLockValue.UNLOCKED
@@ -548,7 +500,7 @@ class PlanetUnlockState(BaseState):
                 self.on_planet_locked(name)
 
     def sync(self) -> None:
-        instance = self.accessor.read_struct(PlanetProgressStruct)
+        instance = self._read_struct()
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
             self.unlocked[name] = getattr(instance, field) == PlanetLockValue.UNLOCKED
         self._enforce_desired()
@@ -563,20 +515,19 @@ class PlanetUnlockState(BaseState):
                 self.unlocked[name] = self._desired[name]
 
     def _write_desired(self, names: list[str]) -> None:
-        # Per-field writes rather than one packed write_struct() call, so
-        # planets in _NATURAL_UNLOCK_NAMES (e.g. Inside Clank) are never
-        # touched at all — a single write_struct() would clobber their live
-        # game-managed byte with whatever this instance's default/desired
-        # value happened to be.
+        # Per-field writes rather than one packed write, so planets in
+        # _NATURAL_UNLOCK_NAMES (e.g. Inside Clank) are never touched at all
+        # — a bulk write would clobber their live game-managed byte with
+        # whatever this instance's default/desired value happened to be.
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
             if name not in names:
                 continue
             unlock_val = PlanetLockValue.UNLOCKED if self._desired[name] else PlanetLockValue.LOCKED
-            self.accessor.write_field(PlanetProgressStruct, field, unlock_val)
+            self.pine.write_int8(PlanetProgressStruct.address_of(field), int(unlock_val))
             pu = PLANET_UNLOCKS.get(name)
             if pu is not None:
                 state_val = max(int(unlock_val), pu.default_state)
-                self.accessor.write_raw(pu.state_addr, bytes([state_val]))
+                self.pine.write_int8(pu.state_addr, state_val)
 
     def set_unlocked_planets(self, planets: set[str]) -> None:
         self._infobot_planets = set(planets)

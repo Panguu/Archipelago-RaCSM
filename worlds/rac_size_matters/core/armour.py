@@ -1,23 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from enum import IntEnum, IntFlag
 from typing import NamedTuple
 
 from ..constants import (
-    Rac5ArmourSet,
     Rac5ClankChallenges as RACSMCLANK,
     Rac5Locations,
     Rac5Planets,
     Rac5SkyboardChallenges as RACSMSKY,
 )
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
 from ..pypine import Pine
-from .structs.pickups import ArmourSetCollectedStruct, ArmourStruct
+from .states.base_state import BaseState
+from .structs.pickups import ArmourStruct
 
 # Armour address resolvers
 _BOOTS_MASK = 0xF0  # module-level, not inside the enum body
@@ -72,53 +67,55 @@ class ArmourSlot:
         self.slot_name = slot_name
 
     def _address(self, instance) -> int:
-        return instance.base + instance._SLOT_OFFSETS[self.slot_name]
+        return instance.base + instance._OFFSETS[self.slot_name]
 
     def __get__(self, instance, owner) -> ArmourSet | None:
         if instance is None:
             return None
-        value = instance.pine.read_int8(instance._address(instance))
+        value = instance.pine.read_int8(self._address(instance))
+        if value == 0:
+            return None
         return ArmourSet(value)
 
     def __set__(self, instance, value) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(instance._address(instance), value)
+        instance.pine.write_int8(self._address(instance), value)
 
     def __delete__(self, instance) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(instance._address(instance), 0)
+        instance.pine.write_int8(self._address(instance), 0)
 
 
-class ArmourUnlock:
+class ArmourUnlockSlot:
     """Descriptor for unlocked armour slots"""
 
     def __init__(self, slot_name: str) -> None:
         self.slot_name = slot_name
 
     def _address(self, instance) -> int:
-        return instance.base + instance._SLOT_OFFSETS[self.slot_name]
+        return instance.base + instance._OFFSETS[self.slot_name]
 
     def __get__(self, instance, owner) -> ArmourPiece | None:
         if instance is None:
             return None
-        value = instance.pine.read_int8(instance._address(instance))
+        value = instance.pine.read_int8(self._address(instance))
         return ArmourPiece.from_raw(value)
 
     def __set__(self, instance, value) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(instance._address(instance), value)
+        instance.pine.write_int8(self._address(instance), value)
 
     def __delete__(self, instance) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(instance._address(instance), 0)
+        instance.pine.write_int8(self._address(instance), 0)
 
 
 class EquippedArmour:
-    _EQUIPED_OFFSETS: dict[str, int] = {
+    _OFFSETS: dict[str, int] = {
         "chestplate": 0x00,
         "helmet": 0x01,
         "gloves_left": 0x02,
@@ -138,9 +135,24 @@ class EquippedArmour:
         self.base = base
         self.pine = pine
 
+    def to_dict(self) -> dict[str, int]:
+        return {name: int(getattr(self, name) or 0) for name in EquippedArmour._OFFSETS}
+
+    @classmethod
+    def from_ap_data(cls, base: int, pine: Pine, data: dict[str, int]) -> EquippedArmour:
+        """Build an EquippedArmour bound to (base, pine) and write an Archipelago data-storage dict into it."""
+        equipped = cls(base, pine)
+        for name in EquippedArmour._OFFSETS:
+            if name in data:
+                setattr(equipped, name, int(data[name]))
+        return equipped
+
+    def __repr__(self) -> str:
+        return f"EquippedArmour({self.to_dict()})"
+
 
 class ArmourUnlocks:
-    _SET_OFFSETS: dict[str, int] = {
+    _OFFSETS: dict[str, int] = {
         "wildfire": 0x06,
         "sludge": 0x07,
         "crystallix": 0x08,
@@ -150,17 +162,36 @@ class ArmourUnlocks:
         "chameleon": 0x0C,
     }
 
-    wildfire = ArmourUnlock("wildfire")
-    sludge = ArmourUnlock("sludge")
-    crystallix = ArmourUnlock("crystallix")
-    electroshock = ArmourUnlock("electroshock")
-    mega_bomb = ArmourUnlock("mega_bomb")
-    hyperborean = ArmourUnlock("hyperborean")
-    chameleon = ArmourUnlock("chameleon")
+    wildfire = ArmourUnlockSlot("wildfire")
+    sludge = ArmourUnlockSlot("sludge")
+    crystallix = ArmourUnlockSlot("crystallix")
+    electroshock = ArmourUnlockSlot("electroshock")
+    mega_bomb = ArmourUnlockSlot("mega_bomb")
+    hyperborean = ArmourUnlockSlot("hyperborean")
+    chameleon = ArmourUnlockSlot("chameleon")
 
     def __init__(self, base: int, pine: Pine) -> None:
         self.base = base
         self.pine = pine
+
+    def owned_mask(self) -> int:
+        """Bitmask with one bit per armour set (bit i = ArmourUnlocks._OFFSETS order) that has any piece owned."""
+        return sum(1 << i for i, name in enumerate(ArmourUnlocks._OFFSETS) if getattr(self, name))
+
+    def to_dict(self) -> dict[str, int]:
+        return {name: int(getattr(self, name)) for name in ArmourUnlocks._OFFSETS}
+
+    @classmethod
+    def from_ap_data(cls, base: int, pine: Pine, data: dict[str, int]) -> ArmourUnlocks:
+        """Build an ArmourUnlocks bound to (base, pine) and write an Archipelago data-storage dict into it."""
+        unlocks = cls(base, pine)
+        for name in ArmourUnlocks._OFFSETS:
+            if name in data:
+                setattr(unlocks, name, ArmourPiece.from_raw(int(data[name])))
+        return unlocks
+
+    def __repr__(self) -> str:
+        return f"ArmourUnlocks({self.to_dict()})"
 
 
 # Armour pickups
@@ -220,326 +251,55 @@ CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
 # Armour set checks
 
 
-@dataclass(frozen=True)
-class ArmourSetCheck:
-    chestplate: ArmourSet | None = None
-    helmet: ArmourSet | None = None
-    gloves: ArmourSet | None = None
-    boots: ArmourSet | None = None
+class ArmourInventory(BaseState):
+    """Minimal replacement for ArmourState: holds EquipedArmour/UnlockedArmour
+    (both pine-backed) and pushes both to Archipelago data storage. Change
+    detection is external now (PlanetInventory.check_collected_armour() reads
+    these live) — no accessor, no registered handlers.
+    """
 
-    def required_mask(self) -> int:
-        mask = 0
-        for val in {self.chestplate, self.helmet, self.gloves, self.boots} - {None}:
-            mask |= 1 << (val - 1)
-        return mask
-
-    def is_unlocked(self, unlocks: ArmourUnlocks) -> bool:
-        """True if every base armour set this cosmetic combo requires is fully owned."""
-        required = self.required_mask()
-        return (required & unlocks.owned_mask()) == required
-
-    def matches(self, equipped: EquippedArmour) -> bool:
-        """True if the currently equipped pieces match this combo exactly."""
-        if self.chestplate is not None and equipped.chestplate != self.chestplate:
-            return False
-        if self.helmet is not None and equipped.helmet != self.helmet:
-            return False
-        if self.gloves is not None:
-            if equipped.gloves_left != self.gloves or equipped.gloves_right != self.gloves:
-                return False
-        if self.boots is not None:
-            if equipped.boots_left != self.boots or equipped.boots_right != self.boots:
-                return False
-        return True
-
-
-ARMOUR_SET_CHECKS: dict[str, ArmourSetCheck] = {
-    Rac5ArmourSet.WILDFIRE: ArmourSetCheck(
-        chestplate=ArmourSets.Wildfire,
-        helmet=ArmourSets.Wildfire,
-        gloves=ArmourSets.Wildfire,
-        boots=ArmourSets.Wildfire,
-    ),
-    Rac5ArmourSet.WILDBURST: ArmourSetCheck(
-        chestplate=ArmourSets.Wildfire, helmet=ArmourSets.Sludge, gloves=ArmourSets.Wildfire, boots=ArmourSets.Wildfire
-    ),
-    Rac5ArmourSet.SLUDGE_MK9: ArmourSetCheck(
-        chestplate=ArmourSets.Sludge, helmet=ArmourSets.Sludge, gloves=ArmourSets.Sludge, boots=ArmourSets.Sludge
-    ),
-    Rac5ArmourSet.CRYSTALLIX: ArmourSetCheck(
-        chestplate=ArmourSets.Crystallix,
-        helmet=ArmourSets.Crystallix,
-        gloves=ArmourSets.Crystallix,
-        boots=ArmourSets.Crystallix,
-    ),
-    Rac5ArmourSet.TRIPLE_WAVE: ArmourSetCheck(
-        chestplate=ArmourSets.Electroshock,
-        helmet=ArmourSets.Wildfire,
-        gloves=ArmourSets.Sludge,
-        boots=ArmourSets.Electroshock,
-    ),
-    Rac5ArmourSet.SHOCK_CRYSTAL: ArmourSetCheck(
-        chestplate=ArmourSets.Crystallix,
-        helmet=ArmourSets.Electroshock,
-        gloves=ArmourSets.Crystallix,
-        boots=ArmourSets.Electroshock,
-    ),
-    Rac5ArmourSet.ELECTROSHOCK: ArmourSetCheck(
-        chestplate=ArmourSets.Electroshock,
-        helmet=ArmourSets.Electroshock,
-        gloves=ArmourSets.Electroshock,
-        boots=ArmourSets.Electroshock,
-    ),
-    Rac5ArmourSet.MEGA_BOMB: ArmourSetCheck(
-        chestplate=ArmourSets.MegaBomb,
-        helmet=ArmourSets.MegaBomb,
-        gloves=ArmourSets.MegaBomb,
-        boots=ArmourSets.MegaBomb,
-    ),
-    Rac5ArmourSet.FIRE_BOMB: ArmourSetCheck(
-        chestplate=ArmourSets.MegaBomb,
-        helmet=ArmourSets.MegaBomb,
-        gloves=ArmourSets.Wildfire,
-        boots=ArmourSets.MegaBomb,
-    ),
-    Rac5ArmourSet.HYPERBOREAN: ArmourSetCheck(
-        chestplate=ArmourSets.Hyperborean,
-        helmet=ArmourSets.Hyperborean,
-        gloves=ArmourSets.Hyperborean,
-        boots=ArmourSets.Hyperborean,
-    ),
-    Rac5ArmourSet.ICE_II: ArmourSetCheck(
-        chestplate=ArmourSets.Hyperborean,
-        helmet=ArmourSets.Crystallix,
-        gloves=ArmourSets.Hyperborean,
-        boots=ArmourSets.Hyperborean,
-    ),
-    Rac5ArmourSet.CHAMELEON: ArmourSetCheck(
-        chestplate=ArmourSets.Chameleon,
-        helmet=ArmourSets.Chameleon,
-        gloves=ArmourSets.Chameleon,
-        boots=ArmourSets.Chameleon,
-    ),
-    Rac5ArmourSet.STALKER: ArmourSetCheck(
-        chestplate=ArmourSets.Chameleon,
-        helmet=ArmourSets.Wildfire,
-        gloves=ArmourSets.Sludge,
-        boots=ArmourSets.Chameleon,
-    ),
-}
-
-_HYBRID_BYTE1_BITS: dict[str, int] = {
-    Rac5ArmourSet.SHOCK_CRYSTAL: 0x01,
-    Rac5ArmourSet.WILDBURST: 0x02,
-    Rac5ArmourSet.TRIPLE_WAVE: 0x04,
-    Rac5ArmourSet.ICE_II: 0x08,
-    Rac5ArmourSet.STALKER: 0x10,
-}
-
-ARMOUR_SET_CHECK_MASKS: dict[str, int] = {
-    name: (_HYBRID_BYTE1_BITS[name] << 8) if name in _HYBRID_BYTE1_BITS else check.required_mask()
-    for name, check in ARMOUR_SET_CHECKS.items()
-}
-
-
-# Armour state (runtime)
-
-
-class ArmourState(BaseState):
     def __init__(
         self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
+        pine: Pine,
+        base: int = ArmourStruct.BASE_ADDRESS,
     ) -> None:
-        super().__init__(accessor, addresses, storage)
-        # Slot bytes store set indices (1-7), not ArmourPiece bitmask values — keep as int.
-        self.equipped: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
-        # Stable snapshot — only updated by freeze_slots()/sync_slots()/sync().
-        self._stable_slots: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
-        self.on_slots_save: Callable[[dict[str, int]], None] = lambda _: None
-        self.sets_unlocked: dict[str, bool] = dict.fromkeys(ArmourStruct.SET_FIELDS, False)
-        self.sets_bitmask: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
-        self.world_collected_armour: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
-        self.ap_armour: dict[str, int] = dict.fromkeys(ArmourStruct.SET_FIELDS, 0)
+        super().__init__()
+        self.base = base
+        self.pine = pine
+        self.UnlockedArmour = ArmourUnlocks(base, pine)
+        self.EquipedArmour = EquippedArmour(base, pine)
+        self.on_equipped_save: Callable[[dict[str, int]], None] = lambda _: None
+        self.on_unlocked_save: Callable[[dict[str, int]], None] = lambda _: None
 
-    def load_slots(self, data: dict[str, int]) -> None:
-        """Load saved slot values (e.g. from AP data storage)."""
-        for name in ArmourStruct.SLOT_FIELDS:
-            if name in data:
-                val = int(data[name])
-                self.equipped[name] = val
-                self._stable_slots[name] = val
+    def set_unlocked_armour(self, state: ArmourUnlocks) -> None:
+        """Save the current unlocked-sets values into UnlockedArmour."""
+        self.UnlockedArmour = state
 
-    def push_slots_save(self) -> None:
-        """Push the current equipped slots to AP data storage. Called
-        explicitly (e.g. on pause-menu close) rather than on every
-        poll-detected change, since that would echo back via set_notify and
-        re-trigger restores."""
-        self.on_slots_save(dict(self.equipped))
+    def set_equipped_armour(self, state: EquippedArmour) -> None:
+        """Save the current equipped-slot values into EquipedArmour."""
+        self.EquipedArmour = state
 
-    def _register_handlers(self) -> None:
-        self.accessor.on_struct_change(ArmourStruct, self._on_armour_change)
+    def sync_equipped(self, data: dict[str, int]) -> None:
+        """Convert an Archipelago data-storage dict and write it into game memory as equipped slots."""
+        self.set_equipped_armour(EquippedArmour.from_ap_data(self.base, self.pine, data))
 
-    def _unregister_handlers(self) -> None:
-        self.accessor.remove_struct_handler(ArmourStruct, self._on_armour_change)
+    def sync_unlocked(self, data: dict[str, int]) -> None:
+        """Convert an Archipelago data-storage dict and write it into game memory as unlocked sets."""
+        self.set_unlocked_armour(ArmourUnlocks.from_ap_data(self.base, self.pine, data))
 
-    def _on_armour_change(self, _address: int, new_bytes: bytes) -> None:
-        instance = ArmourStruct.from_bytes(new_bytes)
-        for name in ArmourStruct.SLOT_FIELDS:
-            self.equipped[name] = getattr(instance, name)
-        for name in ArmourStruct.SET_FIELDS:
-            raw = getattr(instance, name)
-            self.sets_bitmask[name] = raw
-            self.sets_unlocked[name] = bool(raw)
+    def sync(self, equipped_data: dict[str, int], unlocked_data: dict[str, int]) -> None:
+        """Convert Archipelago data-storage dicts and write both equipped slots and unlocked sets into game memory."""
+        self.sync_equipped(equipped_data)
+        self.sync_unlocked(unlocked_data)
 
-    def sync(self) -> None:
-        instance = self.accessor.read_struct(ArmourStruct)
-        for name in ArmourStruct.SLOT_FIELDS:
-            raw = getattr(instance, name)
-            self.equipped[name] = raw
-            self._stable_slots[name] = raw
-        for name in ArmourStruct.SET_FIELDS:
-            raw = getattr(instance, name)
-            self.sets_bitmask[name] = raw
-            self.sets_unlocked[name] = bool(raw)
+    def push_equipped_armour(self) -> None:
+        """Push the current equipped-slot values to Archipelago data storage."""
+        self.on_equipped_save(self.EquipedArmour.to_dict())
 
-    def sync_bitmasks(self) -> None:
-        """Read only the set bitmasks from memory without touching _stable_slots.
-
-        Used in on_pickup_end so that the slot snapshot taken at pickup_start is
-        preserved for restore_equipped_slots() after the detection window closes.
-        """
-        instance = self.accessor.read_struct(ArmourStruct)
-        for name in ArmourStruct.SET_FIELDS:
-            raw = getattr(instance, name)
-            self.sets_bitmask[name] = raw
-            self.sets_unlocked[name] = bool(raw)
-
-    def sync_slots(self) -> None:
-        raw = self.accessor.read_raw(ArmourStruct.BASE_ADDRESS, len(ArmourStruct.SLOT_FIELDS))
-        for i, name in enumerate(ArmourStruct.SLOT_FIELDS):
-            self.equipped[name] = raw[i]
-            self._stable_slots[name] = raw[i]
-
-    def freeze_slots(self) -> None:
-        """Snapshot equipped into _stable_slots from the live dict, not from memory.
-
-        Called on death so we capture the last known good state before the game
-        clears armour memory as part of its death sequence.
-        """
-        for name in ArmourStruct.SLOT_FIELDS:
-            self._stable_slots[name] = self.equipped[name]
-
-    def restore_equipped_slots(self) -> None:
-        """Write the stable slot snapshot back to memory without touching the set bytes."""
-        slot_bytes = bytes(self._stable_slots[name] for name in ArmourStruct.SLOT_FIELDS)
-        self.accessor.write_raw(ArmourStruct.BASE_ADDRESS, slot_bytes)
-
-    def apply_world_armour(self) -> None:
-        data = bytearray(ArmourStruct.size())
-        for name in ArmourStruct.SLOT_FIELDS:
-            offset = ArmourStruct.field_offset(name)
-            data[offset] = self._stable_slots[name]
-        for name in ArmourStruct.SET_FIELDS:
-            offset = ArmourStruct.field_offset(name)
-            data[offset] = self.world_collected_armour.get(name, 0)
-        self.accessor.write_raw(ArmourStruct.BASE_ADDRESS, bytes(data))
-
-    def apply_ap_armour(self) -> None:
-        data = bytearray(ArmourStruct.size())
-        for name in ArmourStruct.SLOT_FIELDS:
-            offset = ArmourStruct.field_offset(name)
-            data[offset] = self._stable_slots[name]
-        for name in ArmourStruct.SET_FIELDS:
-            offset = ArmourStruct.field_offset(name)
-            data[offset] = self.ap_armour.get(name, 0)
-        self.accessor.write_raw(ArmourStruct.BASE_ADDRESS, bytes(data))
-
-    def clear_all_memory(self) -> None:
-        self.accessor.write_raw(ArmourStruct.BASE_ADDRESS, bytes(ArmourStruct.size()))
-
-    def add_world_armour_piece(self, set_name: str, piece: ArmourPiece) -> None:
-        if set_name in self.world_collected_armour:
-            self.world_collected_armour[set_name] |= int(piece)
-
-    def add_ap_armour_piece(self, set_name: str, piece: ArmourPiece) -> None:
-        if set_name in self.ap_armour:
-            self.ap_armour[set_name] |= int(piece)
-
-    def sync_from_ap(
-        self,
-        checked_locations: set[str],
-        armour_item_pickups: set[tuple[str, ArmourPiece]] = frozenset(),
-    ) -> None:
-        _loc_to_flag: dict[str, tuple[str, ArmourPiece]] = {v: k for k, v in ARMOUR_FLAG_TO_LOCATION.items()}
-        for key in ArmourStruct.SET_FIELDS:
-            self.world_collected_armour[key] = 0
-            self.ap_armour[key] = 0
-        for loc_name in checked_locations:
-            flag = _loc_to_flag.get(loc_name) or CHALLENGE_LOCATION_TO_ARMOUR_FLAG.get(loc_name)
-            if flag:
-                set_key, piece = flag
-                self.world_collected_armour[set_key] |= int(piece)
-        for flag in armour_item_pickups:
-            if ARMOUR_FLAG_TO_LOCATION.get(flag):
-                set_key, piece = flag
-                self.ap_armour[set_key] |= int(piece)
+    def push_unlocked_armour(self) -> None:
+        """Push the current unlocked-sets values to Archipelago data storage."""
+        self.on_unlocked_save(self.UnlockedArmour.to_dict())
 
     def __repr__(self) -> str:
-        unlocked = [n for n, v in self.sets_unlocked.items() if v]
-        slots = {k: v for k, v in self.equipped.items() if v}
-        return f"ArmourState(sets_unlocked={unlocked}, equipped_slots={slots})"
+        return f"ArmourInventory(equipped={self.EquipedArmour}, unlocked={self.UnlockedArmour})"
 
-
-# Armour set collected state (runtime)
-
-
-class ArmourSetCollectedState(BaseState):
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self._prev: int = 0
-        self._completed: set[str] = set()
-        self.on_location_check: Callable[[str], None] = lambda _: None
-
-    def on_exit(self) -> None:
-        self.on_location_check = lambda _: None
-
-    def _register_handlers(self) -> None:
-        self.accessor.on_struct_change(ArmourSetCollectedStruct, self._on_change)
-
-    def _unregister_handlers(self) -> None:
-        self.accessor.remove_struct_handler(ArmourSetCollectedStruct, self._on_change)
-
-    def _on_change(self, _address: int, new_bytes: bytes) -> None:
-        byte0 = new_bytes[0] if new_bytes else 0
-        byte1 = new_bytes[1] if len(new_bytes) > 1 else 0
-        current = byte0 | (byte1 << 8)
-        if current == self._prev:
-            return
-        self._prev = current
-        self._check(current)
-
-    def _check(self, value: int) -> None:
-        for name, mask in ARMOUR_SET_CHECK_MASKS.items():
-            if name not in self._completed and (value & mask) == mask:
-                self._completed.add(name)
-                self.on_location_check(name)
-
-    def sync(self) -> None:
-        raw = self.accessor.read_raw(ArmourSetCollectedStruct.BASE_ADDRESS, 2)
-        byte0 = raw[0] if raw else 0
-        byte1 = raw[1] if len(raw) > 1 else 0
-        self._prev = byte0 | (byte1 << 8)
-        self._check(self._prev)
-
-    def sync_from_ap(self, checked_locations: set[str]) -> None:
-        self._completed.update(name for name in checked_locations if name in ARMOUR_SET_CHECK_MASKS)
-
-    def __repr__(self) -> str:
-        return f"ArmourSetCollectedState(prev=0x{self._prev:02X}, completed={len(self._completed)})"

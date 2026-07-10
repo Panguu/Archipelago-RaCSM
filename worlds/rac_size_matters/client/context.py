@@ -12,23 +12,12 @@ except ImportError:
     from CommonClient import CommonContext
 from CommonClient import logger
 
-from ..core import (
-    ARMOUR_ADDRESSES,
-    BOLTS,
-    PLANET_STATE_ADDRESSES,
-    PLAYER_ARMOUR_SLOTS,
-    SKILL_POINT_ADDRESS,
-    Int64State,
-    MemoryItemState,
-    TextColour,
-    colored_text,
-)
-from ..core.game_orchestrator import GameOrchestrator as GameWiring
-from ..core.states.game_state import GameState
+from ..core import TextColour, colored_text
+from ..core.core import Core
 from ..locations import ALL_LOCATIONS
-from ..interface import Pine
+from ..pypine import Pine
 from .command_processor import RACCommandProcessor
-from .constants import EXPECTED_GAME_ID, GAME_NAME
+from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
 from .handlers import CutsceneHandlerMixin, EventsHandlerMixin
 from .pine_mixin import PineMixin
@@ -56,51 +45,6 @@ class RACContext(
         self._location_name_to_id = {name: data.code for name, data in ALL_LOCATIONS.items()}
         self._locally_checked_locations: set[int] = set()
 
-        self._prev_skill_points = 0
-        self._prev_bolt_pickup = 0
-        self._planet_state = MemoryItemState(
-            PLANET_STATE_ADDRESSES,
-            name="PlanetState",
-            debug_log=self._log,
-        )
-        self._prev_planet = 0
-
-        self._armour_pickup_state = MemoryItemState(
-            ARMOUR_ADDRESSES,
-            on_change=self._on_armour_pickup_update,
-            name="ArmourPickupState",
-            debug_log=self._log,
-        )
-        self._player_armour_state = MemoryItemState(
-            ARMOUR_ADDRESSES,
-            name="PlayerArmourState",
-            debug_log=self._log,
-        )
-        self._player_weapon_state = MemoryItemState(
-            {},
-            name="PlayerWeaponState",
-            debug_log=self._log,
-        )
-        self._player_gadget_state = MemoryItemState(
-            {},
-            name="PlayerGadgetState",
-            debug_log=self._log,
-        )
-        self._armour_slot_state = MemoryItemState(
-            PLAYER_ARMOUR_SLOTS,
-            name="ArmourSlotState",
-            debug_log=self._log,
-        )
-        self._titanium_bolt_state = Int64State(
-            BOLTS.pickup,
-            name="TitaniumBoltState",
-            debug_log=self._log,
-        )
-        self._skill_point_state = Int64State(
-            SKILL_POINT_ADDRESS,
-            name="SkillPointState",
-            debug_log=self._log,
-        )
         self._pending_armour_pickup_locs: list[str] = []
         self._processed_item_count = 0
         self._processed_trap_count = 0
@@ -122,39 +66,36 @@ class RACContext(
         # push_save()/push_slots_save() writes back as SetReply would
         # re-trigger restore_equipped_slots() on every in-game change.
         self._ap_loadout_restored = False
-        self._starting_bolts_granted = False
+        # Whether starting bolts have already been granted, per a flag
+        # persisted to AP data storage (racsm_starting_items_sent_*) — NOT a
+        # local bool, so a client restart or reconnect doesn't re-grant them.
+        # Starts False (unset key reads as 0/falsy); flipped True only after
+        # a confirmed successful grant.
+        self._starting_items_sent = False
         self._death_count = 0
-        self._weapon_array_base: int | None = None
         self._pending_item_apply = True
         self._already_hinted: set[int] = set()
         self._notification_item_index: int = 0
         self._last_mod_unlock_write: float = 0.0
         self._armour_set_checks_enabled = False
-        self._gs = GameState(ipc=self.pine)
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
         self._debug_messages = False
         self._challenge_defaults_written = False
 
-        self._wiring = GameWiring(
-            self.pine, log=self._log,
-            expected_game_id=EXPECTED_GAME_ID,
-            on_wrong_game=self._on_wrong_game_detected,
-            pine_lock=self._pine_lock,
-        )
+        self._wiring = Core(self.pine, log=self._log)
 
     async def _guarded_wiring_call(self, fn: Callable[[], None]) -> None:
-        """Runs a synchronous GameOrchestrator call under the PINE lock so it
-        can't interleave PINE requests with game_watcher's poll loop.
+        """Runs a synchronous Core call under the PINE lock so it can't
+        interleave PINE requests with game_watcher's poll loop.
 
         Does NOT skip when PCSX2 isn't connected — callers include pure
-        in-memory bookkeeping (e.g. on_ap_connected's sync_from_ap calls,
-        which never touch self.pine) that must still run before the first
-        PINE connect attempt completes, since that's now triggered from the
-        same "Connected" handler that calls this. A connection drop mid-call
-        (for callers that do touch self.pine, e.g. reapply_inv) is still
-        treated as a soft flag, not a crash, same as game_watcher's poll loop.
+        in-memory bookkeeping (e.g. sync_from_ap, which never touches
+        self.pine) that must still run before the first PINE connect attempt
+        completes, since that's now triggered from the same "Connected"
+        handler that calls this. A connection drop mid-call is still treated
+        as a soft flag, not a crash, same as game_watcher's poll loop.
 
         Runs fn() in-line rather than via run_in_executor — same reasoning as
         PineMixin._attempt_pine_connect: a thread-pool worker stuck inside a
@@ -165,12 +106,13 @@ class RACContext(
         """
         async with self._pine_lock:
             try:
-                self.pine.run_locked(fn)
+                fn()
             except Exception as exc:
-                # Not a full disconnect — GameWiring's own poll loop keeps running
-                # independently of pine_connected, so pickup detection isn't
-                # affected by this alone. This just stops this context's own
-                # planet-poll/mod-unlock writes until the next successful call.
+                # Not a full disconnect — game_watcher's poll loop (which drives
+                # Core.tick() independently) keeps running regardless of this
+                # failing, so pickup/location detection isn't affected by this
+                # alone. This just stops this particular sync call until the
+                # next successful one.
                 logger.warning(f"[RAC] PINE call failed during wiring sync: {exc}. "
                                 "If syncing stops working, use /reconnect.")
                 self.pine_connected = False
@@ -185,6 +127,23 @@ class RACContext(
 
     def _armour_slots_storage_key(self) -> str:
         return f"racsm_armour_slots_{self.team}_{self.slot}"
+
+    def _starting_items_key(self) -> str:
+        """AP data-storage key marking whether starting bolts have already
+        been granted (0/unset = not yet, 1 = granted) — persisted so a
+        client restart or reconnect never re-grants them."""
+        return f"racsm_starting_items_sent_{self.team}_{self.slot}"
+
+    async def _persist_starting_items_sent(self) -> None:
+        if self.slot is None:
+            return
+        await self.send_msgs([{
+            "cmd": "Set",
+            "key": self._starting_items_key(),
+            "default": 0,
+            "want_reply": False,
+            "operations": [{"operation": "replace", "value": 1}],
+        }])
 
     async def _persist_quick_select(self, data: dict) -> None:
         if self.slot is None:
@@ -239,38 +198,35 @@ class RACContext(
             self._ap_loadout_restored = False
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
             self._armour_set_checks_enabled = bool(self.slot_data.get("armour_set_checks", False))
-            self._wiring.clank.set_mode(int(self.slot_data.get("clank_challenges", 1)))
-            self._wiring.skyboard.set_enabled(int(self.slot_data.get("skyboard_challenges", 0)) >= 1)
-            self._wiring.skill_points.set_enabled(
+            clank_mode = int(self.slot_data.get("clank_challenges", 1))
+            self._wiring.clank_enabled        = clank_mode >= 1
+            self._wiring.clank_all_challenges = clank_mode >= 2
+            self._wiring.skyboard_enabled     = int(self.slot_data.get("skyboard_challenges", 0)) >= 1
+            self._wiring.skill_points_enabled = (
                 int(self.slot_data.get("skill_points", 0)) >= 1
                 or bool(self.slot_data.get("enable_clank_challenge_skill_points", False))
-                or bool(self.slot_data.get("enable_skyboard_challenge_skill_points", False)),
-                planet_loaded=self._wiring._initial_load_done,
+                or bool(self.slot_data.get("enable_skyboard_challenge_skill_points", False))
             )
-            self._wiring.skin.set_skin_by_option(int(self.slot_data.get("starting_skin", 0)))
+            self._wiring.skin.set_by_option(int(self.slot_data.get("starting_skin", 0)))
             if self._death_link_enabled:
                 asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": ["DeathLink"]}]))
             self._wiring.wire(
                 send_location      = self._append_location_by_name,
                 send_deathlink     = self._send_death_link_from_sync,
-                kill_player        = self._kill_player_sync,
-                reapply_inv        = self._apply_player_inventory_sync,
                 death_amnesty      = lambda: int(self.slot_data.get("death_amnesty", 1)),
                 death_link_enabled = lambda: self._death_link_enabled,
                 on_goal            = lambda: asyncio.create_task(self._send_goal_status()),
                 on_vendor_open     = lambda: asyncio.create_task(self._send_vendor_hints()),
-                on_vendor_close    = self._on_menu_close_for_armour_sets,
-                on_pause_close     = lambda: (
-                    self._wiring.quick_select.push_save(),
-                    self._wiring.armour.push_slots_save(),
-                ),
+                on_vendor_close    = self._on_vendor_close,
+                on_equipped_armour_saved = lambda data: asyncio.create_task(self._persist_armour_slots(data)),
                 on_bonus_weapon_pickup = self._grant_random_bonus_item,
                 on_scripted_gadget_pickup = self._handle_scripted_gadget_pickup,
+                on_planet_ready    = self._on_planet_ready,
                 on_initial_load    = lambda: asyncio.create_task(self._send_playing_status()),
             )
             checked = self._checked_location_names()
             asyncio.create_task(self._guarded_wiring_call(
-                lambda: self._wiring.on_ap_connected(self.slot_data, checked)
+                lambda: self._wiring.sync_from_ap(checked)
             ))
             self._pending_item_apply = True
             asyncio.create_task(self._apply_received_items())
@@ -289,14 +245,13 @@ class RACContext(
                 # AP (re)connect — it's not something to persist and trust,
                 # it's something to always re-check and re-send on connect.
                 asyncio.create_task(self._send_map_page(self.current_planet))
-            # Wire save callbacks for quick select and armour slots — pushed to
-            # AP data storage on pause-menu close (see on_pause_close above),
-            # not on every poll-detected change.
+            # Wire the quick-select save callback — pushed to AP data storage on
+            # pause-menu close (Core wires PlanetInventory.on_pause_close to
+            # quick_select.push_save() internally), not on every poll-detected
+            # change. Armour's equivalent is on_equipped_armour_saved, passed
+            # directly to wire() above since it's fired the same way.
             self._wiring.quick_select.on_save = (
                 lambda data: asyncio.create_task(self._persist_quick_select(data))
-            )
-            self._wiring.armour.on_slots_save = (
-                lambda data: asyncio.create_task(self._persist_armour_slots(data))
             )
             # Fetch persisted state from AP server. team/slot are only known now
             # (after super().on_package() set them), so registration must happen here.
@@ -307,12 +262,14 @@ class RACContext(
                 self._filler_applied_key(),
                 self._qs_storage_key(),
                 self._armour_slots_storage_key(),
+                self._starting_items_key(),
             ):
                 self.set_notify(key)
             asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [
                 self._filler_applied_key(),
                 self._qs_storage_key(),
                 self._armour_slots_storage_key(),
+                self._starting_items_key(),
             ]}]))
             return
 
@@ -323,10 +280,12 @@ class RACContext(
                     self._wiring.quick_select.load(self.stored_data[qs_key])
                 armour_key = self._armour_slots_storage_key()
                 if armour_key in self.stored_data and isinstance(self.stored_data[armour_key], dict):
-                    self._wiring.armour.load_slots(self.stored_data[armour_key])
-                    if self._wiring._initial_load_done:
-                        self._wiring.armour.restore_equipped_slots()
+                    if self._wiring.planet.is_ready:
+                        self._wiring.armour.sync_equipped(self.stored_data[armour_key])
                 self._ap_loadout_restored = True
+            starting_items_key = self._starting_items_key()
+            if starting_items_key in self.stored_data:
+                self._starting_items_sent = bool(self.stored_data[starting_items_key])
             if not self._filler_checkpoint_synced:
                 key = self._filler_applied_key()
                 if key in self.stored_data:
@@ -351,7 +310,7 @@ class RACContext(
                 self._notification_item_index = len(self.items_received)
             checked = self._checked_location_names()
             asyncio.create_task(self._guarded_wiring_call(
-                lambda: self._wiring.on_ap_received_items(checked)
+                lambda: self._wiring.sync_from_ap(checked)
             ))
             self._pending_item_apply = True
             asyncio.create_task(self._apply_received_items())

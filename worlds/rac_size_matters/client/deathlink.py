@@ -8,7 +8,6 @@ from typing import Any
 from CommonClient import logger
 
 from ..core import (
-    PLANETS_BY_ID,
     PLAYER_ADDRS,
     PLAYER_HEALTH,
     PLAYER_STATE,
@@ -82,11 +81,7 @@ class DeathLinkMixin:
         self._last_death_link = now
         logger.info("[RAC] DeathLink sent.")
         source = self.auth or "Ratchet"
-        planet_name = (
-            PLANETS_BY_ID[self._gs.current_planet].name
-            if self._gs.current_planet in PLANETS_BY_ID
-            else "an unknown planet"
-        )
+        planet_name = self.current_planet or "an unknown planet"
         cause_text = _death_cause(player_state)
         self._write_notification_text(colored_text(
             TextColour.RED, "Deathlink: ", source, TextColour.WHITE, " ", cause_text,
@@ -99,10 +94,7 @@ class DeathLinkMixin:
                     "data": {
                         "time": now,
                         "source": source,
-                        "cause": (
-                            f"{source} {cause_text} on {planet_name}"
-                            " in Ratchet & Clank: Size Matters."
-                        ),
+                        "cause": f"{source} {cause_text} on {planet_name}.",
                     },
                 }
             ])
@@ -122,11 +114,11 @@ class DeathLinkMixin:
             TextColour.RED, "Deathlink: ", source, TextColour.WHITE, " ", cause,
         ))
         async with self._pine_lock:
-            self.pine.run_locked(self._kill_player_sync)
+            self._kill_player_sync()
 
     def _kill_player_sync(self) -> None:
-        state_addr  = PLAYER_ADDRS.get(self._prev_planet, (PLAYER_STATE, PLAYER_HEALTH))[0]
-        health_addr = PLAYER_ADDRS.get(self._prev_planet, (PLAYER_STATE, PLAYER_HEALTH))[1]
+        planet_id = self._wiring.planet.planet_id
+        state_addr, health_addr = PLAYER_ADDRS.get(planet_id, (PLAYER_STATE, PLAYER_HEALTH))
         death_state = random.choice(list(_DEATH_CAUSES))
         self.pine.write_int16(state_addr, death_state)
         self.pine.write_int16(health_addr, 0)

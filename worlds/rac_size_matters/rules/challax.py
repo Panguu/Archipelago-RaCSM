@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5Gadgets, Rac5Items, Rac5Locations, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations
+from ..constants import (
+    Rac5Gadgets,
+    Rac5Infobots,
+    Rac5Locations,
+    Rac5ModVendorLocations,
+    Rac5SkillPoints,
+    Rac5TBolts,
+    Rac5VendorLocations,
+)
 from rule_builder.rules import Has, HasAll, True_
 
 if TYPE_CHECKING:
@@ -34,7 +42,7 @@ def set_challax_rules(world: RACSizeMatterWorld) -> None:
     # Armour
     world.set_rule(
         mw.get_location(Rac5Locations.CHALLAX_HELMET, player),
-        _sprout | Has(Rac5Items.DAYNI_MOON),
+        _sprout | Has(Rac5Infobots.DAYNI_MOON),
     )
 
     # Vendors
@@ -46,9 +54,9 @@ def set_challax_rules(world: RACSizeMatterWorld) -> None:
     # is gated purely on this vendor's planet being accessible; see
     # VendorUnlockState.mod_vendor_unlock_weapons). _base (Shrink Ray +
     # Polarizer) still gates physically reaching the mod vendor area itself.
-    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE, player), _base)
-    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_ACID_BURN, player), _base)
-    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_ACID_EPOXY, player), _base)
-    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK, player), _base)
-    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE, player), _base)
-    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_BEE_WORKER, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_ACID_BURN, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_ACID_EPOXY, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_BEE_WORKER, player), _base)
