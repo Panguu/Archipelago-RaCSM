@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 
+from ..constants import Rac5Gadgets, Rac5Infobots
 from ..core.weapons import WEAPON_DATA
 from ..items import PROGRESSIVE_ARMOUR_NAME, PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
-from rule_builder.rules import And, Has, HasAny, HasAnyCount
+from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or
 
 _PROJECTILE_WEAPONS = [
     display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
@@ -35,3 +36,11 @@ def HasGadget(gadget: str) -> HasAny:
 
 def HasInfobot(infobot: str) -> HasAny:
     return Has(infobot)
+
+def HasGoodExpPlanet() -> Or:
+    return Or(
+        HasAll(Rac5Infobots.QUODRONA, Rac5Gadgets.SHRINK_RAY),
+        HasAll(Rac5Infobots.DAYNI_MOON, Rac5Gadgets.SPROUT_O_MATIC),
+        HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER),
+        HasAll(Rac5Infobots.OUTPOST_OMEGA, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+    )

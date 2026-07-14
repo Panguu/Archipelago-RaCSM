@@ -165,6 +165,17 @@ class PineMixin:
         if self.current_planet != prev_planet:
             await self._send_map_page(self.current_planet)
 
+        # Continuously re-apply AP state every cycle rather than only at
+        # specific event boundaries (item received, planet ready, vendor
+        # close) — self-heals any drift immediately during normal
+        # gameplay. Safe to call unconditionally: apply_inventory() itself
+        # (called from within here) already no-ops the memory writes it
+        # must not make mid-vendor/mid-death/mid-pickup-animation, and
+        # everything else this triggers (bolt/trap filler grants, item
+        # notifications) is checkpoint-based and idempotent against being
+        # called far more often than something new actually arrived.
+        await self._apply_received_items()
+
     async def _send_map_page(self, planet: str) -> None:
         if self.slot is None:
             return

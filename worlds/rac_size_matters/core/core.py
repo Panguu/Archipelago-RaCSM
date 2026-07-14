@@ -274,15 +274,30 @@ class Core:
     ) -> None:
         """Write a fully-rebuilt AP inventory snapshot into game memory.
 
+        Called every tick during normal gameplay (see PineMixin._poll_game())
+        so memory is continuously kept in sync with AP truth rather than only
+        at specific event boundaries — but never while some other window
+        owns this same memory for its own temporary purpose: a vendor
+        session (weapons/gadgets/mods — existing is_ready/vendor_active
+        guard below), or the death sequence / an armour-pickup animation
+        (armour — its own guard just below). Re-applying mid-window would
+        fight those windows' own zero/restore cycles (see _handle_death()
+        and PlanetInventory.check_collected_armour()).
+
         Planet/infobot unlock and armour are global addresses, safe to write
-        any time. Weapons/gadgets/mods live on a per-planet array, so those
-        are skipped while a planet transition is in flight or the vendor
-        menu owns the weapon-display state — same guards the old
+        any time otherwise. Weapons/gadgets/mods live on a per-planet array,
+        so those are skipped while a planet transition is in flight or the
+        vendor menu owns the weapon-display state — same guards the old
         writes_blocked/vendor_active checks provided.
         """
         self.planet_unlock.set_unlocked_planets(infobot_planets)
-        self.armour.sync_unlocked(armour_unlocked)
+        # Bookkeeping dict always kept current regardless of whether the
+        # memory write below is skipped — check_collected_armour()'s
+        # pickup-exit restore and _handle_respawn() both read this later.
         self.planet.sync_unlock_armour(armour_unlocked)
+        if (not self.vendor_active and not self.planet.player.is_dead
+                and not self.planet.player.is_picking_up):
+            self.armour.sync_unlocked(armour_unlocked)
 
         # Always kept current, even while the writes below are skipped —
         # _enforce_no_forced_starter_items() needs an up-to-date answer to

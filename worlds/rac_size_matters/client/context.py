@@ -234,7 +234,7 @@ class RACContext(
                 on_goal            = lambda: asyncio.create_task(self._send_goal_status()),
                 on_vendor_open     = lambda: asyncio.create_task(self._send_vendor_hints()),
                 on_vendor_close    = self._on_vendor_close,
-                on_equipped_armour_saved = lambda data: asyncio.create_task(self._persist_armour_slots(data)),
+                on_equipped_armour_saved = self._on_equipped_armour_saved,
                 on_bonus_weapon_pickup = self._grant_random_bonus_item,
                 on_scripted_gadget_pickup = self._handle_scripted_gadget_pickup,
                 on_planet_ready    = self._on_planet_ready,
@@ -301,7 +301,17 @@ class RACContext(
                 self._ap_loadout_restored = True
             starting_items_key = self._starting_items_key()
             if starting_items_key in self.stored_data:
-                self._starting_items_sent = bool(self.stored_data[starting_items_key])
+                # OR, never a blind overwrite: this handler re-runs on every
+                # "Retrieved"/"SetReply" for ANY of the 4 watched keys, not
+                # just this one, and our own _persist_starting_items_sent()
+                # write only echoes back once the server round-trips it
+                # (want_reply is False, so set_notify is the only signal).
+                # Until that echo lands, self.stored_data here still holds
+                # the stale pre-grant value — overwriting the local flag
+                # from it would erase _grant_starting_items()'s own
+                # synchronous claim and let it fire again on every such
+                # package that arrives in that window.
+                self._starting_items_sent = self._starting_items_sent or bool(self.stored_data[starting_items_key])
                 # Otherwise this only ever gets attempted from _on_planet_ready
                 # (a transition edge) — if PCSX2 was already connected with a
                 # planet loaded before this AP (re)connect, no new transition
