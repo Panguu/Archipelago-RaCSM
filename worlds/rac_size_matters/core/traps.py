@@ -30,7 +30,10 @@ _CHEAT_BITS: dict[str, int] = {
     Rac5Traps.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
 }
 
-# Seconds each trap stays active before automatically reverting.
+# Default seconds each trap stays active before automatically reverting —
+# also the TrapDuration option's own default (options.py). Never mutated;
+# _trap_durations (below) is the live, possibly-slot_data-overridden copy
+# activate_trap() actually reads from.
 TRAP_DURATIONS: dict[str, float] = {
     Rac5Traps.TRAP_FEVERDREAMTIME:   70,
     Rac5Traps.TRAP_BRIGHTNESS:       70,
@@ -40,6 +43,20 @@ TRAP_DURATIONS: dict[str, float] = {
 }
 
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
+
+# Live durations activate_trap() actually uses — starts as a copy of the
+# defaults above, overwritten once by the client from slot_data's
+# TrapDuration option on connect (see set_trap_durations()).
+_trap_durations: dict[str, float] = dict(TRAP_DURATIONS)
+
+
+def set_trap_durations(overrides: dict[str, float]) -> None:
+    """Apply the TrapDuration option's per-trap seconds, called once by the
+    client right after connecting. Only overwrites known trap names —
+    anything absent/unrecognized keeps its existing (default) duration."""
+    for trap_name, seconds in overrides.items():
+        if trap_name in _trap_durations:
+            _trap_durations[trap_name] = seconds
 
 # Per-trap-name bookkeeping so repeated activations of the same trap stack
 # (extend the revert deadline) instead of racing independent timers, where
@@ -60,7 +77,7 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
 
     Unknown/unimplemented traps (e.g. Reset Level) are silently ignored.
     """
-    duration = TRAP_DURATIONS.get(trap_name)
+    duration = _trap_durations.get(trap_name)
     if duration is None:
         return
 
@@ -98,3 +115,42 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
         pine.write_int8(CHEATS, latest & ~bit)
 
     _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
+
+
+# Reconciliation
+
+def reconcile_traps(pine: Pine) -> None:
+    """Clear any trap effect currently active in game memory that this
+    client process has no record of (i.e. not in _active_deadlines) —
+    called once whenever PINE (re)connects.
+
+    _active_deadlines/_revert_handles are this process's only source of
+    truth for "what's actually supposed to be active right now"; they're
+    plain in-memory dicts, not persisted, so a client restart always starts
+    with both empty. Game memory itself can still show a trap as active
+    across that restart (or across a PINE drop/reconnect racing a revert
+    timer's own write — see activate_trap()'s _revert(), which pops the
+    bookkeeping before writing, so a write that fails mid-drop leaves the
+    bit stuck with no bookkeeping left to retry it) — that combination is
+    exactly a trap PINE has no way to ever revert on its own again, so it
+    must be cleared here instead of waiting on a timer that no longer exists.
+
+    Deliberately does not touch any trap that _does_ still have a live
+    deadline (a PINE reconnect mid-trap keeps running as normal — its
+    existing revert timer will still fire and clean up on schedule).
+    """
+    for trap_name, address in _DIRECT_ADDRESSES.items():
+        if trap_name in _active_deadlines:
+            continue
+        if pine.read_int8(address):
+            pine.write_int8(address, 0)
+
+    clear_mask = 0
+    for trap_name, bit in _CHEAT_BITS.items():
+        if trap_name not in _active_deadlines:
+            clear_mask |= bit
+    if clear_mask:
+        current = pine.read_int8(CHEATS)
+        cleared = current & ~clear_mask
+        if cleared != current:
+            pine.write_int8(CHEATS, cleared)

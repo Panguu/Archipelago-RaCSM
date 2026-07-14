@@ -12,7 +12,7 @@ except ImportError:
     from CommonClient import CommonContext
 from CommonClient import logger
 
-from ..core import TextColour, colored_text
+from ..core import TextColour, colored_text, set_trap_durations
 from ..core.core import Core
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
@@ -207,6 +207,22 @@ class RACContext(
                 or bool(self.slot_data.get("enable_clank_challenge_skill_points", False))
                 or bool(self.slot_data.get("enable_skyboard_challenge_skill_points", False))
             )
+            # Option encodes "off" as 0 — `or 1` maps that straight to a 1x
+            # (no-op) multiplier instead of a bogus 0x.
+            self._wiring.planet.weapons.experience_multiplier = (
+                int(self.slot_data.get("weapon_experience_multiplier", 0)) or 1
+            )
+            # 0/1/2 = off/manual/automatic — matches PROGRESSIVE_OFF/
+            # PROGRESSIVE_MANUAL/PROGRESSIVE_AUTOMATIC in core/weapons.py.
+            self._wiring.planet.weapons.progressive_mode = (
+                int(self.slot_data.get("progressive_weapons", 0))
+            )
+            self._wiring.player_bolts.multiplier = (
+                int(self.slot_data.get("bolt_multiplier", 0)) or 1
+            )
+            trap_duration = self.slot_data.get("trap_duration")
+            if isinstance(trap_duration, dict):
+                set_trap_durations(trap_duration)
             self._wiring.skin.set_by_option(int(self.slot_data.get("starting_skin", 0)))
             if self._death_link_enabled:
                 asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": ["DeathLink"]}]))
@@ -286,6 +302,15 @@ class RACContext(
             starting_items_key = self._starting_items_key()
             if starting_items_key in self.stored_data:
                 self._starting_items_sent = bool(self.stored_data[starting_items_key])
+                # Otherwise this only ever gets attempted from _on_planet_ready
+                # (a transition edge) — if PCSX2 was already connected with a
+                # planet loaded before this AP (re)connect, no new transition
+                # fires, so the grant would silently wait for the player to
+                # next travel somewhere. PLAYER_BOLT_COUNT is a global address
+                # (safe to write any time a planet is ready), so fire the
+                # attempt now instead of waiting for that.
+                if not self._starting_items_sent and self._wiring.planet.is_ready:
+                    asyncio.create_task(self._grant_starting_items())
             if not self._filler_checkpoint_synced:
                 key = self._filler_applied_key()
                 if key in self.stored_data:

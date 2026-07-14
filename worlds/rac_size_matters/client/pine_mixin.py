@@ -4,7 +4,7 @@ import asyncio
 
 from CommonClient import logger
 
-from ..core import TextColour, colored_text
+from ..core import TextColour, colored_text, reconcile_traps
 from ..universal_tracker import PLANET_ID_TO_REGION
 from .constants import EXPECTED_GAME_ID, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
@@ -92,6 +92,13 @@ class PineMixin:
             self.pine_connected = True
             try:
                 self._read_initial_state_sync()
+                # This process's own trap bookkeeping (core/traps.py's
+                # _active_deadlines) is never persisted, so it starts empty
+                # on every client restart — reconcile now, while PINE is
+                # confirmed up, so a trap left stuck in game memory from
+                # before (crash, or a revert racing a PINE drop) doesn't
+                # linger for the rest of this session.
+                reconcile_traps(self.pine)
             except Exception as exc:
                 logger.warning(
                     f"[RAC] Initial state read failed: {exc}. Use /reconnect once the game is fully loaded."

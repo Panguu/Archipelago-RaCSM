@@ -38,6 +38,7 @@ from .options import (
     RACSizeMatterOptions,
     SkillPoints,
     SkyboardChallenges,
+    WeaponLevelChecks,
     racsm_option_groups,
 )
 from .regions import create_regions
@@ -171,6 +172,8 @@ class RACSizeMatterWorld(World):
             option_list.append(EnableSkyboardChallengeSkillPoints.display_name)
         if not self.options.armour_set_checks:
             option_list.append(ArmourSetChecks.display_name)
+        if self.options.weapon_level_checks.value < WeaponLevelChecks.option_all:
+            option_list.append(WeaponLevelChecks.display_name)
         if self.options.clank_challenges.value < ClankChallenges.option_all:
             option_list.append(ClankChallenges.display_name)
         if self.options.skyboard_challenges.value < SkyboardChallenges.option_all:
@@ -247,6 +250,10 @@ class RACSizeMatterWorld(World):
             "starting_weapons": self.options.starting_weapons.value,
             "starting_gadgets": self.options.starting_gadgets.value,
             "starting_skin": self.options.starting_skin.value,
+            "weapon_experience_multiplier": self.options.weapon_experience_multiplier.value,
+            "bolt_multiplier": self.options.bolt_multiplier.value,
+            "weapon_level_checks": self.options.weapon_level_checks.value,
+            "trap_duration": dict(self.options.trap_duration.value),
         }
 
     @staticmethod
@@ -256,5 +263,8 @@ class RACSizeMatterWorld(World):
     def get_filler_item_name(self) -> str:
         trap_chance = self.options.trap_chance.value
         if trap_chance and self.random.randint(1, 100) <= trap_chance:
-            return self.random.choice(list(TRAP_ITEM_TABLE))
+            weights = self.options.trap_weight.value
+            names = [name for name in TRAP_ITEM_TABLE if weights.get(name, 0) > 0]
+            if names:
+                return self.random.choices(names, weights=[weights[name] for name in names])[0]
         return "Bolts"

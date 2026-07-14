@@ -31,7 +31,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         """Print every active state."""
         w = self.ctx._wiring
         for state in (
-            w.armour, w.bolts, w.planet_unlock, w.quick_select,
+            w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
             w.clank, w.skyboard, w.skill_points, w.missions, w.skin,
             w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
             w.weapon_vendor, w.mod_vendor, w.vendor,
@@ -47,7 +47,7 @@ class RACCommandProcessor(ClientCommandProcessor):
 
         w = ctx._wiring
         states = (
-            w.armour, w.bolts, w.planet_unlock, w.quick_select,
+            w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
             w.clank, w.skyboard, w.skill_points, w.missions, w.skin,
             w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
             w.weapon_vendor, w.mod_vendor, w.vendor,
@@ -69,4 +69,14 @@ class RACCommandProcessor(ClientCommandProcessor):
         self.ctx._debug_messages = not self.ctx._debug_messages
         state = "enabled" if self.ctx._debug_messages else "disabled"
         logger.info(f"[RAC] Debug messages {state}.")
+        return True
+
+    def _cmd_enable_deathlink(self) -> bool:
+        """Enable DeathLink for this session."""
+        asyncio.create_task(self.ctx._set_death_link_enabled(True))
+        return True
+
+    def _cmd_disable_deathlink(self) -> bool:
+        """Disable DeathLink for this session."""
+        asyncio.create_task(self.ctx._set_death_link_enabled(False))
         return True

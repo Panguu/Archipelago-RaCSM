@@ -11,6 +11,7 @@ from ..core import (
     colored_text,
 )
 from ..core.address_maps import PLAYER_BOLT_COUNT
+from ..core.player_bolts import MAX_PLAYER_BOLTS
 from ..items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_PIECE_BITMASKS,
@@ -342,8 +343,11 @@ class InventoryMixin:
             current = self.pine.read_int32(PLAYER_BOLT_COUNT)
             for _ in range(bolt_items_to_grant):
                 grant = min(200000, max(75000, int(current * 0.2)))
-                current += grant
+                current = min(current + grant, MAX_PLAYER_BOLTS)
             self.pine.write_int32(PLAYER_BOLT_COUNT, current)
+            # One-shot AP filler grant, not organic gameplay gain —
+            # rebaseline so Core's per-tick apply_boost() doesn't multiply it.
+            self._wiring.player_bolts.rebaseline(current)
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
 

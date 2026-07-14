@@ -7,6 +7,7 @@ from NetUtils import ClientStatus
 
 from ..core import ARMOUR_SET_CHECKS
 from ..core.address_maps import PLAYER_BOLT_COUNT
+from ..core.player_bolts import MAX_PLAYER_BOLTS
 
 # Challenge handler
 
@@ -60,7 +61,12 @@ class EventsHandlerMixin:
         async with self._pine_lock:
             try:
                 current = self.pine.read_int32(PLAYER_BOLT_COUNT)
-                self.pine.write_int32(PLAYER_BOLT_COUNT, current + starting_bolts)
+                granted = min(current + starting_bolts, MAX_PLAYER_BOLTS)
+                self.pine.write_int32(PLAYER_BOLT_COUNT, granted)
+                # This is a one-shot AP grant, not organic gameplay gain —
+                # rebaseline so Core's per-tick apply_boost() doesn't see it
+                # as a "gain" and multiply it too.
+                self._wiring.player_bolts.rebaseline(granted)
             except Exception as exc:
                 logger.warning(f"[RAC] Could not grant starting bolts: {exc}")
                 self.pine_connected = False

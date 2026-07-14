@@ -428,7 +428,7 @@ class PlanetInventory:
     # Weapons
     def check_weapons(self) -> dict[str, list]:
         if not self.is_ready:
-            return {"weapons": [], "gadgets": [], "mods": []}
+            return {"weapons": [], "gadgets": [], "mods": [], "levels": []}
         return self.weapons.check()
 
     def __repr__(self) -> str:

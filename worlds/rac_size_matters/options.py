@@ -5,6 +5,8 @@ from Options import (
     Choice,
     DeathLink,
     DefaultOnToggle,
+    ItemDict,
+    OptionCounter,
     OptionGroup,
     PerGameCommonOptions,
     ProgressionBalancing,
@@ -13,13 +15,25 @@ from Options import (
     Toggle,
 )
 
+from .core.traps import TRAP_DURATIONS
 
-class ProgressiveWeapons(Toggle):
+
+class ProgressiveWeapons(Choice):
     """Replace each weapon's individual unlock item with a single Progressive Weapon
     item per weapon: the first copy unlocks the weapon, each subsequent copy grants
-    the next level upgrade. When off, weapons are normal individual items with no
-    level-up items (levels work as in vanilla)."""
+    the next level upgrade.
+    off: weapons are normal individual items with no level-up items (levels work as
+    in vanilla).
+    manual: leveling still happens by playing normally, but is capped at whatever
+    level the Progressive Weapon items received so far allow — reaching that cap
+    freezes further experience gain until the next copy arrives.
+    automatic: level is set directly to match Progressive Weapon items received,
+    with experience gain disabled entirely (no need to play to level up)."""
     display_name = "Progressive Weapons"
+    option_off       = 0
+    option_manual    = 1
+    option_automatic = 2
+    default = 0
 
 
 class ProgressiveMods(Toggle):
@@ -140,6 +154,65 @@ class TrapChance(Range):
     default = 0
 
 
+class TrapWeight(ItemDict):
+    """Sets the relative weights of trap types in the filler pool. A higher value increases
+    how often that trap is chosen over the others when a filler item rolls as a trap (see
+    Trap Chance). Has no effect when Trap Chance is 0, or when every weight here is 0
+    (Bolts fills in instead)."""
+    display_name = "Trap Weight"
+    min = 0
+    max = 100
+    valid_keys = TRAP_DURATIONS.keys()
+    default = dict.fromkeys(TRAP_DURATIONS.keys(), 1)
+
+
+class TrapDuration(OptionCounter):
+    """How many seconds each trap type stays active once triggered."""
+    display_name = "Trap Duration"
+    min = 1
+    max = 300
+    valid_keys = TRAP_DURATIONS.keys()
+    default = dict(TRAP_DURATIONS)
+
+
+class WeaponExperienceMultiplier(Choice):
+    """Multiplies weapon experience gained each time the game grants it, speeding up
+    weapon leveling. Stops applying once a weapon reaches level 4 (max level for
+    every weapon)."""
+    display_name = "Weapon Experience Multiplier"
+    option_off = 0
+    option_2x  = 2
+    option_4x  = 4
+    option_8x  = 8
+    option_16x = 16
+    default = 0
+
+
+class BoltMultiplier(Choice):
+    """Multiplies bolts gained each time the game grants them (crates, enemies, etc.),
+    speeding up bolt income. Does not affect one-off AP grants like starting bolts."""
+    display_name = "Bolt Multiplier"
+    option_off = 0
+    option_2x  = 2
+    option_4x  = 4
+    option_8x  = 8
+    option_16x = 16
+    default = 0
+
+
+class WeaponLevelChecks(Choice):
+    """Adds location checks for reaching weapon levels, in addition to whatever
+    unlocks the weapon in the first place.
+    off: no weapon level checks.
+    max_level: one check per weapon, for reaching its max level (4).
+    all: one check per weapon per level (1 through 4)."""
+    display_name = "Weapon Level Checks"
+    option_off       = 0
+    option_max_level = 1
+    option_all       = 2
+    default = 0
+
+
 class StartingSkin(Choice):
     """Cosmetic skin for Ratchet. Applied automatically on each planet load.
     All skins are unlocked in-game regardless of this choice."""
@@ -175,6 +248,11 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     starting_bolts: StartingBolts
     starting_skin: StartingSkin
     trap_chance: TrapChance
+    trap_weight: TrapWeight
+    trap_duration: TrapDuration
+    weapon_experience_multiplier: WeaponExperienceMultiplier
+    bolt_multiplier: BoltMultiplier
+    weapon_level_checks: WeaponLevelChecks
 
 racsm_option_groups = [
     OptionGroup("Generic Options", [
@@ -191,6 +269,10 @@ racsm_option_groups = [
         ProgressiveMods,
         ProgressiveArmour,
         TrapChance,
+        TrapWeight,
+        TrapDuration,
+        WeaponExperienceMultiplier,
+        BoltMultiplier,
     ]),
     OptionGroup("RACSM Location Options", [
         AllMissions,
@@ -201,6 +283,7 @@ racsm_option_groups = [
         EnableClankChallengeSkillPoints,
         EnableSkyboardChallengeSkillPoints,
         ArmourSetChecks,
+        WeaponLevelChecks,
     ]),
     OptionGroup("RACSM Cosmetic Options", [
         StartingSkin,

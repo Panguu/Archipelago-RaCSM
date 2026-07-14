@@ -13,7 +13,7 @@ from .planets import (
 from .player import PlayerMovementState
 from .skill_points import SKILL_POINT_ADDRESS, SKILL_POINTS
 from .titanium_bolts import TITANIUM_BOLTS
-from .traps import ALL_TRAPS, activate_trap
+from .traps import ALL_TRAPS, activate_trap, reconcile_traps, set_trap_durations
 from .weapons import WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
 
 # NOTE: Core/WeaponVendorMenu/ModVendorMenu are deliberately NOT re-exported
@@ -48,4 +48,6 @@ __all__ = [
     "WEAPON_MOD_COUNTS",
     "activate_trap",
     "colored_text",
+    "reconcile_traps",
+    "set_trap_durations",
 ]

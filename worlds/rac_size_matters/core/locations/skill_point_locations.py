@@ -58,7 +58,8 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     # Rac5SkillPoints.CHALLAX_SHOCK: SkillPoint(0x07, 24, Rac5Planets.CHALLAX)
     # Excluded: only one opportunity to complete this in the whole game (bit 24).
     Rac5SkillPoints.CHALLAX_MASTER:          SkillPoint(0x07, 25, Rac5Planets.CHALLAX),
-    Rac5SkillPoints.CHALLAX_VARMINTS:        SkillPoint(0x07, 26, Rac5Planets.CHALLAX),
+    # Rac5SkillPoints.CHALLAX_VARMINTS: SkillPoint(0x07, 26, Rac5Planets.CHALLAX)
+    # Giant Clank disabled — unreachable.
     # Dayni Moon
     Rac5SkillPoints.DAYNI_MOON_GLADIATOR:    SkillPoint(0x08, 28, Rac5Planets.DAYNI_MOON),
     Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST: SkillPoint(0x08, 29, Rac5Planets.DAYNI_MOON),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import struct as _struct
+from collections.abc import Callable
 from typing import TYPE_CHECKING, NamedTuple
 
 from BaseClasses import ItemClassification
@@ -22,6 +23,13 @@ if TYPE_CHECKING:
 
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
+
+# ProgressiveWeapons option values (options.py's ProgressiveWeapons Choice
+# — kept in sync manually, same as the raw-int slot_data comparisons used
+# elsewhere in this codebase, e.g. context.py's clank_mode/skill_points).
+PROGRESSIVE_OFF       = 0
+PROGRESSIVE_MANUAL    = 1
+PROGRESSIVE_AUTOMATIC = 2
 
 class WeaponData(NamedTuple):
     is_projectile: bool
@@ -69,10 +77,10 @@ WEAPON_DATA: dict[str, WeaponData] = {
         is_projectile=True, classification=ItemClassification.useful, max_level=4, mod_count=0,
     ),
     Rac5WeaponKeys.MOOTATOR: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=1, mod_count=0,
+        is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=0,
     ),
     Rac5WeaponKeys.RYNO: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=5, mod_count=0,
+        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
     ),
 }
 
@@ -148,11 +156,14 @@ class WeaponByteField:
         instance.pine.write_int8(self._address(instance), 0)
 
 
-class WeaponLevelField:
-    """Pine-backed accessor for a weapon's level (int32)."""
+class WeaponInt32Field:
+    """Pine-backed accessor for a single int32 weapon struct field."""
+
+    def __init__(self, field_name: str) -> None:
+        self.field_name = field_name
 
     def _address(self, instance) -> int:
-        return instance.base + instance._OFFSETS["level"]
+        return instance.base + instance._OFFSETS[self.field_name]
 
     def __get__(self, instance, owner) -> int | None:
         if instance is None:
@@ -178,6 +189,9 @@ class WeaponAddresses:
 
     _OFFSETS: dict[str, int] = {
         "level":            0x2D,
+        # Confirmed in-game for Lacerator on Pokitaru (0x20F3EA4C, base
+        # 0x20F3EA17) — same relative offset for every weapon.
+        "experience":       0x35,
         "mod_slot_one":     0x3D,
         "mod_slot_two":     0x3E,
         "mod_slot_three":   0x3F,
@@ -187,7 +201,8 @@ class WeaponAddresses:
         "unlocked":         0x45,
     }
 
-    level            = WeaponLevelField()
+    level            = WeaponInt32Field("level")
+    experience       = WeaponInt32Field("experience")
     mod_slot_one     = WeaponByteField("mod_slot_one")
     mod_slot_two     = WeaponByteField("mod_slot_two")
     mod_slot_three   = WeaponByteField("mod_slot_three")
@@ -322,6 +337,11 @@ class WeaponInventory:
         self._raw_weapons: dict[str, bool]         = {}
         self._raw_gadgets: dict[str, bool]         = {}
         self._raw_mods: dict[str, dict[str, bool]] = {}
+        # Last-seen 0-indexed level per weapon, used only for check()'s
+        # "newly reached level" diffing — separate from level_caps/pinning
+        # bookkeeping below, same "raw memory, not derived state" role as
+        # _raw_weapons.
+        self._raw_level: dict[str, int] = {}
         self.vendor_locations: dict[str, bool] = dict.fromkeys(
             (
                 *_weapon_locations.VENDOR_WEAPON_LOC,
@@ -332,6 +352,30 @@ class WeaponInventory:
         )
         self._weapon_addrs: dict[str, WeaponAddresses] = {}
         self._gadget_addrs: dict[str, GadgetAddresses] = {}
+
+        # Weapon-experience-multiplier option: 1 = no boost (default/off).
+        # Set directly by the client from slot_data, same pattern as Core's
+        # clank_enabled/skill_points_enabled flags.
+        self.experience_multiplier: int = 1
+        # Last-seen raw experience per weapon, used only to diff this tick's
+        # gain from the last one — see apply_experience_boost().
+        self._prev_experience: dict[str, int] = {}
+
+        # ProgressiveWeapons option (options.py): 0=off, 1=manual, 2=automatic.
+        # Set directly by the client from slot_data.
+        self.progressive_mode: int = PROGRESSIVE_OFF
+        # Per-weapon max allowed level (0-indexed, same scale as addr.level),
+        # derived from how many Progressive Weapon copies AP has granted —
+        # kept current by Core.apply_inventory() every time it runs. A
+        # weapon absent from this dict has received zero copies (still
+        # fully locked, no leveling of any kind allowed).
+        self.level_caps: dict[str, int] = {}
+        # manual mode only: the experience value to keep rewriting once a
+        # weapon is pinned (either not-yet-unlocked, or sitting right at its
+        # current cap) — captured the moment it first got pinned, cleared
+        # the moment its cap rises again. See apply_progressive_leveling().
+        self._pinned_experience: dict[str, int] = {}
+        self._prev_level_cap: dict[str, int] = {}
 
     def set_base(self, array_base: int) -> None:
         """Rebind every weapon/gadget address to the given planet's array base."""
@@ -365,6 +409,17 @@ class WeaponInventory:
     def delete_mod(self, weapon: str, slot: str) -> None:
         self.set_mod(weapon, slot, False)
 
+    def get_experience(self, weapon: str) -> int:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is None:
+            return 0
+        return addr.experience
+
+    def set_experience(self, weapon: str, value: int) -> None:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is not None:
+            addr.experience = value
+
     def get_level(self, weapon: str) -> int:
         addr = self._weapon_addrs.get(weapon)
         if addr is None:
@@ -375,6 +430,28 @@ class WeaponInventory:
         addr = self._weapon_addrs.get(weapon)
         if addr is not None:
             addr.level = level
+
+    def zero_levels_for_vendor(self) -> dict[str, int]:
+        """Snapshot every weapon's current level, then zero it all out.
+
+        The weapons vendor's displayed price apparently derives from the
+        weapon's level field, so a weapon already leveled up (via received
+        Progressive copies or real play) would show/charge a different
+        price than the base one while browsing. Caller (VendorInventory)
+        holds onto the returned snapshot and passes it to restore_levels()
+        once the vendor closes — this method never restores on its own.
+        """
+        snapshot = {name: addr.level for name, addr in self._weapon_addrs.items()}
+        for addr in self._weapon_addrs.values():
+            addr.level = 0
+        return snapshot
+
+    def restore_levels(self, snapshot: dict[str, int]) -> None:
+        """Write back a snapshot taken by zero_levels_for_vendor()."""
+        for name, level in snapshot.items():
+            addr = self._weapon_addrs.get(name)
+            if addr is not None:
+                addr.level = level
 
     def get_mod_unlock(self, weapon: str, attr: str) -> bool:
         addr = self._weapon_addrs.get(weapon)
@@ -393,7 +470,8 @@ class WeaponInventory:
     def check(self) -> dict[str, list]:
         """Read every weapon/gadget/mod byte for the current planet's array,
         update ownership state, and return what newly changed this call:
-        {"weapons": [...], "gadgets": [...], "mods": [(weapon, slot), ...]}.
+        {"weapons": [...], "gadgets": [...], "mods": [(weapon, slot), ...],
+        "levels": [(weapon, level), ...]}.
 
         "Newly changed" is decided from the raw memory bit's own previous
         reading (_raw_weapons/_raw_gadgets/_raw_mods), not from
@@ -403,10 +481,20 @@ class WeaponInventory:
         weapons/gadgets/mods themselves still only ever go False->True here,
         preserving that "once owned, stays owned" contract for callers like
         has_weapon()/has_gadget()/has_mod().
+
+        "levels" reports every 1-indexed level >= 2 newly reached since the
+        last call, for weapons that are actually unlocked — if level jumped
+        by more than one step at once (e.g. automatic progressive mode
+        setting level straight to a freshly-raised cap), every level in
+        between is reported too, not just the final one, so none of their
+        locations get silently skipped. Level 1 is never reported here — it
+        fires from Core.apply_inventory() the moment AP inventory grants the
+        weapon, not from observing memory.
         """
         newly_weapons: list[str] = []
         newly_gadgets: list[str] = []
         newly_mods: list[tuple[str, str]] = []
+        newly_levels: list[tuple[str, int]] = []
 
         for name, addr in self._weapon_addrs.items():
             was_unlocked = self._raw_weapons.get(name, False)
@@ -427,6 +515,22 @@ class WeaponInventory:
                 if slot_unlocked and not prev_mods.get(slot, False):
                     newly_mods.append((name, slot))
 
+            if is_unlocked:
+                prev_level = self._raw_level.get(name, -1)
+                current_level = addr.level
+                if current_level > prev_level:
+                    # Level 1 is deliberately excluded here — it's driven
+                    # purely by AP inventory (Core.apply_inventory() fires it
+                    # the moment the weapon's item is received), not by
+                    # observing this memory transition, so it isn't tangled
+                    # up in vendor-context/planet-load timing at all. Only
+                    # levels 2+ genuinely depend on watching real progress.
+                    for idx in range(prev_level + 1, current_level + 1):
+                        level = idx + 1
+                        if level >= 2:
+                            newly_levels.append((name, level))
+                self._raw_level[name] = current_level
+
         for name, addr in self._gadget_addrs.items():
             was_unlocked = self._raw_gadgets.get(name, False)
             is_unlocked  = bool(addr.unlocked)
@@ -436,7 +540,109 @@ class WeaponInventory:
             if is_unlocked and not was_unlocked:
                 newly_gadgets.append(name)
 
-        return {"weapons": newly_weapons, "gadgets": newly_gadgets, "mods": newly_mods}
+        return {
+            "weapons": newly_weapons, "gadgets": newly_gadgets,
+            "mods": newly_mods, "levels": newly_levels,
+        }
+
+    def apply_experience_boost(self) -> None:
+        """Inflate each weapon's experience gain by experience_multiplier,
+        every tick, so leveling happens faster without touching the game's
+        own level-up thresholds.
+
+        Diffed against the raw value last seen here (_prev_experience) — the
+        same "compare to last raw reading" approach check() uses for
+        unlocked bits — so only genuine in-game gain since the last tick
+        gets amplified, never our own previous write. A same-or-lower
+        reading (no gain yet, or the game reset the counter on a level-up)
+        just re-baselines without writing anything.
+
+        Stops entirely once a weapon reaches level 4 — vanilla's normal cap
+        for anything that levels via this experience curve (Mootator/Ryno
+        don't use it at all, so this is a no-op for them regardless).
+        """
+        multiplier = self.experience_multiplier
+        for name, addr in self._weapon_addrs.items():
+            current  = addr.experience
+            previous = self._prev_experience.get(name)
+            if previous is None:
+                self._prev_experience[name] = current
+                continue
+            diff = current - previous
+            if diff <= 0:
+                self._prev_experience[name] = current
+                continue
+            if multiplier > 1 and addr.level < 4:
+                boosted = previous + diff * multiplier
+                addr.experience = boosted
+                self._prev_experience[name] = boosted
+            else:
+                self._prev_experience[name] = current
+
+    def apply_progressive_leveling(self) -> None:
+        """Gate weapon leveling behind Progressive Weapon items received,
+        every tick. No-op when progressive_mode is PROGRESSIVE_OFF (vanilla
+        leveling, untouched).
+
+        automatic: level is fully dictated by level_caps — pinned straight
+        to the received count, experience zeroed continuously, so no
+        organic play can ever push a level past what's been received.
+
+        manual: the player levels up by playing normally, but only within
+        the window AP has actually opened. A weapon with no cap yet (zero
+        Progressive copies received) is fully locked — its experience is
+        captured the first time it's observed and rewritten every tick
+        after, going nowhere until the first copy arrives. Once unlocked,
+        experience is left alone (and can freely rise) as long as
+        addr.level is still under its cap; the instant it reaches the cap,
+        that tick's experience value is captured and rewritten every tick
+        after — freezing progress right at the level-up boundary the game
+        itself just wrote, rather than resetting to zero. Receiving another
+        Progressive copy raises the cap, which clears the pin and lets
+        natural play resume until the new cap.
+        """
+        mode = self.progressive_mode
+        if mode == PROGRESSIVE_OFF:
+            return
+
+        for name, addr in self._weapon_addrs.items():
+            cap = self.level_caps.get(name, -1)
+
+            if mode == PROGRESSIVE_AUTOMATIC:
+                addr.level = max(cap, 0)
+                addr.experience = 0
+                continue
+
+            # manual
+            prev_cap = self._prev_level_cap.get(name, -1)
+            if cap > prev_cap:
+                self._pinned_experience.pop(name, None)
+            self._prev_level_cap[name] = cap
+
+            if cap < 0:
+                # No Progressive copies received yet — fully locked.
+                pinned = self._pinned_experience.get(name)
+                if pinned is None:
+                    self._pinned_experience[name] = addr.experience
+                else:
+                    addr.experience = pinned
+                continue
+
+            if addr.level > cap:
+                # Shouldn't normally happen (caps only rise), but pull back
+                # down defensively rather than leave it over-leveled.
+                addr.level = cap
+
+            if addr.level < cap:
+                # Room to grow naturally — leave experience alone.
+                continue
+
+            # addr.level == cap: freeze right here.
+            pinned = self._pinned_experience.get(name)
+            if pinned is None:
+                self._pinned_experience[name] = addr.experience
+            else:
+                addr.experience = pinned
 
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
@@ -463,6 +669,23 @@ class WeaponInventory:
                 slot_unlocked  = bool(getattr(addr, slot))
                 mods[slot]     = slot_unlocked
                 raw_mods[slot] = slot_unlocked
+            # A fresh planet's array is a separate working copy — rebaseline
+            # so apply_experience_boost() doesn't mistake its current value
+            # for a same-tick gain (or a reset) relative to whatever the
+            # previous planet's array happened to hold.
+            self._prev_experience[name] = addr.experience
+            # _raw_level is deliberately NOT rebaselined here (unlike
+            # experience above) — check() only ever fires on an *increase*
+            # over the last-seen value, so a lower/stale reading from an
+            # unsynced planet array just silently re-baselines downward with
+            # no false "reached level" fire, and a starting/precollected
+            # weapon that's already at its target level the very first time
+            # it's ever observed still correctly fires every level up to it
+            # (comparing against the untouched default of "never observed").
+            # Rebaselining here would instead permanently swallow that first
+            # observation, since apply_progressive_leveling() (which would
+            # otherwise raise the level to trigger a fresh diff) runs on its
+            # own separate tick schedule, not synchronously within this call.
         for name, addr in self._gadget_addrs.items():
             unlocked = bool(addr.unlocked)
             self.gadgets[name]      = unlocked
@@ -550,6 +773,31 @@ class WeaponInventory:
                 weapon, slot = _weapon_locations._MOD_LOC[loc]
                 self.mods.setdefault(weapon, dict.fromkeys(_MOD_SLOTS, False))
                 self.mods[weapon][slot] = True
+
+    def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
+        """Zero unlocked + every mod slot (memory and tracking dicts alike)
+        for every weapon is_ap_owned says no to.
+
+        Used by the mod vendor to clean up its own temporary "show as
+        unlocked so it actually renders in the selection list" display
+        hack once that menu closes. apply_inventory()'s resync is additive
+        only (it never clears anything not owned), so nothing else would
+        ever undo that hack on its own — a vendor purchase only ever
+        checks a location, same principle as weapon_vendor()'s re-lock;
+        this is that same principle applied on a delay, since the weapon
+        has to stay visually unlocked for the whole mod-vendor visit or it
+        wouldn't render as a selection at all, so it can't be re-locked the
+        instant it's observed the way a real weapon-vendor purchase is.
+        """
+        for weapon, addr in self._weapon_addrs.items():
+            if is_ap_owned(weapon):
+                continue
+            addr.unlocked = False
+            self.weapons[weapon] = False
+            mods = self.mods.setdefault(weapon, dict.fromkeys(_MOD_SLOTS, False))
+            for slot in _MOD_SLOTS:
+                setattr(addr, slot, False)
+                mods[slot] = False
 
     def has_weapon(self, name: str) -> bool:
         return self.weapons.get(name, False)

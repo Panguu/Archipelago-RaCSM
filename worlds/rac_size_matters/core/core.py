@@ -5,11 +5,13 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5CutsceneLocations, Rac5Locations
+from ..locations import WEAPON_LEVEL_LOOKUP
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece
 from .challenges import ChallengeInventory, SkyboardInventory
 from .menu import MenuStateValue
 from .missions import MissionInventory
 from .planets import AUTO_UNLOCK_ADDRESSES, INFOBOT_UNLOCK_VALUE, PlanetInventory, PlanetUnlockState
+from .player_bolts import PlayerBoltInventory
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointInventory
 from .skins import SkinInventory
@@ -130,6 +132,7 @@ class Core:
         self.clank        = ChallengeInventory(pine)
         self.skyboard     = SkyboardInventory(pine)
         self.bolts        = TitaniumBoltInventory(pine)
+        self.player_bolts = PlayerBoltInventory(pine)
         self.skill_points = SkillPointInventory(pine)
         self.missions     = MissionInventory(pine)
         self.skin         = SkinInventory(pine)
@@ -160,6 +163,9 @@ class Core:
         # default captured here at construction time.
         self.vendor         = VendorInventory(
             pine, self.planet, self.planet_unlock, lambda loc: self.send_location(loc),
+            log=self._log,
+            is_weapon_ap_owned=lambda name: self._ap_owned_weapons.get(name, False),
+            is_gadget_ap_owned=lambda name: self._ap_owned_gadgets.get(name, False),
         )
         self.weapon_vendor  = WeaponVendorMenu()
         self.mod_vendor     = ModVendorMenu()
@@ -277,12 +283,34 @@ class Core:
         self.planet_unlock.set_unlocked_planets(infobot_planets)
         self.armour.sync_unlocked(armour_unlocked)
         self.planet.sync_unlock_armour(armour_unlocked)
+
+        # Weapon Level Checks, level 1: fires purely off AP inventory — the
+        # moment a weapon's item is actually received — never off observed
+        # memory state. That sidesteps every timing issue level 2+ has to
+        # deal with (vendor-context, planet-load ordering, starting weapons
+        # never producing a "transition" to observe): this only needs to
+        # know the weapon just became AP-owned, which is exactly what this
+        # dict diff already is. Runs unconditionally, before the is_ready/
+        # vendor_active gate below — a location send doesn't touch game
+        # memory, so there's nothing here for that gate to protect.
+        for name, owned in weapons.items():
+            if owned and not self._ap_owned_weapons.get(name, False):
+                loc = WEAPON_LEVEL_LOOKUP.get((name, 1))
+                if loc:
+                    self.send_location(loc)
+
         # Always kept current, even while the writes below are skipped —
         # _enforce_no_forced_starter_items() needs an up-to-date answer to
         # "does AP actually own this" on every tick regardless of whether a
         # planet happens to be mid-transition or the vendor is open.
         self._ap_owned_weapons = dict(weapons)
         self._ap_owned_gadgets = dict(gadgets)
+        # Level caps are pure bookkeeping (no memory write), so keep them
+        # current the same way as _ap_owned_weapons above, regardless of
+        # whether writes are gated below — apply_progressive_leveling()
+        # (called every tick from tick()) is what actually turns this into
+        # level/experience writes, gated on progressive_mode.
+        self.planet.weapons.level_caps = dict(weapon_levels)
 
         if not self.planet.is_ready or self.vendor_active:
             return
@@ -294,8 +322,6 @@ class Core:
         for name, owned in gadgets.items():
             if owned:
                 wi.set(name, True)
-        for name, level in weapon_levels.items():
-            wi.set_level(name, level)
         for name, slots in weapon_mods.items():
             for slot in slots:
                 wi.set_mod(name, slot, True)
@@ -457,6 +483,15 @@ class Core:
             for name in self.skyboard.check():
                 self.send_location(name)
 
+        self.planet.weapons.apply_experience_boost()
+        # Skipped while the weapons vendor is open — it zeroes every
+        # weapon's level for the duration of the visit (see
+        # VendorInventory.weapon_vendor()) to stop the displayed price from
+        # depending on level; this would otherwise fight that back to the
+        # real level every tick.
+        if not self.weapon_vendor.active:
+            self.planet.weapons.apply_progressive_leveling()
+        self.player_bolts.apply_boost()
         self._check_armour_pickups()
         self._check_vendor_purchases()
 
@@ -496,13 +531,31 @@ class Core:
             return
         wi = self.planet.weapons
         kept_weapons = []
+        forced_this_tick: set[str] = set()
         for name in changed["weapons"]:
             if name in _GAME_FORCED_WEAPONS and not self._ap_owned_weapons.get(name, False):
                 wi.set(name, False)
                 wi.weapons[name] = False
+                forced_this_tick.add(name)
                 continue
             kept_weapons.append(name)
         changed["weapons"] = kept_weapons
+
+        # check()'s level diffing only gates on is_unlocked, so it has no way
+        # to know the game's forced unlock above isn't real AP ownership —
+        # any "reached level" it already queued for one of these weapons
+        # this same tick is just as spurious as the "newly unlocked" entry
+        # was, and must be stripped too. Also drop the raw-level baseline
+        # check() just wrote so a genuine future unlock (real AP ownership,
+        # or a vendor purchase) starts from "never observed" again instead
+        # of silently comparing against this suppressed reading and seeing
+        # no change.
+        if forced_this_tick:
+            changed["levels"] = [
+                (name, level) for name, level in changed["levels"] if name not in forced_this_tick
+            ]
+            for name in forced_this_tick:
+                wi._raw_level.pop(name, None)
 
         kept_gadgets = []
         for name in changed["gadgets"]:
@@ -529,6 +582,11 @@ class Core:
         self._prev_vendor = current
 
         if is_vendor and not was_vendor:
+            # Snapshot the wheel as it stood right before the vendor menu
+            # took over, then stop polling — same freeze pattern
+            # PlanetInventory uses for transitions, just triggered by the
+            # vendor menu instead of a planet change.
+            self.quick_select.sync()
             self.quick_select.freeze()
             if current == MenuStateValue.WEAPONS_VENDOR:
                 self.weapon_vendor.activate()
@@ -539,6 +597,11 @@ class Core:
             self.weapon_vendor.deactivate()
             self.mod_vendor.deactivate()
             self.vendor.close()
+            # Write the pre-vendor snapshot back before resuming polling, so
+            # any wheel slot the game auto-assigned during the vendor visit
+            # (e.g. a newly bought weapon) is reverted rather than adopted
+            # as the player's own choice.
+            self.quick_select.restore()
             self.quick_select.unfreeze()
             self.on_vendor_close()
 
@@ -577,6 +640,15 @@ class Core:
             for name in changed["gadgets"]:
                 if name in _SCRIPTED_PICKUP_GADGETS:
                     self.on_scripted_gadget_pickup(name)
+
+        # Weapon Level Checks — a no-op send_location() for a level whose
+        # location isn't in this seed's pool (weapon_level_checks off, or
+        # max_level and this isn't the max level) is already safe, so this
+        # doesn't need to know the option value itself.
+        for name, level in changed["levels"]:
+            loc = WEAPON_LEVEL_LOOKUP.get((name, level))
+            if loc:
+                self.send_location(loc)
 
     def _handle_death(self) -> None:
         # The game's own death sequence needs to see every piece the player

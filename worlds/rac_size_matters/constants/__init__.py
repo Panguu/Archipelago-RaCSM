@@ -11,6 +11,7 @@ from .skillpoints import Rac5SkillPoints
 from .skyboard_challenges import Rac5SkyboardChallenges
 from .tbolts import Rac5TBolts
 from .vendors import Rac5ModVendorLocations, Rac5VendorLocations
+from .weapon_levels import Rac5WeaponLevels
 from .weapons import (
     Rac5ProgressiveWeaponMods,
     Rac5ProgressiveWeapons,
@@ -39,6 +40,7 @@ __all__ = [
     "Rac5ModVendorLocations",
     "Rac5VendorLocations",
     "Rac5WeaponKeys",
+    "Rac5WeaponLevels",
     "Rac5WeaponMods",
     "Rac5Weapons",
     "Rac5CutsceneLocations",

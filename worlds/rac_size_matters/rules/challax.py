@@ -25,8 +25,9 @@ def set_challax_rules(world: RACSizeMatterWorld) -> None:
     _sprout = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER, Rac5Gadgets.SPROUT_O_MATIC)
 
     # Skill Points
-    if world.options.skill_points.value >= 1:
-        world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_VARMINTS, player), _sprout)
+    # Rac5SkillPoints.CHALLAX_VARMINTS ("No More Varmints!") is commented out
+    # of SKILL_POINTS in skill_point_locations.py — Giant Clank disabled,
+    # unreachable — so no rule is set for it here.
     if world.options.skill_points.value >= 2:
         world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_MASTER, player), _sprout)
 

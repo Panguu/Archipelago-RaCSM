@@ -22,7 +22,9 @@ from .locations import (
     SKYBOARD_ITEM_LOCATIONS,
     STORY_MISSION_LOCATIONS,
     TITANIUM_BOLT_LOCATIONS,
+    WEAPON_MAX_LEVEL_LOCATIONS,
     WEAPON_MOD_VENDOR_LOCATIONS,
+    WEAPON_SUB_MAX_LEVEL_LOCATIONS,
     WEAPON_VENDOR_LOCATIONS,
 )
 
@@ -85,6 +87,10 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         location_tables.append(EXTRA_SKYBOARD_LOCATIONS)
     if world.options.armour_set_checks:
         location_tables.append(ARMOUR_SET_CHECK_LOCATIONS)
+    if world.options.weapon_level_checks.value >= 1:
+        location_tables.append(WEAPON_MAX_LEVEL_LOCATIONS)
+    if world.options.weapon_level_checks.value >= 2:
+        location_tables.append(WEAPON_SUB_MAX_LEVEL_LOCATIONS)
 
     for table in location_tables:
         for loc_name, loc_data in table.items():
