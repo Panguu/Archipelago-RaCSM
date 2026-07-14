@@ -7,9 +7,9 @@ from .constants import (
     Rac5SkyboardChallenges as RACSMSKY,
     Rac5VendorLocations,
     Rac5CutsceneLocations,
-    Rac5WeaponLevels,
 )
 from .core.armour import ARMOUR_PICKUPS
+from .core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
 from .core.locations.challenge_locations import (
     CHALLENGE_PICKUPS,
     DERBY_CLANK_PICKUPS,
@@ -99,8 +99,11 @@ from .core.weapons import WEAPON_DATA as _WEAPON_DATA
 # Level 1 is deliberately excluded: it's synonymous with owning the weapon
 # at all (already covered by whatever location/item grants it), not a
 # distinct in-game milestone, so it isn't modelled as a location here.
+# Names come from WEAPON_LEVEL_NAMES (constants/weapon_levels.py) — an
+# explicit mapping, not a dynamically-built getattr() lookup — so a typo/
+# rename there is a KeyError at import time, not a silent lookup failure.
 WEAPON_LEVEL_LOOKUP: dict[tuple[str, int], str] = {
-    (internal, level): getattr(Rac5WeaponLevels, f"{internal.upper()}_LEVEL_{level}")
+    (internal, level): WEAPON_LEVEL_NAMES[internal][level]
     for internal, data in _WEAPON_DATA.items()
     for level in range(2, data.max_level + 1)
 }
