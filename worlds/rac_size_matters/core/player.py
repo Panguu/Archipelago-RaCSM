@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
 from .address_maps import PLAYER_ADDRS
-from .structs.game import PlayerMovementStruct
+
+if TYPE_CHECKING:
+    from ..pypine import Pine
 
 # Player movement state enum (data)
 
@@ -27,114 +26,76 @@ class PlayerMovementState(IntEnum):
         return PlayerMovementState.FishDeath <= state <= PlayerMovementState.MysteriousDeath
 
 
+class PlayerMovementSlot:
+    """Pine-backed accessor for the player's movement-state byte."""
 
-# Player state (runtime)
-
-class PlayerState(BaseState):
-
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self.movement_state: PlayerMovementState = PlayerMovementState.Alive
-        self.health: int = 0
-        self._health_addr: int | None = None
-        self._current_planet: int | None = None
-
-    def on_exit(self) -> None:
-        self.movement_state = PlayerMovementState.Alive
-        self.health = 0
-
-    def set_planet(self, planet_id: int) -> None:
-        addrs = PLAYER_ADDRS.get(planet_id)
-        self._health_addr = addrs[1] if addrs else None
-        self._current_planet = planet_id
-
-    def _register_handlers(self) -> None:
-        struct_cls = self._movement_struct()
-        if struct_cls is not None:
-            self.accessor.on_struct_change(struct_cls, self._on_movement_change)
-
-    def _unregister_handlers(self) -> None:
-        struct_cls = self._movement_struct()
-        if struct_cls is not None:
-            self.accessor.remove_struct_handler(struct_cls, self._on_movement_change)
-
-    def _movement_struct(self) -> type[PlayerMovementStruct] | None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, PlayerMovementStruct) and cls is not PlayerMovementStruct:
-                return cls
-        return None
-
-    def _on_movement_change(self, address: int, new_bytes: bytes) -> None:
-        del address
-        raw = new_bytes[0] if new_bytes else 0
+    def __get__(self, instance, owner) -> PlayerMovementState | None:
+        if instance is None or instance.movement_addr is None:
+            return None
         try:
-            new_state = PlayerMovementState(raw)
+            return PlayerMovementState(instance.pine.read_int8(instance.movement_addr))
         except ValueError:
-            new_state = PlayerMovementState.Alive
+            return PlayerMovementState.Alive
 
-        if self._health_addr is not None:
-            self.health = int.from_bytes(
-                self.accessor.read_raw(self._health_addr, 4), "little"
-            )
-
-        prev = self.movement_state
-        self.movement_state = new_state
-        self._on_transition(prev, new_state)
-
-    def _on_transition(self, prev: PlayerMovementState, current: PlayerMovementState) -> None:
-        was_dead   = PlayerMovementState.is_dead(int(prev))
-        is_dead    = PlayerMovementState.is_dead(int(current))
-        was_pickup = prev    == PlayerMovementState.Pickup
-        is_pickup  = current == PlayerMovementState.Pickup
-
-        if is_dead and not was_dead:
-            self.on_death(current)
-        elif not is_dead and was_dead:
-            self.on_respawn()
-
-        if is_pickup and not was_pickup:
-            self.on_pickup_start()
-        elif not is_pickup and was_pickup:
-            self.on_pickup_end()
-
-    def sync(self) -> None:
-        struct_cls = self._movement_struct()
-        if struct_cls is None:
+    def __set__(self, instance, value: PlayerMovementState) -> None:
+        if instance.movement_addr is None:
             return
-        raw = self.accessor.read_raw(struct_cls.BASE_ADDRESS, 1)
-        try:
-            self.movement_state = PlayerMovementState(raw[0])
-        except ValueError:
-            pass
-        if self._health_addr is not None:
-            self.health = int.from_bytes(
-                self.accessor.read_raw(self._health_addr, 4), "little"
-            )
+        instance.pine.write_int8(instance.movement_addr, int(value))
+
+    def __delete__(self, instance) -> None:
+        if instance.movement_addr is None:
+            return
+        instance.pine.write_int8(instance.movement_addr, int(PlayerMovementState.Alive))
+
+
+class PlayerHealthSlot:
+    """Pine-backed accessor for the player's health (4-byte int)."""
+
+    def __get__(self, instance, owner) -> int | None:
+        if instance is None or instance.health_addr is None:
+            return None
+        return int.from_bytes(instance.pine.read_bytes(instance.health_addr, 4), "little")
+
+    def __set__(self, instance, value: int) -> None:
+        if instance.health_addr is None:
+            return
+        instance.pine.write_bytes(instance.health_addr, value.to_bytes(4, "little"))
+
+    def __delete__(self, instance) -> None:
+        if instance.health_addr is None:
+            return
+        instance.pine.write_bytes(instance.health_addr, (0).to_bytes(4, "little"))
+
+
+class PlayerInventory:
+    """Pine-backed live accessor for player movement/health, replacing PlayerState.
+
+    Planet-dependent: both addresses live on a per-planet struct, so call
+    set_base(planet_id) whenever the loaded planet changes, same as the other
+    planet-dependent inventories (weapons/vendor/menu).
+    """
+
+    movement_state = PlayerMovementSlot()
+    health         = PlayerHealthSlot()
+
+    def __init__(self, pine: Pine) -> None:
+        self.pine = pine
+        self.movement_addr: int | None = None
+        self.health_addr:   int | None = None
+
+    def set_base(self, planet_id: int) -> None:
+        addrs = PLAYER_ADDRS.get(planet_id)
+        self.movement_addr = addrs[0] if addrs else None
+        self.health_addr   = addrs[1] if addrs else None
 
     @property
     def is_dead(self) -> bool:
-        return PlayerMovementState.is_dead(int(self.movement_state))
+        state = self.movement_state
+        return state is not None and PlayerMovementState.is_dead(int(state))
 
     @property
     def is_picking_up(self) -> bool:
         return self.movement_state == PlayerMovementState.Pickup
 
-    def on_death(self, _cause: PlayerMovementState) -> None:
-        del _cause
-
-    def on_respawn(self) -> None:
-        pass
-
-    def on_pickup_start(self) -> None:
-        pass
-
-    def on_pickup_end(self) -> None:
-        pass
-
     def __repr__(self) -> str:
-        return f"PlayerState(movement={self.movement_state.name}, health={self.health})"
+        return f"PlayerInventory(movement={self.movement_state}, health={self.health})"

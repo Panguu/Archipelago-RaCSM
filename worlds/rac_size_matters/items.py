@@ -3,9 +3,11 @@ from typing import NamedTuple
 from BaseClasses import ItemClassification
 
 from .constants import (
+    Rac5Armours,
+    Rac5Filler,
     Rac5GadgetKeys,
     Rac5Gadgets,
-    Rac5Items,
+    Rac5ProgressiveArmours,
     Rac5ProgressiveWeaponMods,
     Rac5ProgressiveWeapons,
     Rac5WeaponKeys,
@@ -52,34 +54,34 @@ GADGET_DISPLAY_TO_INTERNAL: dict[str, str] = {
 }
 
 ARMOUR_DISPLAY_TO_INTERNAL: dict[str, tuple[str, int]] = {
-    Rac5Items.WILDFIRE_CHESTPLATE:     ("wildfire",     0x01),
-    Rac5Items.WILDFIRE_HELMET:         ("wildfire",     0x02),
-    Rac5Items.WILDFIRE_GLOVES:         ("wildfire",     0x04),
-    Rac5Items.WILDFIFE_BOOTS:          ("wildfire",     0x10),
-    Rac5Items.SLUDGE_MK9_CHESTPLATE:   ("sludge",       0x01),
-    Rac5Items.SLUDGE_MK9_HELMET:       ("sludge",       0x02),
-    Rac5Items.SLUDGE_MK9_GLOVES:       ("sludge",       0x04),
-    Rac5Items.SLUDGE_MK9_BOOTS:        ("sludge",       0x10),
-    Rac5Items.CRYSTALLIX_CHESTPLATE:   ("crystallix",   0x01),
-    Rac5Items.CRYSTALLIX_HELMET:       ("crystallix",   0x02),
-    Rac5Items.CRYSTALLIX_GLOVES:       ("crystallix",   0x04),
-    Rac5Items.CRYSTALLIX_BOOTS:        ("crystallix",   0x10),
-    Rac5Items.ELECTROSHOCK_CHESTPLATE: ("electroshock", 0x01),
-    Rac5Items.ELECTROSHOCK_HELMET:     ("electroshock", 0x02),
-    Rac5Items.ELECTROSHOCK_GLOVES:     ("electroshock", 0x04),
-    Rac5Items.ELECTROSHOCK_BOOTS:      ("electroshock", 0x10),
-    Rac5Items.MEGA_BOMB_CHESTPLATE:    ("mega_bomb",    0x01),
-    Rac5Items.MEGA_BOMB_HELMET:        ("mega_bomb",    0x02),
-    Rac5Items.MEGA_BOMB_GLOVES:        ("mega_bomb",    0x04),
-    Rac5Items.MEGA_BOMB_BOOTS:         ("mega_bomb",    0x10),
-    Rac5Items.HYPERBOREAN_CHESTPLATE:  ("hyperborean",  0x01),
-    Rac5Items.HYPERBOREAN_HELMET:      ("hyperborean",  0x02),
-    Rac5Items.HYPERBOREAN_GLOVES:      ("hyperborean",  0x04),
-    Rac5Items.HYPERBOREAN_BOOTS:       ("hyperborean",  0x10),
-    Rac5Items.CHAMELEON_CHESTPLATE:    ("chameleon",    0x01),
-    Rac5Items.CHAMELEON_HELMET:        ("chameleon",    0x02),
-    Rac5Items.CHAMELEON_GLOVES:        ("chameleon",    0x04),
-    Rac5Items.CHAMELEON_BOOTS:         ("chameleon",    0x10),
+    Rac5Armours.WILDFIRE_CHESTPLATE:     ("wildfire",     0x01),
+    Rac5Armours.WILDFIRE_HELMET:         ("wildfire",     0x02),
+    Rac5Armours.WILDFIRE_GLOVES:         ("wildfire",     0x04),
+    Rac5Armours.WILDFIFE_BOOTS:          ("wildfire",     0x10),
+    Rac5Armours.SLUDGE_MK9_CHESTPLATE:   ("sludge",       0x01),
+    Rac5Armours.SLUDGE_MK9_HELMET:       ("sludge",       0x02),
+    Rac5Armours.SLUDGE_MK9_GLOVES:       ("sludge",       0x04),
+    Rac5Armours.SLUDGE_MK9_BOOTS:        ("sludge",       0x10),
+    Rac5Armours.CRYSTALLIX_CHESTPLATE:   ("crystallix",   0x01),
+    Rac5Armours.CRYSTALLIX_HELMET:       ("crystallix",   0x02),
+    Rac5Armours.CRYSTALLIX_GLOVES:       ("crystallix",   0x04),
+    Rac5Armours.CRYSTALLIX_BOOTS:        ("crystallix",   0x10),
+    Rac5Armours.ELECTROSHOCK_CHESTPLATE: ("electroshock", 0x01),
+    Rac5Armours.ELECTROSHOCK_HELMET:     ("electroshock", 0x02),
+    Rac5Armours.ELECTROSHOCK_GLOVES:     ("electroshock", 0x04),
+    Rac5Armours.ELECTROSHOCK_BOOTS:      ("electroshock", 0x10),
+    Rac5Armours.MEGA_BOMB_CHESTPLATE:    ("mega_bomb",    0x01),
+    Rac5Armours.MEGA_BOMB_HELMET:        ("mega_bomb",    0x02),
+    Rac5Armours.MEGA_BOMB_GLOVES:        ("mega_bomb",    0x04),
+    Rac5Armours.MEGA_BOMB_BOOTS:         ("mega_bomb",    0x10),
+    Rac5Armours.HYPERBOREAN_CHESTPLATE:  ("hyperborean",  0x01),
+    Rac5Armours.HYPERBOREAN_HELMET:      ("hyperborean",  0x02),
+    Rac5Armours.HYPERBOREAN_GLOVES:      ("hyperborean",  0x04),
+    Rac5Armours.HYPERBOREAN_BOOTS:       ("hyperborean",  0x10),
+    Rac5Armours.CHAMELEON_CHESTPLATE:    ("chameleon",    0x01),
+    Rac5Armours.CHAMELEON_HELMET:        ("chameleon",    0x02),
+    Rac5Armours.CHAMELEON_GLOVES:        ("chameleon",    0x04),
+    Rac5Armours.CHAMELEON_BOOTS:         ("chameleon",    0x10),
 }
 
 WEAPON_ITEM_TABLE: dict[str, RACItemData] = {
@@ -231,13 +233,13 @@ ARMOUR_ITEM_TABLE: dict[str, RACItemData] = {
 }
 
 PROGRESSIVE_ARMOUR_NAME: dict[str, str] = {
-    "Wildfire":     Rac5Items.PROGRESSIVE_WILDFIRE,
-    "Sludge Mk9":   Rac5Items.PROGRESSIVE_SLUDGE_MK9,
-    "Crystallix":   Rac5Items.PROGRESSIVE_CRYSTALLIX,
-    "Electroshock": Rac5Items.PROGRESSIVE_ELECTROSHOCK,
-    "Mega Bomb":    Rac5Items.PROGRESSIVE_MEGA_BOMB,
-    "Hyperborean":  Rac5Items.PROGRESSIVE_HYPERBOREAN,
-    "Chameleon":    Rac5Items.PROGRESSIVE_CHAMELEON,
+    "Wildfire":     Rac5ProgressiveArmours.PROGRESSIVE_WILDFIRE,
+    "Sludge Mk9":   Rac5ProgressiveArmours.PROGRESSIVE_SLUDGE_MK9,
+    "Crystallix":   Rac5ProgressiveArmours.PROGRESSIVE_CRYSTALLIX,
+    "Electroshock": Rac5ProgressiveArmours.PROGRESSIVE_ELECTROSHOCK,
+    "Mega Bomb":    Rac5ProgressiveArmours.PROGRESSIVE_MEGA_BOMB,
+    "Hyperborean":  Rac5ProgressiveArmours.PROGRESSIVE_HYPERBOREAN,
+    "Chameleon":    Rac5ProgressiveArmours.PROGRESSIVE_CHAMELEON,
 }
 
 ARMOUR_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
@@ -246,7 +248,7 @@ ARMOUR_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
 }
 
 FILLER_ITEM_TABLE: dict[str, RACItemData] = {
-    Rac5Items.BOLTS: RACItemData(BASE_ID + 400, ItemClassification.filler),
+    Rac5Filler.BOLTS: RACItemData(BASE_ID + 400, ItemClassification.filler),
 }
 
 INFOBOT_ITEM_TABLE: dict[str, RACItemData] = {

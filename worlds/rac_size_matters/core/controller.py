@@ -1,6 +1,6 @@
 from enum import IntFlag
 
-from ..interface import Pine
+from ..pypine import Pine
 from .address_maps import PLANET_ADDRESSES
 
 """
@@ -41,11 +41,11 @@ PLANET_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
 class GlobalButtonState:
     """Snapshot of both controller bytes, read each tick.
 
+    Reads PlanetAddresses.controller_pause_select_v2 (buttons byte at +1).
     These bytes start at 0xFF (nothing held) and are decremented by a
     button's PauseSelectButtons/ControllerButtons bit value while it's held,
-    so a bit reads 0 when pressed and 1 when released. The address is
-    per-planet (PlanetAddresses.controller_pause_select_v2, buttons byte at
-    +1) and is not yet captured for Outpost Omega.
+    so a bit reads 0 when pressed and 1 when released — the reverse of
+    controller_pause_select, hence the ``~x & 0xFF`` inversion below.
     """
 
     def __init__(self, pause_sel: int, buttons: int) -> None:

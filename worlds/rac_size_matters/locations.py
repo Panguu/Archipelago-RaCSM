@@ -2,13 +2,15 @@ from typing import NamedTuple
 
 from .constants import (
     Rac5Locations,
+    Rac5ModVendorLocations,
     Rac5Planets,
     Rac5SkyboardChallenges as RACSMSKY,
     Rac5VendorLocations,
     Rac5CutsceneLocations,
+    Rac5WeaponLevels,
 )
 from .core.armour import ARMOUR_PICKUPS
-from .core.challenges import (
+from .core.locations.challenge_locations import (
     CHALLENGE_PICKUPS,
     DERBY_CLANK_PICKUPS,
     GADGETBOT_CLANK_PICKUPS,
@@ -71,22 +73,58 @@ GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
 
 # Weapon mod vendor locations
 WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5VendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
-    Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
-    Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE:  RACLocationData(BASE_ID + 2201, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_ACID_BURN:         RACLocationData(BASE_ID + 2203, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_ACID_EPOXY:        RACLocationData(BASE_ID + 2204, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK:   RACLocationData(BASE_ID + 2206, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE: RACLocationData(BASE_ID + 2207, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.CHALLAX_BEE_WORKER:        RACLocationData(BASE_ID + 2211, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER:  RACLocationData(BASE_ID + 2209, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE: RACLocationData(BASE_ID + 2210, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(BASE_ID + 2212, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(BASE_ID + 2213, Rac5Planets.QUODRONA),
-    Rac5VendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(BASE_ID + 2214, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE:  RACLocationData(BASE_ID + 2201, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_ACID_BURN:         RACLocationData(BASE_ID + 2203, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_ACID_EPOXY:        RACLocationData(BASE_ID + 2204, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK:   RACLocationData(BASE_ID + 2206, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE: RACLocationData(BASE_ID + 2207, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_BEE_WORKER:        RACLocationData(BASE_ID + 2211, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER:  RACLocationData(BASE_ID + 2209, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE: RACLocationData(BASE_ID + 2210, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(BASE_ID + 2212, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(BASE_ID + 2213, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(BASE_ID + 2214, Rac5Planets.QUODRONA),
 }
 
-from .core.armour import ARMOUR_SET_CHECKS
+# Weapon level locations — one per weapon per level (1-4, every weapon's max).
+# Region is Pokitaru for all of them (same as ARMOUR_SET_CHECK_LOCATIONS
+# below): leveling isn't tied to any one planet, just to owning the weapon
+# and playing, so there's no more specific region to anchor it to.
+from .core.weapons import WEAPON_DATA as _WEAPON_DATA
+
+# (internal weapon key, 1-indexed level) -> AP location name. Used by the
+# client to look up which location a newly-reached weapon level maps to.
+WEAPON_LEVEL_LOOKUP: dict[tuple[str, int], str] = {
+    (internal, level): getattr(Rac5WeaponLevels, f"{internal.upper()}_LEVEL_{level}")
+    for internal, data in _WEAPON_DATA.items()
+    for level in range(1, data.max_level + 1)
+}
+
+# Full universe of weapon level locations (levels 1 through each weapon's max),
+# always present in ALL_LOCATIONS regardless of weapon_level_checks — same
+# pattern as SKILL_POINT_LOCATIONS vs EASY_/HARD_SKILL_POINT_LOCATIONS.
+WEAPON_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
+    loc_name: RACLocationData(BASE_ID + 5000 + idx, Rac5Planets.POKITARU)
+    for idx, loc_name in enumerate(WEAPON_LEVEL_LOOKUP.values(), start=1)
+}
+
+# weapon_level_checks == max_level: only the "reached max level" check per weapon.
+WEAPON_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
+    loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
+    for (internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
+    if level == _WEAPON_DATA[internal].max_level
+}
+
+# weapon_level_checks == all: every other (non-max) level check, added on top
+# of WEAPON_MAX_LEVEL_LOCATIONS so the two tables never overlap.
+WEAPON_SUB_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
+    loc_name: data for loc_name, data in WEAPON_LEVEL_LOCATIONS.items()
+    if loc_name not in WEAPON_MAX_LEVEL_LOCATIONS
+}
+
+from .core.locations.armour_set_locations import ARMOUR_SET_CHECKS
 
 ARMOUR_SET_CHECK_LOCATIONS: dict[str, RACLocationData] = {
     name: RACLocationData(BASE_ID + 1500 + idx, Rac5Planets.POKITARU)
@@ -229,6 +267,7 @@ ALL_LOCATIONS: dict[str, RACLocationData] = {
     **WEAPON_VENDOR_LOCATIONS,
     **GADGET_VENDOR_LOCATIONS,
     **WEAPON_MOD_VENDOR_LOCATIONS,
+    **WEAPON_LEVEL_LOCATIONS,
     **ARMOUR_SET_CHECK_LOCATIONS,
     **CHALLENGE_LOCATIONS,
     **ALL_CLANK_LOCATIONS,
@@ -273,24 +312,24 @@ GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_GADGET_LO
 # Slot 1 = mod_slot_one, 2 = mod_slot_two, 3 = mod_slot_three in the weapon struct.
 # Scorcher Spitfire is confirmed in slot 2; all others use the first available slot.
 _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
-    ("lacerator",       2, Rac5VendorLocations.KALIDON_LACERATOR_LOCK),
-    ("lacerator",       1, Rac5VendorLocations.CHALLAX_LACERATOR_DOUBLE),
-    ("acid_bomb_glove", 1, Rac5VendorLocations.CHALLAX_ACID_BURN),
-    ("acid_bomb_glove", 2, Rac5VendorLocations.CHALLAX_ACID_EPOXY),
-    ("concussion_gun",  1, Rac5VendorLocations.KALIDON_CONCUSSION_SPLIT),
-    ("concussion_gun",  3, Rac5VendorLocations.CHALLAX_CONCUSSION_LOCK),
-    ("concussion_gun",  2, Rac5VendorLocations.CHALLAX_CONCUSSION_CHARGE),
-    ("bee_mine_glove",  1, Rac5VendorLocations.CHALLAX_BEE_WORKER),
-    ("agents_of_doom",  2, Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER),
-    ("scorcher",        2, Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE),
-    ("sniper_mine",     1, Rac5VendorLocations.QUODRONA_SNIPER_SPLIT),
-    ("shock_rocket",    3, Rac5VendorLocations.QUODRONA_SHOCK_LOCK),
-    ("shock_rocket",    1, Rac5VendorLocations.QUODRONA_SHOCK_AFTER),
+    ("lacerator",       2, Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK),
+    ("lacerator",       1, Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE),
+    ("acid_bomb_glove", 1, Rac5ModVendorLocations.CHALLAX_ACID_BURN),
+    ("acid_bomb_glove", 2, Rac5ModVendorLocations.CHALLAX_ACID_EPOXY),
+    ("concussion_gun",  1, Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT),
+    ("concussion_gun",  3, Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK),
+    ("concussion_gun",  2, Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE),
+    ("bee_mine_glove",  1, Rac5ModVendorLocations.CHALLAX_BEE_WORKER),
+    ("agents_of_doom",  2, Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER),
+    ("scorcher",        2, Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE),
+    ("sniper_mine",     1, Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT),
+    ("shock_rocket",    3, Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK),
+    ("shock_rocket",    1, Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER),
 ]
 
 _ATTR_NAMES = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
-# For WeaponState / HooksMixin: slot key matches struct field name ("mod_slot_one" etc.)
+# For WeaponInventory.set_mod(): slot key matches struct field name ("mod_slot_one" etc.)
 MOD_INTERNAL_TO_LOCATION: dict[tuple[str, str], str] = {
     (w, _ATTR_NAMES[i - 1]): loc for w, i, loc in _MOD_SLOT_ASSIGNMENT
 }

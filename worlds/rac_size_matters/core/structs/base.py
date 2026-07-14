@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import ctypes
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from ..memory.writer import MemoryWriter
 
 class MemoryStruct(ctypes.LittleEndianStructure):
 
@@ -46,34 +44,6 @@ class MemoryStruct(ctypes.LittleEndianStructure):
         for name, value in data.items():
             if hasattr(self, name):
                 setattr(self, name, value)
-
-    @classmethod
-    def read_all(cls, writer: MemoryWriter) -> MemoryStruct:
-        raw = writer.read(cls.BASE_ADDRESS, cls.size())
-        return cls.from_bytes(raw)
-
-    def write_all(self, writer: MemoryWriter) -> None:
-        writer.write(self.BASE_ADDRESS, self.to_bytes())
-
-    @classmethod
-    def read_field(cls, writer: MemoryWriter, field_name: str) -> Any:
-        descriptor = getattr(cls, field_name)
-        raw = writer.read(cls.address_of(field_name), descriptor.size)
-        instance = cls()
-        ctypes.memmove(
-            ctypes.addressof(instance) + descriptor.offset,
-            raw,
-            descriptor.size,
-        )
-        return getattr(instance, field_name)
-
-    @classmethod
-    def write_field(cls, writer: MemoryWriter, field_name: str, value: Any) -> None:
-        descriptor = getattr(cls, field_name)
-        instance = cls()
-        setattr(instance, field_name, value)
-        raw = bytes(instance)[descriptor.offset: descriptor.offset + descriptor.size]
-        writer.write(cls.address_of(field_name), raw)
 
     def __repr__(self) -> str:
         fields = ", ".join(f"{k}={v!r}" for k, v in self.to_dict().items())

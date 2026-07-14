@@ -14,6 +14,7 @@ from .outpost_omega import set_outpost_omega_rules
 from .pokitaru import set_pokitaru_rules
 from .quodrona import set_quodrona_rules
 from .ryllus import set_ryllus_rules
+from .weapon_levels import set_weapon_level_rules
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -35,3 +36,4 @@ def set_rules(world: RACSizeMatterWorld) -> None:
     set_inside_clank_rules(world)
     set_quodrona_rules(world)
     set_armour_set_rules(world)
+    set_weapon_level_rules(world)

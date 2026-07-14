@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
+from .states.base_state import BaseState
 from .structs.game import QuickSelectStruct
+
+if TYPE_CHECKING:
+    from ..pypine import Pine
 
 _ZERO_BYTES = bytes(4 * len(QuickSelectStruct.SLOT_ORDER))
 
@@ -20,20 +21,13 @@ _WRITE_COOLDOWN_S: float = 0.3
 
 class QuickSelectState(BaseState):
 
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
+    def __init__(self, pine: Pine) -> None:
+        super().__init__()
+        self.pine = pine
         self._snapshot: dict[str, int] = dict.fromkeys(QuickSelectStruct.SLOT_ORDER, 0)
         self._polling = False
         self._write_time: float = 0.0
         self.on_save: Callable[[dict[str, int]], None] = lambda _: None
-
-    def on_exit(self) -> None:
-        self._stop_polling()
 
     def load(self, data: dict[str, int]) -> None:
         """Load a saved quick-select snapshot (e.g. from AP data storage)."""
@@ -47,44 +41,28 @@ class QuickSelectState(BaseState):
         since that would echo back via set_notify and re-trigger restores."""
         self.on_save(dict(self._snapshot))
 
-    # Starts frozen — polling only begins after zero() is called on first planet load.
-    def _register_handlers(self) -> None:
-        pass
-
-    def _unregister_handlers(self) -> None:
-        self._stop_polling()
-
     def freeze(self) -> None:
         """Stop updating the snapshot (planet transition or vendor open)."""
-        self._stop_polling()
+        self._polling = False
 
     def unfreeze(self) -> None:
         """Resume snapshot updates."""
-        self._start_polling()
+        self._polling = True
 
-    def _start_polling(self) -> None:
+    def check(self) -> None:
+        """Pull-based: call every tick while not frozen — re-reads the wheel
+        and updates the snapshot, unless still inside the cooldown window
+        after our own write (the game briefly reassigns default gadgets to
+        specific wheel positions right after a restore)."""
         if not self._polling:
-            self.accessor.on_struct_change(QuickSelectStruct, self._on_change)
-            self._polling = True
-
-    def _stop_polling(self) -> None:
-        if self._polling:
-            self.accessor.remove_struct_handler(QuickSelectStruct, self._on_change)
-            self._polling = False
-
-    def _on_change(self, _address: int, new_bytes: bytes) -> None:
-        # Suppress changes that arrive in the cooldown window after our own write.
-        # The game sometimes reassigns default gadgets to specific wheel positions
-        # immediately after we restore the snapshot; this prevents that from
-        # overwriting what the player deliberately put there.
+            return
         if time.monotonic() - self._write_time < _WRITE_COOLDOWN_S:
             return
-        instance = QuickSelectStruct.from_bytes(new_bytes)
-        for name in QuickSelectStruct.SLOT_ORDER:
-            self._snapshot[name] = getattr(instance, name)
+        self.sync()
 
     def sync(self) -> None:
-        instance = self.accessor.read_struct(QuickSelectStruct)
+        raw = self.pine.read_bytes(QuickSelectStruct.BASE_ADDRESS, QuickSelectStruct.size())
+        instance = QuickSelectStruct.from_bytes(raw)
         for name in QuickSelectStruct.SLOT_ORDER:
             self._snapshot[name] = getattr(instance, name)
 
@@ -95,20 +73,20 @@ class QuickSelectState(BaseState):
         (restored via on_enter) can be written back by the following restore().
         """
         self._write_time = time.monotonic()
-        self.accessor.write_raw(QuickSelectStruct.BASE_ADDRESS, _ZERO_BYTES)
-        self._start_polling()
+        self.pine.write_bytes(QuickSelectStruct.BASE_ADDRESS, _ZERO_BYTES)
+        self._polling = True
 
     def restore(self) -> None:
         """Write the current snapshot to memory without checking polling state.
 
         Call this BEFORE unfreeze() when resuming after a planet transition so
-        the poller's first read sees our values, not game-default values.
+        the next check() sees our values, not game-default values.
         """
         self._write_time = time.monotonic()
         instance = QuickSelectStruct()
         for name in QuickSelectStruct.SLOT_ORDER:
             setattr(instance, name, self._snapshot[name])
-        self.accessor.write_struct(instance)
+        self.pine.write_bytes(QuickSelectStruct.BASE_ADDRESS, bytes(instance))
 
     def apply(self) -> None:
         """Write the current snapshot back to memory, zeroing any empty slots."""
@@ -118,4 +96,4 @@ class QuickSelectState(BaseState):
         instance = QuickSelectStruct()
         for name in QuickSelectStruct.SLOT_ORDER:
             setattr(instance, name, self._snapshot[name])
-        self.accessor.write_struct(instance)
+        self.pine.write_bytes(QuickSelectStruct.BASE_ADDRESS, bytes(instance))

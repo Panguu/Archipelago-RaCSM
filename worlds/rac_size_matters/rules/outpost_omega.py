@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from ..constants import (
     Rac5Gadgets,
-    Rac5Items,
     Rac5SkillPoints,
     Rac5SkyboardChallenges as RACSMSKY,
     Rac5TBolts,

@@ -1,7 +1,12 @@
 """This module contains string constants for Armor Sets locations"""
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
 class Rac5ArmourSet:
     """String constants for Armor Set locations"""
+
     CHAMELEON = "Armor Set: Equip Chameleon Armor Set"
     CRYSTALLIX = "Armor Set: Equip Crystallix Armor Set"
     ELECTROSHOCK = "Armor Set: Equip Electroshock Armor Set"

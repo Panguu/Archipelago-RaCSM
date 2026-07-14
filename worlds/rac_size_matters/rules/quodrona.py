@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5Gadgets, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5CutsceneLocations
+from ..constants import Rac5Gadgets, Rac5ModVendorLocations, Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5CutsceneLocations
 from rule_builder.rules import HasAll, True_
 
 if TYPE_CHECKING:
@@ -40,8 +40,8 @@ def set_quodrona_rules(world: RACSizeMatterWorld) -> None:
     # Weapon Mod Vendor — purchasable without owning the weapon (mod_unlock_N
     # is gated purely on this vendor's planet being accessible; see
     # VendorUnlockState.mod_vendor_unlock_weapons).
-    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_AGENTS_LAUNCHER, player), True_())
-    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SCORCHER_SPITFIRE, player), True_())
-    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SNIPER_SPLIT, player), True_())
-    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SHOCK_LOCK, player), True_())
-    world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_SHOCK_AFTER, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK, player), True_())
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER, player), True_())

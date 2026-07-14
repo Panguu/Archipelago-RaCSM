@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-import logging
-from collections.abc import Callable
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
-from .structs.game import MenuStruct
-
-logger = logging.getLogger("CommonClient")
+from .address_maps import MENU_ADDR_BY_PLANET_ID
 
 if TYPE_CHECKING:
-    from .planets import PlanetState
-    from .vendor import ModVendorState, WeaponVendorState
+    from ..pypine import Pine
+
+# +0x00 state  — current menu value, set by the game itself
+# +0x04 update — write a MenuStateValue here to request a menu change;
+#                same offset on every planet's menu address
+_STATE_OFFSET  = 0x00
+_UPDATE_OFFSET = 0x04
+
 
 class MenuStateValue(IntEnum):
     CLOSED            = 0x00
@@ -27,122 +25,76 @@ class MenuStateValue(IntEnum):
     SKYBOARD_MENU     = 0x15
 
 
-class MenuState(BaseState):
+class MenuStateSlot:
+    """Pine-backed accessor for the current menu state byte."""
 
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-        log: Callable[..., None] | None = None,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self.current: MenuStateValue              = MenuStateValue.CLOSED
-        self._weapon_vendor: WeaponVendorState | None = None
-        self._mod_vendor: ModVendorState | None        = None
-        self._planet: PlanetState | None          = None
-        self._log                                 = log or logger.info
-        self.on_pause_close:        Callable[[], None] = lambda: None
-        self.on_travel_menu_close:  Callable[[], None] = lambda: None
-
-    def bind(self, weapon_vendor: WeaponVendorState, mod_vendor: ModVendorState, planet: PlanetState) -> None:
-        self._weapon_vendor = weapon_vendor
-        self._mod_vendor    = mod_vendor
-        self._planet        = planet
-
-    def set_pause_close_callback(self, cb: Callable[[], None]) -> None:
-        self.on_pause_close = cb
-
-    def unbind(self) -> None:
-        self._weapon_vendor = None
-        self._mod_vendor    = None
-        self._planet        = None
-
-    def _vendor_for(self, value: MenuStateValue) -> WeaponVendorState | ModVendorState | None:
-        if value == MenuStateValue.WEAPONS_VENDOR:
-            return self._weapon_vendor
-        if value == MenuStateValue.MOD_VENDOR:
-            return self._mod_vendor
-        return None
-
-    def on_exit(self) -> None:
-        if self.is_vendor:
-            vendor = self._vendor_for(self.current)
-            if vendor is not None:
-                vendor.on_menu_close()
-                vendor.deactivate()
-        self.current = MenuStateValue.CLOSED
-        self.unbind()
-
-    def _register_handlers(self) -> None:
-        menu_cls = self._menu_struct()
-        if menu_cls is not None:
-            self.accessor.on_struct_change(menu_cls, self._on_menu_change)
-
-    def _unregister_handlers(self) -> None:
-        menu_cls = self._menu_struct()
-        if menu_cls is not None:
-            self.accessor.remove_struct_handler(menu_cls, self._on_menu_change)
-
-    def set_menu(self, value: MenuStateValue) -> None:
-        """Request a menu change by writing to the update field (base+0x04),
-        same offset on every planet's menu address."""
-        menu_cls = self._menu_struct()
-        if menu_cls is not None:
-            self.accessor.write_field(menu_cls, "update", int(value))
-
-    def _menu_struct(self) -> type[MenuStruct] | None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, MenuStruct) and cls is not MenuStruct:
-                return cls
-        return None
-
-    def _on_menu_change(self, address: int, new_bytes: bytes) -> None:
-        del address
-        raw = new_bytes[0] if new_bytes else 0
+    def __get__(self, instance, owner) -> MenuStateValue | None:
+        if instance is None or instance.base is None:
+            return None
         try:
-            new_state = MenuStateValue(raw)
+            return MenuStateValue(instance.pine.read_int8(instance.base + _STATE_OFFSET))
         except ValueError:
+            return None
+
+    def __set__(self, instance, value: MenuStateValue) -> None:
+        if instance.base is None:
             return
-        prev = self.current
-        self.current = new_state
-        if new_state != prev:
-            self._on_transition(prev, new_state)
+        instance.pine.write_int8(instance.base + _STATE_OFFSET, int(value))
 
-    _TRAVEL_MENUS = frozenset({MenuStateValue.SKYBOARD_MENU, MenuStateValue.PLANET_MENU})
-
-    def _on_transition(self, prev: MenuStateValue, current: MenuStateValue) -> None:
-        if prev == MenuStateValue.PAUSE_MENU and current != MenuStateValue.PAUSE_MENU:
-            self.on_pause_close()
-        if prev in self._TRAVEL_MENUS and current not in self._TRAVEL_MENUS:
-            self.on_travel_menu_close()
-
-        if self._weapon_vendor is None or self._mod_vendor is None:
+    def __delete__(self, instance) -> None:
+        if instance.base is None:
             return
-        was_vendor = prev    in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR)
-        is_vendor  = current in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR)
+        instance.pine.write_int8(instance.base + _STATE_OFFSET, int(MenuStateValue.CLOSED))
 
-        if is_vendor and not was_vendor:
-            self._log(f"[RAC] MenuState: vendor opened ({current.name}).")
-            vendor = self._vendor_for(current)
-            if vendor is None:
-                return
-            vendor.activate()
-            vendor.on_menu_open()
-            if self._planet is not None:
-                if current == MenuStateValue.WEAPONS_VENDOR:
-                    self._planet.on_weapon_vendor_open()
-                else:
-                    self._planet.on_mod_vendor_open()
-            self.set_menu(current)
-        elif was_vendor and not is_vendor:
-            self._log(f"[RAC] MenuState: vendor closed ({prev.name} → {current.name}).")
-            vendor = self._vendor_for(prev)
-            if vendor is not None:
-                vendor.on_menu_close()
-                vendor.deactivate()
-            if self._planet is not None:
-                self._planet.on_menu_close()
+
+class MenuUpdateSlot:
+    """Pine-backed accessor for the menu-change-request byte (write-only in practice)."""
+
+    def __get__(self, instance, owner) -> int | None:
+        if instance is None or instance.base is None:
+            return None
+        return instance.pine.read_int8(instance.base + _UPDATE_OFFSET)
+
+    def __set__(self, instance, value: MenuStateValue) -> None:
+        if instance.base is None:
+            return
+        instance.pine.write_int8(instance.base + _UPDATE_OFFSET, int(value))
+
+    def __delete__(self, instance) -> None:
+        if instance.base is None:
+            return
+        instance.pine.write_int8(instance.base + _UPDATE_OFFSET, 0)
+
+
+class MenuInventory:
+    """Pine-backed live accessor for the current menu state, replacing MenuState.
+
+    Planet-dependent: the menu struct lives at a per-planet address, so call
+    set_base(planet_id) whenever the loaded planet changes. Menu-transition
+    orchestration (opening a vendor, closing the pause menu, ...) is an
+    external concern now — this only exposes get/set/delete on the raw bytes
+    plus a couple of read-only convenience properties.
+    """
+
+    current = MenuStateSlot()
+    update  = MenuUpdateSlot()
+
+    def __init__(self, pine: Pine) -> None:
+        self.pine = pine
+        self.base: int | None = None
+
+    def set_base(self, planet_id: int) -> None:
+        self.base = MENU_ADDR_BY_PLANET_ID.get(planet_id)
+
+    def get(self) -> MenuStateValue | None:
+        return self.current
+
+    def set(self, value: MenuStateValue) -> None:
+        """Request a menu change by writing to the update field."""
+        self.update = value
+
+    def delete(self) -> None:
+        self.current = MenuStateValue.CLOSED
 
     @property
     def is_vendor(self) -> bool:
@@ -169,4 +121,4 @@ class MenuState(BaseState):
         return self.current == MenuStateValue.QUICK_SELECT_MENU
 
     def __repr__(self) -> str:
-        return f"MenuState(current={self.current.name})"
+        return f"MenuInventory(current={self.current})"

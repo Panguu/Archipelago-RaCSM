@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .structs.game import SkinStruct
 
 if TYPE_CHECKING:
-    from ..interface_orchestrator.memory.accessor import MemoryAccessor
+    from ..pypine import Pine
 
 
 # Data
@@ -44,22 +44,57 @@ SKIN_BY_EQUIP_ID: dict[int, Skin] = {s.equip_id: s for s in Skin}
 ALL_SKINS_UNLOCK_MASK: int = 0x01 | 0x02 | 0x04 | 0x10 | 0x20 | 0x40
 
 
-# State (runtime)
+class SkinSlot:
+    """Pine-backed accessor for one SkinStruct field (unlocked bitmask or equipped id)."""
 
-class SkinState:
+    def __init__(self, field: str) -> None:
+        self.field = field
+        self.address = SkinStruct.address_of(field)
 
-    def __init__(self) -> None:
+    def __get__(self, instance, owner) -> int | None:
+        if instance is None:
+            return None
+        return instance.pine.read_int8(self.address)
+
+    def __set__(self, instance, value: int) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(self.address, value)
+
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(self.address, 0)
+
+
+class SkinInventory:
+    """Pine-backed live accessor for the equipped/unlocked skin bytes, replacing SkinState."""
+
+    unlocked = SkinSlot("unlocked")
+    equipped = SkinSlot("equipped")
+
+    def __init__(self, pine: Pine) -> None:
+        self.pine = pine
         self._skin: Skin = Skin.DEFAULT
 
-    def set_skin(self, skin: Skin) -> None:
+    def get(self) -> Skin:
+        return SKIN_BY_EQUIP_ID.get(self.equipped, Skin.DEFAULT)
+
+    def set(self, skin: Skin) -> None:
         self._skin = skin
+        self.equipped = skin.equip_id
+        self.unlocked = ALL_SKINS_UNLOCK_MASK
 
-    def set_skin_by_option(self, value: int) -> None:
-        self._skin = SKIN_BY_EQUIP_ID.get(value, Skin.DEFAULT)
+    def set_by_option(self, value: int) -> None:
+        self.set(SKIN_BY_EQUIP_ID.get(value, Skin.DEFAULT))
 
-    def apply(self, accessor: MemoryAccessor) -> None:
-        accessor.write_field(SkinStruct, "unlocked", ALL_SKINS_UNLOCK_MASK)
-        accessor.write_field(SkinStruct, "equipped", self._skin.equip_id)
+    def delete(self) -> None:
+        self.set(Skin.DEFAULT)
+
+    def setup(self) -> None:
+        """Write the currently selected skin's unlock/equip bytes into game memory."""
+        self.equipped = self._skin.equip_id
+        self.unlocked = ALL_SKINS_UNLOCK_MASK
 
     def __repr__(self) -> str:
-        return f"SkinState(skin={self._skin.name})"
+        return f"SkinInventory(skin={self._skin.name})"

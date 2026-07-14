@@ -1,7 +1,12 @@
-# Name constants for weapons and weapon mods. Per-weapon flags (projectile,
-# classification, max level, mod count) live in core/weapons.py WEAPON_DATA,
-# not here — this file is names only.
+"""String constants for weapons and weapon mods."""
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
 class Rac5Weapons:
+    """String constants for weapons"""
+
     LACERATOR = "Lacerator"
     CONCUSSION_GUN = "Concussion Gun"
     ACID_BOMB_GLOVE = "Acid Bomb Glove"
@@ -17,7 +22,10 @@ class Rac5Weapons:
     RYNO = "RYNO"
 
 
+@dataclass(frozen=True)
 class Rac5ProgressiveWeapons:
+    """String constants for progressive weapons"""
+
     LACERATOR = "Progressive Lacerator"
     CONCUSSION_GUN = "Progressive Concussion Gun"
     ACID_BOMB_GLOVE = "Progressive Acid Bomb Glove"
@@ -33,7 +41,10 @@ class Rac5ProgressiveWeapons:
     RYNO = "Progressive RYNO"
 
 
+@dataclass(frozen=True)
 class Rac5WeaponMods:
+    """String constants for weapon mods"""
+
     LACERATOR_MOD_LOCK_ON = "Lacerator: Lock On Mod"
     LACERATOR_MOD_DOUBLE_BARREL = "Lacerator: Double Barrel Mod"
     CONCUSSION_GUN_MOD_SPLIT_BARREL = "Concussion Gun: Split Barrel Mod"
@@ -58,7 +69,10 @@ class Rac5WeaponMods:
     LASER_TRACER_MOD_RICOCHET = "Laser Tracer: Ricochet Mod"
 
 
+@dataclass(frozen=True)
 class Rac5ProgressiveWeaponMods:
+    """String constants for progressive weapon mods"""
+
     LACERATOR = "Progressive Lacerator Mod"
     CONCUSSION_GUN = "Progressive Concussion Gun Mod"
     ACID_BOMB_GLOVE = "Progressive Acid Bomb Glove Mod"

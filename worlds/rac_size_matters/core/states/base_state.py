@@ -1,29 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..memory.accessor import MemoryAccessor
-    from ..storage.local import LocalStorage
-    from ..structs.address_map import AddressMap
 
 class BaseState:
-
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        self.accessor = accessor
-        self.addresses = addresses
-        self.storage = storage
-
-    def set_addresses(self, addresses: AddressMap) -> None:
-        self._unregister_handlers()
-        self.addresses = addresses
-        if self._active:
-            self._register_handlers()
+    """Lightweight lifecycle marker for the handful of state classes that
+    still want enter()/exit() semantics. No longer carries an accessor/
+    address-map/storage — everything reads/writes pine directly now."""
 
     _active: bool = False
 

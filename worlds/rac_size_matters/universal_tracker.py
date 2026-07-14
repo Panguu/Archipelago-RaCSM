@@ -58,6 +58,10 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.starting_gadgets.value = world.passthrough["starting_gadgets"]
             world.options.starting_bolts.value = world.passthrough["starting_bolts"]
             world.options.death_amnesty.value = world.passthrough["death_amnesty"]
+            world.options.weapon_level_checks.value = world.passthrough.get("weapon_level_checks", 0)
+            world.options.weapon_experience_multiplier.value = \
+                world.passthrough.get("weapon_experience_multiplier", 0)
+            world.options.bolt_multiplier.value = world.passthrough.get("bolt_multiplier", 0)
         else:
             world.using_ut = False
     else:

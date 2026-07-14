@@ -7,7 +7,7 @@ from BaseClasses import Item, ItemClassification, Location, Tutorial
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
-from .constants import Rac5Items, Rac5Weapons
+from .constants import Rac5Infobots, Rac5Weapons
 from .core.weapons import WEAPON_MOD_COUNTS
 from .items import (
     ALL_ITEMS,
@@ -38,6 +38,7 @@ from .options import (
     RACSizeMatterOptions,
     SkillPoints,
     SkyboardChallenges,
+    WeaponLevelChecks,
     racsm_option_groups,
 )
 from .regions import create_regions
@@ -145,9 +146,29 @@ class RACSizeMatterWorld(World):
         # Fill any remaining slots
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         deficit = len(pool) - unfilled
+        filler_count = -deficit
+
+        # exclude_locations locations must end up filler-only (never
+        # progression/useful) — if there are more of them than the filler
+        # we're about to generate, the excluded locations alone can't all be
+        # covered by real filler once fill runs. Solo-only for the same
+        # reason as the check below: a multiworld's other players still
+        # supply enough of their own filler overall, this player's exclusions
+        # don't shrink the global filler supply. Matches rac3's own
+        # players == 1 gate on the equivalent check (world.py's create_items).
+        excluded_count = self.get_excluded_count()
+        if excluded_count > filler_count and self.multiworld.players == 1:
+            self.handle_not_enough_locations(excluded_count - filler_count)
+
+        # Unlike the excluded-locations check above, rac3 does NOT gate this
+        # one on players == 1 — a deficit here means this world generated
+        # more progression/useful items than it has locations of its own,
+        # which rac3 always treats as fatal regardless of multiworld size
+        # (see the unconditional `else: self.handle_not_enough_locations(...)`
+        # branch in rac3's world.py create_items). Mirrored here as-is.
         if deficit > 0:
             self.handle_not_enough_locations(deficit)
-        pool += [self.get_filler_item_name() for _ in range(-deficit)]
+        pool += [self.get_filler_item_name() for _ in range(max(0, filler_count))]
 
         for name in pool:
             self.multiworld.itempool.append(self.create_item(name))
@@ -171,6 +192,8 @@ class RACSizeMatterWorld(World):
             option_list.append(EnableSkyboardChallengeSkillPoints.display_name)
         if not self.options.armour_set_checks:
             option_list.append(ArmourSetChecks.display_name)
+        if self.options.weapon_level_checks.value < WeaponLevelChecks.option_all:
+            option_list.append(WeaponLevelChecks.display_name)
         if self.options.clank_challenges.value < ClankChallenges.option_all:
             option_list.append(ClankChallenges.display_name)
         if self.options.skyboard_challenges.value < SkyboardChallenges.option_all:
@@ -206,8 +229,8 @@ class RACSizeMatterWorld(World):
 
     def generate_basic(self) -> None:
         # Pokitaru and Ryllus are always the starting planets.
-        self._precollect(Rac5Items.POKITARU)
-        self._precollect(Rac5Items.RYLLUS)
+        self._precollect(Rac5Infobots.POKITARU)
+        self._precollect(Rac5Infobots.RYLLUS)
 
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))
@@ -247,6 +270,10 @@ class RACSizeMatterWorld(World):
             "starting_weapons": self.options.starting_weapons.value,
             "starting_gadgets": self.options.starting_gadgets.value,
             "starting_skin": self.options.starting_skin.value,
+            "weapon_experience_multiplier": self.options.weapon_experience_multiplier.value,
+            "bolt_multiplier": self.options.bolt_multiplier.value,
+            "weapon_level_checks": self.options.weapon_level_checks.value,
+            "trap_duration": dict(self.options.trap_duration.value),
         }
 
     @staticmethod
@@ -256,5 +283,8 @@ class RACSizeMatterWorld(World):
     def get_filler_item_name(self) -> str:
         trap_chance = self.options.trap_chance.value
         if trap_chance and self.random.randint(1, 100) <= trap_chance:
-            return self.random.choice(list(TRAP_ITEM_TABLE))
+            weights = self.options.trap_weight.value
+            names = [name for name in TRAP_ITEM_TABLE if weights.get(name, 0) > 0]
+            if names:
+                return self.random.choices(names, weights=[weights[name] for name in names])[0]
         return "Bolts"

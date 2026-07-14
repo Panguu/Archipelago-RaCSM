@@ -3,6 +3,10 @@ from __future__ import annotations
 import asyncio
 import struct
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..pypine import Pine
 
 # Colour encoding
 # 0x09 = colour-change marker; the following byte selects the colour.
@@ -28,17 +32,11 @@ def colored_text(*parts: bytes | str) -> bytes:
     return bytes(buf)
 
 
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
 from .address_maps import (
     MULTI_LINE_TEXT_BOX_BY_PLANET,
-    PLANET_ADDRESSES,
     SMALL_TEXT_BOX_BY_PLANET,
     STATIC_TEXT_BUFFER as _STATIC_TEXT_BUFFER,
 )
-from .structs.game import CountdownTimerStruct, VendorVisibilityStruct
 
 # Data
 # Both box types share the same in-memory layout relative to their base address:
@@ -108,143 +106,67 @@ MultiLineTextBoxAddrs: list[MultiLineTextBox] = [
 ]
 
 
-# State (runtime)
+# Text box inventory (runtime)
 
-class DisplayedTextBoxState(BaseState):
+class TextBoxInventory:
+    """Pine-backed accessor for a planet's text box (small or multi-line),
+    replacing DisplayedTextBoxState.
 
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self.is_displayed: bool = False
-        self._active_config: TextBoxConfig | None = None
+    set(text) writes the string into the static text buffer and instantly
+    displays it (same write as SmallTextBox/MultiLineTextBox.write_text).
+    get() reads back the currently-showing string, or None if nothing is
+    displayed. delete() clears the timer and text immediately (no 7s/5s
+    auto-hide delay — that's only for a set() that isn't manually cleared).
 
-    def activate(self, config: TextBoxConfig) -> None:
-        self._active_config = config
+    Planet-dependent: call set_base(planet_id) whenever the loaded planet
+    changes to rebind to that planet's box config.
+    """
 
-    def deactivate(self) -> None:
-        self._active_config = None
-        self.is_displayed = False
+    def __init__(self, pine: Pine, boxes: list[TextBoxConfig]) -> None:
+        self.pine = pine
+        self._by_planet: dict[int, TextBoxConfig] = {tb.planet_id: tb for tb in boxes}
+        self._config: TextBoxConfig | None = None
 
-    def on_exit(self) -> None:
-        self.is_displayed = False
+    def set_base(self, planet_id: int) -> None:
+        self._config = self._by_planet.get(planet_id)
 
-    def _register_handlers(self) -> None:
-        cls = self._countdown_struct()
-        if cls is not None:
-            self.accessor.on_struct_change(cls, self._on_countdown_change)
+    def get(self) -> str | None:
+        cfg = self._config
+        if cfg is None:
+            return None
+        timer = struct.unpack_from("<f", self.pine.read_bytes(cfg.countdown_timer, 4))[0]
+        if timer <= 0:
+            return None
+        ptr = self.pine.read_int32(cfg.message_str_pointer)
+        if ptr != _STATIC_TEXT_BUFFER:
+            return None
+        return self.pine.read_string(_STATIC_TEXT_BUFFER, 256)
 
-    def _unregister_handlers(self) -> None:
-        cls = self._countdown_struct()
-        if cls is not None:
-            self.accessor.remove_struct_handler(cls, self._on_countdown_change)
-
-    def _countdown_struct(self) -> type[CountdownTimerStruct] | None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, CountdownTimerStruct) and cls is not CountdownTimerStruct:
-                return cls
-        return None
-
-    def _on_countdown_change(self, address: int, new_bytes: bytes) -> None:
-        del address
-        if len(new_bytes) < 4:
+    def set(self, text: bytes | str) -> None:
+        cfg = self._config
+        if cfg is None:
             return
-        timer = struct.unpack_from("<f", new_bytes)[0]
-        was_displayed = self.is_displayed
-        self.is_displayed = timer > 0
-        if self.is_displayed and not was_displayed:
-            self.on_text_box_shown()
-        elif not self.is_displayed and was_displayed:
-            self.on_text_box_hidden()
+        data = text if isinstance(text, (bytes, bytearray)) else colored_text(text)
+        cfg.write_text(self.pine, data)
 
-    def sync(self) -> None:
-        cls = self._countdown_struct()
-        if cls is None:
+    def delete(self) -> None:
+        cfg = self._config
+        if cfg is None:
             return
-        raw = self.accessor.read_raw(cls.BASE_ADDRESS, 4)
-        if len(raw) < 4:
-            return
-        timer = struct.unpack_from("<f", raw)[0]
-        self.is_displayed = timer > 0
+        self.pine.write_int8(cfg.countdown_timer, 0)
+        self.pine.write_int8(cfg.base_addr + 0x39, 0x01)
 
-    def on_text_box_shown(self) -> None:
-        pass
-
-    def on_text_box_hidden(self) -> None:
-        pass
+    @property
+    def is_displayed(self) -> bool:
+        return self.get() is not None
 
     def __repr__(self) -> str:
-        return f"DisplayedTextBoxState(is_displayed={self.is_displayed})"
+        return f"TextBoxInventory(displayed={self.is_displayed})"
 
-class DisplayTextBoxState(BaseState):
 
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        self.is_vendor_prompt: bool    = False
-        self._vendor_value: int        = 0
-        self._active_config: TextBoxConfig | None = None
-        self.on_vendor_prompt_shown:  callable = lambda: None
-        self.on_vendor_prompt_hidden: callable = lambda: None
+def small_text_box_inventory(pine: Pine) -> TextBoxInventory:
+    return TextBoxInventory(pine, SmallTextBoxAddrs)
 
-    def activate(self, config: TextBoxConfig) -> None:
-        self._active_config = config
-        pa = PLANET_ADDRESSES.get(config.planet_id)
-        self._vendor_value  = pa.vendor_prompt_id if pa is not None and pa.vendor_prompt_id is not None else 0
 
-    def deactivate(self) -> None:
-        self._active_config = None
-        self.is_vendor_prompt = False
-
-    def on_exit(self) -> None:
-        self.is_vendor_prompt = False
-
-    def _register_handlers(self) -> None:
-        cls = self._visibility_struct()
-        if cls is not None:
-            self.accessor.on_struct_change(cls, self._on_visibility_change)
-
-    def _unregister_handlers(self) -> None:
-        cls = self._visibility_struct()
-        if cls is not None:
-            self.accessor.remove_struct_handler(cls, self._on_visibility_change)
-
-    def _visibility_struct(self) -> type[VendorVisibilityStruct] | None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, VendorVisibilityStruct) and cls is not VendorVisibilityStruct:
-                return cls
-        return None
-
-    def _on_visibility_change(self, address: int, new_bytes: bytes) -> None:
-        del address
-        if len(new_bytes) < 2:
-            return
-        raw = struct.unpack_from("<H", new_bytes)[0]
-        msg_val = ((raw & 0xFF) << 8) | (raw >> 8)
-        was_prompt = self.is_vendor_prompt
-        self.is_vendor_prompt = (msg_val == self._vendor_value)
-        if self.is_vendor_prompt and not was_prompt:
-            self.on_vendor_prompt_shown()
-        elif not self.is_vendor_prompt and was_prompt:
-            self.on_vendor_prompt_hidden()
-
-    def sync(self) -> None:
-        cls = self._visibility_struct()
-        if cls is None:
-            return
-        raw_bytes = self.accessor.read_raw(cls.BASE_ADDRESS, 2)
-        if len(raw_bytes) < 2:
-            return
-        raw = struct.unpack_from("<H", raw_bytes)[0]
-        msg_val = ((raw & 0xFF) << 8) | (raw >> 8)
-        self.is_vendor_prompt = (msg_val == self._vendor_value)
-
-    def __repr__(self) -> str:
-        return f"DisplayTextBoxState(vendor_prompt={self.is_vendor_prompt})"
+def multi_line_text_box_inventory(pine: Pine) -> TextBoxInventory:
+    return TextBoxInventory(pine, MultiLineTextBoxAddrs)

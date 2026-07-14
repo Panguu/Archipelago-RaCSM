@@ -29,18 +29,12 @@ class RACCommandProcessor(ClientCommandProcessor):
 
     def _cmd_states(self) -> bool:
         """Print every active state."""
-        ctx = self.ctx
-        w = ctx._wiring
+        w = self.ctx._wiring
         for state in (
-            w.armour, w.armour_sets, w.bolts, w.planet_unlock, w.quick_select,
-            w.clank, w.skyboard, w.weapons, w.player, w.menu, w.weapon_vendor, w.mod_vendor,
-            w.display_text, w.displayed_text_box, w.missions,
-        ):
-            logger.info(repr(state))
-        for state in (
-            ctx._planet_state, ctx._armour_pickup_state, ctx._player_armour_state,
-            ctx._armour_slot_state, ctx._player_weapon_state, ctx._player_gadget_state,
-            ctx._titanium_bolt_state,
+            w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
+            w.clank, w.skyboard, w.skill_points, w.missions, w.skin,
+            w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
+            w.weapon_vendor, w.mod_vendor, w.vendor,
         ):
             logger.info(repr(state))
         return True
@@ -53,14 +47,21 @@ class RACCommandProcessor(ClientCommandProcessor):
 
         w = ctx._wiring
         states = (
-            w.armour, w.armour_sets, w.bolts, w.planet_unlock, w.quick_select,
-            w.clank, w.skyboard, w.weapons, w.player, w.menu, w.weapon_vendor, w.mod_vendor,
-            w.display_text, w.displayed_text_box, w.missions,
-            ctx._planet_state, ctx._armour_pickup_state, ctx._player_armour_state,
-            ctx._armour_slot_state, ctx._player_weapon_state, ctx._player_gadget_state,
-            ctx._titanium_bolt_state,
+            w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
+            w.clank, w.skyboard, w.skill_points, w.missions, w.skin,
+            w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
+            w.weapon_vendor, w.mod_vendor, w.vendor,
         )
         logger.info("[RAC] States: " + " ".join(repr(state) for state in states))
+        return True
+
+    def _cmd_vendor_refresh(self) -> bool:
+        """Force-rewrite the vendor item list right now (debug: rebuilds and
+        writes WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS immediately, without
+        waiting for the next tick or a menu open/close edge)."""
+        w = self.ctx._wiring
+        w.vendor.force_refresh()
+        logger.info(f"[RAC] {w.vendor!r}")
         return True
 
     def _cmd_debug(self) -> bool:
@@ -70,11 +71,12 @@ class RACCommandProcessor(ClientCommandProcessor):
         logger.info(f"[RAC] Debug messages {state}.")
         return True
 
-    def _cmd_debug_buttons(self) -> bool:
-        """Toggle printing of the controller button state whenever it changes."""
-        wiring = self.ctx._wiring
-        enabled = not wiring._debug_buttons_enabled
-        wiring.set_debug_buttons(enabled)
-        state = "enabled" if enabled else "disabled"
-        logger.info(f"[RAC] Button debug logging {state}.")
+    def _cmd_enable_deathlink(self) -> bool:
+        """Enable DeathLink for this session."""
+        asyncio.create_task(self.ctx._set_death_link_enabled(True))
+        return True
+
+    def _cmd_disable_deathlink(self) -> bool:
+        """Disable DeathLink for this session."""
+        asyncio.create_task(self.ctx._set_death_link_enabled(False))
         return True

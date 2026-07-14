@@ -2,27 +2,34 @@ from __future__ import annotations
 
 import struct as _struct
 from collections.abc import Callable
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from BaseClasses import ItemClassification
 
 from ..constants import Rac5GadgetKeys, Rac5WeaponKeys
-from ..interface_orchestrator.memory.accessor import MemoryAccessor
-from ..interface_orchestrator.state.base_state import BaseState
-from ..interface_orchestrator.storage.local import LocalStorage
-from ..interface_orchestrator.structs.address_map import AddressMap
-from .structs.pickups import GadgetStruct, WeaponStruct
+from .locations import weapon_locations as _weapon_locations
 
-# NOTE: ``..items`` and ``..locations`` are imported lazily (see _ensure_loc_data
-# below).  Importing them at module top would create a circular import, because
-# ``items.py`` imports this module's weapon constants directly, and
-# ``locations.py`` imports ``core.weapons`` siblings + items.py.
+if TYPE_CHECKING:
+    from ..pypine import Pine
+
+# Vendor/mod location lookups (VENDOR_WEAPON_LOC, MOD_UNLOCK_PLANET, etc.)
+# live in core.locations.weapon_locations, not here — that module builds them
+# lazily on first use since ``items.py`` imports this module's weapon
+# constants directly, and top-level ``locations.py`` imports ``core.weapons``
+# siblings + items.py, which would otherwise cycle back into this module.
 
 
 # Weapon data
 
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
+
+# ProgressiveWeapons option values (options.py's ProgressiveWeapons Choice
+# — kept in sync manually, same as the raw-int slot_data comparisons used
+# elsewhere in this codebase, e.g. context.py's clank_mode/skill_points).
+PROGRESSIVE_OFF       = 0
+PROGRESSIVE_MANUAL    = 1
+PROGRESSIVE_AUTOMATIC = 2
 
 class WeaponData(NamedTuple):
     is_projectile: bool
@@ -70,10 +77,10 @@ WEAPON_DATA: dict[str, WeaponData] = {
         is_projectile=True, classification=ItemClassification.useful, max_level=4, mod_count=0,
     ),
     Rac5WeaponKeys.MOOTATOR: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=1, mod_count=0,
+        is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=0,
     ),
     Rac5WeaponKeys.RYNO: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=5, mod_count=0,
+        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
     ),
 }
 
@@ -123,9 +130,68 @@ def is_ps2_weapon_candidate(data: bytes, i: int) -> bool:
     return True
 
 
+class WeaponByteField:
+    """Pine-backed accessor for a single-byte weapon struct field
+    (unlocked, mod_slot_N, mod_unlock_N)."""
+
+    def __init__(self, field_name: str) -> None:
+        self.field_name = field_name
+
+    def _address(self, instance) -> int:
+        return instance.base + instance._OFFSETS[self.field_name]
+
+    def __get__(self, instance, owner) -> bool | None:
+        if instance is None:
+            return None
+        return bool(instance.pine.read_int8(self._address(instance)))
+
+    def __set__(self, instance, value: bool) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(self._address(instance), int(value))
+
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int8(self._address(instance), 0)
+
+
+class WeaponInt32Field:
+    """Pine-backed accessor for a single int32 weapon struct field."""
+
+    def __init__(self, field_name: str) -> None:
+        self.field_name = field_name
+
+    def _address(self, instance) -> int:
+        return instance.base + instance._OFFSETS[self.field_name]
+
+    def __get__(self, instance, owner) -> int | None:
+        if instance is None:
+            return None
+        return instance.pine.read_int32(self._address(instance))
+
+    def __set__(self, instance, value: int) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int32(self._address(instance), value)
+
+    def __delete__(self, instance) -> None:
+        if instance is None:
+            return
+        instance.pine.write_int32(self._address(instance), 0)
+
+
 class WeaponAddresses:
+    """Pine-backed live accessor for one weapon struct instance, replacing
+    the old plain address-holder class — every field reads/writes memory
+    directly via its descriptor instead of callers manually poking
+    self.pine.read_int8(addr.field)."""
+
     _OFFSETS: dict[str, int] = {
         "level":            0x2D,
+        # Confirmed in-game for Lacerator on Pokitaru (0x20F3EA4C, base
+        # 0x20F3EA17) — same relative offset for every weapon.
+        "experience":       0x35,
         "mod_slot_one":     0x3D,
         "mod_slot_two":     0x3E,
         "mod_slot_three":   0x3F,
@@ -135,56 +201,39 @@ class WeaponAddresses:
         "unlocked":         0x45,
     }
 
-    _BYTE_FIELDS: frozenset[str] = frozenset({
-        "mod_slot_one", "mod_slot_two", "mod_slot_three",
-        "mod_unlock_one", "mod_unlock_two", "mod_unlock_three",
-        "unlocked",
-    })
+    level            = WeaponInt32Field("level")
+    experience       = WeaponInt32Field("experience")
+    mod_slot_one     = WeaponByteField("mod_slot_one")
+    mod_slot_two     = WeaponByteField("mod_slot_two")
+    mod_slot_three   = WeaponByteField("mod_slot_three")
+    mod_unlock_one   = WeaponByteField("mod_unlock_one")
+    mod_unlock_two   = WeaponByteField("mod_unlock_two")
+    mod_unlock_three = WeaponByteField("mod_unlock_three")
+    unlocked         = WeaponByteField("unlocked")
 
-    def __init__(self, base: int) -> None:
+    def __init__(self, base: int, pine: Pine) -> None:
         self.base = base
-        for name, offset in self._OFFSETS.items():
-            setattr(self, name, base + offset)
-
-    def fields(self) -> list[str]:
-        return list(self._OFFSETS)
-
-    def is_byte(self, field: str) -> bool:
-        return field in self._BYTE_FIELDS
+        self.pine = pine
 
     def __repr__(self) -> str:
-        fields = "\n".join(
-            f"  {name} = 0x{getattr(self, name):08X}"
-            for name in self._OFFSETS
-        )
-        return f"WeaponAddresses(base=0x{self.base:08X})\n{fields}"
+        return f"WeaponAddresses(base=0x{self.base:08X}, unlocked={self.unlocked}, level={self.level})"
 
 
 class GadgetAddresses:
+    """Pine-backed live accessor for one gadget struct instance."""
+
     _OFFSETS: dict[str, int] = {
-        "icon":     0x1D,
         "unlocked": 0x45,
     }
 
-    _BYTE_FIELDS: frozenset[str] = frozenset({"unlocked"})
+    unlocked = WeaponByteField("unlocked")
 
-    def __init__(self, base: int) -> None:
+    def __init__(self, base: int, pine: Pine) -> None:
         self.base = base
-        for name, offset in self._OFFSETS.items():
-            setattr(self, name, base + offset)
-
-    def fields(self) -> list[str]:
-        return list(self._OFFSETS)
-
-    def is_byte(self, field: str) -> bool:
-        return field in self._BYTE_FIELDS
+        self.pine = pine
 
     def __repr__(self) -> str:
-        fields = "\n".join(
-            f"  {name} = 0x{getattr(self, name):08X}"
-            for name in self._OFFSETS
-        )
-        return f"GadgetAddresses(base=0x{self.base:08X})\n{fields}"
+        return f"GadgetAddresses(base=0x{self.base:08X}, unlocked={self.unlocked})"
 
 
 class GadgetData(NamedTuple):
@@ -237,17 +286,17 @@ GADGET_ORDER: list[str | None] = [
 ]
 
 
-def build_weapons(array_base: int) -> tuple[dict[str, WeaponAddresses], dict[str, GadgetAddresses]]:
+def build_weapons(array_base: int, pine: Pine) -> tuple[dict[str, WeaponAddresses], dict[str, GadgetAddresses]]:
     weapons: dict[str, WeaponAddresses] = {}
     for i, name in enumerate(WEAPON_ORDER):
         if name is not None:
-            weapons[name] = WeaponAddresses(array_base + i * WEAPON_STRUCT_SIZE)
+            weapons[name] = WeaponAddresses(array_base + i * WEAPON_STRUCT_SIZE, pine)
 
     gadget_base = array_base + len(WEAPON_ORDER) * WEAPON_STRUCT_SIZE
     gadgets: dict[str, GadgetAddresses] = {}
     for i, name in enumerate(GADGET_ORDER):
         if name is not None:
-            gadgets[name] = GadgetAddresses(gadget_base + i * WEAPON_STRUCT_SIZE)
+            gadgets[name] = GadgetAddresses(gadget_base + i * WEAPON_STRUCT_SIZE, pine)
 
     return weapons, gadgets
 
@@ -256,220 +305,391 @@ def build_weapons(array_base: int) -> tuple[dict[str, WeaponAddresses], dict[str
 
 _MOD_SLOTS = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
-# Location-derived lookups depend on ``items`` and ``locations`` and are built
-# lazily on first use to avoid the import cycle described at the top of the file.
-_LOC_DATA_LOADED = False
-VENDOR_WEAPON_LOC: dict[str, str] = {}
-VENDOR_GADGET_LOC: dict[str, str] = {}
-WEAPON_INTERNAL_TO_LOCATION: dict[str, str] = {}
-GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {}
-_MOD_LOC: dict[str, tuple[str, str]] = {}
-MOD_INTERNAL_TO_LOCATION: dict[tuple[str, str], str] = {}
 
-_SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
-    "mod_slot_one": "mod_unlock_one",
-    "mod_slot_two": "mod_unlock_two",
-    "mod_slot_three": "mod_unlock_three",
-}
+class WeaponInventory:
+    """Pine-backed live accessor + ownership/vendor tracking for weapons,
+    gadgets and mods, replacing WeaponState.
 
-# (internal_weapon, mod_unlock_attr) -> planet the vendor selling that mod
-# lives on. Drives the mod_unlock_N "purchasable" byte: it should only read 1
-# once the player owns the weapon (and, on Challax, the extra gadgets below —
-# that vendor sits behind the Polarizer gate, mirroring rules/challax.py's _base).
-MOD_UNLOCK_PLANET: dict[tuple[str, str], str] = {}
+    Planet-dependent: the weapon/gadget array lives at a per-planet base
+    address, so call set_base(array_base) whenever the loaded planet changes
+    (array_base comes from WEAPON_ARRAY_BASE_BY_PLANET). Acquire/lose events
+    are an external concern now — check() just reports what changed since the
+    last call, same shape as ChallengeInventory.check().
+    """
 
-# Planets whose mod vendor requires extra gadgets beyond owning the weapon
-# itself, mirroring that planet's AP access_rule for its mod locations.
-MOD_UNLOCK_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {}
-
-
-def _ensure_loc_data() -> None:
-    """Populate the location/item-derived module globals (lazy, idempotent)."""
-    global _LOC_DATA_LOADED, VENDOR_WEAPON_LOC, VENDOR_GADGET_LOC
-    global WEAPON_INTERNAL_TO_LOCATION, GADGET_INTERNAL_TO_LOCATION
-    global _MOD_LOC, MOD_INTERNAL_TO_LOCATION
-    global MOD_UNLOCK_PLANET, MOD_UNLOCK_EXTRA_GADGETS
-    if _LOC_DATA_LOADED:
-        return
-    from ..constants import Rac5GadgetKeys, Rac5Planets
-    from ..locations import (
-        GADGET_INTERNAL_TO_LOCATION as _GADGET_INTERNAL_TO_LOCATION,
-        MOD_INTERNAL_TO_LOCATION as _MOD_INTERNAL_TO_LOCATION,
-        VENDOR_GADGET_LOC as _VENDOR_GADGET_LOC,
-        VENDOR_WEAPON_LOC as _VENDOR_WEAPON_LOC,
-        WEAPON_INTERNAL_TO_LOCATION as _WEAPON_INTERNAL_TO_LOCATION,
-        WEAPON_MOD_VENDOR_LOCATIONS as _WEAPON_MOD_VENDOR_LOCATIONS,
-    )
-    VENDOR_WEAPON_LOC = _VENDOR_WEAPON_LOC
-    VENDOR_GADGET_LOC = _VENDOR_GADGET_LOC
-    WEAPON_INTERNAL_TO_LOCATION = _WEAPON_INTERNAL_TO_LOCATION
-    GADGET_INTERNAL_TO_LOCATION = _GADGET_INTERNAL_TO_LOCATION
-    MOD_INTERNAL_TO_LOCATION = _MOD_INTERNAL_TO_LOCATION
-    _MOD_LOC = {v: k for k, v in _MOD_INTERNAL_TO_LOCATION.items()}
-    MOD_UNLOCK_PLANET = {
-        (weapon, _SLOT_TO_UNLOCK_ATTR[slot]): _WEAPON_MOD_VENDOR_LOCATIONS[loc].region
-        for (weapon, slot), loc in _MOD_INTERNAL_TO_LOCATION.items()
-    }
-    MOD_UNLOCK_EXTRA_GADGETS = {
-        Rac5Planets.CHALLAX: (Rac5GadgetKeys.SHRINK_RAY, Rac5GadgetKeys.POLARIZER),
-    }
-    _LOC_DATA_LOADED = True
-
-
-def __getattr__(name: str):
-    # Resolve the lazily-built location lookups when imported via
-    # ``from core.weapons import <name>`` (e.g. by core._hooks / core.vendor).
-    if name in (
-        "VENDOR_WEAPON_LOC", "VENDOR_GADGET_LOC",
-        "WEAPON_INTERNAL_TO_LOCATION", "GADGET_INTERNAL_TO_LOCATION",
-        "MOD_INTERNAL_TO_LOCATION", "_MOD_LOC",
-        "MOD_UNLOCK_PLANET", "MOD_UNLOCK_EXTRA_GADGETS",
-    ):
-        _ensure_loc_data()
-        return globals()[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-class WeaponState(BaseState):
-
-    def __init__(
-        self,
-        accessor: MemoryAccessor,
-        addresses: AddressMap,
-        storage: LocalStorage,
-        log: Callable[..., None] | None = None,
-    ) -> None:
-        super().__init__(accessor, addresses, storage)
-        _ensure_loc_data()
-        self._log = log or (lambda *a, **k: None)
-        self.weapons: dict[str, bool]           = {}
-        self.gadgets: dict[str, bool]           = {}
-        self.mods: dict[str, dict[str, bool]]   = {}
-        self.vendor_locations: dict[str, bool]  = dict.fromkeys(
-            (*VENDOR_WEAPON_LOC, *VENDOR_GADGET_LOC, *_MOD_LOC), False
+    def __init__(self, pine: Pine) -> None:
+        self.pine = pine
+        _weapon_locations._ensure_loc_data()
+        self.weapons: dict[str, bool]         = {}
+        self.gadgets: dict[str, bool]         = {}
+        self.mods: dict[str, dict[str, bool]] = {}
+        # Raw-memory baselines used only for check()'s "did this just flip
+        # 0->1" detection — kept separate from weapons/gadgets/mods above,
+        # which never regress True->False (see check()'s docstring). Without
+        # this split, a weapon already owned via an AP item received before
+        # its vendor location was ever bought would never be detectable as
+        # "just purchased": apply_vendor_locations() zeroes the memory bit for
+        # display, but the ownership dict stays True, so a real purchase
+        # flipping memory back to 1 would look like no change at all. These
+        # baselines track the memory bit itself, so they correctly go back to
+        # False whenever apply_vendor_locations() zeroes it, and a genuine
+        # purchase is seen as a fresh transition regardless of prior ownership.
+        self._raw_weapons: dict[str, bool]         = {}
+        self._raw_gadgets: dict[str, bool]         = {}
+        self._raw_mods: dict[str, dict[str, bool]] = {}
+        # Last-seen 0-indexed level per weapon, used only for check()'s
+        # "newly reached level" diffing — separate from level_caps/pinning
+        # bookkeeping below, same "raw memory, not derived state" role as
+        # _raw_weapons.
+        self._raw_level: dict[str, int] = {}
+        self.vendor_locations: dict[str, bool] = dict.fromkeys(
+            (
+                *_weapon_locations.VENDOR_WEAPON_LOC,
+                *_weapon_locations.VENDOR_GADGET_LOC,
+                *_weapon_locations._MOD_LOC,
+            ),
+            False,
         )
-        # _make_weapon_handler/_make_gadget_handler return a fresh closure on
-        # every call, so register/unregister must reuse the exact same
-        # function objects — otherwise remove_struct_handler's identity check
-        # silently no-ops and handlers pile up at the same address on every
-        # planet revisit.
-        self._registered_handlers: dict[type, Callable[[int, bytes], None]] = {}
+        self._weapon_addrs: dict[str, WeaponAddresses] = {}
+        self._gadget_addrs: dict[str, GadgetAddresses] = {}
 
-    def on_exit(self) -> None:
-        self.weapons.clear()
-        self.gadgets.clear()
-        self.mods.clear()
+        # Weapon-experience-multiplier option: 1 = no boost (default/off).
+        # Set directly by the client from slot_data, same pattern as Core's
+        # clank_enabled/skill_points_enabled flags.
+        self.experience_multiplier: int = 1
+        # Last-seen raw experience per weapon, used only to diff this tick's
+        # gain from the last one — see apply_experience_boost().
+        self._prev_experience: dict[str, int] = {}
 
-    def _register_handlers(self) -> None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, WeaponStruct) and cls is not WeaponStruct:
-                handler = self._registered_handlers.setdefault(cls, self._make_weapon_handler(cls.__name__))
-                self.accessor.on_struct_change(cls, handler)
-            elif issubclass(cls, GadgetStruct) and cls is not GadgetStruct:
-                handler = self._registered_handlers.setdefault(cls, self._make_gadget_handler(cls.__name__))
-                self.accessor.on_struct_change(cls, handler)
+        # ProgressiveWeapons option (options.py): 0=off, 1=manual, 2=automatic.
+        # Set directly by the client from slot_data.
+        self.progressive_mode: int = PROGRESSIVE_OFF
+        # Per-weapon max allowed level (0-indexed, same scale as addr.level),
+        # derived from how many Progressive Weapon copies AP has granted —
+        # kept current by Core.apply_inventory() every time it runs. A
+        # weapon absent from this dict has received zero copies (still
+        # fully locked, no leveling of any kind allowed).
+        self.level_caps: dict[str, int] = {}
+        # manual mode only: the experience value to keep rewriting once a
+        # weapon is pinned (either not-yet-unlocked, or sitting right at its
+        # current cap) — captured the moment it first got pinned, cleared
+        # the moment its cap rises again. See apply_progressive_leveling().
+        self._pinned_experience: dict[str, int] = {}
+        self._prev_level_cap: dict[str, int] = {}
 
-    def _unregister_handlers(self) -> None:
-        for cls in self.addresses.structs():
-            handler = self._registered_handlers.pop(cls, None)
-            if handler is not None:
-                self.accessor.remove_struct_handler(cls, handler)
+    def set_base(self, array_base: int) -> None:
+        """Rebind every weapon/gadget address to the given planet's array base."""
+        self._weapon_addrs, self._gadget_addrs = build_weapons(array_base, self.pine)
 
-    def _make_weapon_handler(self, cls_name: str):
-        weapon_name = cls_name.removeprefix("WeaponStruct_")
+    def get(self, name: str) -> bool:
+        addr = self._weapon_addrs.get(name) or self._gadget_addrs.get(name)
+        if addr is None:
+            return False
+        return bool(addr.unlocked)
 
-        def handler(address: int, new_bytes: bytes) -> None:
-            self._log(
-                f"[RAC] WeaponState: struct change {weapon_name} @ {address:#010x} "
-                f"raw={new_bytes.hex()}"
-            )
-            instance     = WeaponStruct.from_bytes(new_bytes)
-            was_unlocked = self.weapons.get(weapon_name, False)
-            is_unlocked  = bool(instance.unlocked)
-            # Never regress True->False here: weapons aren't lost in this game,
-            # and apply_vendor_locations()/set_unlocked() deliberately zero this
-            # bit for vendor-display purposes (showing "buy weapon" instead of
-            # "buy ammo") without the player actually losing AP ownership. If
-            # this dict followed the bit down to False, owned_names() would
-            # wrongly think an owned-but-not-yet-vendor-purchased weapon (e.g.
-            # Scorcher) isn't owned at all the moment the default view locks it.
+    def set(self, name: str, value: bool) -> None:
+        addr = self._weapon_addrs.get(name) or self._gadget_addrs.get(name)
+        if addr is not None:
+            addr.unlocked = value
+
+    def delete(self, name: str) -> None:
+        self.set(name, False)
+
+    def get_mod(self, weapon: str, slot: str) -> bool:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is None:
+            return False
+        return bool(getattr(addr, slot))
+
+    def set_mod(self, weapon: str, slot: str, value: bool) -> None:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is not None:
+            setattr(addr, slot, value)
+
+    def delete_mod(self, weapon: str, slot: str) -> None:
+        self.set_mod(weapon, slot, False)
+
+    def get_experience(self, weapon: str) -> int:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is None:
+            return 0
+        return addr.experience
+
+    def set_experience(self, weapon: str, value: int) -> None:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is not None:
+            addr.experience = value
+
+    def get_level(self, weapon: str) -> int:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is None:
+            return 0
+        return addr.level
+
+    def set_level(self, weapon: str, level: int) -> None:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is not None:
+            addr.level = level
+
+    def zero_levels_for_vendor(self) -> dict[str, int]:
+        """Snapshot every weapon's current level, then zero it all out.
+
+        The weapons vendor's displayed price apparently derives from the
+        weapon's level field, so a weapon already leveled up (via received
+        Progressive copies or real play) would show/charge a different
+        price than the base one while browsing. Caller (VendorInventory)
+        holds onto the returned snapshot and passes it to restore_levels()
+        once the vendor closes — this method never restores on its own.
+        """
+        snapshot = {name: addr.level for name, addr in self._weapon_addrs.items()}
+        for addr in self._weapon_addrs.values():
+            addr.level = 0
+        return snapshot
+
+    def restore_levels(self, snapshot: dict[str, int]) -> None:
+        """Write back a snapshot taken by zero_levels_for_vendor()."""
+        for name, level in snapshot.items():
+            addr = self._weapon_addrs.get(name)
+            if addr is not None:
+                addr.level = level
+
+    def get_mod_unlock(self, weapon: str, attr: str) -> bool:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is None:
+            return False
+        return bool(getattr(addr, attr))
+
+    def set_mod_unlock(self, weapon: str, attr: str, value: bool) -> None:
+        """Write the mod_unlock_N "purchasable" byte — separate from set_mod
+        (does the player *own* the mod): this just controls whether the mod
+        vendor shows that slot as buyable."""
+        addr = self._weapon_addrs.get(weapon)
+        if addr is not None:
+            setattr(addr, attr, value)
+
+    def check(self) -> dict[str, list]:
+        """Read every weapon/gadget/mod byte for the current planet's array,
+        update ownership state, and return what newly changed this call:
+        {"weapons": [...], "gadgets": [...], "mods": [(weapon, slot), ...],
+        "levels": [(weapon, level), ...]}.
+
+        "Newly changed" is decided from the raw memory bit's own previous
+        reading (_raw_weapons/_raw_gadgets/_raw_mods), not from
+        weapons/gadgets/mods — those never regress True->False (see
+        apply_vendor_locations()), so diffing against them directly would
+        miss a genuine repurchase/re-force of something already marked owned.
+        weapons/gadgets/mods themselves still only ever go False->True here,
+        preserving that "once owned, stays owned" contract for callers like
+        has_weapon()/has_gadget()/has_mod().
+
+        "levels" reports every 1-indexed level >= 2 newly reached since the
+        last call, for weapons that are actually unlocked — if level jumped
+        by more than one step at once (e.g. automatic progressive mode
+        setting level straight to a freshly-raised cap), every level in
+        between is reported too, not just the final one, so none of their
+        locations get silently skipped. Level 1 is never reported here — it
+        fires from Core.apply_inventory() the moment AP inventory grants the
+        weapon, not from observing memory.
+        """
+        newly_weapons: list[str] = []
+        newly_gadgets: list[str] = []
+        newly_mods: list[tuple[str, str]] = []
+        newly_levels: list[tuple[str, int]] = []
+
+        for name, addr in self._weapon_addrs.items():
+            was_unlocked = self._raw_weapons.get(name, False)
+            is_unlocked  = bool(addr.unlocked)
+            self._raw_weapons[name] = is_unlocked
             if is_unlocked:
-                self.weapons[weapon_name] = True
-            prev_mods = dict(self.mods.get(weapon_name, dict.fromkeys(_MOD_SLOTS, False)))
-            self.mods.setdefault(weapon_name, dict.fromkeys(_MOD_SLOTS, False))
-            self.mods[weapon_name]["mod_slot_one"]   = bool(instance.mod_slot_one)
-            self.mods[weapon_name]["mod_slot_two"]   = bool(instance.mod_slot_two)
-            self.mods[weapon_name]["mod_slot_three"] = bool(instance.mod_slot_three)
+                self.weapons[name] = True
             if is_unlocked and not was_unlocked:
-                self._log(f"[RAC] WeaponState: {weapon_name} unlocked -> on_weapon_acquired")
-                self.on_weapon_acquired(weapon_name)
-            elif not is_unlocked and was_unlocked:
-                self._log(f"[RAC] WeaponState: {weapon_name} lost -> on_weapon_lost")
-                self.on_weapon_lost(weapon_name)
+                newly_weapons.append(name)
+            prev_mods = dict(self._raw_mods.get(name, dict.fromkeys(_MOD_SLOTS, False)))
+            raw_mods  = self._raw_mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
+            mods      = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
             for slot in _MOD_SLOTS:
-                is_mod  = self.mods[weapon_name][slot]
-                was_mod = prev_mods.get(slot, False)
-                if is_mod and not was_mod:
-                    self._log(f"[RAC] WeaponState: {weapon_name}.{slot} 0->1 -> on_mod_acquired")
-                    self.on_mod_acquired(weapon_name, slot)
-                elif not is_mod and was_mod:
-                    self._log(f"[RAC] WeaponState: {weapon_name}.{slot} 1->0 -> on_mod_lost")
-                    self.on_mod_lost(weapon_name, slot)
-        return handler
+                slot_unlocked = bool(getattr(addr, slot))
+                raw_mods[slot] = slot_unlocked
+                if slot_unlocked:
+                    mods[slot] = True
+                if slot_unlocked and not prev_mods.get(slot, False):
+                    newly_mods.append((name, slot))
 
-    def _make_gadget_handler(self, cls_name: str):
-        gadget_name = cls_name.removeprefix("GadgetStruct_")
-
-        def handler(address: int, new_bytes: bytes) -> None:
-            del address
-            instance     = GadgetStruct.from_bytes(new_bytes)
-            was_unlocked = self.gadgets.get(gadget_name, False)
-            is_unlocked  = bool(instance.unlocked)
-            # See _make_weapon_handler — same monotonic guard against
-            # vendor-display zero-writes wrongly erasing AP ownership.
             if is_unlocked:
-                self.gadgets[gadget_name] = True
+                prev_level = self._raw_level.get(name, -1)
+                current_level = addr.level
+                if current_level > prev_level:
+                    # Level 1 is deliberately excluded here — it's driven
+                    # purely by AP inventory (Core.apply_inventory() fires it
+                    # the moment the weapon's item is received), not by
+                    # observing this memory transition, so it isn't tangled
+                    # up in vendor-context/planet-load timing at all. Only
+                    # levels 2+ genuinely depend on watching real progress.
+                    for idx in range(prev_level + 1, current_level + 1):
+                        level = idx + 1
+                        if level >= 2:
+                            newly_levels.append((name, level))
+                self._raw_level[name] = current_level
+
+        for name, addr in self._gadget_addrs.items():
+            was_unlocked = self._raw_gadgets.get(name, False)
+            is_unlocked  = bool(addr.unlocked)
+            self._raw_gadgets[name] = is_unlocked
+            if is_unlocked:
+                self.gadgets[name] = True
             if is_unlocked and not was_unlocked:
-                self.on_gadget_acquired(gadget_name)
-            elif not is_unlocked and was_unlocked:
-                self.on_gadget_lost(gadget_name)
-        return handler
+                newly_gadgets.append(name)
+
+        return {
+            "weapons": newly_weapons, "gadgets": newly_gadgets,
+            "mods": newly_mods, "levels": newly_levels,
+        }
+
+    def apply_experience_boost(self) -> None:
+        """Inflate each weapon's experience gain by experience_multiplier,
+        every tick, so leveling happens faster without touching the game's
+        own level-up thresholds.
+
+        Diffed against the raw value last seen here (_prev_experience) — the
+        same "compare to last raw reading" approach check() uses for
+        unlocked bits — so only genuine in-game gain since the last tick
+        gets amplified, never our own previous write. A same-or-lower
+        reading (no gain yet, or the game reset the counter on a level-up)
+        just re-baselines without writing anything.
+
+        Stops entirely once a weapon reaches level 4 — vanilla's normal cap
+        for anything that levels via this experience curve (Mootator/Ryno
+        don't use it at all, so this is a no-op for them regardless).
+        """
+        multiplier = self.experience_multiplier
+        for name, addr in self._weapon_addrs.items():
+            current  = addr.experience
+            previous = self._prev_experience.get(name)
+            if previous is None:
+                self._prev_experience[name] = current
+                continue
+            diff = current - previous
+            if diff <= 0:
+                self._prev_experience[name] = current
+                continue
+            if multiplier > 1 and addr.level < 4:
+                boosted = previous + diff * multiplier
+                addr.experience = boosted
+                self._prev_experience[name] = boosted
+            else:
+                self._prev_experience[name] = current
+
+    def apply_progressive_leveling(self) -> None:
+        """Gate weapon leveling behind Progressive Weapon items received,
+        every tick. No-op when progressive_mode is PROGRESSIVE_OFF (vanilla
+        leveling, untouched).
+
+        automatic: level is fully dictated by level_caps — pinned straight
+        to the received count, experience zeroed continuously, so no
+        organic play can ever push a level past what's been received.
+
+        manual: the player levels up by playing normally, but only within
+        the window AP has actually opened. A weapon with no cap yet (zero
+        Progressive copies received) is fully locked — its experience is
+        captured the first time it's observed and rewritten every tick
+        after, going nowhere until the first copy arrives. Once unlocked,
+        experience is left alone (and can freely rise) as long as
+        addr.level is still under its cap; the instant it reaches the cap,
+        that tick's experience value is captured and rewritten every tick
+        after — freezing progress right at the level-up boundary the game
+        itself just wrote, rather than resetting to zero. Receiving another
+        Progressive copy raises the cap, which clears the pin and lets
+        natural play resume until the new cap.
+        """
+        mode = self.progressive_mode
+        if mode == PROGRESSIVE_OFF:
+            return
+
+        for name, addr in self._weapon_addrs.items():
+            cap = self.level_caps.get(name, -1)
+
+            if mode == PROGRESSIVE_AUTOMATIC:
+                addr.level = max(cap, 0)
+                addr.experience = 0
+                continue
+
+            # manual
+            prev_cap = self._prev_level_cap.get(name, -1)
+            if cap > prev_cap:
+                self._pinned_experience.pop(name, None)
+            self._prev_level_cap[name] = cap
+
+            if cap < 0:
+                # No Progressive copies received yet — fully locked.
+                pinned = self._pinned_experience.get(name)
+                if pinned is None:
+                    self._pinned_experience[name] = addr.experience
+                else:
+                    addr.experience = pinned
+                continue
+
+            if addr.level > cap:
+                # Shouldn't normally happen (caps only rise), but pull back
+                # down defensively rather than leave it over-leveled.
+                addr.level = cap
+
+            if addr.level < cap:
+                # Room to grow naturally — leave experience alone.
+                continue
+
+            # addr.level == cap: freeze right here.
+            pinned = self._pinned_experience.get(name)
+            if pinned is None:
+                self._pinned_experience[name] = addr.experience
+            else:
+                addr.experience = pinned
 
     def sync(self) -> None:
-        self._write_inventory()
+        """Write the current ownership dicts into game memory for the current planet's array."""
+        for name, addr in self._weapon_addrs.items():
+            addr.unlocked = self.weapons.get(name, False)
+            mods = self.mods.get(name, {})
+            for slot in _MOD_SLOTS:
+                setattr(addr, slot, mods.get(slot, False))
+        for name, addr in self._gadget_addrs.items():
+            addr.unlocked = self.gadgets.get(name, False)
 
     def sync_slots(self) -> None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, WeaponStruct) and cls is not WeaponStruct:
-                name = cls.__name__.removeprefix("WeaponStruct_")
-                raw  = self.accessor.read_raw(cls.BASE_ADDRESS, cls.size())
-                inst = WeaponStruct.from_bytes(raw)
-                self.weapons[name] = bool(inst.unlocked)
-                self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
-                self.mods[name]["mod_slot_one"]   = bool(inst.mod_slot_one)
-                self.mods[name]["mod_slot_two"]   = bool(inst.mod_slot_two)
-                self.mods[name]["mod_slot_three"] = bool(inst.mod_slot_three)
-            elif issubclass(cls, GadgetStruct) and cls is not GadgetStruct:
-                name = cls.__name__.removeprefix("GadgetStruct_")
-                raw  = self.accessor.read_raw(cls.BASE_ADDRESS, cls.size())
-                inst = GadgetStruct.from_bytes(raw)
-                self.gadgets[name] = bool(inst.unlocked)
-
-    def _write_inventory(self) -> None:
-        for cls in self.addresses.structs():
-            if issubclass(cls, WeaponStruct) and cls is not WeaponStruct:
-                name = cls.__name__.removeprefix("WeaponStruct_")
-                inst = cls()
-                inst.unlocked       = int(self.weapons.get(name, False))
-                inst.mod_slot_one   = int(self.mods.get(name, {}).get("mod_slot_one", False))
-                inst.mod_slot_two   = int(self.mods.get(name, {}).get("mod_slot_two", False))
-                inst.mod_slot_three = int(self.mods.get(name, {}).get("mod_slot_three", False))
-                self.accessor.write_raw(cls.BASE_ADDRESS, bytes(inst))
-            elif issubclass(cls, GadgetStruct) and cls is not GadgetStruct:
-                name = cls.__name__.removeprefix("GadgetStruct_")
-                inst = cls()
-                inst.unlocked = int(self.gadgets.get(name, False))
-                self.accessor.write_field(cls, "unlocked", inst.unlocked)
+        """Read the current planet's array into the ownership dicts (does not
+        report changes). Also re-baselines the raw-memory dicts check() diffs
+        against, so the next check() call doesn't see this resync's own
+        writes as a fresh change."""
+        for name, addr in self._weapon_addrs.items():
+            unlocked = bool(addr.unlocked)
+            self.weapons[name]     = unlocked
+            self._raw_weapons[name] = unlocked
+            mods     = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
+            raw_mods = self._raw_mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
+            for slot in _MOD_SLOTS:
+                slot_unlocked  = bool(getattr(addr, slot))
+                mods[slot]     = slot_unlocked
+                raw_mods[slot] = slot_unlocked
+            # A fresh planet's array is a separate working copy — rebaseline
+            # so apply_experience_boost() doesn't mistake its current value
+            # for a same-tick gain (or a reset) relative to whatever the
+            # previous planet's array happened to hold.
+            self._prev_experience[name] = addr.experience
+            # _raw_level is deliberately NOT rebaselined here (unlike
+            # experience above) — check() only ever fires on an *increase*
+            # over the last-seen value, so a lower/stale reading from an
+            # unsynced planet array just silently re-baselines downward with
+            # no false "reached level" fire, and a starting/precollected
+            # weapon that's already at its target level the very first time
+            # it's ever observed still correctly fires every level up to it
+            # (comparing against the untouched default of "never observed").
+            # Rebaselining here would instead permanently swallow that first
+            # observation, since apply_progressive_leveling() (which would
+            # otherwise raise the level to trigger a fresh diff) runs on its
+            # own separate tick schedule, not synchronously within this call.
+        for name, addr in self._gadget_addrs.items():
+            unlocked = bool(addr.unlocked)
+            self.gadgets[name]      = unlocked
+            self._raw_gadgets[name] = unlocked
 
     def apply_vendor_locations(self, allowed_extra: frozenset[str] = frozenset()) -> None:
         """Zero all weapon/gadget/mod memory then restore what the player may keep.
@@ -479,39 +699,26 @@ class WeaponState(BaseState):
         unlocked). Mods restored only if purchased from this vendor — owning
         the mod via an AP item received elsewhere does not restore it here.
         """
-        weapon_classes = {
-            cls.__name__.removeprefix("WeaponStruct_"): cls
-            for cls in self.addresses.structs()
-            if issubclass(cls, WeaponStruct) and cls is not WeaponStruct
-        }
-        gadget_classes = {
-            cls.__name__.removeprefix("GadgetStruct_"): cls
-            for cls in self.addresses.structs()
-            if issubclass(cls, GadgetStruct) and cls is not GadgetStruct
-        }
-
-        # Compute the final desired state first, then write each field exactly
-        # once — no separate zero pass followed by a restore pass.
-        weapon_unlocked = dict.fromkeys(weapon_classes, False)
+        weapon_unlocked = dict.fromkeys(self._weapon_addrs, False)
         weapon_mods: dict[str, dict[str, bool]] = {
-            name: dict.fromkeys(_MOD_SLOTS, False) for name in weapon_classes
+            name: dict.fromkeys(_MOD_SLOTS, False) for name in self._weapon_addrs
         }
-        gadget_unlocked = dict.fromkeys(gadget_classes, False)
+        gadget_unlocked = dict.fromkeys(self._gadget_addrs, False)
 
         for loc_name, purchased in self.vendor_locations.items():
             if not purchased:
                 continue
-            if loc_name in VENDOR_WEAPON_LOC:
-                name = VENDOR_WEAPON_LOC[loc_name]
+            if loc_name in _weapon_locations.VENDOR_WEAPON_LOC:
+                name = _weapon_locations.VENDOR_WEAPON_LOC[loc_name]
                 # Guard: only restore if player actually owns it (edge-case safety).
                 if self.weapons.get(name, False) and name in weapon_unlocked:
                     weapon_unlocked[name] = True
-            elif loc_name in VENDOR_GADGET_LOC:
-                name = VENDOR_GADGET_LOC[loc_name]
+            elif loc_name in _weapon_locations.VENDOR_GADGET_LOC:
+                name = _weapon_locations.VENDOR_GADGET_LOC[loc_name]
                 if self.gadgets.get(name, False) and name in gadget_unlocked:
                     gadget_unlocked[name] = True
-            elif loc_name in _MOD_LOC:
-                weapon, slot = _MOD_LOC[loc_name]
+            elif loc_name in _weapon_locations._MOD_LOC:
+                weapon, slot = _weapon_locations._MOD_LOC[loc_name]
                 if weapon in weapon_mods:
                     weapon_mods[weapon][slot] = True
 
@@ -522,19 +729,12 @@ class WeaponState(BaseState):
             if name in gadget_unlocked:
                 gadget_unlocked[name] = True
 
-        missing_allowed = [n for n in allowed_extra if n not in weapon_unlocked and n not in gadget_unlocked]
-        self._log(
-            f"[RAC] WeaponState.apply_vendor_locations: writing "
-            f"{len(weapon_classes)} weapon struct(s) {sorted(weapon_classes)}, "
-            f"{len(gadget_classes)} gadget struct(s) -> unlocked={[n for n, v in weapon_unlocked.items() if v]}"
-            + (f" — NOT REGISTERED (no struct for): {missing_allowed}" if missing_allowed else "")
-        )
-        for name, cls in weapon_classes.items():
-            self.accessor.write_field(cls, "unlocked", int(weapon_unlocked[name]))
+        for name, addr in self._weapon_addrs.items():
+            addr.unlocked = weapon_unlocked[name]
             for slot in _MOD_SLOTS:
-                self.accessor.write_field(cls, slot, int(weapon_mods[name][slot]))
-        for name, cls in gadget_classes.items():
-            self.accessor.write_field(cls, "unlocked", int(gadget_unlocked[name]))
+                setattr(addr, slot, weapon_mods[name][slot])
+        for name, addr in self._gadget_addrs.items():
+            addr.unlocked = gadget_unlocked[name]
 
     def zero_unpurchased_mod_slots(self, names: frozenset[str]) -> None:
         """Explicitly re-zero mod_slot_N for the given weapons unless that
@@ -545,43 +745,59 @@ class WeaponState(BaseState):
         second pass guarantees the mod vendor shows it as purchasable rather
         than already-owned."""
         purchased_slots = {
-            _MOD_LOC[loc] for loc, bought in self.vendor_locations.items()
-            if bought and loc in _MOD_LOC
+            _weapon_locations._MOD_LOC[loc] for loc, bought in self.vendor_locations.items()
+            if bought and loc in _weapon_locations._MOD_LOC
         }
-        zeroed: list[str] = []
-        for cls in self.addresses.structs():
-            if not (issubclass(cls, WeaponStruct) and cls is not WeaponStruct):
-                continue
-            name = cls.__name__.removeprefix("WeaponStruct_")
-            if name not in names:
+        for name in names:
+            addr = self._weapon_addrs.get(name)
+            if addr is None:
                 continue
             for slot in _MOD_SLOTS:
                 if (name, slot) in purchased_slots:
                     continue
                 # Read first — this runs every poll tick while the mod vendor
-                # is open, so skip the write (and the log below) unless
-                # something actually set it back to 1 since our last pass.
-                if self.accessor.read_field(cls, slot):
-                    self.accessor.write_field(cls, slot, 0)
-                    zeroed.append(f"{name}.{slot}")
-        if zeroed:
-            self._log(
-                f"[RAC] WeaponState.zero_unpurchased_mod_slots: re-zeroed {zeroed} "
-                f"(was set to 1 despite not being in purchased_slots={sorted(purchased_slots)})"
-            )
+                # is open, so skip the write unless something actually set it
+                # back to 1 since our last pass.
+                if getattr(addr, slot):
+                    setattr(addr, slot, False)
 
     def sync_from_ap(self, checked_locations: set[str]) -> None:
         for loc in checked_locations:
             if loc in self.vendor_locations:
                 self.vendor_locations[loc] = True
-            if loc in VENDOR_WEAPON_LOC:
-                self.weapons[VENDOR_WEAPON_LOC[loc]] = True
-            elif loc in VENDOR_GADGET_LOC:
-                self.gadgets[VENDOR_GADGET_LOC[loc]] = True
-            elif loc in _MOD_LOC:
-                weapon, slot = _MOD_LOC[loc]
+            if loc in _weapon_locations.VENDOR_WEAPON_LOC:
+                self.weapons[_weapon_locations.VENDOR_WEAPON_LOC[loc]] = True
+            elif loc in _weapon_locations.VENDOR_GADGET_LOC:
+                self.gadgets[_weapon_locations.VENDOR_GADGET_LOC[loc]] = True
+            elif loc in _weapon_locations._MOD_LOC:
+                weapon, slot = _weapon_locations._MOD_LOC[loc]
                 self.mods.setdefault(weapon, dict.fromkeys(_MOD_SLOTS, False))
                 self.mods[weapon][slot] = True
+
+    def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
+        """Zero unlocked + every mod slot (memory and tracking dicts alike)
+        for every weapon is_ap_owned says no to.
+
+        Used by the mod vendor to clean up its own temporary "show as
+        unlocked so it actually renders in the selection list" display
+        hack once that menu closes. apply_inventory()'s resync is additive
+        only (it never clears anything not owned), so nothing else would
+        ever undo that hack on its own — a vendor purchase only ever
+        checks a location, same principle as weapon_vendor()'s re-lock;
+        this is that same principle applied on a delay, since the weapon
+        has to stay visually unlocked for the whole mod-vendor visit or it
+        wouldn't render as a selection at all, so it can't be re-locked the
+        instant it's observed the way a real weapon-vendor purchase is.
+        """
+        for weapon, addr in self._weapon_addrs.items():
+            if is_ap_owned(weapon):
+                continue
+            addr.unlocked = False
+            self.weapons[weapon] = False
+            mods = self.mods.setdefault(weapon, dict.fromkeys(_MOD_SLOTS, False))
+            for slot in _MOD_SLOTS:
+                setattr(addr, slot, False)
+                mods[slot] = False
 
     def has_weapon(self, name: str) -> bool:
         return self.weapons.get(name, False)
@@ -592,25 +808,7 @@ class WeaponState(BaseState):
     def has_mod(self, weapon: str, slot: str) -> bool:
         return self.mods.get(weapon, {}).get(slot, False)
 
-    def on_weapon_acquired(self, _name: str) -> None:
-        del _name
-
-    def on_weapon_lost(self, _name: str) -> None:
-        del _name
-
-    def on_gadget_acquired(self, _name: str) -> None:
-        del _name
-
-    def on_gadget_lost(self, _name: str) -> None:
-        del _name
-
-    def on_mod_acquired(self, _weapon: str, _slot: str) -> None:
-        del _weapon, _slot
-
-    def on_mod_lost(self, _weapon: str, _slot: str) -> None:
-        del _weapon, _slot
-
     def __repr__(self) -> str:
         unlocked_w = [n for n, v in self.weapons.items() if v]
         unlocked_g = [n for n, v in self.gadgets.items() if v]
-        return f"WeaponState(weapons={unlocked_w}, gadgets={unlocked_g})"
+        return f"WeaponInventory(weapons={unlocked_w}, gadgets={unlocked_g})"
