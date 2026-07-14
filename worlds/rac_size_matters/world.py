@@ -146,9 +146,29 @@ class RACSizeMatterWorld(World):
         # Fill any remaining slots
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         deficit = len(pool) - unfilled
+        filler_count = -deficit
+
+        # exclude_locations locations must end up filler-only (never
+        # progression/useful) — if there are more of them than the filler
+        # we're about to generate, the excluded locations alone can't all be
+        # covered by real filler once fill runs. Solo-only for the same
+        # reason as the check below: a multiworld's other players still
+        # supply enough of their own filler overall, this player's exclusions
+        # don't shrink the global filler supply. Matches rac3's own
+        # players == 1 gate on the equivalent check (world.py's create_items).
+        excluded_count = self.get_excluded_count()
+        if excluded_count > filler_count and self.multiworld.players == 1:
+            self.handle_not_enough_locations(excluded_count - filler_count)
+
+        # Unlike the excluded-locations check above, rac3 does NOT gate this
+        # one on players == 1 — a deficit here means this world generated
+        # more progression/useful items than it has locations of its own,
+        # which rac3 always treats as fatal regardless of multiworld size
+        # (see the unconditional `else: self.handle_not_enough_locations(...)`
+        # branch in rac3's world.py create_items). Mirrored here as-is.
         if deficit > 0:
             self.handle_not_enough_locations(deficit)
-        pool += [self.get_filler_item_name() for _ in range(-deficit)]
+        pool += [self.get_filler_item_name() for _ in range(max(0, filler_count))]
 
         for name in pool:
             self.multiworld.itempool.append(self.create_item(name))
