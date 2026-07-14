@@ -46,13 +46,21 @@ class VendorHandlerMixin:
         Called each time the vendor menu opens. Skips locations that have already
         been hinted or checked this session.
 
-        TODO: purchasable-location lookup was removed along with the old
-        vendor-unlock machinery — needs to be rebuilt on top of the new
-        core.vendor.VendorInventory.
+        Whichever vendor menu is open at this instant (weapon_vendor/mod_vendor
+        activate() before Core fires on_vendor_open — see
+        Core._check_vendor_purchases()) decides which of VendorInventory's two
+        location lists to hint; neither being active means this fired from some
+        other event entirely, so there's nothing to hint.
         """
         if self.slot is None or not self.pine_connected:
             return
-        loc_names: list[str] = []
+        vendor = self._wiring.vendor
+        if self._wiring.weapon_vendor.active:
+            loc_names = vendor.purchasable_locations()
+        elif self._wiring.mod_vendor.active:
+            loc_names = vendor.mod_locations()
+        else:
+            return
         checked   = self.checked_locations | self._locally_checked_locations
         server_locations = getattr(self, "server_locations", None)
         new_ids: list[int] = []

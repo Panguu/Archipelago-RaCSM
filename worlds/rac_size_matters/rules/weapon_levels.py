@@ -33,7 +33,7 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     progressive = bool(world.options.progressive_weapons.value)
 
     for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items():
-        for level in range(1, WEAPON_DATA[internal].max_level + 1):
+        for level in range(2, WEAPON_DATA[internal].max_level + 1):
             loc_name = WEAPON_LEVEL_LOOKUP[(internal, level)]
             if loc_name not in created:
                 continue

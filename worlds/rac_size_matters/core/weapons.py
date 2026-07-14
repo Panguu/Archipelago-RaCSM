@@ -488,8 +488,8 @@ class WeaponInventory:
         setting level straight to a freshly-raised cap), every level in
         between is reported too, not just the final one, so none of their
         locations get silently skipped. Level 1 is never reported here — it
-        fires from Core.apply_inventory() the moment AP inventory grants the
-        weapon, not from observing memory.
+        isn't a location at all (synonymous with owning the weapon), only
+        levels 2+ are.
         """
         newly_weapons: list[str] = []
         newly_gadgets: list[str] = []
@@ -519,12 +519,9 @@ class WeaponInventory:
                 prev_level = self._raw_level.get(name, -1)
                 current_level = addr.level
                 if current_level > prev_level:
-                    # Level 1 is deliberately excluded here — it's driven
-                    # purely by AP inventory (Core.apply_inventory() fires it
-                    # the moment the weapon's item is received), not by
-                    # observing this memory transition, so it isn't tangled
-                    # up in vendor-context/planet-load timing at all. Only
-                    # levels 2+ genuinely depend on watching real progress.
+                    # Level 1 is deliberately excluded here — it isn't a
+                    # location (synonymous with owning the weapon), so only
+                    # levels 2+ are ever reported.
                     for idx in range(prev_level + 1, current_level + 1):
                         level = idx + 1
                         if level >= 2:

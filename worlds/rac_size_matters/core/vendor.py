@@ -233,6 +233,27 @@ class VendorInventory:
                 names.append(name)
         return names
 
+    def purchasable_locations(self) -> list[str]:
+        """AP location names for every weapon/gadget currently purchasable
+        at the weapons vendor's default view — used to send hints the
+        moment that vendor opens, so a purchasable check is hinted before
+        the player has to browse for it."""
+        locations: list[str] = []
+        for name in self._purchasable_names():
+            loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
+            if loc:
+                locations.append(loc)
+        return locations
+
+    def mod_locations(self) -> list[str]:
+        """AP location names for every mod slot currently reachable at the
+        mod vendor — same hinting purpose as purchasable_locations(), for
+        the mod vendor instead of the weapons vendor."""
+        return [
+            loc for (_weapon, _slot), loc in MOD_INTERNAL_TO_LOCATION.items()
+            if self._is_mod_location_accessible(loc)
+        ]
+
     def _is_mod_location_accessible(self, loc: str) -> bool:
         """Whether the mod vendor selling this location's planet is
         actually reachable — the planet itself being AP-accessible isn't
@@ -266,24 +287,42 @@ class VendorInventory:
         """Write mod_unlock_N — the mod vendor's own "purchasable" byte for
         that slot, distinct from mod_slot_N (does the player *own* the mod)
         — for every mod slot: 1 once its vendor location is actually
-        reachable AND the player actually owns that weapon (buying a mod
-        for a weapon you don't have doesn't make sense), 0 otherwise.
+        reachable, 0 otherwise. Gated purely on reachability, matching every
+        mod-vendor location's own world rule (see e.g. rules/quodrona.py's
+        "purchasable without owning the weapon" comment, and
+        rules/challax.py's _base gadget-only gate) — not on whether the
+        player already owns that weapon. AP's own accessibility sweep
+        assumes these locations are reachable independent of weapon
+        ownership, so requiring it here too would leave a location that
+        fill/hints treat as always gettable permanently unpurchasable
+        in-game for a weapon the player hasn't received or bought yet.
 
-        Ownership here must come from _is_weapon_ap_owned (Core's real
-        _ap_owned_weapons truth), not weapons.weapons — mod_vendor() force-
-        unlocks every listed weapon's display bit regardless of real
-        ownership (or it wouldn't render in the menu at all), and once
-        check() observes that, weapons.weapons sticks True for the rest of
-        this vendor session per its own "once owned, stays owned" contract.
-        Using that here would make every listed weapon read as "owned".
+        Making the mod purchasable without also forcing the weapon's own
+        `unlocked` byte to match would leave a bad half-state (mod
+        purchasable, weapon still reading as locked) — same display-unlock
+        `_mod_vendor_weapons()`/apply_vendor_locations() already force for
+        the weapon-selection list, done again here in lockstep with the
+        per-slot reachability this method already computes. Temporary only:
+        close() -> revert_unowned() zeros both the weapon and every mod slot
+        back out for anything not truly AP-owned once the vendor closes, so
+        nothing here leaks past this session the same way a real weapon-
+        vendor purchase never grants local functionality by itself either.
 
         Covers every slot every call, not just newly-accessible ones, so
-        anything that stops qualifying also gets correctly revoked."""
+        anything that stops qualifying also gets correctly revoked.
+
+        The weapon-level unlock below is "any slot reachable" (same OR
+        semantics as _mod_vendor_weapons()), not the current slot's own
+        reachable value — a weapon with multiple mod slots split across
+        planets (one reachable, one not) must not have the later slot in
+        iteration order lock the weapon back down after an earlier slot
+        already unlocked it for display/purchase."""
+        reachable_weapons = set(self._mod_vendor_weapons())
         for (weapon, slot), loc in MOD_INTERNAL_TO_LOCATION.items():
             reachable = self._is_mod_location_accessible(loc)
-            owned = self._is_weapon_ap_owned(weapon)
             unlock_attr = _SLOT_TO_UNLOCK_ATTR[slot]
-            self.weapons.set_mod_unlock(weapon, unlock_attr, reachable and owned)
+            self.weapons.set_mod_unlock(weapon, unlock_attr, reachable)
+            self.weapons.set(weapon, weapon in reachable_weapons)
 
     def _set_items(self, names: list[str]) -> None:
         self._items = []

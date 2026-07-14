@@ -96,10 +96,13 @@ from .core.weapons import WEAPON_DATA as _WEAPON_DATA
 
 # (internal weapon key, 1-indexed level) -> AP location name. Used by the
 # client to look up which location a newly-reached weapon level maps to.
+# Level 1 is deliberately excluded: it's synonymous with owning the weapon
+# at all (already covered by whatever location/item grants it), not a
+# distinct in-game milestone, so it isn't modelled as a location here.
 WEAPON_LEVEL_LOOKUP: dict[tuple[str, int], str] = {
     (internal, level): getattr(Rac5WeaponLevels, f"{internal.upper()}_LEVEL_{level}")
     for internal, data in _WEAPON_DATA.items()
-    for level in range(1, data.max_level + 1)
+    for level in range(2, data.max_level + 1)
 }
 
 # Full universe of weapon level locations (levels 1 through each weapon's max),

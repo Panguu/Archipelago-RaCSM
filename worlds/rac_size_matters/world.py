@@ -98,6 +98,15 @@ class RACSizeMatterWorld(World):
                 and self.options.armour_set_checks
                 and (name in ARMOUR_ITEM_TABLE or name in ARMOUR_PROGRESSIVE_ITEM_TABLE)):
             classification = ItemClassification.progression_skip_balancing
+        # Static Barrier/Suck Cannon are the only "useful" weapons, but Weapon
+        # Level Checks gates their own level locations behind owning them
+        # (HasWeapon rule), so they must be progression too when that option
+        # is on — otherwise the fill algorithm can place them somewhere that
+        # never becomes reachable, same issue armour pieces had above.
+        if (classification == ItemClassification.useful
+                and self.options.weapon_level_checks
+                and name in WEAPON_ITEM_TABLE):
+            classification = ItemClassification.progression_skip_balancing
         return RACItem(name, classification, data.code, self.player)
 
     def create_event(self, name: str) -> RACItem:

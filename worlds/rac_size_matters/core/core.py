@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from ..constants import Rac5CutsceneLocations, Rac5Locations
 from ..locations import WEAPON_LEVEL_LOOKUP
-from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece
+from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece, ArmourUnlocks
 from .challenges import ChallengeInventory, SkyboardInventory
 from .menu import MenuStateValue
 from .missions import MissionInventory
@@ -283,21 +283,6 @@ class Core:
         self.planet_unlock.set_unlocked_planets(infobot_planets)
         self.armour.sync_unlocked(armour_unlocked)
         self.planet.sync_unlock_armour(armour_unlocked)
-
-        # Weapon Level Checks, level 1: fires purely off AP inventory — the
-        # moment a weapon's item is actually received — never off observed
-        # memory state. That sidesteps every timing issue level 2+ has to
-        # deal with (vendor-context, planet-load ordering, starting weapons
-        # never producing a "transition" to observe): this only needs to
-        # know the weapon just became AP-owned, which is exactly what this
-        # dict diff already is. Runs unconditionally, before the is_ready/
-        # vendor_active gate below — a location send doesn't touch game
-        # memory, so there's nothing here for that gate to protect.
-        for name, owned in weapons.items():
-            if owned and not self._ap_owned_weapons.get(name, False):
-                loc = WEAPON_LEVEL_LOOKUP.get((name, 1))
-                if loc:
-                    self.send_location(loc)
 
         # Always kept current, even while the writes below are skipped —
         # _enforce_no_forced_starter_items() needs an up-to-date answer to
@@ -653,9 +638,15 @@ class Core:
     def _handle_death(self) -> None:
         # The game's own death sequence needs to see every piece the player
         # has physically picked up this session (collected_armour), not just
-        # what AP has actually granted (unlock_armour) — write that in now,
+        # what AP has actually granted (unlock_armour). Memory going into
+        # this is normal-gameplay state (unlock_armour, which can include
+        # pieces AP granted but the player never physically found), so this
+        # is a real downgrade, not a no-op write — zero first (same
+        # defensive pattern as check_collected_armour()'s pickup window) so
+        # no unlock_armour-only bit can linger, then write collected_armour.
         # _handle_respawn() below reverts it back to AP truth once the death
         # sequence is over.
+        self.armour.sync_unlocked(dict.fromkeys(ArmourUnlocks._OFFSETS, 0))
         self.armour.sync_unlocked(self.planet.collected_armour)
 
         if not self.death_link_enabled():
