@@ -42,6 +42,8 @@ jobs:
     steps:
       # - copy code below to release.yml -
       - uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
       - name: Install python
         uses: actions/setup-python@v6.2.0
         with:
@@ -129,6 +131,8 @@ jobs:
     steps:
       # - copy code below to release.yml -
       - uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
       - name: Install base dependencies
         run: |
           sudo apt update
