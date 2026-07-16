@@ -641,6 +641,42 @@ class WeaponInventory:
             else:
                 addr.experience = pinned
 
+    def wipe(self) -> None:
+        """Zero every weapon/gadget/mod unlock bit, level and experience in
+        memory for the current planet's array, and rebaseline every
+        tracking dict (weapons/gadgets/mods and their _raw_* counterparts,
+        plus _raw_level/_prev_experience) to match.
+
+        Called once, the very first time a planet becomes ready after a
+        fresh connect/reconnect (see Core.tick()) — before that point,
+        whatever's sitting in the save (vanilla progress, a stale prior
+        session, anything not actually tracked by AP) would otherwise be
+        misread as a batch of brand-new pickups/level-ups the instant
+        check() ever runs against it, since every raw baseline starts
+        blank/-1. Wiping first means check()'s very first real diff is
+        against a clean all-False/level-0 state, so only what
+        Core.apply_inventory() writes afterward (true AP ownership) can
+        ever look like a change — and that path uses sync_slots(), not
+        check(), so it never reports one anyway.
+        """
+        for addr in self._weapon_addrs.values():
+            addr.unlocked = False
+            for slot in _MOD_SLOTS:
+                setattr(addr, slot, False)
+            addr.level = 0
+            addr.experience = 0
+        for addr in self._gadget_addrs.values():
+            addr.unlocked = False
+
+        self.weapons = dict.fromkeys(self._weapon_addrs, False)
+        self.gadgets = dict.fromkeys(self._gadget_addrs, False)
+        self.mods = {name: dict.fromkeys(_MOD_SLOTS, False) for name in self._weapon_addrs}
+        self._raw_weapons = dict(self.weapons)
+        self._raw_gadgets = dict(self.gadgets)
+        self._raw_mods = {name: dict(mods) for name, mods in self.mods.items()}
+        self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
+        self._prev_experience = dict.fromkeys(self._weapon_addrs, 0)
+
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
         for name, addr in self._weapon_addrs.items():

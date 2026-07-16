@@ -32,6 +32,8 @@ def set_dreamtime_rules(world: RACSizeMatterWorld) -> None:
     # Missions
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.DREAMTIME_COMPLETE, player), _base)
+    if world.options.all_cutscenes:
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DREAMTIME_SLEEPING_RATCHET, player), _base)
 
     # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.DREAMTIME_HAT, player), _base)

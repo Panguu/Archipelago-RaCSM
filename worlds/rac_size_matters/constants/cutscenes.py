@@ -35,6 +35,7 @@ class Rac5CutsceneLocations:
     # Dreamtime
     # TODO: add in missing cutscenes
     DREAMTIME_ENTER = "Dreamtime: Enter Planet"
+    DREAMTIME_SLEEPING_RATCHET = "Dreamtime: Clank finds sleeping Ratchet"
     DREAMTIME_COMPLETE = "Dreamtime: Complete Dreamtime"
 
     # Outpost Omega

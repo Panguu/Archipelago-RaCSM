@@ -86,6 +86,17 @@ class ArmourSetChecks(DefaultOnToggle):
     display_name = "Armour Set Checks"
 
 
+class NgPlusItems(DefaultOnToggle):
+    """Include RYNO and the Chameleon/Hyperborean armour sets in generation. These are New
+    Game Plus exclusives in vanilla, so turning this off is intended for players doing a
+    fresh (non-NG+) playthrough where those items would never actually be obtainable.
+    off: RYNO and the Chameleon/Hyperborean armour pieces are removed from the item pool
+    entirely. Also removes the RYNO Weapon Level checks, and the Chameleon/Hyperborean
+    Armour Set checks along with Stalker/Ice II (both of which need a Chameleon or
+    Hyperborean piece to complete)."""
+    display_name = "NG+ Items"
+
+
 class SkillPoints(Choice):
     """Include skill point challenges as location checks.
     off: no skill point checks.
@@ -240,6 +251,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     clank_challenges: ClankChallenges
     skyboard_challenges: SkyboardChallenges
     armour_set_checks: ArmourSetChecks
+    ng_plus_items: NgPlusItems
     skill_points: SkillPoints
     enable_clank_challenge_skill_points: EnableClankChallengeSkillPoints
     enable_skyboard_challenge_skill_points: EnableSkyboardChallengeSkillPoints
@@ -284,6 +296,7 @@ racsm_option_groups = [
         EnableSkyboardChallengeSkillPoints,
         ArmourSetChecks,
         WeaponLevelChecks,
+        NgPlusItems,
     ]),
     OptionGroup("RACSM Cosmetic Options", [
         StartingSkin,

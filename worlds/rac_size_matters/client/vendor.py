@@ -182,15 +182,31 @@ class InventoryMixin:
 
     async def force_sync(self) -> None:
         """Force the player's in-game state to match what was received from AP,
-        regardless of what's already been applied."""
+        regardless of what's already been applied.
+
+        Wipes the current planet's weapon/gadget/mod array first (see
+        WeaponInventory.wipe()) so any leftover non-AP state — vanilla
+        progress, a stale prior session — is fully replaced by AP truth
+        instead of merely topped up on top of it, same reasoning as the
+        one-time wipe Core.tick() does on the very first planet-ready.
+        Skipped if the planet isn't ready yet (nothing to wipe) or a
+        vendor menu owns the display right now (that window has its own
+        zero/restore cycle already; wiping here would just get clobbered
+        by it) — apply_inventory() below already no-ops its own writes in
+        both cases, so wiping here would otherwise leave the array blank
+        with nothing to immediately rewrite it.
+        """
         if not self.pine_connected:
             return
         inventory = self._parse_inventory()
         checked   = self._checked_location_names()
         async with self._pine_lock:
-            self._wiring.apply_inventory(**inventory)
-            self._wiring.restore_world_states(checked)
-            self._wiring.restore_armour_from_locations(checked)
+            wiring = self._wiring
+            if wiring.planet.is_ready and not wiring.vendor_active:
+                wiring.planet.weapons.wipe()
+            wiring.apply_inventory(**inventory)
+            wiring.restore_world_states(checked)
+            wiring.restore_armour_from_locations(checked)
         self._pending_item_apply = False
 
     async def _apply_received_items(self) -> None:

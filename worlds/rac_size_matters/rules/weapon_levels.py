@@ -5,7 +5,12 @@ from typing import TYPE_CHECKING
 from ..constants import Rac5Weapons
 from ..core.weapons import WEAPON_DATA
 from ..items import PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
-from ..locations import WEAPON_LEVEL_LOOKUP, WEAPON_MAX_LEVEL_LOCATIONS, WEAPON_SUB_MAX_LEVEL_LOCATIONS
+from ..locations import (
+    NG_PLUS_WEAPON_LEVEL_LOCATIONS,
+    WEAPON_LEVEL_LOOKUP,
+    WEAPON_MAX_LEVEL_LOCATIONS,
+    WEAPON_SUB_MAX_LEVEL_LOCATIONS,
+)
 from ._helpers import HasGoodExpPlanet, HasWeapon
 from rule_builder.rules import Has
 
@@ -39,6 +44,11 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     created = set(WEAPON_MAX_LEVEL_LOCATIONS)
     if tier >= 2:
         created |= set(WEAPON_SUB_MAX_LEVEL_LOCATIONS)
+    if not world.options.ng_plus_items:
+        # RYNO's own levels never got created (regions.py excludes them the
+        # same way) — must match here too, or set_rule() below targets a
+        # Location that was never actually built.
+        created -= NG_PLUS_WEAPON_LEVEL_LOCATIONS
 
     player = world.player
     mw = world.multiworld

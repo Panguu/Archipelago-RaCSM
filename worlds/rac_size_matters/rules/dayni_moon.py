@@ -35,11 +35,11 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
 
     # Missions
     if world.options.all_missions:
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON, player), _shrink_ray)
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_LUNA, player), _shrink_ray)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON, player), _base)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_LUNA, player), _base)
     if world.options.all_cutscenes:
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT1, player), _shrink_ray)
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT2, player), _shrink_ray)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT1, player), _base)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT2, player), _base)
 
     # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.DAYNI_MOON_BARN, player), _base)

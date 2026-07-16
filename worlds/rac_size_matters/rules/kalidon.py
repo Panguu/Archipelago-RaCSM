@@ -36,7 +36,10 @@ def set_kalidon_rules(world: RACSizeMatterWorld) -> None:
     if world.options.all_cutscenes:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.KALIDON_EXPLORE, player), _inside)
     if world.options.all_missions:
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.KALIDON_WIN, player), True_())
+        # Skyboard racing is an alternate route around needing Shrink Ray
+        # here — only required when that route isn't available.
+        win_rule = True_() if world.options.skyboard_challenges.value >= 1 else Has(Rac5Gadgets.SHRINK_RAY)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.KALIDON_WIN, player), win_rule)
 
     # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.KALIDON_SHIP, player), True_())

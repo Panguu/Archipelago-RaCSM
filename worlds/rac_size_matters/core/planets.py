@@ -513,13 +513,27 @@ class PlanetUnlockState(BaseState):
         self._enforce_desired()
 
     def _enforce_desired(self) -> None:
+        """Unconditionally re-assert every non-natural planet's lock state
+        every call, rather than only when self.unlocked (mirroring just the
+        PlanetProgressStruct byte) looks out of sync with _desired.
+
+        _write_desired() also writes a second, independent byte per planet
+        (PLANET_UNLOCKS[name].state_addr — the one that actually gates ship
+        travel/selection) alongside the PlanetProgressStruct field this
+        class reads back for self.unlocked. Those two bytes can drift apart
+        without ever showing up as a mismatch here (e.g. a stale save/prior
+        session leaves state_addr unlocked while the struct field reads
+        locked) — a mismatch-gated write would then never touch state_addr
+        again, silently leaving a planet travelable despite never having
+        received its infobot. Writing every tick regardless closes that gap
+        instead of trusting a single derived signal to catch every case.
+        """
         if not self._enforce_active:
             return
         names = [n for n in PLANET_UNLOCK_ORDER if n not in _NATURAL_UNLOCK_NAMES]
-        if any(self.unlocked[n] != self._desired[n] for n in names):
-            self._write_desired(names)
-            for name in names:
-                self.unlocked[name] = self._desired[name]
+        self._write_desired(names)
+        for name in names:
+            self.unlocked[name] = self._desired[name]
 
     def _write_desired(self, names: list[str]) -> None:
         # Per-field writes rather than one packed write, so planets in

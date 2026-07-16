@@ -455,7 +455,29 @@ class Core:
             return
 
         if became_ready:
+            if not self._initial_load_done:
+                # Very first planet-ready this process — the save's weapon/
+                # gadget/mod/level state has never been touched by AP yet,
+                # so wipe it clean before anything below ever diffs against
+                # it. Without this, whatever the save already had (vanilla
+                # progress, a stale prior session) looks identical to a
+                # batch of brand-new pickups/level-ups the instant
+                # check_weapons() first runs, since every raw baseline
+                # starts blank/-1. apply_inventory() (fired moments later
+                # via on_planet_ready, below) then writes true AP ownership
+                # onto this now-clean array.
+                self.planet.weapons.wipe()
             self.skin.setup()
+            if self.clank_enabled:
+                # Unlocks every Clank Challenge section (Derby/Gadgetbot Toss/
+                # Gadgetbot) on every tracked planet — fixed per-planet
+                # addresses, safe to call regardless of which planet is
+                # currently loaded (see CLANK_SECTION_UNLOCK_ADDRESSES).
+                # Never wired in before this, so challenge sections stayed
+                # locked behind whatever vanilla story progress unlocks them,
+                # independent of AP's own reachability logic. Idempotent, so
+                # re-running it on every transition is harmless.
+                self.clank.setup(self.clank_all_challenges)
             self.on_planet_ready()
             if not self._initial_load_done:
                 self._initial_load_done = True
