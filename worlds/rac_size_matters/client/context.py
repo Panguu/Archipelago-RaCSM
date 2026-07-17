@@ -79,6 +79,26 @@ class RACContext(
         self._last_mod_unlock_write: float = 0.0
         self._armour_set_checks_enabled = False
 
+        # Weapon level/experience persistence (racsm_weapon_state_*) — real
+        # gameplay progress with no AP item behind it, so it has to be
+        # explicitly saved/restored around Core.tick()'s reconnect-time
+        # wipe() (see core/core.py) or it's lost every reconnect. Pushed on
+        # a throttle (_WEAPON_STATE_PUSH_INTERVAL, see pine_mixin.py) since
+        # experience changes continuously during combat — pushing every
+        # poll tick would spam the server for no benefit.
+        self._last_weapon_state_push: float = 0.0
+        self._pushed_weapon_state: dict[str, list[int]] = {}
+        # Separate from _ap_loadout_restored: that flag is set the moment the
+        # "Retrieved"/"SetReply" package is handled at all, even if the planet
+        # wasn't ready yet at that exact instant (e.g. right after a fresh
+        # reconnect/game reload, racing PCSX2's own load) — in that case the
+        # weapon-state restore below gets silently skipped and never retried,
+        # since nothing else re-fires that handler. This flag instead gets
+        # set only once restore_level_experience() actually runs, and
+        # _on_planet_ready() (handlers.py) retries it on every subsequent
+        # planet transition until it succeeds.
+        self._weapon_state_restored = False
+
         self._death_link_enabled = False
         self._last_death_link = 0.0
         self._debug_messages = False
@@ -128,6 +148,36 @@ class RACContext(
     def _armour_slots_storage_key(self) -> str:
         return f"racsm_armour_slots_{self.team}_{self.slot}"
 
+    def _weapon_state_storage_key(self) -> str:
+        """AP data-storage key for persisted weapon level/experience — real
+        gameplay progress with no AP item record, so a reconnect (which
+        wipes and re-baselines game memory, see core/core.py's tick()) has
+        nothing else to restore it from."""
+        return f"racsm_weapon_state_{self.team}_{self.slot}"
+
+    def _try_restore_weapon_state(self) -> None:
+        """Apply persisted weapon level/experience once, as soon as both the
+        server data and a ready planet are available.
+
+        Called from the "Retrieved"/"SetReply" handler (server data usually
+        arrives first) and from _on_planet_ready() (handlers.py, in case the
+        planet becomes ready only after that data already arrived) — order
+        of the two isn't guaranteed, so both call sites retry through here
+        until self._weapon_state_restored actually latches True. Without a
+        dedicated flag, gating this solely on _ap_loadout_restored (which
+        that handler sets unconditionally once it's processed the package at
+        all) would mean a "Retrieved" that lands before the planet is ready
+        permanently skips this restore for the rest of the session — no
+        other event ever re-triggers this handler.
+        """
+        if self._weapon_state_restored or not self._wiring.planet.is_ready:
+            return
+        key = self._weapon_state_storage_key()
+        data = self.stored_data.get(key)
+        if isinstance(data, dict):
+            self._wiring.planet.weapons.restore_level_experience(data)
+            self._weapon_state_restored = True
+
     def _starting_items_key(self) -> str:
         """AP data-storage key marking whether starting bolts have already
         been granted (0/unset = not yet, 1 = granted) — persisted so a
@@ -167,6 +217,17 @@ class RACContext(
             "operations": [{"operation": "replace", "value": data}],
         }])
 
+    async def _persist_weapon_state(self, data: dict) -> None:
+        if self.slot is None:
+            return
+        await self.send_msgs([{
+            "cmd": "Set",
+            "key": self._weapon_state_storage_key(),
+            "default": {},
+            "want_reply": False,
+            "operations": [{"operation": "replace", "value": data}],
+        }])
+
     def _checked_location_names(self) -> set[str]:
         id_to_name = {v: k for k, v in self._location_name_to_id.items()}
         return {
@@ -196,6 +257,7 @@ class RACContext(
             self.slot_data = args.get("slot_data", {})
             self._already_hinted.clear()
             self._ap_loadout_restored = False
+            self._weapon_state_restored = False
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
             self._armour_set_checks_enabled = bool(self.slot_data.get("armour_set_checks", False))
             clank_mode = int(self.slot_data.get("clank_challenges", 1))
@@ -206,6 +268,9 @@ class RACContext(
                 int(self.slot_data.get("skill_points", 0)) >= 1
                 or bool(self.slot_data.get("enable_clank_challenge_skill_points", False))
                 or bool(self.slot_data.get("enable_skyboard_challenge_skill_points", False))
+            )
+            self._wiring.weapon_level_checks_enabled = (
+                int(self.slot_data.get("weapon_level_checks", 0)) >= 1
             )
             # Option encodes "off" as 0 — `or 1` maps that straight to a 1x
             # (no-op) multiplier instead of a bogus 0x.
@@ -234,7 +299,7 @@ class RACContext(
                 on_goal            = lambda: asyncio.create_task(self._send_goal_status()),
                 on_vendor_open     = lambda: asyncio.create_task(self._send_vendor_hints()),
                 on_vendor_close    = self._on_vendor_close,
-                on_equipped_armour_saved = lambda data: asyncio.create_task(self._persist_armour_slots(data)),
+                on_equipped_armour_saved = self._on_equipped_armour_saved,
                 on_bonus_weapon_pickup = self._grant_random_bonus_item,
                 on_scripted_gadget_pickup = self._handle_scripted_gadget_pickup,
                 on_planet_ready    = self._on_planet_ready,
@@ -279,6 +344,7 @@ class RACContext(
                 self._qs_storage_key(),
                 self._armour_slots_storage_key(),
                 self._starting_items_key(),
+                self._weapon_state_storage_key(),
             ):
                 self.set_notify(key)
             asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [
@@ -286,6 +352,7 @@ class RACContext(
                 self._qs_storage_key(),
                 self._armour_slots_storage_key(),
                 self._starting_items_key(),
+                self._weapon_state_storage_key(),
             ]}]))
             return
 
@@ -294,14 +361,33 @@ class RACContext(
                 qs_key = self._qs_storage_key()
                 if qs_key in self.stored_data and isinstance(self.stored_data[qs_key], dict):
                     self._wiring.quick_select.load(self.stored_data[qs_key])
+                    # PlanetInventory._ready_on_planet() already calls
+                    # restore() on every planet-ready (including the very
+                    # first), so this only needs to cover the case where
+                    # this data arrives *after* that first ready already
+                    # fired — otherwise the loaded snapshot would just sit
+                    # unapplied until the player's next planet transition.
+                    if self._wiring.planet.is_ready:
+                        self._wiring.quick_select.restore()
                 armour_key = self._armour_slots_storage_key()
                 if armour_key in self.stored_data and isinstance(self.stored_data[armour_key], dict):
                     if self._wiring.planet.is_ready:
                         self._wiring.armour.sync_equipped(self.stored_data[armour_key])
                 self._ap_loadout_restored = True
+            self._try_restore_weapon_state()
             starting_items_key = self._starting_items_key()
             if starting_items_key in self.stored_data:
-                self._starting_items_sent = bool(self.stored_data[starting_items_key])
+                # OR, never a blind overwrite: this handler re-runs on every
+                # "Retrieved"/"SetReply" for ANY of the 4 watched keys, not
+                # just this one, and our own _persist_starting_items_sent()
+                # write only echoes back once the server round-trips it
+                # (want_reply is False, so set_notify is the only signal).
+                # Until that echo lands, self.stored_data here still holds
+                # the stale pre-grant value — overwriting the local flag
+                # from it would erase _grant_starting_items()'s own
+                # synchronous claim and let it fire again on every such
+                # package that arrives in that window.
+                self._starting_items_sent = self._starting_items_sent or bool(self.stored_data[starting_items_key])
                 # Otherwise this only ever gets attempted from _on_planet_ready
                 # (a transition edge) — if PCSX2 was already connected with a
                 # planet loaded before this AP (re)connect, no new transition

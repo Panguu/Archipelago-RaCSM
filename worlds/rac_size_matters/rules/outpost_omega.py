@@ -32,7 +32,10 @@ def set_outpost_omega_rules(world: RACSizeMatterWorld) -> None:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA, player), _facility)
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE, player), _facility)
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player), True_())
+        # Skyboard racing is an alternate route around needing the Polarizer
+        # here — only required when that route isn't available.
+        rematch_rule = True_() if world.options.skyboard_challenges.value >= 1 else Has(Rac5Gadgets.POLARIZER)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player), rematch_rule)
 
     # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.OUTPOST_OMEGA_DREAM, player), True_())

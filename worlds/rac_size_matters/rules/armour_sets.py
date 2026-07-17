@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5ArmourSet
+from ..locations import NG_PLUS_ARMOUR_SET_LOCATIONS
 from ._helpers import HasArmourPiece
 from rule_builder.rules import And
 
@@ -56,7 +57,14 @@ def set_armour_set_rules(world: RACSizeMatterWorld) -> None:
 
     player = world.player
     mw = world.multiworld
+    ng_plus = bool(world.options.ng_plus_items)
 
     for loc_name, reqs in _ARMOUR_SET_RULES.items():
+        # Chameleon/Hyperborean (and Stalker/Ice II, which each need one
+        # piece from those two sets) were never created by regions.py when
+        # NG+ Items is off — must match that same exclusion, or set_rule()
+        # below targets a Location that doesn't exist.
+        if not ng_plus and loc_name in NG_PLUS_ARMOUR_SET_LOCATIONS:
+            continue
         rule = And(*(HasArmourPiece(sd, pn) for sd, pn in reqs))
         world.set_rule(mw.get_location(loc_name, player), rule)

@@ -7,15 +7,18 @@ from BaseClasses import Item, ItemClassification, Location, Tutorial
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
-from .constants import Rac5Infobots, Rac5Weapons
+from .constants import Rac5Infobots
 from .core.weapons import WEAPON_MOD_COUNTS
 from .items import (
     ALL_ITEMS,
+    ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_ITEM_TABLE,
     ARMOUR_PROGRESSIVE_ITEM_TABLE,
     ARMOUR_SETS,
     GADGET_ITEM_TABLE,
     INFOBOT_ITEM_TABLE,
+    NG_PLUS_ARMOUR_SETS,
+    NG_PLUS_WEAPONS,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_MOD_NAME,
     PROGRESSIVE_WEAPON_NAME,
@@ -23,7 +26,6 @@ from .items import (
     WEAPON_DISPLAY_TO_INTERNAL,
     WEAPON_ITEM_TABLE,
     WEAPON_MOD_ITEM_TABLE,
-    WEAPON_PROGRESSIVE_ITEM_TABLE,
     WEAPON_PROGRESSIVE_STEPS,
 )
 from .locations import ALL_LOCATIONS
@@ -98,6 +100,15 @@ class RACSizeMatterWorld(World):
                 and self.options.armour_set_checks
                 and (name in ARMOUR_ITEM_TABLE or name in ARMOUR_PROGRESSIVE_ITEM_TABLE)):
             classification = ItemClassification.progression_skip_balancing
+        # Static Barrier/Suck Cannon are the only "useful" weapons, but Weapon
+        # Level Checks gates their own level locations behind owning them
+        # (HasWeapon rule), so they must be progression too when that option
+        # is on — otherwise the fill algorithm can place them somewhere that
+        # never becomes reachable, same issue armour pieces had above.
+        if (classification == ItemClassification.useful
+                and self.options.weapon_level_checks
+                and name in WEAPON_ITEM_TABLE):
+            classification = ItemClassification.progression_skip_balancing
         return RACItem(name, classification, data.code, self.player)
 
     def create_event(self, name: str) -> RACItem:
@@ -114,18 +125,14 @@ class RACSizeMatterWorld(World):
 
     def create_items(self) -> None:
         pool: list[str] = []
+        ng_plus = bool(self.options.ng_plus_items)
         if self.options.progressive_weapons:
-            ryno_progressive = self.options.skill_points.value >= SkillPoints.option_hard
-            mootator_progressive = self.options.skill_points.value >= SkillPoints.option_easy
             for display, steps in WEAPON_PROGRESSIVE_STEPS.items():
-                if display == Rac5Weapons.RYNO and not ryno_progressive:
-                    pool.append(display)
-                elif display == Rac5Weapons.MOOTATOR and not mootator_progressive:
-                    pool.append(display)
-                else:
-                    pool += [PROGRESSIVE_WEAPON_NAME[display]] * steps
+                if not ng_plus and display in NG_PLUS_WEAPONS:
+                    continue
+                pool += [PROGRESSIVE_WEAPON_NAME[display]] * steps
         else:
-            pool += list(WEAPON_ITEM_TABLE)
+            pool += [name for name in WEAPON_ITEM_TABLE if ng_plus or name not in NG_PLUS_WEAPONS]
 
         if self.options.progressive_mods:
             for display in PROGRESSIVE_MOD_NAME:
@@ -138,10 +145,15 @@ class RACSizeMatterWorld(World):
         pool += list(INFOBOT_ITEM_TABLE)
 
         if self.options.progressive_armour:
-            for display, _ in ARMOUR_SETS:
+            for display, internal in ARMOUR_SETS:
+                if not ng_plus and internal in NG_PLUS_ARMOUR_SETS:
+                    continue
                 pool += [PROGRESSIVE_ARMOUR_NAME[display]] * 4
         else:
-            pool += list(ARMOUR_ITEM_TABLE)
+            pool += [
+                name for name in ARMOUR_ITEM_TABLE
+                if ng_plus or ARMOUR_DISPLAY_TO_INTERNAL[name][0] not in NG_PLUS_ARMOUR_SETS
+            ]
 
         # Fill any remaining slots
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
@@ -235,12 +247,20 @@ class RACSizeMatterWorld(World):
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))
 
+        ng_plus = bool(self.options.ng_plus_items)
         weapon_count = self.options.starting_weapons.value
         if weapon_count > 0:
+            # Sampled straight from the static item tables, not the actual
+            # itempool — so an NG+-locked weapon (e.g. RYNO) has to be
+            # excluded here too, or a fresh (non-NG+) seed could still roll
+            # it as a starting weapon despite never placing it in the pool.
             if self.options.progressive_weapons:
-                pool = list(WEAPON_PROGRESSIVE_ITEM_TABLE.keys())
+                pool = [
+                    PROGRESSIVE_WEAPON_NAME[display] for display in WEAPON_PROGRESSIVE_STEPS
+                    if ng_plus or display not in NG_PLUS_WEAPONS
+                ]
             else:
-                pool = list(WEAPON_ITEM_TABLE.keys())
+                pool = [name for name in WEAPON_ITEM_TABLE if ng_plus or name not in NG_PLUS_WEAPONS]
             for name in self.random.sample(pool, min(weapon_count, len(pool))):
                 self._precollect(name)
 

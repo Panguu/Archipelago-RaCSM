@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from BaseClasses import Region
 
-from .constants import Rac5Planets
+from .constants import Rac5CutsceneLocations, Rac5Planets
 from .locations import (
     ALL_CLANK_LOCATIONS,
     ARMOUR_PICKUP_LOCATIONS,
@@ -18,6 +18,8 @@ from .locations import (
     GADGET_PICKUP_LOCATIONS,
     GADGET_VENDOR_LOCATIONS,
     HARD_SKILL_POINT_LOCATIONS,
+    NG_PLUS_ARMOUR_SET_LOCATIONS,
+    NG_PLUS_WEAPON_LEVEL_LOCATIONS,
     SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS,
     SKYBOARD_ITEM_LOCATIONS,
     STORY_MISSION_LOCATIONS,
@@ -66,7 +68,19 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         GADGET_VENDOR_LOCATIONS,
     ]
     if world.options.all_missions:
-        location_tables.append(STORY_MISSION_LOCATIONS)
+        story_missions = STORY_MISSION_LOCATIONS
+        if world.options.clank_challenges.value < 1:
+            # METALIS_WAR's own in-game trigger is completing the Buzzsaw
+            # Blitz clank challenge — with clank challenges off, its
+            # section never gets unlocked (see Core.tick()'s clank.setup()
+            # call, gated on clank_enabled), so this mission can never
+            # actually fire. Drop it rather than create a location that
+            # can never be reached.
+            story_missions = {
+                name: data for name, data in STORY_MISSION_LOCATIONS.items()
+                if name != Rac5CutsceneLocations.METALIS_WAR
+            }
+        location_tables.append(story_missions)
     if world.options.all_cutscenes:
         location_tables.append(CUTSCENE_LOCATIONS)
     if world.options.skill_points.value >= 1:
@@ -85,12 +99,31 @@ def create_regions(world: RACSizeMatterWorld) -> None:
     if world.options.skyboard_challenges.value >= 1:
         location_tables.append(SKYBOARD_ITEM_LOCATIONS)
         location_tables.append(EXTRA_SKYBOARD_LOCATIONS)
+    ng_plus = bool(world.options.ng_plus_items)
     if world.options.armour_set_checks:
-        location_tables.append(ARMOUR_SET_CHECK_LOCATIONS)
+        armour_set_locations = ARMOUR_SET_CHECK_LOCATIONS
+        if not ng_plus:
+            armour_set_locations = {
+                name: data for name, data in ARMOUR_SET_CHECK_LOCATIONS.items()
+                if name not in NG_PLUS_ARMOUR_SET_LOCATIONS
+            }
+        location_tables.append(armour_set_locations)
     if world.options.weapon_level_checks.value >= 1:
-        location_tables.append(WEAPON_MAX_LEVEL_LOCATIONS)
+        max_level_locations = WEAPON_MAX_LEVEL_LOCATIONS
+        if not ng_plus:
+            max_level_locations = {
+                name: data for name, data in WEAPON_MAX_LEVEL_LOCATIONS.items()
+                if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
+            }
+        location_tables.append(max_level_locations)
     if world.options.weapon_level_checks.value >= 2:
-        location_tables.append(WEAPON_SUB_MAX_LEVEL_LOCATIONS)
+        sub_max_level_locations = WEAPON_SUB_MAX_LEVEL_LOCATIONS
+        if not ng_plus:
+            sub_max_level_locations = {
+                name: data for name, data in WEAPON_SUB_MAX_LEVEL_LOCATIONS.items()
+                if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
+            }
+        location_tables.append(sub_max_level_locations)
 
     for table in location_tables:
         for loc_name, loc_data in table.items():

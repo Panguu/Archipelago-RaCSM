@@ -431,19 +431,24 @@ class WeaponInventory:
         if addr is not None:
             addr.level = level
 
-    def zero_levels_for_vendor(self) -> dict[str, int]:
-        """Snapshot every weapon's current level, then zero it all out.
+    def zero_levels_for_vendor(self, purchasable: frozenset[str] | None = None) -> dict[str, int]:
+        """Snapshot every weapon's current level, then zero out only the
+        ones in `purchasable` (every weapon, if not given).
 
         The weapons vendor's displayed price apparently derives from the
-        weapon's level field, so a weapon already leveled up (via received
-        Progressive copies or real play) would show/charge a different
-        price than the base one while browsing. Caller (VendorInventory)
-        holds onto the returned snapshot and passes it to restore_levels()
-        once the vendor closes — this method never restores on its own.
+        weapon's level field, so an already-leveled-but-not-yet-AP-owned
+        weapon would show/charge a different price than the base one while
+        browsing. AP-owned weapons have nothing to hide behind a fake base
+        price — real level is kept visible for them even in this view, so
+        `purchasable` should be the set of weapons AP does NOT yet own
+        (see VendorInventory's callers). Caller holds onto the returned
+        snapshot and passes it to restore_levels() once the vendor closes
+        (or the view switches) — this method never restores on its own.
         """
         snapshot = {name: addr.level for name, addr in self._weapon_addrs.items()}
-        for addr in self._weapon_addrs.values():
-            addr.level = 0
+        for name, addr in self._weapon_addrs.items():
+            if purchasable is None or name in purchasable:
+                addr.level = 0
         return snapshot
 
     def restore_levels(self, snapshot: dict[str, int]) -> None:
@@ -488,8 +493,8 @@ class WeaponInventory:
         setting level straight to a freshly-raised cap), every level in
         between is reported too, not just the final one, so none of their
         locations get silently skipped. Level 1 is never reported here — it
-        fires from Core.apply_inventory() the moment AP inventory grants the
-        weapon, not from observing memory.
+        isn't a location at all (synonymous with owning the weapon), only
+        levels 2+ are.
         """
         newly_weapons: list[str] = []
         newly_gadgets: list[str] = []
@@ -519,12 +524,9 @@ class WeaponInventory:
                 prev_level = self._raw_level.get(name, -1)
                 current_level = addr.level
                 if current_level > prev_level:
-                    # Level 1 is deliberately excluded here — it's driven
-                    # purely by AP inventory (Core.apply_inventory() fires it
-                    # the moment the weapon's item is received), not by
-                    # observing this memory transition, so it isn't tangled
-                    # up in vendor-context/planet-load timing at all. Only
-                    # levels 2+ genuinely depend on watching real progress.
+                    # Level 1 is deliberately excluded here — it isn't a
+                    # location (synonymous with owning the weapon), so only
+                    # levels 2+ are ever reported.
                     for idx in range(prev_level + 1, current_level + 1):
                         level = idx + 1
                         if level >= 2:
@@ -643,6 +645,42 @@ class WeaponInventory:
                 self._pinned_experience[name] = addr.experience
             else:
                 addr.experience = pinned
+
+    def wipe(self) -> None:
+        """Zero every weapon/gadget/mod unlock bit, level and experience in
+        memory for the current planet's array, and rebaseline every
+        tracking dict (weapons/gadgets/mods and their _raw_* counterparts,
+        plus _raw_level/_prev_experience) to match.
+
+        Called once, the very first time a planet becomes ready after a
+        fresh connect/reconnect (see Core.tick()) — before that point,
+        whatever's sitting in the save (vanilla progress, a stale prior
+        session, anything not actually tracked by AP) would otherwise be
+        misread as a batch of brand-new pickups/level-ups the instant
+        check() ever runs against it, since every raw baseline starts
+        blank/-1. Wiping first means check()'s very first real diff is
+        against a clean all-False/level-0 state, so only what
+        Core.apply_inventory() writes afterward (true AP ownership) can
+        ever look like a change — and that path uses sync_slots(), not
+        check(), so it never reports one anyway.
+        """
+        for addr in self._weapon_addrs.values():
+            addr.unlocked = False
+            for slot in _MOD_SLOTS:
+                setattr(addr, slot, False)
+            addr.level = 0
+            addr.experience = 0
+        for addr in self._gadget_addrs.values():
+            addr.unlocked = False
+
+        self.weapons = dict.fromkeys(self._weapon_addrs, False)
+        self.gadgets = dict.fromkeys(self._gadget_addrs, False)
+        self.mods = {name: dict.fromkeys(_MOD_SLOTS, False) for name in self._weapon_addrs}
+        self._raw_weapons = dict(self.weapons)
+        self._raw_gadgets = dict(self.gadgets)
+        self._raw_mods = {name: dict(mods) for name, mods in self.mods.items()}
+        self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
+        self._prev_experience = dict.fromkeys(self._weapon_addrs, 0)
 
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
@@ -773,6 +811,39 @@ class WeaponInventory:
                 weapon, slot = _weapon_locations._MOD_LOC[loc]
                 self.mods.setdefault(weapon, dict.fromkeys(_MOD_SLOTS, False))
                 self.mods[weapon][slot] = True
+
+    def level_experience_snapshot(self) -> dict[str, list[int]]:
+        """Current [level, experience] per weapon on whichever planet's
+        array is currently bound — for persisting to AP data storage (see
+        client/context.py's weapon-state Set/Get) so real leveling progress
+        (organic play, not something any AP item records) survives a
+        reconnect. wipe() below zeroes this same data every session's first
+        planet-ready to stop stale/pre-AP memory from being misread as a
+        batch of fresh level-ups; without a persisted copy to restore from
+        afterward, that wipe would permanently erase real progress instead
+        of just resetting the diff baseline it's meant to.
+
+        Lists, not tuples — this round-trips through JSON (AP data storage),
+        which has no tuple type; using lists on both ends keeps a later
+        equality diff (skip an unnecessary Set) meaningful.
+        """
+        return {name: [addr.level, addr.experience] for name, addr in self._weapon_addrs.items()}
+
+    def restore_level_experience(self, data: dict) -> None:
+        """Write back a level_experience_snapshot() previously persisted to
+        AP data storage — the counterpart to wipe() zeroing this same data
+        on the first planet-ready of a fresh connect/reconnect. Also
+        rebaselines _raw_level/_prev_experience so check()'s next call
+        doesn't misread this restore as a fresh level-up/experience gain."""
+        for name, pair in data.items():
+            addr = self._weapon_addrs.get(name)
+            if addr is None or not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                continue
+            level, experience = int(pair[0]), int(pair[1])
+            addr.level = level
+            addr.experience = experience
+            self._raw_level[name] = level
+            self._prev_experience[name] = experience
 
     def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
         """Zero unlocked + every mod slot (memory and tracking dicts alike)

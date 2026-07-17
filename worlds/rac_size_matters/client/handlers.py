@@ -49,13 +49,30 @@ class EventsHandlerMixin:
         its own retry/backoff logic."""
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
+        # Retry weapon-state (level/experience) restore here too — the
+        # "Retrieved"/"SetReply" handler in context.py only gets one shot at
+        # it and may run before the planet is ready (see
+        # _try_restore_weapon_state's docstring); this covers that race by
+        # trying again on every subsequent planet-ready until it sticks.
+        self._try_restore_weapon_state()
 
     async def _grant_starting_items(self) -> None:
         if self._starting_items_sent or not self.pine_connected:
             return
+        # Claim the grant immediately, synchronously, before any await point
+        # below — this can be scheduled from both _on_planet_ready (the
+        # transition edge) and the "Retrieved"/"SetReply" handler (for when
+        # the planet was already ready before AP connected), and on a fresh
+        # connect both conditions are very often true at once. asyncio.
+        # create_task() only schedules a coroutine, it doesn't start it, so
+        # both calls could reach the check above before either had set this
+        # flag — claiming it here, before the first await, closes that
+        # window (the loser's check-at-top-of-function now always sees it
+        # already claimed). Reset back to False on failure so a later retry
+        # (e.g. next planet transition) can still attempt the grant.
+        self._starting_items_sent = True
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))
         if starting_bolts <= 0:
-            self._starting_items_sent = True
             asyncio.create_task(self._persist_starting_items_sent())
             return
         async with self._pine_lock:
@@ -70,8 +87,8 @@ class EventsHandlerMixin:
             except Exception as exc:
                 logger.warning(f"[RAC] Could not grant starting bolts: {exc}")
                 self.pine_connected = False
+                self._starting_items_sent = False
                 return
-        self._starting_items_sent = True
         asyncio.create_task(self._persist_starting_items_sent())
 
     def _on_vendor_close(self) -> None:
@@ -85,6 +102,16 @@ class EventsHandlerMixin:
         for actual gameplay."""
         self._on_menu_close_for_armour_sets()
         asyncio.create_task(self._apply_received_items())
+
+    def _on_equipped_armour_saved(self, data: dict) -> None:
+        """Fired every time the pause/equip menu closes (Core's
+        on_equipped_armour_saved hook, wired from PlanetInventory.
+        check_equipped_armour()) — the actual moment equipped armour can
+        change, so the set-completion check belongs here, not on vendor
+        close (that only ever runs it as a side effect of an unrelated
+        menu, never on a normal equip)."""
+        self._on_menu_close_for_armour_sets()
+        asyncio.create_task(self._persist_armour_slots(data))
 
     def _on_menu_close_for_armour_sets(self) -> None:
         if not self._armour_set_checks_enabled:

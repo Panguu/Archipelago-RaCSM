@@ -2,14 +2,27 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..constants import Rac5Weapons
 from ..core.weapons import WEAPON_DATA
 from ..items import PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
-from ..locations import WEAPON_LEVEL_LOOKUP, WEAPON_MAX_LEVEL_LOCATIONS, WEAPON_SUB_MAX_LEVEL_LOCATIONS
-from ._helpers import HasWeapon
+from ..locations import (
+    NG_PLUS_WEAPON_LEVEL_LOCATIONS,
+    WEAPON_LEVEL_LOOKUP,
+    WEAPON_MAX_LEVEL_LOCATIONS,
+    WEAPON_SUB_MAX_LEVEL_LOCATIONS,
+)
+from ._helpers import HasGoodExpPlanet, HasWeapon
 from rule_builder.rules import Has
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
+
+# These three weapons only gain experience at a meaningful rate on specific
+# planets/gadget combos (see HasGoodExpPlanet) — every other weapon levels
+# fine anywhere, so this extra requirement is scoped to just these.
+_NEEDS_GOOD_EXP_PLANET: frozenset[str] = frozenset({
+    Rac5Weapons.RYNO, Rac5Weapons.LASER_TRACER, Rac5Weapons.STATIC_BARRIER,
+})
 
 
 def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
@@ -19,6 +32,10 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     location needs that many copies to ever be reachable. off mode has no such
     gate — leveling is free once the weapon is owned — so the location just
     needs the weapon itself.
+
+    RYNO/Laser Tracer/Static Barrier levels also need HasGoodExpPlanet() —
+    those three only gain experience at a meaningful rate on specific
+    planets/gadget combos, not just from owning the weapon.
     """
     tier = world.options.weapon_level_checks.value
     if tier < 1:
@@ -27,15 +44,22 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     created = set(WEAPON_MAX_LEVEL_LOCATIONS)
     if tier >= 2:
         created |= set(WEAPON_SUB_MAX_LEVEL_LOCATIONS)
+    if not world.options.ng_plus_items:
+        # RYNO's own levels never got created (regions.py excludes them the
+        # same way) — must match here too, or set_rule() below targets a
+        # Location that was never actually built.
+        created -= NG_PLUS_WEAPON_LEVEL_LOCATIONS
 
     player = world.player
     mw = world.multiworld
     progressive = bool(world.options.progressive_weapons.value)
 
     for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items():
-        for level in range(1, WEAPON_DATA[internal].max_level + 1):
+        for level in range(2, WEAPON_DATA[internal].max_level + 1):
             loc_name = WEAPON_LEVEL_LOOKUP[(internal, level)]
             if loc_name not in created:
                 continue
             rule = Has(PROGRESSIVE_WEAPON_NAME[display], level) if progressive else HasWeapon(display)
+            if display in _NEEDS_GOOD_EXP_PLANET:
+                rule = rule & HasGoodExpPlanet()
             world.set_rule(mw.get_location(loc_name, player), rule)

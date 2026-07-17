@@ -27,7 +27,10 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
 
     # Missions
     # METALIS_ESCAPE is commented out in locations.py/missions.py — Giant Clank disabled.
-    if world.options.all_missions:
+    # METALIS_WAR's own trigger is completing the Buzzsaw Blitz clank
+    # challenge, so with clank challenges off it's never created at all
+    # (see regions.py) — nothing to set a rule on in that case.
+    if world.options.all_missions and world.options.clank_challenges.value >= 1:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.METALIS_WAR, player), True_())
 
     # Titanium Bolts

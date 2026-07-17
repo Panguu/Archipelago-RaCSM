@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from ..constants import Rac5CutsceneLocations, Rac5Locations
 from ..locations import WEAPON_LEVEL_LOOKUP
-from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece
+from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece, ArmourUnlocks
 from .challenges import ChallengeInventory, SkyboardInventory
 from .menu import MenuStateValue
 from .missions import MissionInventory
@@ -92,7 +92,15 @@ _MISSION_GADGET_LOCATION: dict[str, str] = {
 # (set directly in the same "gadgets" dict apply_inventory() receives), so
 # this correction correctly leaves it alone there.
 _GAME_FORCED_WEAPONS: frozenset[str] = frozenset({"lacerator", "acid_bomb_glove"})
-_GAME_FORCED_GADGETS: frozenset[str] = frozenset({"hypershot", "sprout_o_matic", "shrink_ray"})
+# map_o_matic/box_breaker: sold at a vendor (see core/vendor.py's
+# _GADGET_TO_PLANET_KEY) same as lacerator/acid_bomb_glove above, but the
+# game also force-grants them on its own at some point outside that
+# purchase flow — same forced-unlock class as hypershot, just discovered
+# later; without this they permanently latch "owned" the first time that
+# happens, regardless of whether AP ever actually granted them.
+_GAME_FORCED_GADGETS: frozenset[str] = frozenset({
+    "hypershot", "sprout_o_matic", "shrink_ray", "map_o_matic", "box_breaker",
+})
 
 
 class Core:
@@ -151,10 +159,11 @@ class Core:
         # called for a disabled system, and "all challenges" is passed
         # straight into clank.check() each tick instead of being stored on
         # ChallengeInventory itself).
-        self.clank_enabled:        bool = True
-        self.clank_all_challenges: bool = False
-        self.skyboard_enabled:     bool = False
-        self.skill_points_enabled: bool = False
+        self.clank_enabled:              bool = True
+        self.clank_all_challenges:       bool = False
+        self.skyboard_enabled:           bool = False
+        self.skill_points_enabled:       bool = False
+        self.weapon_level_checks_enabled: bool = False
 
         # Vendor purchase flow.
         # send_location is a forwarding lambda, not self.send_location itself
@@ -166,6 +175,7 @@ class Core:
             log=self._log,
             is_weapon_ap_owned=lambda name: self._ap_owned_weapons.get(name, False),
             is_gadget_ap_owned=lambda name: self._ap_owned_gadgets.get(name, False),
+            is_weapon_level_checks_enabled=lambda: self.weapon_level_checks_enabled,
         )
         self.weapon_vendor  = WeaponVendorMenu()
         self.mod_vendor     = ModVendorMenu()
@@ -274,30 +284,30 @@ class Core:
     ) -> None:
         """Write a fully-rebuilt AP inventory snapshot into game memory.
 
+        Called every tick during normal gameplay (see PineMixin._poll_game())
+        so memory is continuously kept in sync with AP truth rather than only
+        at specific event boundaries — but never while some other window
+        owns this same memory for its own temporary purpose: a vendor
+        session (weapons/gadgets/mods — existing is_ready/vendor_active
+        guard below), or the death sequence / an armour-pickup animation
+        (armour — its own guard just below). Re-applying mid-window would
+        fight those windows' own zero/restore cycles (see _handle_death()
+        and PlanetInventory.check_collected_armour()).
+
         Planet/infobot unlock and armour are global addresses, safe to write
-        any time. Weapons/gadgets/mods live on a per-planet array, so those
-        are skipped while a planet transition is in flight or the vendor
-        menu owns the weapon-display state — same guards the old
+        any time otherwise. Weapons/gadgets/mods live on a per-planet array,
+        so those are skipped while a planet transition is in flight or the
+        vendor menu owns the weapon-display state — same guards the old
         writes_blocked/vendor_active checks provided.
         """
         self.planet_unlock.set_unlocked_planets(infobot_planets)
-        self.armour.sync_unlocked(armour_unlocked)
+        # Bookkeeping dict always kept current regardless of whether the
+        # memory write below is skipped — check_collected_armour()'s
+        # pickup-exit restore and _handle_respawn() both read this later.
         self.planet.sync_unlock_armour(armour_unlocked)
-
-        # Weapon Level Checks, level 1: fires purely off AP inventory — the
-        # moment a weapon's item is actually received — never off observed
-        # memory state. That sidesteps every timing issue level 2+ has to
-        # deal with (vendor-context, planet-load ordering, starting weapons
-        # never producing a "transition" to observe): this only needs to
-        # know the weapon just became AP-owned, which is exactly what this
-        # dict diff already is. Runs unconditionally, before the is_ready/
-        # vendor_active gate below — a location send doesn't touch game
-        # memory, so there's nothing here for that gate to protect.
-        for name, owned in weapons.items():
-            if owned and not self._ap_owned_weapons.get(name, False):
-                loc = WEAPON_LEVEL_LOOKUP.get((name, 1))
-                if loc:
-                    self.send_location(loc)
+        if (not self.vendor_active and not self.planet.player.is_dead
+                and not self.planet.player.is_picking_up):
+            self.armour.sync_unlocked(armour_unlocked)
 
         # Always kept current, even while the writes below are skipped —
         # _enforce_no_forced_starter_items() needs an up-to-date answer to
@@ -455,7 +465,29 @@ class Core:
             return
 
         if became_ready:
+            if not self._initial_load_done:
+                # Very first planet-ready this process — the save's weapon/
+                # gadget/mod/level state has never been touched by AP yet,
+                # so wipe it clean before anything below ever diffs against
+                # it. Without this, whatever the save already had (vanilla
+                # progress, a stale prior session) looks identical to a
+                # batch of brand-new pickups/level-ups the instant
+                # check_weapons() first runs, since every raw baseline
+                # starts blank/-1. apply_inventory() (fired moments later
+                # via on_planet_ready, below) then writes true AP ownership
+                # onto this now-clean array.
+                self.planet.weapons.wipe()
             self.skin.setup()
+            if self.clank_enabled:
+                # Unlocks every Clank Challenge section (Derby/Gadgetbot Toss/
+                # Gadgetbot) on every tracked planet — fixed per-planet
+                # addresses, safe to call regardless of which planet is
+                # currently loaded (see CLANK_SECTION_UNLOCK_ADDRESSES).
+                # Never wired in before this, so challenge sections stayed
+                # locked behind whatever vanilla story progress unlocks them,
+                # independent of AP's own reachability logic. Idempotent, so
+                # re-running it on every transition is harmless.
+                self.clank.setup(self.clank_all_challenges)
             self.on_planet_ready()
             if not self._initial_load_done:
                 self._initial_load_done = True
@@ -641,21 +673,30 @@ class Core:
                 if name in _SCRIPTED_PICKUP_GADGETS:
                     self.on_scripted_gadget_pickup(name)
 
-        # Weapon Level Checks — a no-op send_location() for a level whose
-        # location isn't in this seed's pool (weapon_level_checks off, or
-        # max_level and this isn't the max level) is already safe, so this
-        # doesn't need to know the option value itself.
-        for name, level in changed["levels"]:
-            loc = WEAPON_LEVEL_LOOKUP.get((name, level))
-            if loc:
-                self.send_location(loc)
+        # Weapon Level Checks — gated on the option directly rather than
+        # relying on send_location() being a no-op for an unpooled location:
+        # that no-op still logs a "not in server locations" warning every
+        # time (see _append_location_by_name), which fired constantly with
+        # the option off whenever check_weapons() saw a level change (e.g.
+        # during the death sequence, which doesn't gate this call).
+        if self.weapon_level_checks_enabled:
+            for name, level in changed["levels"]:
+                loc = WEAPON_LEVEL_LOOKUP.get((name, level))
+                if loc:
+                    self.send_location(loc)
 
     def _handle_death(self) -> None:
         # The game's own death sequence needs to see every piece the player
         # has physically picked up this session (collected_armour), not just
-        # what AP has actually granted (unlock_armour) — write that in now,
+        # what AP has actually granted (unlock_armour). Memory going into
+        # this is normal-gameplay state (unlock_armour, which can include
+        # pieces AP granted but the player never physically found), so this
+        # is a real downgrade, not a no-op write — zero first (same
+        # defensive pattern as check_collected_armour()'s pickup window) so
+        # no unlock_armour-only bit can linger, then write collected_armour.
         # _handle_respawn() below reverts it back to AP truth once the death
         # sequence is over.
+        self.armour.sync_unlocked(dict.fromkeys(ArmourUnlocks._OFFSETS, 0))
         self.armour.sync_unlocked(self.planet.collected_armour)
 
         if not self.death_link_enabled():

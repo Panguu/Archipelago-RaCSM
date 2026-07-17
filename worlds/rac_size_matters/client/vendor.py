@@ -46,13 +46,21 @@ class VendorHandlerMixin:
         Called each time the vendor menu opens. Skips locations that have already
         been hinted or checked this session.
 
-        TODO: purchasable-location lookup was removed along with the old
-        vendor-unlock machinery — needs to be rebuilt on top of the new
-        core.vendor.VendorInventory.
+        Whichever vendor menu is open at this instant (weapon_vendor/mod_vendor
+        activate() before Core fires on_vendor_open — see
+        Core._check_vendor_purchases()) decides which of VendorInventory's two
+        location lists to hint; neither being active means this fired from some
+        other event entirely, so there's nothing to hint.
         """
         if self.slot is None or not self.pine_connected:
             return
-        loc_names: list[str] = []
+        vendor = self._wiring.vendor
+        if self._wiring.weapon_vendor.active:
+            loc_names = vendor.purchasable_locations()
+        elif self._wiring.mod_vendor.active:
+            loc_names = vendor.mod_locations()
+        else:
+            return
         checked   = self.checked_locations | self._locally_checked_locations
         server_locations = getattr(self, "server_locations", None)
         new_ids: list[int] = []
@@ -174,15 +182,31 @@ class InventoryMixin:
 
     async def force_sync(self) -> None:
         """Force the player's in-game state to match what was received from AP,
-        regardless of what's already been applied."""
+        regardless of what's already been applied.
+
+        Wipes the current planet's weapon/gadget/mod array first (see
+        WeaponInventory.wipe()) so any leftover non-AP state — vanilla
+        progress, a stale prior session — is fully replaced by AP truth
+        instead of merely topped up on top of it, same reasoning as the
+        one-time wipe Core.tick() does on the very first planet-ready.
+        Skipped if the planet isn't ready yet (nothing to wipe) or a
+        vendor menu owns the display right now (that window has its own
+        zero/restore cycle already; wiping here would just get clobbered
+        by it) — apply_inventory() below already no-ops its own writes in
+        both cases, so wiping here would otherwise leave the array blank
+        with nothing to immediately rewrite it.
+        """
         if not self.pine_connected:
             return
         inventory = self._parse_inventory()
         checked   = self._checked_location_names()
         async with self._pine_lock:
-            self._wiring.apply_inventory(**inventory)
-            self._wiring.restore_world_states(checked)
-            self._wiring.restore_armour_from_locations(checked)
+            wiring = self._wiring
+            if wiring.planet.is_ready and not wiring.vendor_active:
+                wiring.planet.weapons.wipe()
+            wiring.apply_inventory(**inventory)
+            wiring.restore_world_states(checked)
+            wiring.restore_armour_from_locations(checked)
         self._pending_item_apply = False
 
     async def _apply_received_items(self) -> None:

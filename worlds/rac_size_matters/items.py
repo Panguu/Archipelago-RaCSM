@@ -84,6 +84,17 @@ ARMOUR_DISPLAY_TO_INTERNAL: dict[str, tuple[str, int]] = {
     Rac5Armours.CHAMELEON_BOOTS:         ("chameleon",    0x10),
 }
 
+# NG+ Items option (options.py's NgPlusItems): RYNO and the Chameleon/
+# Hyperborean armour sets are New Game Plus exclusives in vanilla — with
+# that option off, none of their items belong in the pool at all (see
+# world.py's create_items()/generate_basic()), and the world/rules modules
+# that build locations depending on them (rules/weapon_levels.py, rules/
+# armour_sets.py, regions.py) must agree on the exact same exclusion or
+# they end up creating a rule against — or a Location for — something that
+# was never actually placed.
+NG_PLUS_WEAPONS: frozenset[str] = frozenset({Rac5Weapons.RYNO})
+NG_PLUS_ARMOUR_SETS: frozenset[str] = frozenset({"hyperborean", "chameleon"})
+
 WEAPON_ITEM_TABLE: dict[str, RACItemData] = {
     name: RACItemData(BASE_ID + idx, WEAPON_DATA[internal].classification)
     for idx, (name, internal) in enumerate(WEAPON_DISPLAY_TO_INTERNAL.items(), start=1)
