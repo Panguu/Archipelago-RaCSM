@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 
 from CommonClient import logger
 
@@ -8,6 +9,14 @@ from ..core import TextColour, colored_text, reconcile_traps
 from ..universal_tracker import PLANET_ID_TO_REGION
 from .constants import EXPECTED_GAME_ID, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
+
+# How often weapon level/experience gets persisted to AP data storage — a
+# throttle, not a poll rate: experience changes continuously during combat,
+# so pushing every POLL_INTERVAL tick would spam the server for no benefit.
+# Only actually pushed when the snapshot differs from what was last sent
+# anyway (see _maybe_persist_weapon_state), so this just bounds how often
+# that comparison can turn into a real Set call.
+_WEAPON_STATE_PUSH_INTERVAL: float = 5.0
 
 
 class PineMixin:
@@ -175,6 +184,28 @@ class PineMixin:
         # notifications) is checkpoint-based and idempotent against being
         # called far more often than something new actually arrived.
         await self._apply_received_items()
+        self._maybe_persist_weapon_state()
+
+    def _maybe_persist_weapon_state(self) -> None:
+        """Push the current weapon level/experience snapshot to AP data
+        storage, throttled to _WEAPON_STATE_PUSH_INTERVAL and skipped
+        entirely if nothing's actually changed since the last push — real
+        gameplay progress (no AP item records it), so it has to be saved
+        explicitly or a reconnect's wipe() (core/core.py's tick()) loses it
+        for good instead of just resetting check()'s diff baseline like
+        it's meant to.
+        """
+        if self.slot is None or not self.pine_connected or not self._wiring.planet.is_ready:
+            return
+        now = time.monotonic()
+        if now - self._last_weapon_state_push < _WEAPON_STATE_PUSH_INTERVAL:
+            return
+        snapshot = self._wiring.planet.weapons.level_experience_snapshot()
+        if snapshot == self._pushed_weapon_state:
+            return
+        self._last_weapon_state_push = now
+        self._pushed_weapon_state = snapshot
+        asyncio.create_task(self._persist_weapon_state(snapshot))
 
     async def _send_map_page(self, planet: str) -> None:
         if self.slot is None:

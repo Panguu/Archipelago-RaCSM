@@ -309,8 +309,20 @@ class PlanetInventory:
             self._quick_select_primed = True
             self.quick_select.zero()
         else:
-            self.quick_select.restore()
             self.quick_select.unfreeze()
+        # zero()'s own docstring already promises this: the in-memory
+        # snapshot survives the zero-out specifically so a previously
+        # restored AP loadout can be written back right after — but nothing
+        # actually called restore() on this first-time branch, so a loadout
+        # already loaded via context.py's Retrieved/SetReply handler (see
+        # QuickSelectState.load()) sat in memory doing nothing until the
+        # player's *next* planet transition ever wrote it out. Calling it
+        # unconditionally here closes that gap for both branches: on the
+        # very first ready it applies whatever's already been loaded (or
+        # harmlessly re-applies the same all-zero default zero() just
+        # wrote), and on every later one it's the same restore the old
+        # code already ran in the else branch above.
+        self.quick_select.restore()
         if planet_id == _METALIS_ID:
             self._suppress_giant_clank()
 

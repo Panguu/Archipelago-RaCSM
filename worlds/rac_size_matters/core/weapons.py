@@ -431,19 +431,24 @@ class WeaponInventory:
         if addr is not None:
             addr.level = level
 
-    def zero_levels_for_vendor(self) -> dict[str, int]:
-        """Snapshot every weapon's current level, then zero it all out.
+    def zero_levels_for_vendor(self, purchasable: frozenset[str] | None = None) -> dict[str, int]:
+        """Snapshot every weapon's current level, then zero out only the
+        ones in `purchasable` (every weapon, if not given).
 
         The weapons vendor's displayed price apparently derives from the
-        weapon's level field, so a weapon already leveled up (via received
-        Progressive copies or real play) would show/charge a different
-        price than the base one while browsing. Caller (VendorInventory)
-        holds onto the returned snapshot and passes it to restore_levels()
-        once the vendor closes — this method never restores on its own.
+        weapon's level field, so an already-leveled-but-not-yet-AP-owned
+        weapon would show/charge a different price than the base one while
+        browsing. AP-owned weapons have nothing to hide behind a fake base
+        price — real level is kept visible for them even in this view, so
+        `purchasable` should be the set of weapons AP does NOT yet own
+        (see VendorInventory's callers). Caller holds onto the returned
+        snapshot and passes it to restore_levels() once the vendor closes
+        (or the view switches) — this method never restores on its own.
         """
         snapshot = {name: addr.level for name, addr in self._weapon_addrs.items()}
-        for addr in self._weapon_addrs.values():
-            addr.level = 0
+        for name, addr in self._weapon_addrs.items():
+            if purchasable is None or name in purchasable:
+                addr.level = 0
         return snapshot
 
     def restore_levels(self, snapshot: dict[str, int]) -> None:
@@ -806,6 +811,39 @@ class WeaponInventory:
                 weapon, slot = _weapon_locations._MOD_LOC[loc]
                 self.mods.setdefault(weapon, dict.fromkeys(_MOD_SLOTS, False))
                 self.mods[weapon][slot] = True
+
+    def level_experience_snapshot(self) -> dict[str, list[int]]:
+        """Current [level, experience] per weapon on whichever planet's
+        array is currently bound — for persisting to AP data storage (see
+        client/context.py's weapon-state Set/Get) so real leveling progress
+        (organic play, not something any AP item records) survives a
+        reconnect. wipe() below zeroes this same data every session's first
+        planet-ready to stop stale/pre-AP memory from being misread as a
+        batch of fresh level-ups; without a persisted copy to restore from
+        afterward, that wipe would permanently erase real progress instead
+        of just resetting the diff baseline it's meant to.
+
+        Lists, not tuples — this round-trips through JSON (AP data storage),
+        which has no tuple type; using lists on both ends keeps a later
+        equality diff (skip an unnecessary Set) meaningful.
+        """
+        return {name: [addr.level, addr.experience] for name, addr in self._weapon_addrs.items()}
+
+    def restore_level_experience(self, data: dict) -> None:
+        """Write back a level_experience_snapshot() previously persisted to
+        AP data storage — the counterpart to wipe() zeroing this same data
+        on the first planet-ready of a fresh connect/reconnect. Also
+        rebaselines _raw_level/_prev_experience so check()'s next call
+        doesn't misread this restore as a fresh level-up/experience gain."""
+        for name, pair in data.items():
+            addr = self._weapon_addrs.get(name)
+            if addr is None or not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                continue
+            level, experience = int(pair[0]), int(pair[1])
+            addr.level = level
+            addr.experience = experience
+            self._raw_level[name] = level
+            self._prev_experience[name] = experience
 
     def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
         """Zero unlocked + every mod slot (memory and tracking dicts alike)

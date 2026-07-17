@@ -92,7 +92,15 @@ _MISSION_GADGET_LOCATION: dict[str, str] = {
 # (set directly in the same "gadgets" dict apply_inventory() receives), so
 # this correction correctly leaves it alone there.
 _GAME_FORCED_WEAPONS: frozenset[str] = frozenset({"lacerator", "acid_bomb_glove"})
-_GAME_FORCED_GADGETS: frozenset[str] = frozenset({"hypershot", "sprout_o_matic", "shrink_ray"})
+# map_o_matic/box_breaker: sold at a vendor (see core/vendor.py's
+# _GADGET_TO_PLANET_KEY) same as lacerator/acid_bomb_glove above, but the
+# game also force-grants them on its own at some point outside that
+# purchase flow — same forced-unlock class as hypershot, just discovered
+# later; without this they permanently latch "owned" the first time that
+# happens, regardless of whether AP ever actually granted them.
+_GAME_FORCED_GADGETS: frozenset[str] = frozenset({
+    "hypershot", "sprout_o_matic", "shrink_ray", "map_o_matic", "box_breaker",
+})
 
 
 class Core:
@@ -151,10 +159,11 @@ class Core:
         # called for a disabled system, and "all challenges" is passed
         # straight into clank.check() each tick instead of being stored on
         # ChallengeInventory itself).
-        self.clank_enabled:        bool = True
-        self.clank_all_challenges: bool = False
-        self.skyboard_enabled:     bool = False
-        self.skill_points_enabled: bool = False
+        self.clank_enabled:              bool = True
+        self.clank_all_challenges:       bool = False
+        self.skyboard_enabled:           bool = False
+        self.skill_points_enabled:       bool = False
+        self.weapon_level_checks_enabled: bool = False
 
         # Vendor purchase flow.
         # send_location is a forwarding lambda, not self.send_location itself
@@ -166,6 +175,7 @@ class Core:
             log=self._log,
             is_weapon_ap_owned=lambda name: self._ap_owned_weapons.get(name, False),
             is_gadget_ap_owned=lambda name: self._ap_owned_gadgets.get(name, False),
+            is_weapon_level_checks_enabled=lambda: self.weapon_level_checks_enabled,
         )
         self.weapon_vendor  = WeaponVendorMenu()
         self.mod_vendor     = ModVendorMenu()
@@ -663,14 +673,17 @@ class Core:
                 if name in _SCRIPTED_PICKUP_GADGETS:
                     self.on_scripted_gadget_pickup(name)
 
-        # Weapon Level Checks — a no-op send_location() for a level whose
-        # location isn't in this seed's pool (weapon_level_checks off, or
-        # max_level and this isn't the max level) is already safe, so this
-        # doesn't need to know the option value itself.
-        for name, level in changed["levels"]:
-            loc = WEAPON_LEVEL_LOOKUP.get((name, level))
-            if loc:
-                self.send_location(loc)
+        # Weapon Level Checks — gated on the option directly rather than
+        # relying on send_location() being a no-op for an unpooled location:
+        # that no-op still logs a "not in server locations" warning every
+        # time (see _append_location_by_name), which fired constantly with
+        # the option off whenever check_weapons() saw a level change (e.g.
+        # during the death sequence, which doesn't gate this call).
+        if self.weapon_level_checks_enabled:
+            for name, level in changed["levels"]:
+                loc = WEAPON_LEVEL_LOOKUP.get((name, level))
+                if loc:
+                    self.send_location(loc)
 
     def _handle_death(self) -> None:
         # The game's own death sequence needs to see every piece the player

@@ -49,6 +49,12 @@ class EventsHandlerMixin:
         its own retry/backoff logic."""
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
+        # Retry weapon-state (level/experience) restore here too — the
+        # "Retrieved"/"SetReply" handler in context.py only gets one shot at
+        # it and may run before the planet is ready (see
+        # _try_restore_weapon_state's docstring); this covers that race by
+        # trying again on every subsequent planet-ready until it sticks.
+        self._try_restore_weapon_state()
 
     async def _grant_starting_items(self) -> None:
         if self._starting_items_sent or not self.pine_connected:

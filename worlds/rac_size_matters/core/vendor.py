@@ -173,6 +173,7 @@ class VendorInventory:
         log: Callable[[str], None] | None = None,
         is_weapon_ap_owned: Callable[[str], bool] | None = None,
         is_gadget_ap_owned: Callable[[str], bool] | None = None,
+        is_weapon_level_checks_enabled: Callable[[], bool] | None = None,
     ) -> None:
         self.pine = pine
         self.planet = planet
@@ -186,6 +187,13 @@ class VendorInventory:
         # even be this weapon in a shuffled seed).
         self._is_weapon_ap_owned = is_weapon_ap_owned or (lambda name: False)
         self._is_gadget_ap_owned = is_gadget_ap_owned or (lambda name: False)
+        # Gates the "levels" location-sends below — without this, a no-op
+        # send_location() for a level whose location isn't in this seed's
+        # pool (weapon_level_checks off) still logs a "not in server
+        # locations" warning every time (see CommonClient's
+        # _append_location_by_name), which fires constantly with the option
+        # off since check_weapons() runs regardless of it.
+        self._is_weapon_level_checks_enabled = is_weapon_level_checks_enabled or (lambda: False)
         self.weapons: WeaponInventory = planet.weapons
         self._items: list[str] = []
 
@@ -216,6 +224,13 @@ class VendorInventory:
         owned = {name for name, unlocked in self.weapons.weapons.items() if unlocked}
         owned |= {name for name, unlocked in self.weapons.gadgets.items() if unlocked}
         return frozenset(owned)
+
+    def _not_ap_owned_weapon_names(self) -> frozenset[str]:
+        """Weapons AP hasn't actually granted yet — the set zero_levels_for_
+        vendor() should zero, since an AP-owned weapon has nothing to hide
+        behind a fake base price and should always show its real level,
+        even in the left (buy-new) view."""
+        return frozenset(name for name in self.weapons.weapons if not self._is_weapon_ap_owned(name))
 
     def _is_purchased(self, name: str) -> bool:
         loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
@@ -342,18 +357,33 @@ class VendorInventory:
         check()'s docstring in weapons.py.
         """
         if not self._weapon_vendor_open:
-            # Just opened — reset to the default purchasable view.
-            self._weapon_vendor_open      = True
-            self.show_purchasable_weapons = True
-            self.weapons.apply_vendor_locations()
-            # Zero every weapon's level for the duration of this vendor
-            # visit — its displayed price apparently derives from the level
-            # field, so an already-leveled weapon would show/charge the
-            # wrong price otherwise. Restored in close(). Core.tick() skips
-            # apply_progressive_leveling() while this menu is open so it
-            # can't fight this zero-out back to the real level mid-tick.
-            self._level_snapshot = self.weapons.zero_levels_for_vendor()
-            self._set_items(self._purchasable_names())
+            self._weapon_vendor_open = True
+            # Zero level for the duration of this vendor visit, but only
+            # for weapons AP doesn't actually own yet — its displayed price
+            # apparently derives from the level field, so an already-
+            # leveled-but-not-yet-owned weapon would show/charge the wrong
+            # price otherwise. An AP-owned weapon has nothing to hide
+            # behind a fake base price, so its real level stays visible
+            # even here. Restored in close() (or, for the purchasable
+            # view, re-derived on every left/right toggle below).
+            # Core.tick() skips apply_progressive_leveling() while this
+            # menu is open so it can't fight this zero-out back to the
+            # real level mid-tick.
+            self._level_snapshot = self.weapons.zero_levels_for_vendor(self._not_ap_owned_weapon_names())
+            purchasable = self._purchasable_names()
+            if purchasable:
+                # Default (left) view.
+                self.show_purchasable_weapons = True
+                self.weapons.apply_vendor_locations()
+                self._set_items(purchasable)
+            else:
+                # Nothing left to buy — everything's already been
+                # purchased, so open straight into the owned-inventory
+                # (ammo) view instead of showing an empty left list.
+                self.show_purchasable_weapons = False
+                self.weapons.apply_vendor_locations(self._owned_names())
+                self.weapons.restore_levels(self._level_snapshot)
+                self._set_items(list(self._owned_names()))
             self.refresh(MenuStateValue.WEAPONS_VENDOR)
             # TEMP DEBUG: dump the vendor-id -> name mapping actually written
             # to game memory for this open, so a purchase can be cross-checked
@@ -368,12 +398,31 @@ class VendorInventory:
             if controller.pressed(PauseSelectButtons.D_PAD_RIGHT) and self.show_purchasable_weapons:
                 self.weapons.apply_vendor_locations(self._owned_names())
                 self.show_purchasable_weapons = False
+                # Right-hand view browses the player's own owned weapons
+                # (to buy ammo for them) — unlike the left view, ammo
+                # price/capacity here genuinely depends on the weapon's
+                # real level, so restore it for the duration of this view
+                # instead of leaving it zeroed. Re-zeroed below the moment
+                # the player flips back to the left view.
+                self.weapons.restore_levels(self._level_snapshot)
                 self._set_items(list(self._owned_names()))
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
-            if controller.pressed(PauseSelectButtons.D_PAD_LEFT) and not self.show_purchasable_weapons:
+            # Only allow flipping back to the left (buy-new) view if there's
+            # actually something purchasable to show there — with nothing
+            # left to buy, the left/right toggle stops entirely and the
+            # vendor stays in the owned-inventory (ammo) view for the rest
+            # of this visit, same as it opened into.
+            if (controller.pressed(PauseSelectButtons.D_PAD_LEFT) and not self.show_purchasable_weapons
+                    and self._purchasable_names()):
                 self.weapons.apply_vendor_locations()
                 self.show_purchasable_weapons = True
+                # Back to the left (buy-new) view — re-zero so an owned-
+                # but-not-vendor-purchased weapon's displayed price isn't
+                # skewed by its real level, same reasoning as the initial
+                # zero on open. Re-snapshots from the just-restored real
+                # levels above, so close() still restores the true value.
+                self._level_snapshot = self.weapons.zero_levels_for_vendor(self._not_ap_owned_weapon_names())
                 self._set_items(self._purchasable_names())
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
@@ -397,10 +446,14 @@ class VendorInventory:
         # level 0 for the first time) has to be sent from here instead —
         # in both views, since apply_progressive_leveling() runs from
         # Core.tick() independently of which view this menu is showing.
-        for name, level in changed["levels"]:
-            loc = WEAPON_LEVEL_LOOKUP.get((name, level))
-            if loc:
-                self.send_location(loc)
+        # Gated on the option directly, same reasoning as Core's own
+        # _check_vendor_purchases() — an unpooled location's no-op
+        # send_location() still logs a warning every time otherwise.
+        if self._is_weapon_level_checks_enabled():
+            for name, level in changed["levels"]:
+                loc = WEAPON_LEVEL_LOOKUP.get((name, level))
+                if loc:
+                    self.send_location(loc)
 
         if not self.show_purchasable_weapons:
             # Right-hand (AP inventory) view — browsing ammo for already-owned
@@ -435,7 +488,17 @@ class VendorInventory:
         if newly_purchased:
             # Refresh right away so the just-bought item drops off the
             # purchasable list instead of waiting for the next open.
-            self._set_items(self._purchasable_names())
+            purchasable = self._purchasable_names()
+            if purchasable:
+                self._set_items(purchasable)
+            else:
+                # That was the last purchasable item — nothing left to show
+                # on the left, so drop straight into the owned-inventory
+                # view instead of refreshing onto an empty list.
+                self.show_purchasable_weapons = False
+                self.weapons.apply_vendor_locations(self._owned_names())
+                self.weapons.restore_levels(self._level_snapshot)
+                self._set_items(list(self._owned_names()))
             self.refresh(MenuStateValue.WEAPONS_VENDOR)
             self._log(
                 "[RAC][vendor-debug] post-purchase purchasable list="
@@ -512,11 +575,13 @@ class VendorInventory:
         # Same reasoning as weapon_vendor() — Core never sees this tick's
         # check() while this menu is open, so a level reached in the
         # background (e.g. automatic mode catching up to a Progressive item
-        # that arrived while browsing) must be sent from here too.
-        for name, level in changed["levels"]:
-            loc = WEAPON_LEVEL_LOOKUP.get((name, level))
-            if loc:
-                self.send_location(loc)
+        # that arrived while browsing) must be sent from here too. Gated on
+        # the option same as weapon_vendor()'s equivalent loop.
+        if self._is_weapon_level_checks_enabled():
+            for name, level in changed["levels"]:
+                loc = WEAPON_LEVEL_LOOKUP.get((name, level))
+                if loc:
+                    self.send_location(loc)
 
         if newly_purchased:
             # Refresh right away, same as weapon_vendor() does after a
