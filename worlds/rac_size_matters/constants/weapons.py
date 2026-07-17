@@ -47,7 +47,7 @@ class Rac5WeaponMods:
 
     LACERATOR_MOD_LOCK_ON = "Lacerator: Lock On Mod"
     LACERATOR_MOD_DOUBLE_BARREL = "Lacerator: Double Barrel Mod"
-    CONCUSSION_GUN_MOD_SPLIT_BARREL = "Concussion Gun: Split Barrel Mod"
+    CONCUSSION_GUN_MOD_SPLIT_BARREL = "Concussion Gun: Wide Barrel Mod"
     CONCUSSION_GUN_MOD_LOCK_ON = "Concussion Gun: Lock On Mod"
     CONCUSSION_GUN_MOD_CHARGE_UP = "Concussion Gun: Charge Up Mod"
     ACID_BOMB_GLOVE_MOD_ACID_BOMB = "Acid Bomb Glove: Acid Bomb Mod"

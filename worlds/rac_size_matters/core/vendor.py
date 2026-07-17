@@ -225,12 +225,25 @@ class VendorInventory:
         owned |= {name for name, unlocked in self.weapons.gadgets.items() if unlocked}
         return frozenset(owned)
 
-    def _not_ap_owned_weapon_names(self) -> frozenset[str]:
-        """Weapons AP hasn't actually granted yet — the set zero_levels_for_
-        vendor() should zero, since an AP-owned weapon has nothing to hide
-        behind a fake base price and should always show its real level,
-        even in the left (buy-new) view."""
-        return frozenset(name for name in self.weapons.weapons if not self._is_weapon_ap_owned(name))
+    def _weapons_to_zero_for_vendor(self) -> frozenset[str]:
+        """Weapons whose level zero_levels_for_vendor() should hide for the
+        duration of this vendor visit.
+
+        An AP-owned weapon only gets to show its real level once it's no
+        longer purchasable here (i.e. this vendor's own location for it has
+        already been bought) — at that point it has nothing left to hide
+        behind a fake base price. Still-purchasable weapons must stay zeroed
+        regardless of AP ownership: the weapon may already be functionally
+        owned (granted from another location in a shuffled seed), but this
+        vendor's own copy hasn't actually been bought yet, so its displayed
+        price would otherwise be skewed by a level the player hasn't paid
+        for at this vendor.
+        """
+        purchasable = set(self._purchasable_names())
+        return frozenset(
+            name for name in self.weapons.weapons
+            if not (self._is_weapon_ap_owned(name) and name not in purchasable)
+        )
 
     def _is_purchased(self, name: str) -> bool:
         loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
@@ -358,18 +371,16 @@ class VendorInventory:
         """
         if not self._weapon_vendor_open:
             self._weapon_vendor_open = True
-            # Zero level for the duration of this vendor visit, but only
-            # for weapons AP doesn't actually own yet — its displayed price
-            # apparently derives from the level field, so an already-
-            # leveled-but-not-yet-owned weapon would show/charge the wrong
-            # price otherwise. An AP-owned weapon has nothing to hide
-            # behind a fake base price, so its real level stays visible
-            # even here. Restored in close() (or, for the purchasable
-            # view, re-derived on every left/right toggle below).
-            # Core.tick() skips apply_progressive_leveling() while this
-            # menu is open so it can't fight this zero-out back to the
+            # Zero level for the duration of this vendor visit — its
+            # displayed price apparently derives from the level field, so an
+            # already-leveled-but-still-purchasable-here weapon would show/
+            # charge the wrong price otherwise, AP-owned or not (see
+            # _weapons_to_zero_for_vendor()). Restored in close() (or, for
+            # the purchasable view, re-derived on every left/right toggle
+            # below). Core.tick() skips apply_progressive_leveling() while
+            # this menu is open so it can't fight this zero-out back to the
             # real level mid-tick.
-            self._level_snapshot = self.weapons.zero_levels_for_vendor(self._not_ap_owned_weapon_names())
+            self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
             purchasable = self._purchasable_names()
             if purchasable:
                 # Default (left) view.
@@ -422,7 +433,7 @@ class VendorInventory:
                 # skewed by its real level, same reasoning as the initial
                 # zero on open. Re-snapshots from the just-restored real
                 # levels above, so close() still restores the true value.
-                self._level_snapshot = self.weapons.zero_levels_for_vendor(self._not_ap_owned_weapon_names())
+                self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
                 self._set_items(self._purchasable_names())
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
@@ -455,16 +466,27 @@ class VendorInventory:
                 if loc:
                     self.send_location(loc)
 
-        if not self.show_purchasable_weapons:
-            # Right-hand (AP inventory) view — browsing ammo for already-owned
-            # weapons, nothing here can be a fresh purchase.
-            return
+        # The re-lock below must run every tick regardless of which view is
+        # active — check() above always runs regardless of view, and it
+        # unconditionally baselines self.weapons/gadgets[name] = True the
+        # instant it sees an unlocked bit in memory (dict entries never
+        # regress on their own). An early return here for the right-hand
+        # (AP-inventory/ammo) view used to skip this correction entirely: if
+        # the game's own vendor UI ever re-asserts an unlocked bit while
+        # browsing that view (e.g. still rendering the item you just bought
+        # as "owned" for its own display purposes) with nothing to correct
+        # it, that weapon/gadget stays permanently (and wrongly) marked
+        # AP-owned even after leaving the vendor. Only the "is this a fresh
+        # purchase to report as a location check" half is view-gated below —
+        # nothing new is purchasable to report from the right-hand view, but
+        # the correction itself must not depend on that.
+        report_as_purchase = self.show_purchasable_weapons
 
         newly_purchased = False
         for name in changed["weapons"]:
             loc = WEAPON_INTERNAL_TO_LOCATION.get(name)
             self._log(f"[RAC][vendor-debug] weapon {name!r} newly unlocked -> loc={loc!r}")
-            if loc:
+            if report_as_purchase and loc:
                 self.weapons.vendor_locations[loc] = True
                 self.send_location(loc)
                 newly_purchased = True
@@ -478,13 +500,19 @@ class VendorInventory:
         for name in changed["gadgets"]:
             loc = GADGET_INTERNAL_TO_LOCATION.get(name)
             self._log(f"[RAC][vendor-debug] gadget {name!r} newly unlocked -> loc={loc!r}")
-            if loc:
+            if report_as_purchase and loc:
                 self.weapons.vendor_locations[loc] = True
                 self.send_location(loc)
                 newly_purchased = True
             if not self._is_gadget_ap_owned(name):
                 self.weapons.set(name, False)
                 self.weapons.gadgets[name] = False
+
+        if not report_as_purchase:
+            # Right-hand (AP inventory) view — nothing here can be reported
+            # as a fresh purchase, and the post-purchase refresh below only
+            # applies to the left (buy-new) view's own item list.
+            return
         if newly_purchased:
             # Refresh right away so the just-bought item drops off the
             # purchasable list instead of waiting for the next open.
@@ -536,10 +564,15 @@ class VendorInventory:
         the game won't render it as a mod-vendor selection at all, and
         that's true regardless of whether the player actually owns it yet.
         This only touches display memory, never weapons.weapons directly —
-        check() below is what actually updates that dict, and closing
-        either vendor menu triggers a full AP-inventory re-apply
-        (client's _on_vendor_close) that corrects any of this back to real
-        ownership, so nothing here leaks past the current vendor visit.
+        but check() in mod_vendor() below will still see this unlock and
+        baseline weapons.weapons[name] = True the instant it does (dict
+        entries never regress on their own), so mod_vendor() corrects that
+        dict back inline every tick for anything not truly AP-owned. That
+        correction — not the vendor-close revert, and not apply_inventory()'s
+        own re-apply, which is purely additive and can never un-set an
+        already-True dict entry — is what actually keeps this from leaking
+        past the current vendor visit if the session ends any way that
+        doesn't cleanly trip close()/revert_unowned().
         """
         weapons_sold = self._mod_vendor_weapons()
         self.weapons.apply_vendor_locations(frozenset(weapons_sold))
@@ -560,10 +593,23 @@ class VendorInventory:
         changed = self.weapons.check()
 
         # Only a mod purchase counts as "purchased" here — changed["weapons"]
-        # is deliberately never inspected: any weapon transition this tick is
-        # just check() observing _refresh_mod_vendor()'s own force-unlock
-        # writes above, never a real purchase (this vendor doesn't sell whole
-        # weapons), so it must not be treated or reported as one.
+        # is never treated or reported as one: any weapon transition this
+        # tick is just check() observing _refresh_mod_vendor()'s own
+        # force-unlock writes above, never a real purchase (this vendor
+        # doesn't sell whole weapons). But check() itself unconditionally
+        # baselines self.weapons[name] = True the instant it sees that
+        # display-only unlock in memory (dict entries never regress on their
+        # own) — relying solely on close()'s revert_unowned() to undo that
+        # later is a single point of failure if the session ever ends
+        # without cleanly tripping close(). Correct the dict back inline
+        # instead — memory must NOT be touched here (unlike weapon_vendor()'s
+        # equivalent correction): the weapon has to stay unlocked in memory
+        # for the whole visit or the game won't render it as a mod-vendor
+        # selection at all; only the ownership bookkeeping needs fixing.
+        for name in changed["weapons"]:
+            if not self._is_weapon_ap_owned(name):
+                self.weapons.weapons[name] = False
+
         newly_purchased = False
         for weapon, slot in changed["mods"]:
             loc = MOD_INTERNAL_TO_LOCATION.get((weapon, slot))
