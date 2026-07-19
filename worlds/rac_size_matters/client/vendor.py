@@ -37,8 +37,6 @@ PROGRESSIVE_MOD_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_MOD_NAME.items()}
 _SLOT_ATTR: dict[int, str] = {1: "mod_slot_one", 2: "mod_slot_two", 3: "mod_slot_three"}
 
 
-# Vendor handler
-
 class VendorHandlerMixin:
     async def _send_vendor_hints(self) -> None:
         """Send AP location hints for all currently purchasable vendor items.
@@ -136,7 +134,6 @@ class InventoryMixin:
                 set_key, piece = ARMOUR_DISPLAY_TO_INTERNAL[item_name]
                 armour_unlocked[set_key] = armour_unlocked.get(set_key, 0) | int(piece)
 
-        # Progressive armour
         for display, count in armour_prog_counts.items():
             internal = ARMOUR_SET_DISPLAY_TO_INTERNAL.get(display)
             if not internal:
@@ -306,14 +303,10 @@ class InventoryMixin:
             self._log(f"[RAC] Intro gadget picked: {trigger_name!r} -> loc={loc!r}")
             self._append_location_by_name(loc)
 
-    # Notification helper
-
     def _write_notification_text(self, msg: bytes) -> None:
         if not self.pine_connected:
             return
         self._wiring.notify(msg)
-
-    # Item notifications
 
     def _show_new_item_notifications(self) -> None:
         new_items = self.items_received[self._notification_item_index:]
@@ -328,8 +321,6 @@ class InventoryMixin:
             TextColour.WHITE, " from ", TextColour.ORANGE, player_name, TextColour.WHITE,
         )
         self._write_notification_text(msg)
-
-    # Bolt items
 
     def _grant_new_bolt_items(self) -> None:
         # PLAYER_BOLT_COUNT is a global address — safe to write during a transition.
@@ -374,8 +365,6 @@ class InventoryMixin:
             self._wiring.player_bolts.rebaseline(current)
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
-
-    # Trap items
 
     def _grant_new_trap_items(self) -> None:
         # Trap addresses (DREAMTIME_EFFECT, BRIGHTNESS_ADDRESS, CHEATS) are all

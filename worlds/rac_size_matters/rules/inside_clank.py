@@ -22,23 +22,18 @@ def set_inside_clank_rules(world: RACSizeMatterWorld) -> None:
     mw = world.multiworld
 
     _base = HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY)
-    # Skill Points
     if world.options.skill_points.value >= 2:
         world.set_rule(mw.get_location(Rac5SkillPoints.INSIDE_CLANK_SHOCK, player), _base)
         world.set_rule(mw.get_location(Rac5SkillPoints.INSIDE_CLANK_RATCHET, player), _base)
 
-    # Missions
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE, player), _base)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES, player), _base)
 
-    # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.INSIDE_CLANK_LADDER, player), True_())
     world.set_rule(mw.get_location(Rac5TBolts.INSIDE_CLANK_WALL, player), True_())
 
-    # Armour
     world.set_rule(mw.get_location(Rac5Locations.INSIDE_CLANK_CHESTPLATE, player), _base)
 
-    # Vendors
     # Static Barrier vendor — freely accessible on arrival.
     world.set_rule(mw.get_location(Rac5VendorLocations.INSIDE_CLANK_STATIC, player), _base)

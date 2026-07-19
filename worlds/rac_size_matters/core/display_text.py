@@ -38,7 +38,6 @@ from .address_maps import (
     STATIC_TEXT_BUFFER as _STATIC_TEXT_BUFFER,
 )
 
-# Data
 # Both box types share the same in-memory layout relative to their base address:
 #   base + 0x00  countdown_timer      (float, seconds remaining)
 #   base + 0x20  is_visible           (u16, message-ID when visible)
@@ -105,8 +104,6 @@ MultiLineTextBoxAddrs: list[MultiLineTextBox] = [
     for pid, addr in MULTI_LINE_TEXT_BOX_BY_PLANET.items()
 ]
 
-
-# Text box inventory (runtime)
 
 class TextBoxInventory:
     """Pine-backed accessor for a planet's text box (small or multi-line),

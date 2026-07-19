@@ -8,8 +8,6 @@ from .address_maps import PLAYER_ADDRS
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Player movement state enum (data)
-
 class PlayerMovementState(IntEnum):
     Alive           = 0x00
     FishDeath       = 0x29

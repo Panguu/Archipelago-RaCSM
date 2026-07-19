@@ -7,13 +7,11 @@ from dataclasses import dataclass
 class Rac5SkyboardChallenges:
     """String constants for Skyboard Challenge locations"""
 
-    # Kalidon
     KALIDON_LEARNER = "Kalidon: Skyboard Challenge: Learner's Challenge"
     KALIDON_MASTER = "Kalidon: Skyboard Challenge: Master's Challenge"
     KALIDON_TICKET = "Kalidon: Skyboard Challenge: Speeding Ticket"
     KALIDON_TRICKY = "Kalidon: Skyboard Challenge: Tricky Air"
 
-    # Outpost Omega
     OUTPOST_OMEGA_DANGER = "Outpost Omega: Skyboard Challenge: Danger, High Voltage"
     OUTPOST_OMEGA_INTERIOR = "Outpost Omega: Skyboard Challenge: Interior Decorating"
     OUTPOST_OMEGA_VERTIGO = "Outpost Omega: Skyboard Challenge: Vertigo"

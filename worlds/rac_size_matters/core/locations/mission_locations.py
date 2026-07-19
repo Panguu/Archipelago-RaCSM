@@ -16,41 +16,30 @@ PRESET_MISSION_BITS: list[tuple[int, int]] = [
     (_ADDRS["Challax"],  0x0004),   # Explore the miniature city
 ]
 
-# Story missions
 STORY_MISSION_MAP: dict[tuple[int, int], str] = {
-    # Pokitaru
     (_ADDRS["Pokitaru"],      0x0002): Rac5CutsceneLocations.POKITARU_FIGHT,
 
-    # Ryllus
     (_ADDRS["Ryllus"],        0x0008): Rac5CutsceneLocations.RYLLUS_ARTIFACT,
     (_ADDRS["Ryllus"],        0x0010): Rac5CutsceneLocations.RYLLUS_TEMPLE,
 
-    # Kalidon
     (_ADDRS["Kalidon"],       0x0010): Rac5CutsceneLocations.KALIDON_WIN,
 
-    # Metalis
     (_ADDRS["Metalis"],       0x0002): Rac5CutsceneLocations.METALIS_WAR,
     # (_ADDRS["Metalis"],     0x0004): Rac5CutsceneLocations.METALIS_ESCAPE,  # Giant Clank disabled — unreachable
 
-    # Dreamtime
     (_ADDRS["Dreamtime"],     0x0004): Rac5CutsceneLocations.DREAMTIME_COMPLETE,
 
-    # Outpost Omega
     (_ADDRS["Outpost Omega"], 0x0080): Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
     (_ADDRS["Outpost Omega"], 0x0010): Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,
 
-    # Challax
     # (_ADDRS["Challax"],     0x0020): Rac5CutsceneLocations.CHALLAX_CLANK,  # Giant Clank disabled — unreachable
 
-    # Dayni Moon
     (_ADDRS["Dayni Moon"],    0x0008): Rac5CutsceneLocations.DAYNI_MOON,
     (_ADDRS["Dayni Moon"],    0x0004): Rac5CutsceneLocations.DAYNI_MOON_LUNA,
     (_ADDRS["Dayni Moon"],    0x0020): Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,
 
-    # Inside Clank
     (_ADDRS["Inside Clank"],  0x0002): Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES,
 
-    # Quodrona
     (_ADDRS["Quodrona"],      0x0004): Rac5CutsceneLocations.QUODRONA_FIND,
     (_ADDRS["Quodrona"],      0x0140): Rac5CutsceneLocations.QUODRONA_GOAL,
 }

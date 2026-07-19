@@ -22,11 +22,9 @@ def set_outpost_omega_rules(world: RACSizeMatterWorld) -> None:
 
     _facility = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC)
 
-    # Skill Points
     if world.options.enable_skyboard_challenge_skill_points:
         world.set_rule(mw.get_location(Rac5SkillPoints.OUTPOST_OMEGA_AWESOME, player), True_())
 
-    # Missions
     if world.options.all_cutscenes:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER, player), _facility)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA, player), _facility)
@@ -37,15 +35,12 @@ def set_outpost_omega_rules(world: RACSizeMatterWorld) -> None:
         rematch_rule = True_() if world.options.skyboard_challenges.value >= 1 else Has(Rac5Gadgets.POLARIZER)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH, player), rematch_rule)
 
-    # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.OUTPOST_OMEGA_DREAM, player), True_())
 
-    # Skyboard Challenges (skyboard_challenges >= 1)
     if world.options.skyboard_challenges.value >= 1:
         world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_VERTIGO, player), True_())
         world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_INTERIOR, player), True_())
         world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_DANGER, player), True_())
         world.set_rule(mw.get_location(RACSMSKY.OUTPOST_OMEGA_VORTEX, player), True_())
 
-    # Vendors
     world.set_rule(mw.get_location(Rac5VendorLocations.OUTPOST_OMEGA_BEE, player), Has(Rac5Gadgets.SHRINK_RAY))

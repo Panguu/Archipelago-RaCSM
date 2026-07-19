@@ -15,7 +15,7 @@ from .address_maps import (
     PLANET_UNLOCK_ADDRESSES,
     WEAPON_ARRAY_BASE_BY_PLANET,
 )
-from .armour import ArmourUnlocks, EquippedArmour
+from .armour import ARMOUR_SET_TO_KEY, EQUIPPED_SLOT_TO_PIECE, ArmourUnlocks, EquippedArmour
 from .controller import GlobalButtonState
 from .display_text import small_text_box_inventory, multi_line_text_box_inventory
 from .menu import MenuInventory, MenuStateValue
@@ -36,8 +36,6 @@ if TYPE_CHECKING:
     from .armour import ArmourInventory
     from .quick_select import QuickSelectState
 
-
-# Planet data
 
 @dataclass(frozen=True)
 class Planet:
@@ -68,8 +66,6 @@ BY_ID: dict[int, Planet] = {
     for p in vars(Planets).values()
     if isinstance(p, Planet)
 }
-
-# Planet unlock data
 
 @dataclass(frozen=True)
 class PlanetUnlock:
@@ -388,8 +384,12 @@ class PlanetInventory:
         (the per-set byte is the only signal that exists, and it's the same
         one AP writes) — so instead of snapshotting, entering the animation
         zeroes every set's bytes outright. Whatever's back to 1 on exit is
-        guaranteed fresh from this pickup, regardless of prior AP ownership:
-        OR it into collected_armour (so it's never reported twice), then
+        fresh from this pickup — except a piece already equipped going into
+        the animation, whose bit the game re-asserts on its own regardless
+        of any new pickup (e.g. the default starting armour, worn before AP
+        has granted it), so those bits are masked out of the diff using the
+        pre-pickup equipped-slot baseline before the result is OR'd into
+        collected_armour (so it's never reported twice), then
         immediately rewrite memory for every set back to only what
         Archipelago has actually granted (unlock_armour) — a local pickup
         only proves the *location* was visited, it doesn't grant ownership,
@@ -410,9 +410,17 @@ class PlanetInventory:
             }
             self.armour.sync_unlocked(dict.fromkeys(ArmourUnlocks._OFFSETS, 0))
         elif not is_picking_up and self._was_picking_up:
+            equipped_mask_by_set: dict[str, int] = {}
+            if self._equipped_pickup_baseline:
+                for slot_name, piece in EQUIPPED_SLOT_TO_PIECE.items():
+                    set_key = ARMOUR_SET_TO_KEY.get(self._equipped_pickup_baseline.get(slot_name, 0))
+                    if set_key:
+                        equipped_mask_by_set[set_key] = equipped_mask_by_set.get(set_key, 0) | int(piece)
+
             changed: dict[str, int] = {}
             for name in ArmourUnlocks._OFFSETS:
                 raw = int(getattr(self.armour.UnlockedArmour, name))
+                raw &= ~equipped_mask_by_set.get(name, 0)
                 new_bits = raw & ~self.collected_armour[name]
                 if new_bits:
                     self.collected_armour[name] |= new_bits

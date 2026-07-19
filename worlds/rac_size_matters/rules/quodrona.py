@@ -15,12 +15,10 @@ def set_quodrona_rules(world: RACSizeMatterWorld) -> None:
 
     _checks = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT)
 
-    # Skill Points
     if world.options.skill_points.value >= 2:
         world.set_rule(mw.get_location(Rac5SkillPoints.QUODRONA_ELITE, player), _checks)
         world.set_rule(mw.get_location(Rac5SkillPoints.QUODRONA_STORM, player), _checks)
 
-    # Missions
     if world.options.all_cutscenes:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_CLONE, player), _checks)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_CHASE, player), _checks)
@@ -28,13 +26,11 @@ def set_quodrona_rules(world: RACSizeMatterWorld) -> None:
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_FIND, player), _checks)
 
-    # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.QUODRONA_DUMMIES, player), _checks)
 
     # Boss
     world.set_rule(mw.get_location(Rac5CutsceneLocations.QUODRONA_GOAL, player), _checks)
 
-    # Vendors
     world.set_rule(mw.get_location(Rac5VendorLocations.QUODRONA_LASER, player), True_())
 
     # Weapon Mod Vendor — purchasable without owning the weapon (mod_unlock_N

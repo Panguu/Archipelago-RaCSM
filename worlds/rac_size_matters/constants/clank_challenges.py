@@ -7,7 +7,6 @@ from dataclasses import dataclass
 class Rac5ClankChallenges:
     """String constants for Clank Challenge locations"""
 
-    # Metalis Challanges
     METALIS_BRAIN = "Metalis: Clank Challenge: Brain Trip"
     METALIS_GAP = "Metalis: Clank Challenge: Bridge The Gap"
     METALIS_BUZZSAW = "Metalis: Clank Challenge: Buzzsaw Blitz"
@@ -24,7 +23,6 @@ class Rac5ClankChallenges:
     METALIS_UBER = "Metalis: Clank Challenge: The Uber Finals"
     METALIS_BRACKET = "Metalis: Clank Challenge: Varsity Bracket"
 
-    # Dayni Moon Challanges
     DAYNI_MOON_AROUND = "Dayni Moon: Clank Challenge: A-rooouund the Bend"
     DAYNI_MOON_BRIDGE = "Dayni Moon: Clank Challenge: Emergency Bridge"
     DAYNI_MOON_INFINITE = "Dayni Moon: Clank Challenge: Infinite Improbability"

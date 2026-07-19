@@ -19,13 +19,11 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
-    # Skill Points
     # METALIS_TERROR is commented out in core/skill_points.py — Giant Clank disabled.
     if world.options.enable_clank_challenge_skill_points:
         world.set_rule(mw.get_location(Rac5SkillPoints.METALIS_SHUTOUT, player), True_())
         world.set_rule(mw.get_location(Rac5SkillPoints.METALIS_GLADIATOR, player), True_())
 
-    # Missions
     # METALIS_ESCAPE is commented out in locations.py/missions.py — Giant Clank disabled.
     # METALIS_WAR's own trigger is completing the Buzzsaw Blitz clank
     # challenge, so with clank challenges off it's never created at all
@@ -33,7 +31,6 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
     if world.options.all_missions and world.options.clank_challenges.value >= 1:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.METALIS_WAR, player), True_())
 
-    # Titanium Bolts
     world.set_rule(
         mw.get_location(Rac5TBolts.METALIS_DOOR, player),
         HasAll(Rac5Gadgets.POLARIZER, Rac5Gadgets.HYPERSHOT),

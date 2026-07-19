@@ -9,7 +9,6 @@ from .address_maps import BRIGHTNESS_ADDRESS, CHEATS, DREAMTIME_EFFECT
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Data
 # TRAP_RESET_LEVEL is intentionally absent below — not functional yet.
 
 # Direct memory-flag traps: write 1 to activate, write 0 to revert.
@@ -66,8 +65,6 @@ _active_deadlines: dict[str, float] = {}
 _revert_handles: dict[str, asyncio.TimerHandle] = {}
 
 
-# Activation
-
 def activate_trap(pine: Pine, trap_name: str) -> None:
     """Activate a trap by name and schedule it to automatically revert.
 
@@ -116,8 +113,6 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
 
     _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
 
-
-# Reconciliation
 
 def reconcile_traps(pine: Pine) -> None:
     """Clear any trap effect currently active in game memory that this

@@ -3,7 +3,6 @@ import ctypes
 from .base import MemoryStruct
 from ..address_maps import ARMOUR_BASE
 
-# Armour
 
 class ArmourStruct(MemoryStruct):
 

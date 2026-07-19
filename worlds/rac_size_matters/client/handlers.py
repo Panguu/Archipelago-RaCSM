@@ -9,7 +9,6 @@ from ..core import ARMOUR_SET_CHECKS
 from ..core.address_maps import PLAYER_BOLT_COUNT
 from ..core.player_bolts import MAX_PLAYER_BOLTS
 
-# Challenge handler
 
 class ChallengeHandlerMixin:
     def _on_challenge_armour_earned(self, loc_name: str) -> None:
@@ -17,7 +16,6 @@ class ChallengeHandlerMixin:
         self._pending_challenge_checks.append(loc_name)
 
 
-# Cutscene handler
 
 class CutsceneHandlerMixin:
     async def _send_goal_status(self) -> None:
@@ -26,7 +24,6 @@ class CutsceneHandlerMixin:
             self.finished_game = True
 
 
-# Events handler
 
 class EventsHandlerMixin:
     async def _send_playing_status(self) -> None:

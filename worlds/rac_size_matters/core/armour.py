@@ -194,9 +194,6 @@ class ArmourUnlocks:
         return f"ArmourUnlocks({self.to_dict()})"
 
 
-# Armour pickups
-
-
 class ArmourPickup(NamedTuple):
     """
     Data record for an armour pickup's information.
@@ -209,30 +206,40 @@ class ArmourPickup(NamedTuple):
     planet: str
 
 
+ARMOUR_SET_TO_KEY: dict[ArmourSet, str] = {
+    ArmourSet.Wildfire: "wildfire",
+    ArmourSet.Sludge: "sludge",
+    ArmourSet.Crystallix: "crystallix",
+    ArmourSet.Electroshock: "electroshock",
+    ArmourSet.MegaBomb: "mega_bomb",
+    ArmourSet.Hyperborean: "hyperborean",
+    ArmourSet.Chameleon: "chameleon",
+}
+
+EQUIPPED_SLOT_TO_PIECE: dict[str, ArmourPiece] = {
+    "chestplate": ArmourPiece.CHESTPLATE,
+    "helmet": ArmourPiece.HELMET,
+    "gloves_left": ArmourPiece.GLOVES,
+    "gloves_right": ArmourPiece.GLOVES,
+    "boots_left": ArmourPiece.BOOTS,
+    "boots_right": ArmourPiece.BOOTS,
+}
+
 ARMOUR_PICKUPS: list[ArmourPickup] = [
-    # Pokitaru
     ArmourPickup("wildfire", ArmourPiece.CHESTPLATE, Rac5Locations.POKITARU_CHESTPLATE, Rac5Planets.POKITARU),
     ArmourPickup("wildfire", ArmourPiece.GLOVES, Rac5Locations.POKITARU_GLOVES, Rac5Planets.POKITARU),
-    # Ryllus
     ArmourPickup("sludge", ArmourPiece.BOOTS, Rac5Locations.RYLLUS_BOOTS, Rac5Planets.RYLLUS),
     ArmourPickup("wildfire", ArmourPiece.HELMET, Rac5Locations.RYLLUS_HELMET, Rac5Planets.RYLLUS),
-    # Kalidon
     ArmourPickup("sludge", ArmourPiece.CHESTPLATE, Rac5Locations.KALIDON_CHESTPLATE, Rac5Planets.KALIDON),
     ArmourPickup("wildfire", ArmourPiece.BOOTS, Rac5Locations.KALIDON_BOOTS, Rac5Planets.KALIDON),
-    # Metalis
     # ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES,
     #              Rac5Planets.METALIS),  # currently unreachable
-    # Dreamtime
     ArmourPickup("crystallix", ArmourPiece.CHESTPLATE, Rac5Locations.DREAMTIME_CHESTPLATE, Rac5Planets.DREAMTIME),
-    # Outpost Omega
     ArmourPickup("crystallix", ArmourPiece.BOOTS, Rac5Locations.OUTPOST_OMEGA_BOOTS, Rac5Planets.OUTPOST_OMEGA),
-    # Challax
     # ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, "Challax: Electroshock Chestplate",
     #              Rac5Planets.CHALLAX),  # not reachable
     ArmourPickup("electroshock", ArmourPiece.HELMET, Rac5Locations.CHALLAX_HELMET, Rac5Planets.CHALLAX),
-    # Dayni Moon
     ArmourPickup("mega_bomb", ArmourPiece.HELMET, Rac5Locations.DAYNI_MOON_HELMET, Rac5Planets.DAYNI_MOON),
-    # Inside Clank
     ArmourPickup("mega_bomb", ArmourPiece.CHESTPLATE, Rac5Locations.INSIDE_CLANK_CHESTPLATE, Rac5Planets.INSIDE_CLANK),
 ]
 

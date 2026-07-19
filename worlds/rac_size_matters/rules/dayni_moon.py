@@ -25,7 +25,6 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
     _base       = Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon()
     _shrink_ray = _base & Has(Rac5Gadgets.SHRINK_RAY)
 
-    # Skill Points
     if world.options.skill_points.value >= 1:
         world.set_rule(mw.get_location(Rac5SkillPoints.DAYNI_MOON_BOUNCY, player), _base)
     if world.options.skill_points.value >= 2:
@@ -33,7 +32,6 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
     if world.options.enable_clank_challenge_skill_points:
         world.set_rule(mw.get_location(Rac5SkillPoints.DAYNI_MOON_GLADIATOR, player), True_())
 
-    # Missions
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON, player), _base)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_LUNA, player), _base)
@@ -41,11 +39,9 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT1, player), _base)
         world.set_rule(mw.get_location(Rac5CutsceneLocations.DAYNI_MOON_FIGHT2, player), _base)
 
-    # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.DAYNI_MOON_BARN, player), _base)
     world.set_rule(mw.get_location(Rac5TBolts.DAYNI_MOON_MIMIC, player), _shrink_ray)
 
-    # Armour
     world.set_rule(mw.get_location(Rac5Locations.DAYNI_MOON_HELMET, player), _base)
 
     # Clank Challenges — item rewards (clank_challenges >= 1)
@@ -69,6 +65,5 @@ def set_dayni_moon_rules(world: RACSizeMatterWorld) -> None:
         world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_LINE, player), True_())
         world.set_rule(mw.get_location(RACSMCLANK.DAYNI_MOON_HAY, player), True_())
 
-    # Vendors
     world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player), True_())
     world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_MAP, player), True_())

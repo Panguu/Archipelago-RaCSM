@@ -49,7 +49,6 @@ BOSS_LOCATIONS: dict[str, RACLocationData] = {
     Rac5Locations.QUODRONA_GOAL: RACLocationData(BASE_ID + 1200, Rac5Planets.QUODRONA),
 }
 
-# Weapon vendor locations
 WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.POKITARU_LACERATOR:  RACLocationData(BASE_ID + 2001, Rac5Planets.POKITARU),
     Rac5VendorLocations.POKITARU_ACID:       RACLocationData(BASE_ID + 2002, Rac5Planets.POKITARU),
@@ -64,7 +63,6 @@ WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.QUODRONA_LASER:      RACLocationData(BASE_ID + 2011, Rac5Planets.QUODRONA),
 }
 
-# Gadget vendor locations
 GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.POKITARU_HYPERSHOT:      RACLocationData(BASE_ID + 2101, Rac5Planets.POKITARU),
     Rac5VendorLocations.CHALLAX_PDA:             RACLocationData(BASE_ID + 2102, Rac5Planets.CHALLAX),
@@ -73,7 +71,6 @@ GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER: RACLocationData(BASE_ID + 2105, Rac5Planets.OUTPOST_OMEGA),
 }
 
-# Weapon mod vendor locations
 WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
     Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
@@ -196,7 +193,6 @@ GADGET_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
     # Rac5Locations.METALIS_GLOVES: RACLocationData(BASE_ID + 1406, Rac5Planets.METALIS),  # Giant Clank disabled
 }
 
-# Skyboard challenge locations
 SKYBOARD_ITEM_LOCATIONS: dict[str, RACLocationData] = {
     RACSMSKY.KALIDON_LEARNER:          RACLocationData(BASE_ID + 1402, Rac5Planets.KALIDON),
     RACSMSKY.KALIDON_MASTER:           RACLocationData(BASE_ID + 1405, Rac5Planets.KALIDON),
@@ -227,36 +223,26 @@ ALL_CLANK_LOCATIONS: dict[str, RACLocationData] = {
 # Enumeration order is fixed to keep location IDs stable across option changes.
 # Enter Planet entries are appended at the end to avoid shifting existing IDs.
 _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
-    # Pokitaru
     (Rac5CutsceneLocations.POKITARU_FIGHT,           Rac5Planets.POKITARU,      False),
-    # Ryllus
     (Rac5CutsceneLocations.RYLLUS_BUZZING,           Rac5Planets.RYLLUS,        True),
     (Rac5CutsceneLocations.RYLLUS_ARTIFACT,          Rac5Planets.RYLLUS,        False),
     (Rac5CutsceneLocations.RYLLUS_TEMPLE,            Rac5Planets.RYLLUS,        False),
-    # Kalidon
     (Rac5CutsceneLocations.KALIDON_EXPLORE,          Rac5Planets.KALIDON,       True),
     (Rac5CutsceneLocations.KALIDON_WIN,              Rac5Planets.KALIDON,       False),
-    # Metalis
     (Rac5CutsceneLocations.METALIS_WAR,              Rac5Planets.METALIS,       False),
     # (Rac5CutsceneLocations.METALIS_ESCAPE,         Rac5Planets.METALIS,       False),  # Giant Clank disabled
-    # Dreamtime
     (Rac5CutsceneLocations.DREAMTIME_COMPLETE,       Rac5Planets.DREAMTIME,     False),
-    # Outpost Omega
     (Rac5CutsceneLocations.OUTPOST_OMEGA,            Rac5Planets.OUTPOST_OMEGA, True),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,     Rac5Planets.OUTPOST_OMEGA, False),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,    Rac5Planets.OUTPOST_OMEGA, False),
-    # Challax
     # (Rac5CutsceneLocations.METALIS_CLANK,          Rac5Planets.CHALLAX,       True),   # Giant Clank disabled
     # (Rac5CutsceneLocations.CHALLAX_CLANK,          Rac5Planets.CHALLAX,       False),  # Giant Clank disabled
-    # Dayni Moon
     (Rac5CutsceneLocations.DAYNI_MOON,               Rac5Planets.DAYNI_MOON,    False),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,        Rac5Planets.DAYNI_MOON,    True),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,        Rac5Planets.DAYNI_MOON,    True),
     (Rac5CutsceneLocations.DAYNI_MOON_LUNA,          Rac5Planets.DAYNI_MOON,    False),
-    # Inside Clank
     (Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,      Rac5Planets.INSIDE_CLANK,  False),
     (Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES, Rac5Planets.INSIDE_CLANK,  False),
-    # Quodrona
     (Rac5CutsceneLocations.QUODRONA_CLONE,           Rac5Planets.QUODRONA,      True),
     (Rac5CutsceneLocations.QUODRONA_CHASE,           Rac5Planets.QUODRONA,      True),
     (Rac5CutsceneLocations.QUODRONA_MECHA,           Rac5Planets.QUODRONA,      True),

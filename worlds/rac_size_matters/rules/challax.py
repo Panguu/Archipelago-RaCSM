@@ -24,29 +24,24 @@ def set_challax_rules(world: RACSizeMatterWorld) -> None:
     _base   = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER)
     _sprout = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER, Rac5Gadgets.SPROUT_O_MATIC)
 
-    # Skill Points
     # Rac5SkillPoints.CHALLAX_VARMINTS ("No More Varmints!") is commented out
     # of SKILL_POINTS in skill_point_locations.py — Giant Clank disabled,
     # unreachable — so no rule is set for it here.
     if world.options.skill_points.value >= 2:
         world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_MASTER, player), _sprout)
 
-    # Missions
     # Giant Clank disabled/unreachable — METALIS_CLANK and CHALLAX_CLANK are
     # commented out of the location pool in locations.py, so no rule is set here.
 
-    # Titanium Bolts
     world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_MECH_PAD, player), True_())
     world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_ROOM, player), _base)
     world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_PLANT, player), _sprout)
 
-    # Armour
     world.set_rule(
         mw.get_location(Rac5Locations.CHALLAX_HELMET, player),
         _sprout | Has(Rac5Infobots.DAYNI_MOON),
     )
 
-    # Vendors
     _shrink_ray = Has(Rac5Gadgets.SHRINK_RAY)
     world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_SNIPER, player), _shrink_ray)
     world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_PDA, player), _shrink_ray)

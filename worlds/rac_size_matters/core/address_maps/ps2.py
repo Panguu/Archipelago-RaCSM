@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Global memory addresses
-
 ARMOUR_BASE                = 0x21F4B354
 ARMOUR_SET_COLLECTED_ADDR  = 0x21F4B442  # byte 0: pure sets (bit N = ArmourSets(N+1) complete)
                                           # byte 1 (0x21F4B443): hybrid sets equipped —
@@ -56,8 +54,6 @@ STATIC_TEXT_BUFFER: int = 0x21F649D0
 # e.g. OUTPOST_OMEGA state = 0x21F4C677; gates Outpost Omega 2 (0x17) access.
 PLANET_STATE_OFFSET: int = 0x11
 
-
-# Per-planet consolidated addresses
 
 @dataclass(frozen=True)
 class PlanetAddresses:

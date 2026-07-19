@@ -10,8 +10,6 @@ if TYPE_CHECKING:
     from ..pypine import Pine
 
 
-# Data
-
 @dataclass(frozen=True)
 class SkinData:
     unlock_mask: int | None

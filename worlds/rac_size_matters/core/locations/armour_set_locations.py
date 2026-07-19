@@ -10,9 +10,6 @@ if TYPE_CHECKING:
     from ..armour import ArmourUnlocks, EquippedArmour
 
 
-# Armour set checks
-
-
 @dataclass(frozen=True)
 class ArmourSetCheck:
     chestplate: ArmourSet | None = None

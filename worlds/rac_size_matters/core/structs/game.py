@@ -4,8 +4,6 @@ import ctypes
 
 from .base import MemoryStruct
 
-# Planet progress
-
 PLANET_PROGRESS_BASE = 0x21F4C661
 
 class PlanetProgressStruct(MemoryStruct):
@@ -32,8 +30,6 @@ class PlanetProgressStruct(MemoryStruct):
     PLANET_NAME_ORDER: tuple[str, ...] = tuple(n.upper() for n in PLANET_ORDER)
 
 
-# Quick select
-
 class QuickSelectStruct(MemoryStruct):
     BASE_ADDRESS = 0x21F4B364
     _pack_ = 1
@@ -54,8 +50,6 @@ class QuickSelectStruct(MemoryStruct):
     )
 
 
-# Skins
-
 class SkinStruct(MemoryStruct):
     # +0x00 unlocked — bitmask; bit N = skin N is available.
     # +0x01 equipped — ID of the skin Ratchet is currently wearing.
@@ -67,15 +61,12 @@ class SkinStruct(MemoryStruct):
     ]
 
 
-# Display text
-
 class VendorVisibilityStruct(MemoryStruct):
 
     BASE_ADDRESS = 0
     _pack_ = 1
     _fields_ = [("visibility", ctypes.c_int16)]
 
-# Transition gate
 # Rests at TRANSITION_GATE_IDLE (0x000000FF). Any change away from idle means a
 # level transition has started — writes must stop immediately. It passes through
 # TRANSITION_GATE_ARRIVED (0x00000100) once the new planet is known (safe to swap

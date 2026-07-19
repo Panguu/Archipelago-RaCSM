@@ -345,42 +345,49 @@ class Core:
         # weapons look identical to a genuine first-time pickup the moment
         # the very first planet finishes loading.
         wi.sync_slots()
-        # sync_slots() just mirrored whatever's currently in memory — if the
-        # game's forced unlock of lacerator/acid_bomb_glove/hypershot
-        # happened to be sitting at 1 at that exact moment, it would get
-        # baselined as "owned" here too, permanently masking any later
-        # genuine purchase (check() never regresses owned->not-owned). Purge
-        # that the same way _suppress_forced_starter_items() does.
-        self._correct_forced_starter_items()
+        # sync_slots() just mirrored whatever's currently in memory — the
+        # game can force-write any weapon/gadget's unlocked bit on its own
+        # (not just the known lacerator/acid_bomb_glove/hypershot handful),
+        # so anything that got baselined as "owned" here without AP actually
+        # granting it needs to be corrected back out the same tick, or
+        # check() would treat it as permanently owned (never regresses
+        # owned->not-owned) and mask any later genuine purchase.
+        self._sync_weapon_gadget_ownership()
 
         self._apply_mod_unlock_flags()
 
-    def _correct_forced_starter_items(self) -> None:
-        """Zero lacerator/acid_bomb_glove/hypershot/sprout_o_matic back out
-        (memory + dict) wherever AP doesn't actually own them — shared by
-        apply_inventory() (after sync_slots() re-baselines from raw memory)
-        and _suppress_forced_starter_items() (after check_weapons() detects
-        a fresh transition), the two places this forced-unlock noise can
-        leak into the ownership dicts as if it were real.
+    def _sync_weapon_gadget_ownership(self) -> None:
+        """Force every weapon/gadget's unlocked bit (memory + tracking dict)
+        to match true AP ownership: zero out anything AP doesn't own that's
+        currently reading as unlocked (the game force-writing it, a stale
+        vendor-display leftover, etc.), and unlock anything AP does own that
+        isn't. Runs after sync_slots() re-baselines from raw memory, since a
+        forced write can race back in during that exact read gap — the
+        correction has to look at the freshest snapshot, not values written
+        moments earlier.
 
         A gadget with its own dedicated scripted-pickup location (see
-        _SCRIPTED_GADGET_LOCATIONS) still needs that location fired here
-        too — sync_slots() runs independently of check_weapons()'s tick-by-
-        tick diffing, so if apply_inventory() happens to run between the
-        cutscene completing and the next tick, this is the only place left
-        that ever sees the transition before it gets corrected away."""
+        _SCRIPTED_GADGET_LOCATIONS) still needs that location fired when
+        caught here losing an un-owned forced unlock — sync_slots() runs
+        independently of check_weapons()'s tick-by-tick diffing, so if
+        apply_inventory() happens to run between the cutscene completing and
+        the next tick, this is the only place left that ever sees the
+        transition before it gets corrected away."""
         wi = self.planet.weapons
-        for name in _GAME_FORCED_WEAPONS:
-            if not self._ap_owned_weapons.get(name, False) and wi.weapons.get(name, False):
-                wi.set(name, False)
-                wi.weapons[name] = False
-        for name in _GAME_FORCED_GADGETS:
-            if not self._ap_owned_gadgets.get(name, False) and wi.gadgets.get(name, False):
-                loc = _SCRIPTED_GADGET_LOCATIONS.get(name)
-                if loc:
-                    self.send_location(loc)
-                wi.set(name, False)
-                wi.gadgets[name] = False
+        for name in wi._weapon_addrs:
+            owned = self._ap_owned_weapons.get(name, False)
+            if wi.weapons.get(name, False) != owned:
+                wi.set(name, owned)
+                wi.weapons[name] = owned
+        for name in wi._gadget_addrs:
+            owned = self._ap_owned_gadgets.get(name, False)
+            if wi.gadgets.get(name, False) != owned:
+                if not owned:
+                    loc = _SCRIPTED_GADGET_LOCATIONS.get(name)
+                    if loc:
+                        self.send_location(loc)
+                wi.set(name, owned)
+                wi.gadgets[name] = owned
 
     def _apply_mod_unlock_flags(self) -> None:
         """TODO: rebuild on top of the new vendor.py — used to write

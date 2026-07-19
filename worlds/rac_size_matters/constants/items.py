@@ -7,43 +7,36 @@ from dataclasses import dataclass
 class Rac5Armours:
     """String constants for each armour piece"""
 
-    # Wildfire
     WILDFIRE_CHESTPLATE = "Wildfire Chestplate"
     WILDFIRE_HELMET = "Wildfire Helmet"
     WILDFIRE_GLOVES = "Wildfire Gloves"
     WILDFIFE_BOOTS = "Wildfire Boots"
 
-    # Sludge Mk9
     SLUDGE_MK9_CHESTPLATE = "Sludge Mk9 Chestplate"
     SLUDGE_MK9_HELMET = "Sludge Mk9 Helmet"
     SLUDGE_MK9_GLOVES = "Sludge Mk9 Gloves"
     SLUDGE_MK9_BOOTS = "Sludge Mk9 Boots"
 
-    # Crystallix
     CRYSTALLIX_CHESTPLATE = "Crystallix Chestplate"
     CRYSTALLIX_HELMET = "Crystallix Helmet"
     CRYSTALLIX_GLOVES = "Crystallix Gloves"
     CRYSTALLIX_BOOTS = "Crystallix Boots"
 
-    # Electroshock
     ELECTROSHOCK_CHESTPLATE = "Electroshock Chestplate"
     ELECTROSHOCK_HELMET = "Electroshock Helmet"
     ELECTROSHOCK_GLOVES = "Electroshock Gloves"
     ELECTROSHOCK_BOOTS = "Electroshock Boots"
 
-    # Mega Bomb
     MEGA_BOMB_CHESTPLATE = "Mega Bomb Chestplate"
     MEGA_BOMB_HELMET = "Mega Bomb Helmet"
     MEGA_BOMB_GLOVES = "Mega Bomb Gloves"
     MEGA_BOMB_BOOTS = "Mega Bomb Boots"
 
-    # Hyperborean
     HYPERBOREAN_CHESTPLATE = "Hyperborean Chestplate"
     HYPERBOREAN_HELMET = "Hyperborean Helmet"
     HYPERBOREAN_GLOVES = "Hyperborean Gloves"
     HYPERBOREAN_BOOTS = "Hyperborean Boots"
 
-    # Chameleon
     CHAMELEON_CHESTPLATE = "Chameleon Chestplate"
     CHAMELEON_HELMET = "Chameleon Helmet"
     CHAMELEON_GLOVES = "Chameleon Gloves"

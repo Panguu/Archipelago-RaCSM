@@ -19,8 +19,6 @@ if TYPE_CHECKING:
 # siblings + items.py, which would otherwise cycle back into this module.
 
 
-# Weapon data
-
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
 

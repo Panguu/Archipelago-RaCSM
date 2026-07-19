@@ -7,47 +7,37 @@ from dataclasses import dataclass
 class Rac5VendorLocations:
     """Constant strings for each Weapon location name."""
 
-    # Pokitaru
     POKITARU_LACERATOR = "Pokitaru: Gadgetron Vendor: Lacerator - 0"
     POKITARU_ACID = "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 0"
     POKITARU_CONCUSSION = "Pokitaru: Gadgetron Vendor: Concussion Gun - 10,000"
     POKITARU_HYPERSHOT = "Pokitaru: Gadgetron Vendor: Hypershot - 5,000"
 
-    # Ryllus
     RYLLUS_AGENTS = "Ryllus: Gadgetron Vendor: Agents of Doom - 25,000"
     KALIDON_SCORCHER = "Kalidon: Gadgetron Vendor: Scorcher - 20,000"
 
-    # Dreamtime
     DREAMTIME_SUCK = "Dreamtime: Gadgetron Vendor: Suck Cannon - 30,000"
 
-    # Outpost Omega
     OUTPOST_OMEGA_BEE = "Outpost Omega: Gadgetron Vendor: Bee Mine Glove - 50,000"
     OUTPOST_OMEGA_BOX_BREAKER = "Outpost Omega: Gadgetron Vendor: Box Breaker - 20,000"
 
-    # Challax
     CHALLAX_SNIPER = "Challax: Gadgetron Vendor: Sniper Mine - 50,000"
     CHALLAX_PDA = "Challax: Gadgetron Vendor: PDA - 50,000"
     CHALLAX_BOLT_GRABBER = "Challax: Gadgetron Vendor: Bolt Grabber - 5,000"
 
-    # Dayni Moon
     DAYNI_MOON_SHOCK = "Dayni Moon: Gadgetron Vendor: Shock Rocket - 55,000"
     DAYNI_MOON_MAP = "Dayni Moon: Gadgetron Vendor: Map-O-Matic - 50,000"
 
-    # Inside Clank
     INSIDE_CLANK_STATIC = "Inside Clank: Gadgetron Vendor: Static Barrier - 65,000"
 
-    # Quodrona
     QUODRONA_LASER = "Quodrona: Gadgetron Vendor: Laser Tracer - 85,000"
 
 
 class Rac5ModVendorLocations:
     """String constants for Weapon Mod locations"""
 
-    # Kalidon
     KALIDON_LACERATOR_LOCK = "Kalidon: Slim Cognito: Lacerator Lock On Mod - 5,000"
     KALIDON_CONCUSSION_SPLIT = "Kalidon: Slim Cognito: Concussion Gun Split Barrel Mod - 15,000"
 
-    # Challax
     CHALLAX_LACERATOR_DOUBLE = "Challax: Slim Cognito: Lacerator Double Barrel Mod - 30,000"
     CHALLAX_ACID_BURN = "Challax: Slim Cognito: Acid Bomb Acid Burn Mod - 30,000"
     CHALLAX_ACID_EPOXY = "Challax: Slim Cognito: Acid Bomb Epoxy Mod - 50,000"
@@ -55,7 +45,6 @@ class Rac5ModVendorLocations:
     CHALLAX_CONCUSSION_CHARGE = "Challax: Slim Cognito: Concussion Gun Charge Up Mod - 50,000"
     CHALLAX_BEE_WORKER = "Challax: Slim Cognito: Bee Mine Glove Worker Mod - 5,000"
 
-    # Quodrona
     QUODRONA_AGENTS_LAUNCHER = "Quodrona: Slim Cognito: Agents of Doom Launcher Mod - 20,000"
     QUODRONA_SCORCHER_SPITFIRE = "Quodrona: Slim Cognito: Scorcher Spitfire Mod - 15,000"
     QUODRONA_SNIPER_SPLIT = "Quodrona: Slim Cognito: Sniper Mine Split Beam Mod - 25,000"

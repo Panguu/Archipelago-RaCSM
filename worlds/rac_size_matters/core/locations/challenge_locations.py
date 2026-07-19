@@ -54,7 +54,6 @@ class ChallengeSection(IntEnum):
     GADGETBOT       = 2
 
 
-# Unlock addresses (derived from base)
 METALIS_CLANK_UNLOCK_ADDR:           int   = _METALIS_BASE        # +0: Derby unlock
 METALIS_CLANK_UNLOCK_BYTES:          bytes = bytes([0x0F, 0x0F, 0x0F])
 
@@ -79,10 +78,6 @@ CLANK_SECTION_UNLOCK_ADDRESSES: dict[str, dict[ChallengeSection, int]] = {
     },
 }
 
-
-# Clank challenge address tables (name → base + offset)
-# Metalis:  Derby +3..+7 | Gadgetbot Toss +8..+12 | Gadgetbot +13..+17
-# Dayni:    Derby +3..+7 | Gadgetbot Toss +8..+12 | Gadgetbot +13..+17
 
 _METALIS_DERBY: dict[str, int] = {
     RACSMCLANK.METALIS_BUZZSAW:      _METALIS_BASE + 3,
@@ -132,8 +127,6 @@ _DAYNI_GADGETBOT: dict[str, int] = {
     RACSMCLANK.DAYNI_MOON_INFINITE:  _DAYNI_BASE + 17,   # reward
 }
 
-
-# Challenge type pickup lists
 
 DERBY_CLANK_PICKUPS: list[ChallengePickup] = [
     ChallengePickup(addr, name, Rac5Planets.METALIS)   for name, addr in _METALIS_DERBY.items()
@@ -203,8 +196,6 @@ GLADIATOR_FAILSAFE: dict[str, str] = {
 }
 
 
-# Skyboard addresses
-
 # Maps AP location name (constant) → (unlock_addr, completed_addr, mask).
 _KALIDON_SKYBOARD: dict[str, tuple[int, int, int]] = {
     RACSMSKY.KALIDON_LEARNER: (_KALIDON_SKY, _KALIDON_SKY + 1, 0x01),
@@ -244,7 +235,6 @@ for _sp in ALL_SKYBOARD_PICKUPS:
         SKYBOARD_UNLOCK_MASK[_sp.unlock_addr] = SKYBOARD_UNLOCK_MASK.get(_sp.unlock_addr, 0) | int(_sp.mask)
 
 
-# Challenge-only AP items
 CHALLENGE_ONLY_ITEMS: frozenset[str] = frozenset({
     "Polarizer",
     "Sludge Mk9 Gloves",
