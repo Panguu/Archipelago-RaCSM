@@ -282,6 +282,7 @@ class RACSizeMatterWorld(World):
             "enable_clank_challenge_skill_points": bool(self.options.enable_clank_challenge_skill_points.value),
             "enable_skyboard_challenge_skill_points": bool(self.options.enable_skyboard_challenge_skill_points.value),
             "armour_set_checks": bool(self.options.armour_set_checks.value),
+            "ng_plus_items": bool(self.options.ng_plus_items.value),
             "starting_bolts": self.options.starting_bolts.value,
             "death_amnesty": self.options.death_amnesty.value,
             "progressive_weapons": self.options.progressive_weapons.value,

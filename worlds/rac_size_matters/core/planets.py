@@ -231,15 +231,21 @@ class PlanetInventory:
         self._prev_menu: MenuStateValue | None = None
 
     def set_planet(self, planet_id: int) -> None:
-        """Rebind every planet-dependent Inventory to the newly loaded planet."""
+        """Rebind every planet-dependent Inventory to the newly loaded planet
+        — including unbinding them (base/array None, every read/write on
+        them becomes a no-op) for a planet_id not in PLANET_ADDRESSES. Every
+        sub-inventory here must always be explicitly rebound on every call,
+        never left alone, or an unrecognized planet would keep whatever
+        addresses the last recognized planet had bound: player/menu/weapons
+        would then read/write a totally unrelated planet's memory instead of
+        just leaving those addresses untouched, and only truly global
+        addresses (bolts, skill points, missions, ...) would be safe."""
         self.planet_id = planet_id
         self.player.set_base(planet_id)
         self.menu.set_base(planet_id)
         self.small_text.set_base(planet_id)
         self.multi_line_text.set_base(planet_id)
-        array_base = WEAPON_ARRAY_BASE_BY_PLANET.get(planet_id)
-        if array_base is not None:
-            self.weapons.set_base(array_base)
+        self.weapons.set_base(WEAPON_ARRAY_BASE_BY_PLANET.get(planet_id))
 
     def check_transition(self) -> bool:
         """Pull-based transition detector — call every tick.

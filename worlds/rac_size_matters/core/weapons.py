@@ -284,7 +284,10 @@ GADGET_ORDER: list[str | None] = [
 ]
 
 
-def build_weapons(array_base: int, pine: Pine) -> tuple[dict[str, WeaponAddresses], dict[str, GadgetAddresses]]:
+def build_weapons(array_base: int | None, pine: Pine) -> tuple[dict[str, WeaponAddresses], dict[str, GadgetAddresses]]:
+    if array_base is None:
+        return {}, {}
+
     weapons: dict[str, WeaponAddresses] = {}
     for i, name in enumerate(WEAPON_ORDER):
         if name is not None:
@@ -375,8 +378,12 @@ class WeaponInventory:
         self._pinned_experience: dict[str, int] = {}
         self._prev_level_cap: dict[str, int] = {}
 
-    def set_base(self, array_base: int) -> None:
-        """Rebind every weapon/gadget address to the given planet's array base."""
+    def set_base(self, array_base: int | None) -> None:
+        """Rebind every weapon/gadget address to the given planet's array
+        base, or unbind entirely (empty dicts, every check()/sync() call
+        becomes a no-op) when array_base is None — an unrecognized planet
+        with no known array location, so nothing here should keep pointing
+        at whatever the previously loaded planet's array happened to be."""
         self._weapon_addrs, self._gadget_addrs = build_weapons(array_base, self.pine)
 
     def get(self, name: str) -> bool:
