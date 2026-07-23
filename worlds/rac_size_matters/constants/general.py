@@ -12,7 +12,7 @@ class Rac5Locations:
     POKITARU_GLOVES = "Pokitaru: Wildfire Gloves in the skuttle crab cave"
 
     RYLLUS_BOOTS = "Ryllus: Sludge Mk9 Boots behind breakable rock"
-    RYLLUS_SPROUT = "Ryllus: Receive Spout-O-Matic"
+    RYLLUS_SPROUT = "Ryllus: Receive Sprout-O-Matic"
     RYLLUS_HELMET = "Ryllus: Wildfire Helmet before temple entrance"
     RYLLUS_ARTIFACT = "Ryllus: Investigate the artifact (Reach the temple)"
     RYLLUS_TEMPLE = "Ryllus: Unlock the temple"
