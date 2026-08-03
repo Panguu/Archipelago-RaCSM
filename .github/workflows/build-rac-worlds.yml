@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - rac_size_matters
+          - rac_size_matters_psp
           - rac_odd_couple
       prerelease:
         description: "Is this a pre-release?"
@@ -48,6 +49,13 @@ jobs:
               echo "game_name=Ratchet & Clank: Size Matters" >> "$GITHUB_OUTPUT"
               echo "tag_prefix=rac-size-matters/v"          >> "$GITHUB_OUTPUT"
               echo "display_name=RaC Size Matters"          >> "$GITHUB_OUTPUT"
+              ;;
+            rac_size_matters_psp)
+              echo "world_folder=worlds/rac_size_matters_psp"          >> "$GITHUB_OUTPUT"
+              echo "apworld_file=rac_size_matters_psp.apworld"         >> "$GITHUB_OUTPUT"
+              echo "game_name=Ratchet & Clank: Size Matters - PSP"     >> "$GITHUB_OUTPUT"
+              echo "tag_prefix=rac-size-matters-psp/v"                 >> "$GITHUB_OUTPUT"
+              echo "display_name=RaC Size Matters (PSP)"               >> "$GITHUB_OUTPUT"
               ;;
             rac_odd_couple)
               echo "world_folder=worlds/rac_odd_couple"                      >> "$GITHUB_OUTPUT"

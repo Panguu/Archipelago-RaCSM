@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from ..constants import (
+    Rac5Gadgets,
+    Rac5Infobots,
+    Rac5Locations,
+    Rac5ModVendorLocations,
+    Rac5SkillPoints,
+    Rac5TBolts,
+    Rac5VendorLocations,
+)
+from rule_builder.rules import Has, HasAll, True_
+
+if TYPE_CHECKING:
+    from ..world import RACSizeMatterWorld
+
+
+def set_challax_rules(world: RACSizeMatterWorld) -> None:
+    player = world.player
+    mw = world.multiworld
+
+    _base   = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER)
+    _sprout = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER, Rac5Gadgets.SPROUT_O_MATIC)
+
+    # Rac5SkillPoints.CHALLAX_VARMINTS ("No More Varmints!") is commented out
+    # of SKILL_POINTS in skill_point_locations.py — Giant Clank disabled,
+    # unreachable — so no rule is set for it here.
+    if world.options.skill_points.value >= 2:
+        world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_MASTER, player), _sprout)
+
+    # Giant Clank disabled/unreachable — METALIS_CLANK and CHALLAX_CLANK are
+    # commented out of the location pool in locations.py, so no rule is set here.
+
+    world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_MECH_PAD, player), True_())
+    world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_ROOM, player), _base)
+    world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_PLANT, player), _sprout)
+
+    world.set_rule(
+        mw.get_location(Rac5Locations.CHALLAX_HELMET, player),
+        _sprout | Has(Rac5Infobots.DAYNI_MOON),
+    )
+
+    _shrink_ray = Has(Rac5Gadgets.SHRINK_RAY)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_SNIPER, player), _shrink_ray)
+    world.set_rule(mw.get_location(Rac5VendorLocations.CHALLAX_PDA, player), _shrink_ray)
+
+    # Weapon Mod Vendor — purchasable without owning the weapon (mod_unlock_N
+    # is gated purely on this vendor's planet being accessible; see
+    # VendorUnlockState.mod_vendor_unlock_weapons). _base (Shrink Ray +
+    # Polarizer) still gates physically reaching the mod vendor area itself.
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_ACID_BURN, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_ACID_EPOXY, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE, player), _base)
+    world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_BEE_WORKER, player), _base)

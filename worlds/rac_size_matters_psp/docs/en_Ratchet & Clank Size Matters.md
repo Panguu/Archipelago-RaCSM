@@ -34,4 +34,4 @@ firepower.
 
 ## Setup guide
 
-See [the Setup Guide](setup_en.md) for full instructions on connecting PCSX2 to Archipelago.
+See [the Setup Guide](setup_en.md) for full instructions on connecting PPSSPP to Archipelago.
