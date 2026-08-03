@@ -7,7 +7,7 @@ from CommonClient import logger
 
 from ..core import TextColour, colored_text, reconcile_traps
 from ..universal_tracker import PLANET_ID_TO_REGION
-from .constants import EXPECTED_GAME_ID, POLL_INTERVAL
+from .constants import EXPECTED_GAME_ID, PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
 
 # How often weapon level/experience gets persisted to AP data storage — a
@@ -91,6 +91,14 @@ class PineMixin:
         if game_id != EXPECTED_GAME_ID:
             await self._reject_wrong_game(game_id, is_disconnect=False)
             return
+
+        # The disc id above is readable as soon as PINE itself is reachable,
+        # but Dynamic Pine boots PCSX2 straight into the ISO — the game can
+        # still be loading assets into memory for a bit after that, before
+        # gameplay state (planet id, player structs, etc.) is valid. Give it
+        # a moment to settle before the very first real memory read below,
+        # rather than reading it mid-boot and misreading garbage as state.
+        await asyncio.sleep(PINE_CONNECT_SETTLE_DELAY_S)
 
         async with self._pine_lock:
             logger.info(

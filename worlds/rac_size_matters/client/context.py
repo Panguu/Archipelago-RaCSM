@@ -62,6 +62,7 @@ class RACContext(
         self._last_weapon_state_push: float = 0.0
         self._pushed_weapon_state: dict[str, list[int]] = {}
         self._weapon_state_restored = False
+        self._starting_skin_option = 0
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
@@ -222,7 +223,7 @@ class RACContext(
             trap_duration = self.slot_data.get("trap_duration")
             if isinstance(trap_duration, dict):
                 set_trap_durations(trap_duration)
-            self._wiring.skin.set_by_option(int(self.slot_data.get("starting_skin", 0)))
+            self._starting_skin_option = int(self.slot_data.get("starting_skin", 0))
             if self._death_link_enabled:
                 asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": ["DeathLink"]}]))
             self._wiring.wire(
@@ -240,8 +241,12 @@ class RACContext(
                 on_initial_load    = lambda: asyncio.create_task(self._send_playing_status()),
             )
             checked = self._checked_location_names()
+            starting_skin = self._starting_skin_option
             asyncio.create_task(self._guarded_wiring_call(
-                lambda: self._wiring.sync_from_ap(checked)
+                lambda: (
+                    self._wiring.skin.set_by_option(starting_skin),
+                    self._wiring.sync_from_ap(checked),
+                )
             ))
             self._pending_item_apply = True
             asyncio.create_task(self._apply_received_items())
