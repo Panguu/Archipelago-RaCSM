@@ -1,0 +1,10 @@
+{
+    "version": 7,
+    "compatible_version": 7,
+    "game": "Dynamic Pine",
+    "world_version": "0.1.0",
+    "minimum_ap_version": "0.6.2",
+    "authors": [
+        "Pangu"
+    ]
+}

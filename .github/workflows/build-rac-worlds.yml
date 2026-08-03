@@ -11,6 +11,7 @@ on:
           - rac_size_matters
           - rac_size_matters_psp
           - rac_odd_couple
+          - dynamicpine
       prerelease:
         description: "Is this a pre-release?"
         type: boolean
@@ -64,6 +65,13 @@ jobs:
               echo "tag_prefix=rac-odd-couple/v"                             >> "$GITHUB_OUTPUT"
               echo "display_name=RaC Odd Couple"                             >> "$GITHUB_OUTPUT"
               ;;
+            dynamicpine)
+              echo "world_folder=worlds/dynamicpine"                         >> "$GITHUB_OUTPUT"
+              echo "apworld_file=dynamicpine.apworld"                        >> "$GITHUB_OUTPUT"
+              echo "game_name=Dynamic Pine"                                  >> "$GITHUB_OUTPUT"
+              echo "tag_prefix=dynamicpine/v"                                >> "$GITHUB_OUTPUT"
+              echo "display_name=Dynamic Pine"                               >> "$GITHUB_OUTPUT"
+              ;;
           esac
 
   build:
@@ -104,8 +112,13 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
+          test_dir="${{ needs.config.outputs.world_folder }}/test"
+          if [ ! -d "$test_dir" ]; then
+            echo "No test directory at $test_dir - skipping."
+            exit 0
+          fi
           set +e
-          pytest ${{ needs.config.outputs.world_folder }}/test -n auto
+          pytest "$test_dir" -n auto
           exit_code=$?
           set -e
           if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 5 ]; then

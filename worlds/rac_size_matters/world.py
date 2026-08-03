@@ -46,6 +46,14 @@ from .options import (
 from .regions import create_regions
 from .rules import set_rules
 from .universal_tracker import setup_options_from_slot_data, tracker_world
+try:
+    from worlds.dynamicpine import DynamicPineGame
+    _DYNAMIC_PINE_SPEC = DynamicPineGame(
+        game_id="SCUS-97615",
+        client_component="Ratchet & Clank: Size Matters Client",
+    )
+except ImportError:
+    _DYNAMIC_PINE_SPEC = None
 
 
 class RACItem(Item):
@@ -90,6 +98,7 @@ class RACSizeMatterWorld(World):
     ut_can_gen_without_yaml: bool = True
     disable_ut: bool = False
     tracker_world: ClassVar = tracker_world
+    dynamic_pine = _DYNAMIC_PINE_SPEC
 
     def create_item(self, name: str) -> RACItem:
         data = ALL_ITEMS[name]

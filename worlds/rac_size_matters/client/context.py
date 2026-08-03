@@ -155,6 +155,25 @@ class RACContext(
             if lid in id_to_name
         }
 
+    def _launch_pcsx2_via_dynamic_pine(self) -> None:
+        if not self.auth:
+            return
+        try:
+            from worlds.dynamicpine import InstanceAlreadyRunningError, get_pine_port, launch_pcsx2
+        except ImportError:
+            return
+        try:
+            port = launch_pcsx2(GAME_NAME, self.auth)
+        except InstanceAlreadyRunningError:
+            # Already running (e.g. this client reconnecting) - reuse its
+            # existing instance rather than treating that as a launch failure.
+            port = get_pine_port(GAME_NAME, self.auth)
+        except Exception as exc:
+            logger.warning(f"[RAC] Dynamic Pine PCSX2 launch failed: {exc}")
+            return
+        if port is not None:
+            self.pine.set_slot(port)
+
     def _log(self, msg: str, level: str = "info") -> None:
         if not self._debug_messages:
             return
@@ -230,6 +249,7 @@ class RACContext(
                 "Connected to ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
             ))
             if not self.pine_connected:
+                self._launch_pcsx2_via_dynamic_pine()
                 asyncio.create_task(self._attempt_pine_connect(), name="PCSX2 PINE connect")
             else:
                 asyncio.create_task(self._send_map_page(self.current_planet))
