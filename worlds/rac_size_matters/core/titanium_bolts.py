@@ -6,7 +6,7 @@ from .address_maps import TITANIUM_BOLT_BASE
 from .locations.titanium_bolt_locations import BOLT_BY_PLANET_AND_DELTA, TITANIUM_BOLTS, TitaniumBolt
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
 
 __all__ = [
     "TitaniumBolt",

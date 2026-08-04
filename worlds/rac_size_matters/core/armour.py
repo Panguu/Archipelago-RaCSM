@@ -10,7 +10,7 @@ from ..constants import (
     Rac5Planets,
     Rac5SkyboardChallenges as RACSMSKY,
 )
-from ..pypine import Pine
+from pypine import Pine
 from .states.base_state import BaseState
 from .structs.pickups import ArmourStruct
 

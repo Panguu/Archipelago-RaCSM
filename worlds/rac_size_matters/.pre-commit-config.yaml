@@ -4,3 +4,10 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --config, ruff.toml]
+      - id: pytest-full
+        name: pytest (full suite)
+        entry: python -m pytest 
+        args: [worlds/rac_size_matters]
+        language: system
+        pass_filenames: false
+        stages: [commit]

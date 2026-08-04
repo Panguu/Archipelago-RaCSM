@@ -20,7 +20,7 @@ from .titanium_bolts import TitaniumBoltInventory
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
 
 logger = logging.getLogger("CommonClient")
 

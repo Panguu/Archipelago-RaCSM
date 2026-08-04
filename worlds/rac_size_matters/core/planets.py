@@ -33,7 +33,7 @@ from .weapon_cycler import WeaponCyclerInventory
 from .weapons import WeaponInventory
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
     from .armour import ArmourInventory
     from .quick_select import QuickSelectState
 

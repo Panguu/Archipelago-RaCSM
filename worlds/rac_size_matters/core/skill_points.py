@@ -14,7 +14,7 @@ from .locations.skill_point_locations import (
 )
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
 
 __all__ = [
     "SkillPoint",

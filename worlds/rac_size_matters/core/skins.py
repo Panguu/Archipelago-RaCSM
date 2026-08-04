@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .structs.game import SkinStruct
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
 
 
 @dataclass(frozen=True)

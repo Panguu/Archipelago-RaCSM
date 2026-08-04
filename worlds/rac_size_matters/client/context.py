@@ -15,7 +15,7 @@ from CommonClient import logger
 from ..core import TextColour, colored_text, set_trap_durations
 from ..core.core import Core
 from ..locations import ALL_LOCATIONS
-from ..pypine import Pine
+from pypine import Pine
 from ..world import RACSizeMatterWorld
 from .command_processor import RACCommandProcessor
 from .constants import GAME_NAME

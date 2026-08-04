@@ -7,7 +7,7 @@ from ..constants import Rac5Traps
 from .address_maps import BRIGHTNESS_ADDRESS, CHEATS, DREAMTIME_EFFECT
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
 
 # TRAP_RESET_LEVEL is intentionally absent below — not functional yet.
 

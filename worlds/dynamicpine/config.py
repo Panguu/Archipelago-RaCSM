@@ -1,12 +1,12 @@
 """Dynamic Pine's PCSX2 ini builder.
 
-pypine (pinned at its "pine config builder" commit) provides the PINE protocol
-and the base PineConfig, which handles enabling PINE on a port and pointing
-Slot1 at a memcard. Everything multi-instance lives here on top of that:
-per-instance portable datapaths grouped by game serial then slot name, port
-reuse/probing so instances never collide, a shared BIOS folder so PCSX2's
-first-run setup happens once, RetroAchievements disabled, and per-game
-ini_overrides from the game's DynamicPineGame declaration.
+pypine (installed via requirements.txt, pinned to a specific commit) provides
+the PINE protocol and the base PineConfig, which handles enabling PINE on a
+port and pointing Slot1 at a memcard. Everything multi-instance lives here on
+top of that: per-instance portable datapaths grouped by game serial then slot
+name, port reuse/probing so instances never collide, a shared BIOS folder so
+PCSX2's first-run setup happens once, RetroAchievements disabled, and
+per-game ini_overrides from the game's DynamicPineGame declaration.
 
 The port/datapath logic is ported from rac_size_matters' extended pypine
 working tree (its uncommitted additions to the same base commit)."""
@@ -18,7 +18,7 @@ import platform
 import socket
 from configparser import ConfigParser
 from pathlib import Path
-from .pypine.pypine.config import DEFAULT_PINE_PORT, PineConfig
+from pypine.config import DEFAULT_PINE_PORT, PineConfig
 from .types import Overrides
 
 BASE_INI_SETTINGS: Overrides = {

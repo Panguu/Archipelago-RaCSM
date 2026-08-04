@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from .locations.mission_locations import PRESET_MISSION_BITS, VALIDATED_MISSION_MAP
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
 
 __all__ = [
     "VALIDATED_MISSION_MAP",

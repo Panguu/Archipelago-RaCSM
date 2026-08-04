@@ -15,7 +15,7 @@ from .controller import GlobalButtonState, PauseSelectButtons
 from .menu import MenuStateValue
 
 if TYPE_CHECKING:
-    from ..pypine import Pine
+    from pypine import Pine
     from .planets import PlanetInventory, PlanetUnlockState
     from .weapons import WeaponInventory
 
