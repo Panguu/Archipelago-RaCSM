@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-# Location-derived lookups depend on ``constants``/top-level ``locations``,
-# which transitively import back into core.weapons (items.py imports
-# WEAPON_DATA/GADGET_DATA from it) — built lazily on first use so importing
-# this module never triggers that cycle. core.weapons.WeaponInventory is the
-# main consumer; core.core/core.vendor pull MOD_UNLOCK_PLANET/
-# MOD_UNLOCK_EXTRA_GADGETS/VENDOR_WEAPON_LOC/VENDOR_GADGET_LOC from here too.
+# Location-derived lookups transitively import back into core.weapons, so
+# they're built lazily on first use to avoid an import cycle.
 _LOC_DATA_LOADED = False
 VENDOR_WEAPON_LOC: dict[str, str] = {}
 VENDOR_GADGET_LOC: dict[str, str] = {}
@@ -21,9 +17,9 @@ _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
 }
 
 # (internal_weapon, mod_unlock_attr) -> planet the vendor selling that mod
-# lives on. Drives the mod_unlock_N "purchasable" byte: it should only read 1
-# once the player owns the weapon (and, on Challax, the extra gadgets below —
-# that vendor sits behind the Polarizer gate, mirroring rules/challax.py's _base).
+# lives on. Drives the mod_unlock_N "purchasable" byte, which should only
+# read 1 once the player owns the weapon (and, on Challax, the extra
+# gadgets below — mirrors rules/challax.py's Polarizer gate).
 MOD_UNLOCK_PLANET: dict[tuple[str, str], str] = {}
 
 # Planets whose mod vendor requires extra gadgets beyond owning the weapon
@@ -65,8 +61,7 @@ def _ensure_loc_data() -> None:
 
 
 def __getattr__(name: str):
-    # Resolve the lazily-built location lookups when imported via
-    # ``from core.locations.weapon_locations import <name>``.
+    # Resolve the lazily-built location lookups on attribute access.
     if name in (
         "VENDOR_WEAPON_LOC", "VENDOR_GADGET_LOC",
         "WEAPON_INTERNAL_TO_LOCATION", "GADGET_INTERNAL_TO_LOCATION",

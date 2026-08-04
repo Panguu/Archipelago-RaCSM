@@ -106,17 +106,13 @@ MultiLineTextBoxAddrs: list[MultiLineTextBox] = [
 
 
 class TextBoxInventory:
-    """Pine-backed accessor for a planet's text box (small or multi-line),
-    replacing DisplayedTextBoxState.
+    """Pine-backed accessor for a planet's text box (small or multi-line).
 
-    set(text) writes the string into the static text buffer and instantly
-    displays it (same write as SmallTextBox/MultiLineTextBox.write_text).
+    set(text) writes into the static text buffer and displays it instantly.
     get() reads back the currently-showing string, or None if nothing is
-    displayed. delete() clears the timer and text immediately (no 7s/5s
-    auto-hide delay — that's only for a set() that isn't manually cleared).
-
-    Planet-dependent: call set_base(planet_id) whenever the loaded planet
-    changes to rebind to that planet's box config.
+    displayed. delete() clears immediately, skipping the normal 7s/5s
+    auto-hide delay. Planet-dependent: call set_base(planet_id) whenever the
+    loaded planet changes.
     """
 
     def __init__(self, pine: Pine, boxes: list[TextBoxConfig]) -> None:

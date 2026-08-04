@@ -19,10 +19,7 @@ _BOOTS_MASK = 0xF0  # module-level, not inside the enum body
 
 
 class ArmourSet(IntEnum):
-    """
-    Enum representing different armour sets in the game.
-    This is the value which is set in armour slots to represent what armour is currently equiped.
-    """
+    """Value set in armour slots to represent which armour is currently equipped."""
 
     Wildfire = 1
     Sludge = 2
@@ -48,8 +45,6 @@ class ArmourPiece(IntFlag):
     CHESTPLATE = 0x01
     HELMET = 0x02
     GLOVES = 0x0C
-    # Boots changes: it's any value with bit 4 set, because the game treats left and
-    # right boots as one piece, so any value with bit 4 set is considered equipped.
     BOOTS = 0x10
     ALL = 0x1F
 
@@ -197,10 +192,7 @@ class ArmourUnlocks:
 
 
 class ArmourPickup(NamedTuple):
-    """
-    Data record for an armour pickup's information.
-    This is used for monitoring and modifying armour pickups in the game.
-    """
+    """One armour piece's set/piece/location/planet."""
 
     set_key: str
     piece: ArmourPiece
@@ -281,11 +273,9 @@ class ArmourInventory(BaseState):
         self.on_unlocked_save: Callable[[dict[str, int]], None] = lambda _: None
 
     def set_unlocked_armour(self, state: ArmourUnlocks) -> None:
-        """Save the current unlocked-sets values into UnlockedArmour."""
         self.UnlockedArmour = state
 
     def set_equipped_armour(self, state: EquippedArmour) -> None:
-        """Save the current equipped-slot values into EquipedArmour."""
         self.EquipedArmour = state
 
     def sync_equipped(self, data: dict[str, int]) -> None:

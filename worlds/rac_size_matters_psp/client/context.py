@@ -226,11 +226,8 @@ class RACContext(
                 "Connected to ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
             ))
             if not self.psp_connected:
-                # Nothing below that touches PPSSPP (skin, sync_from_ap,
-                # apply_received_items) may run until the connection actually
-                # exists — _attempt_psp_connect() itself applies the current
-                # skin/sync/inventory once it succeeds, so just kick it off
-                # and let it own that sequencing.
+                # _attempt_psp_connect() applies the current skin/sync/inventory
+                # itself once it succeeds, so just kick it off.
                 asyncio.create_task(self._attempt_psp_connect(), name="PPSSPP connect")
             else:
                 checked = self._checked_location_names()

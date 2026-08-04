@@ -73,19 +73,30 @@ class PlanetAddresses:
     controller_pause_select_v2: int | None = None   # candidate replacement: counts DOWN from 0xFF,
         # decremented by held PauseSelectButtons/ControllerButtons bit value (inverse of controller_pause_select).
         # buttons_v2 byte is always at +1. Captured per-planet as it's verified; not yet known for all planets.
+    weapon_cycler_apply:   int | None = None   # write a weapon id here to hand it straight to the player
+    weapon_cycler_state:   int | None = None   # WeaponCycleState — 0x0C while a pickup animation plays
+    weapon_cycler_current: int | None = None   # currently-equipped weapon id
+    weapon_cycler_stored:  int | None = None   # weapon id waiting to be cycled in
+        # Fixed offsets from player_health, confirmed on Pokitaru and Ryllus
+        # (current/stored/apply all landed exactly on prediction; cycle_state
+        # is the same +0x04 past apply on both, unconfirmed but high
+        # confidence): current = health+0x34, stored = health+0x40,
+        # apply = health+0x54, cycle_state = health+0x58. Every other
+        # planet below is derived from that same offset, not independently
+        # verified yet (see worlds/rac_size_matters/core/weapon_cycler.py).
 
 
 PLANET_ADDRESSES: dict[int, PlanetAddresses] = {
-    0x01: PlanetAddresses("Pokitaru",        0x20F805C0, 0x20F80E2C, menu=0x1073DC0, preload_menu=0xF4C8C0, weapon_array=0x20F3EA17, mission=0x21F4B3C4, vendor_prompt_id=0xBF48, small_text_box=0xF479E8, multi_line_text_box=0xF47B28, controller_pause_select=0xF80594, controller_pause_select_v2=0xF866C2),
-    0x02: PlanetAddresses("Ryllus",          0x20F7F2D0, 0x20F7FB3C, menu=0x1072AC0, preload_menu=0xF49080, weapon_array=0x20F3AE97, mission=0x21F4B3C6, vendor_prompt_id=0xBF35, small_text_box=0xF441A8, multi_line_text_box=0xF442E8, controller_pause_select=0xF7F2A4, controller_pause_select_v2=0xF853C2),
-    0x03: PlanetAddresses("Kalidon",         0x20F7F440, 0x20F7FCAC, menu=0x1072C40, preload_menu=0xF48F40, weapon_array=0x20F3B097, mission=0x21F4B3C8, vendor_prompt_id=0x3F37, skyboard_base=0x1F4B407, small_text_box=0xF44068, multi_line_text_box=0xF441A8, controller_pause_select=0xF7F414, controller_pause_select_v2=0xF85542),
-    0x04: PlanetAddresses("Metalis",         0x20F7EDD0, 0x20F7F63C, menu=0x10725C0, preload_menu=0xF49D80, weapon_array=0x20F3BB97, mission=0x21F4B3CA, vendor_prompt_id=0x3F30, clank_challenge_base=0x1F4B3DB, small_text_box=0xF44EA8, multi_line_text_box=0xF44FE8, controller_pause_select=0xF7EDA4, controller_pause_select_v2=0xF84EC2),
-    0x05: PlanetAddresses("Dreamtime",       0x20F762C0, 0x20F76B2C, menu=0x1069C80, preload_menu=0xF45C40, weapon_array=0x20F37D97, mission=0x21F4B3CC, vendor_prompt_id=0x7FA7, small_text_box=0xF40D68, multi_line_text_box=0xF40EA8, controller_pause_select=0xF76294, controller_pause_select_v2=0xF7C582),
-    0x06: PlanetAddresses("Outpost Omega",   0x20F81B40, 0x20F823AC, menu=0x1075340, preload_menu=0xF4D040, weapon_array=0x20F42117, mission=0x21F4B3CE, skyboard_base=0x1F4B409, controller_pause_select=0x20F7F414, controller_pause_select_v2=0xF87C42),
-    0x07: PlanetAddresses("Challax",         0x20F806C0, 0x20F80F2C, menu=0x1073EC0, preload_menu=0xF4B3C0, weapon_array=0x20F3D517, mission=0x21F4B3D0, vendor_prompt_id=0xBF49, small_text_box=0xF464E8, multi_line_text_box=0xF46628, controller_pause_select=0xF80694, controller_pause_select_v2=0xF867C2),
-    0x08: PlanetAddresses("Dayni Moon",      0x20F79850, 0x20F7A0BC, menu=0x106D040, preload_menu=0xF3F780, weapon_array=0x20F31597, mission=0x21F4B3D2, vendor_prompt_id=0x3FDB, clank_challenge_base=0x1F4B3F3, small_text_box=0xF3A8A8, multi_line_text_box=0xF3A9E8, controller_pause_select=0xF79824, controller_pause_select_v2=0xF7F942),
-    0x09: PlanetAddresses("Inside Clank",    0x20F82540, 0x20F82DAC, menu=0x1075D40, preload_menu=0xF50EC0, weapon_array=0x20F43017, mission=0x21F4B3D4, vendor_prompt_id=0x3F68, small_text_box=0xF4BFE8, multi_line_text_box=0xF4C128, controller_pause_select=0xF82514, controller_pause_select_v2=0xF88642),
-    0x0A: PlanetAddresses("Quodrona",        0x20F809C0, 0x20F8122C, menu=0x10741C0, preload_menu=0xF4C8C0, weapon_array=0x20F3EA17, mission=0x21F4B3D6, vendor_prompt_id=0xBF4C, small_text_box=0xF479E8, multi_line_text_box=0xF47B28, controller_pause_select=0xF80994, controller_pause_select_v2=0xF86AC2),
+    0x01: PlanetAddresses("Pokitaru",        0x20F805C0, 0x20F80E2C, menu=0x1073DC0, preload_menu=0xF4C8C0, weapon_array=0x20F3EA17, mission=0x21F4B3C4, vendor_prompt_id=0xBF48, small_text_box=0xF479E8, multi_line_text_box=0xF47B28, controller_pause_select=0xF80594, controller_pause_select_v2=0xF866C2, weapon_cycler_apply=0xF80E80, weapon_cycler_state=0xF80E84, weapon_cycler_current=0xF80E60, weapon_cycler_stored=0xF80E6C),
+    0x02: PlanetAddresses("Ryllus",          0x20F7F2D0, 0x20F7FB3C, menu=0x1072AC0, preload_menu=0xF49080, weapon_array=0x20F3AE97, mission=0x21F4B3C6, vendor_prompt_id=0xBF35, small_text_box=0xF441A8, multi_line_text_box=0xF442E8, controller_pause_select=0xF7F2A4, controller_pause_select_v2=0xF853C2, weapon_cycler_apply=0xF7FB90, weapon_cycler_state=0xF7FB94, weapon_cycler_current=0xF7FB70, weapon_cycler_stored=0xF7FB7C),
+    0x03: PlanetAddresses("Kalidon",         0x20F7F440, 0x20F7FCAC, menu=0x1072C40, preload_menu=0xF48F40, weapon_array=0x20F3B097, mission=0x21F4B3C8, vendor_prompt_id=0x3F37, skyboard_base=0x1F4B407, small_text_box=0xF44068, multi_line_text_box=0xF441A8, controller_pause_select=0xF7F414, controller_pause_select_v2=0xF85542, weapon_cycler_apply=0xF7FD00, weapon_cycler_state=0xF7FD04, weapon_cycler_current=0xF7FCE0, weapon_cycler_stored=0xF7FCEC),
+    0x04: PlanetAddresses("Metalis",         0x20F7EDD0, 0x20F7F63C, menu=0x10725C0, preload_menu=0xF49D80, weapon_array=0x20F3BB97, mission=0x21F4B3CA, vendor_prompt_id=0x3F30, clank_challenge_base=0x1F4B3DB, small_text_box=0xF44EA8, multi_line_text_box=0xF44FE8, controller_pause_select=0xF7EDA4, controller_pause_select_v2=0xF84EC2, weapon_cycler_apply=0xF7F690, weapon_cycler_state=0xF7F694, weapon_cycler_current=0xF7F670, weapon_cycler_stored=0xF7F67C),
+    0x05: PlanetAddresses("Dreamtime",       0x20F762C0, 0x20F76B2C, menu=0x1069C80, preload_menu=0xF45C40, weapon_array=0x20F37D97, mission=0x21F4B3CC, vendor_prompt_id=0x7FA7, small_text_box=0xF40D68, multi_line_text_box=0xF40EA8, controller_pause_select=0xF76294, controller_pause_select_v2=0xF7C582, weapon_cycler_apply=0xF76B80, weapon_cycler_state=0xF76B84, weapon_cycler_current=0xF76B60, weapon_cycler_stored=0xF76B6C),
+    0x06: PlanetAddresses("Outpost Omega",   0x20F81B40, 0x20F823AC, menu=0x1075340, preload_menu=0xF4D040, weapon_array=0x20F42117, mission=0x21F4B3CE, skyboard_base=0x1F4B409, controller_pause_select=0x20F7F414, controller_pause_select_v2=0xF87C42, weapon_cycler_apply=0xF82400, weapon_cycler_state=0xF82404, weapon_cycler_current=0xF823E0, weapon_cycler_stored=0xF823EC),
+    0x07: PlanetAddresses("Challax",         0x20F806C0, 0x20F80F2C, menu=0x1073EC0, preload_menu=0xF4B3C0, weapon_array=0x20F3D517, mission=0x21F4B3D0, vendor_prompt_id=0xBF49, small_text_box=0xF464E8, multi_line_text_box=0xF46628, controller_pause_select=0xF80694, controller_pause_select_v2=0xF867C2, weapon_cycler_apply=0xF80F80, weapon_cycler_state=0xF80F84, weapon_cycler_current=0xF80F60, weapon_cycler_stored=0xF80F6C),
+    0x08: PlanetAddresses("Dayni Moon",      0x20F79850, 0x20F7A0BC, menu=0x106D040, preload_menu=0xF3F780, weapon_array=0x20F31597, mission=0x21F4B3D2, vendor_prompt_id=0x3FDB, clank_challenge_base=0x1F4B3F3, small_text_box=0xF3A8A8, multi_line_text_box=0xF3A9E8, controller_pause_select=0xF79824, controller_pause_select_v2=0xF7F942, weapon_cycler_apply=0xF7A110, weapon_cycler_state=0xF7A114, weapon_cycler_current=0xF7A0F0, weapon_cycler_stored=0xF7A0FC),
+    0x09: PlanetAddresses("Inside Clank",    0x20F82540, 0x20F82DAC, menu=0x1075D40, preload_menu=0xF50EC0, weapon_array=0x20F43017, mission=0x21F4B3D4, vendor_prompt_id=0x3F68, small_text_box=0xF4BFE8, multi_line_text_box=0xF4C128, controller_pause_select=0xF82514, controller_pause_select_v2=0xF88642, weapon_cycler_apply=0xF82E00, weapon_cycler_state=0xF82E04, weapon_cycler_current=0xF82DE0, weapon_cycler_stored=0xF82DEC),
+    0x0A: PlanetAddresses("Quodrona",        0x20F809C0, 0x20F8122C, menu=0x10741C0, preload_menu=0xF4C8C0, weapon_array=0x20F3EA17, mission=0x21F4B3D6, vendor_prompt_id=0xBF4C, small_text_box=0xF479E8, multi_line_text_box=0xF47B28, controller_pause_select=0xF80994, controller_pause_select_v2=0xF86AC2, weapon_cycler_apply=0xF81280, weapon_cycler_state=0xF81284, weapon_cycler_current=0xF81260, weapon_cycler_stored=0xF8126C),
     0x17: PlanetAddresses("Outpost Omega 2", 0x20F82A40, 0x20F823AC, menu=0x107A200, preload_menu=0xF54CC0, weapon_array=0x20F46E17,                      vendor_prompt_id=0x3F37, small_text_box=0xF4FDE8, multi_line_text_box=0xF4FF28, controller_pause_select=0xF82A14, controller_pause_select_v2=0xF8CB42),
 }
 
@@ -114,4 +125,13 @@ SMALL_TEXT_BOX_BY_PLANET: dict[int, int] = {
 
 MULTI_LINE_TEXT_BOX_BY_PLANET: dict[int, int] = {
     pid: p.multi_line_text_box for pid, p in PLANET_ADDRESSES.items() if p.multi_line_text_box is not None
+}
+
+# (apply, cycle_state, current_weapon, stored_weapon) — only present for a
+# planet once all four addresses are known (Pokitaru only, for now).
+WEAPON_CYCLER_ADDRS_BY_PLANET: dict[int, tuple[int, int, int, int]] = {
+    pid: (p.weapon_cycler_apply, p.weapon_cycler_state, p.weapon_cycler_current, p.weapon_cycler_stored)
+    for pid, p in PLANET_ADDRESSES.items()
+    if p.weapon_cycler_apply is not None and p.weapon_cycler_state is not None
+    and p.weapon_cycler_current is not None and p.weapon_cycler_stored is not None
 }

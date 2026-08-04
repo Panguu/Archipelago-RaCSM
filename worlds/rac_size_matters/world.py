@@ -170,24 +170,18 @@ class RACSizeMatterWorld(World):
         deficit = len(pool) - unfilled
         filler_count = -deficit
 
-        # exclude_locations locations must end up filler-only (never
-        # progression/useful) — if there are more of them than the filler
-        # we're about to generate, the excluded locations alone can't all be
-        # covered by real filler once fill runs. Solo-only for the same
-        # reason as the check below: a multiworld's other players still
-        # supply enough of their own filler overall, this player's exclusions
-        # don't shrink the global filler supply. Matches rac3's own
-        # players == 1 gate on the equivalent check (world.py's create_items).
+        # excluded_locations must end up filler-only; if there's more of them
+        # than filler we're about to generate, they can't all be covered.
+        # Solo-only, since a multiworld's other players supply plenty of
+        # their own filler overall.
         excluded_count = self.get_excluded_count()
         if excluded_count > filler_count and self.multiworld.players == 1:
             self.handle_not_enough_locations(excluded_count - filler_count)
 
-        # Unlike the excluded-locations check above, rac3 does NOT gate this
-        # one on players == 1 — a deficit here means this world generated
-        # more progression/useful items than it has locations of its own,
-        # which rac3 always treats as fatal regardless of multiworld size
-        # (see the unconditional `else: self.handle_not_enough_locations(...)`
-        # branch in rac3's world.py create_items). Mirrored here as-is.
+        # Unlike above, this is not gated on players == 1: a deficit means
+        # this world generated more progression/useful items than it has
+        # locations of its own, which is always fatal regardless of
+        # multiworld size.
         if deficit > 0:
             self.handle_not_enough_locations(deficit)
         pool += [self.get_filler_item_name() for _ in range(max(0, filler_count))]
@@ -260,10 +254,8 @@ class RACSizeMatterWorld(World):
         ng_plus = bool(self.options.ng_plus_items)
         weapon_count = self.options.starting_weapons.value
         if weapon_count > 0:
-            # Sampled straight from the static item tables, not the actual
-            # itempool — so an NG+-locked weapon (e.g. RYNO) has to be
-            # excluded here too, or a fresh (non-NG+) seed could still roll
-            # it as a starting weapon despite never placing it in the pool.
+            # Sampled from the static item tables rather than the itempool,
+            # so NG+-locked weapons (e.g. RYNO) must be excluded here too.
             if self.options.progressive_weapons:
                 pool = [
                     PROGRESSIVE_WEAPON_NAME[display] for display in WEAPON_PROGRESSIVE_STEPS

@@ -67,13 +67,10 @@ class MenuUpdateSlot:
 
 
 class MenuInventory:
-    """Pine-backed live accessor for the current menu state, replacing MenuState.
+    """Pine-backed live accessor for the current menu state.
 
     Planet-dependent: the menu struct lives at a per-planet address, so call
-    set_base(planet_id) whenever the loaded planet changes. Menu-transition
-    orchestration (opening a vendor, closing the pause menu, ...) is an
-    external concern now — this only exposes get/set/delete on the raw bytes
-    plus a couple of read-only convenience properties.
+    set_base(planet_id) whenever the loaded planet changes.
     """
 
     current = MenuStateSlot()

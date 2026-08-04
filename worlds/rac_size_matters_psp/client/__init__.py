@@ -1,4 +1,4 @@
-"""Archipelago client for Ratchet & Clank: Size Matters via PPSSPP's debugger WebSocket."""
+"""Archipelago client for Ratchet & Clank: Size Matters PSP, connecting to PPSSPP."""
 from __future__ import annotations
 
 import asyncio

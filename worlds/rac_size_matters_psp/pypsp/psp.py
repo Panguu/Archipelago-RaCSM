@@ -215,23 +215,14 @@ class Psp:
         return game["id"] if game else ""
 
     def memory_base(self) -> int:
-        """Fetch PPSSPP's own host-memory pointer for the start of its
-        emulated-RAM allocation (Memory::base, C++ side), via the
-        "memory.base" debugger event (Core/Debugger/WebSocket/
-        DisasmSubscriber.cpp's WebSocketDisasmState::Base()).
+        """Fetch PPSSPP's host-memory pointer for the start of its emulated-RAM
+        allocation (Memory::base), via the "memory.base" debugger event. Used
+        only by procmem/transport.py's one-time per-connect bootstrap, which
+        then does raw ReadProcessMemory/WriteProcessMemory using this pointer
+        instead of going through this WebSocket for every access.
 
-        Used only by procmem/transport.py's one-time (per-connect) bootstrap
-        — not part of the regular read/write hot path, which for that
-        variant bypasses this WebSocket entirely in favour of raw
-        ReadProcessMemory/WriteProcessMemory into PPSSPP's process using the
-        pointer this returns (host_address = memory_base() + (psp_address &
-        0x3FFFFFFF), see Core/MemMap.h's GetPointerUnchecked).
-
-        The response's "addressHex" field is a plain hex string with no "0x"
-        prefix (PPSSPP's C++ side formats it with "%016llx") — matches how
-        every other hex-ish field this module parses is handled: taken
-        as-is and fed straight to int(..., 16). Still strips an optional
-        "0x"/"0X" prefix defensively in case that format ever changes.
+        The response's "addressHex" normally has no "0x" prefix, but one is
+        stripped defensively in case that ever changes.
         """
         resp = self._request("memory.base")
         raw = resp.get("addressHex", "0")

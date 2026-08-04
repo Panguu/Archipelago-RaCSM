@@ -70,12 +70,9 @@ def create_regions(world: RACSizeMatterWorld) -> None:
     if world.options.all_missions:
         story_missions = STORY_MISSION_LOCATIONS
         if world.options.clank_challenges.value < 1:
-            # METALIS_WAR's own in-game trigger is completing the Buzzsaw
-            # Blitz clank challenge — with clank challenges off, its
-            # section never gets unlocked (see Core.tick()'s clank.setup()
-            # call, gated on clank_enabled), so this mission can never
-            # actually fire. Drop it rather than create a location that
-            # can never be reached.
+            # METALIS_WAR triggers on completing the Buzzsaw Blitz clank
+            # challenge, which never unlocks with clank challenges off —
+            # drop it rather than create an unreachable location.
             story_missions = {
                 name: data for name, data in STORY_MISSION_LOCATIONS.items()
                 if name != Rac5CutsceneLocations.METALIS_WAR

@@ -19,18 +19,16 @@ if TYPE_CHECKING:
     from .planets import PlanetInventory, PlanetUnlockState
     from .weapons import WeaponInventory
 
-# WEAPON_VENDOR_ITEMS is a flat array immediately followed in memory by
-# WEAPON_VENDOR_SLOTS (the count). The gap between them is the array's full
-# capacity — slots beyond the written count must be zeroed too, otherwise
-# stale entries from a previous, longer write keep showing up in the vendor
-# menu instead of disappearing.
+# WEAPON_VENDOR_SLOTS (the count) immediately follows the WEAPON_VENDOR_ITEMS
+# array in memory; the gap between them is the array's full capacity. Slots
+# past the written count must be zeroed or stale entries from a previous,
+# longer write linger in the vendor menu.
 MAX_VENDOR_SLOTS = (WEAPON_VENDOR_SLOTS - WEAPON_VENDOR_ITEMS) // 4
 
-# Vendor item IDs written to WEAPON_VENDOR_ITEMS.
-# Each 4-byte entry identifies one slot in the vendor menu UI.
+# Vendor item IDs written to WEAPON_VENDOR_ITEMS (4 bytes each).
 # Derivation: combined weapon+gadget array slot index + 2 offset.
-# lacerator (slot 0) = 0x02 is the only in-game confirmed value.
-# All others are inferred from array layout — verify in-game.
+# lacerator (slot 0) = 0x02 is the only in-game confirmed value; the rest are
+# inferred from array layout — verify in-game.
 WEAPON_VENDOR_IDS: dict[str, int] = {
     # weapons (WEAPON_ORDER slots 0-13; slot 12 is None gap → 0x0E skipped)
     "lacerator":        0x02,  # confirmed
@@ -62,7 +60,7 @@ WEAPON_VENDOR_IDS: dict[str, int] = {
 # internal weapon/gadget name -> PlanetUnlockState key, for deciding which
 # items are currently purchasable (their vendor planet is AP-accessible).
 # Ryno/mootator/sprout_o_matic/polarizer/shrink_ray aren't sold at any
-# weapons vendor, so they're deliberately absent here.
+# weapons vendor, so they're absent here.
 _WEAPON_TO_PLANET_KEY: dict[str, str] = {
     "lacerator":       "POKITARU",
     "acid_bomb_glove": "POKITARU",
@@ -104,10 +102,8 @@ _MOD_LOCATION_TO_PLANET_KEY: dict[str, str] = {
 }
 
 # Planets whose mod vendor requires extra gadgets beyond the planet itself
-# being AP-accessible — mirrors rules/challax.py's _base rule (Shrink Ray +
-# Polarizer physically gate reaching Challax's mod vendor area, same as
-# core/vendor.py's own _WEAPON_TO_PLANET_KEY-driven weapon vendor list would
-# need if any other planet ever grew the same kind of gate).
+# being AP-accessible (mirrors rules/challax.py's _base rule: Shrink Ray +
+# Polarizer physically gate reaching Challax's mod vendor area).
 _MOD_VENDOR_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {
     "CHALLAX": (Rac5GadgetKeys.SHRINK_RAY, Rac5GadgetKeys.POLARIZER),
 }
@@ -155,13 +151,9 @@ class ModVendorMenu:
 
 class VendorInventory:
     """Psp-backed accessor for the vendor item list/size array
-    (WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS).
-
-    weapon_vendor()/mod_vendor() are the hooks fired when their respective
-    menu opens — left empty for now, filled in as that logic is rebuilt.
-    add_weapon() just tracks which rac5 weapon/gadget names belong in the
-    vendor's item list; refresh() is what actually writes that list into
-    game memory.
+    (WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS). weapon_vendor()/mod_vendor()
+    run each tick their menu is open; add_weapon() tracks which names belong
+    in the vendor's item list, refresh() writes that list to game memory.
     """
 
     def __init__(
@@ -180,38 +172,29 @@ class VendorInventory:
         self.planet_unlock = planet_unlock
         self.send_location = send_location
         self._log = log or (lambda msg: None)
-        # Whether AP has actually granted this weapon/gadget's item yet
-        # (distinct from "was its vendor location bought" — a vendor
-        # purchase only checks the location; it must not grant local
-        # functionality on its own, since the item at that location may not
-        # even be this weapon in a shuffled seed).
+        # Whether AP has actually granted this item — distinct from "was its
+        # vendor location bought", since a purchase only checks the location.
         self._is_weapon_ap_owned = is_weapon_ap_owned or (lambda name: False)
         self._is_gadget_ap_owned = is_gadget_ap_owned or (lambda name: False)
-        # Gates the "levels" location-sends below — without this, a no-op
-        # send_location() for a level whose location isn't in this seed's
-        # pool (weapon_level_checks off) still logs a "not in server
-        # locations" warning every time (see CommonClient's
-        # _append_location_by_name), which fires constantly with the option
-        # off since check_weapons() runs regardless of it.
+        # Gates the "levels" location-sends below so a no-op send_location()
+        # for a level not in this seed's pool doesn't spam a warning every
+        # tick while weapon_level_checks is off.
         self._is_weapon_level_checks_enabled = is_weapon_level_checks_enabled or (lambda: False)
         self.weapons: WeaponInventory = planet.weapons
         self._items: list[str] = []
 
-        # weapon_vendor()/mod_vendor() are called every tick while their menu
-        # is open (not just once on open) so the D-pad toggle below can be
-        # polled — this is all state that must survive between those calls.
+        # State that must survive between per-tick weapon_vendor()/mod_vendor() calls.
         self._weapon_vendor_open:      bool = False
         self._mod_vendor_open:         bool = False
         self.show_purchasable_weapons: bool = True
-        # Weapon levels while the weapons vendor is open — see
+        # Weapon levels snapshotted while the weapons vendor is open — see
         # weapon_vendor()'s open block / close() below.
         self._level_snapshot: dict[str, int] = {}
 
     def controller(self) -> GlobalButtonState | None:
-        """Current controller/pause-select button state for whichever planet
-        is loaded, or None if no planet is loaded yet, or its
-        controller_pause_select_v2 address isn't mapped — GlobalButtonState.read()
-        raises rather than returning None for that, so it must be checked first."""
+        """Current controller/pause-select button state, or None if no planet
+        is loaded or its controller_pause_select_v2 address isn't mapped
+        (GlobalButtonState.read() raises rather than returning None)."""
         planet_id = self.planet.planet_id
         if planet_id is None:
             return None
@@ -226,19 +209,10 @@ class VendorInventory:
         return frozenset(owned)
 
     def _weapons_to_zero_for_vendor(self) -> frozenset[str]:
-        """Weapons whose level zero_levels_for_vendor() should hide for the
-        duration of this vendor visit.
-
-        An AP-owned weapon only gets to show its real level once it's no
-        longer purchasable here (i.e. this vendor's own location for it has
-        already been bought) — at that point it has nothing left to hide
-        behind a fake base price. Still-purchasable weapons must stay zeroed
-        regardless of AP ownership: the weapon may already be functionally
-        owned (granted from another location in a shuffled seed), but this
-        vendor's own copy hasn't actually been bought yet, so its displayed
-        price would otherwise be skewed by a level the player hasn't paid
-        for at this vendor.
-        """
+        """Weapons whose level should stay hidden (zeroed) for this vendor
+        visit: an AP-owned weapon only shows its real level once this
+        vendor's own copy has been bought, otherwise its displayed price
+        would be skewed by a level the player hasn't paid for here."""
         purchasable = set(self._purchasable_names())
         return frozenset(
             name for name in self.weapons.weapons
@@ -283,11 +257,9 @@ class VendorInventory:
         ]
 
     def _is_mod_location_accessible(self, loc: str) -> bool:
-        """Whether the mod vendor selling this location's planet is
-        actually reachable — the planet itself being AP-accessible isn't
-        enough where an extra gadget check gates the vendor's specific
-        area (Challax's Shrink Ray + Polarizer, mirroring rules/challax.py's
-        _base rule; see _MOD_VENDOR_EXTRA_GADGETS)."""
+        """Whether the mod vendor selling this location's planet is reachable
+        — planet accessibility alone isn't enough where an extra gadget
+        check gates the vendor's area (see _MOD_VENDOR_EXTRA_GADGETS)."""
         planet_key = _MOD_LOCATION_TO_PLANET_KEY.get(loc)
         if not planet_key or not self.planet_unlock.is_vendor_accessible(planet_key):
             return False
@@ -298,13 +270,12 @@ class VendorInventory:
 
     def _mod_vendor_weapons(self) -> list[str]:
         """Weapons that should appear in the mod vendor's selection list:
-        at least one of their mod locations is actually reachable —
-        regardless of whether the player owns the weapon yet, the mod
-        itself is still browsable/listed. Every weapon returned here gets
-        force-unlocked for display (see _refresh_mod_vendor()) since the
-        game won't render an unlisted-as-unlocked weapon as a selection at
-        all; real ownership only gates whether a slot is actually
-        *purchasable* (mod_unlock_N, see _apply_mod_unlock_flags())."""
+        at least one of their mod locations is reachable, regardless of
+        whether the player owns the weapon yet (it's still browsable). Every
+        weapon returned here gets force-unlocked for display in
+        _refresh_mod_vendor() since the game won't render an unlisted weapon
+        as a selection; real ownership only gates purchasability
+        (mod_unlock_N, see _apply_mod_unlock_flags())."""
         weapons: list[str] = []
         for (weapon, _slot), loc in MOD_INTERNAL_TO_LOCATION.items():
             if self._is_mod_location_accessible(loc) and weapon not in weapons:
@@ -312,39 +283,17 @@ class VendorInventory:
         return weapons
 
     def _apply_mod_unlock_flags(self) -> None:
-        """Write mod_unlock_N — the mod vendor's own "purchasable" byte for
-        that slot, distinct from mod_slot_N (does the player *own* the mod)
-        — for every mod slot: 1 once its vendor location is actually
-        reachable, 0 otherwise. Gated purely on reachability, matching every
-        mod-vendor location's own world rule (see e.g. rules/quodrona.py's
-        "purchasable without owning the weapon" comment, and
-        rules/challax.py's _base gadget-only gate) — not on whether the
-        player already owns that weapon. AP's own accessibility sweep
-        assumes these locations are reachable independent of weapon
-        ownership, so requiring it here too would leave a location that
-        fill/hints treat as always gettable permanently unpurchasable
-        in-game for a weapon the player hasn't received or bought yet.
+        """Write mod_unlock_N (the vendor's "purchasable" byte for that slot,
+        distinct from mod_slot_N which means "player owns the mod"): 1 once
+        its location is reachable, 0 otherwise. Gated purely on reachability,
+        not ownership — AP's accessibility sweep assumes these locations are
+        reachable independent of weapon ownership.
 
-        Making the mod purchasable without also forcing the weapon's own
-        `unlocked` byte to match would leave a bad half-state (mod
-        purchasable, weapon still reading as locked) — same display-unlock
-        `_mod_vendor_weapons()`/apply_vendor_locations() already force for
-        the weapon-selection list, done again here in lockstep with the
-        per-slot reachability this method already computes. Temporary only:
-        close() -> revert_unowned() zeros both the weapon and every mod slot
-        back out for anything not truly AP-owned once the vendor closes, so
-        nothing here leaks past this session the same way a real weapon-
-        vendor purchase never grants local functionality by itself either.
-
-        Covers every slot every call, not just newly-accessible ones, so
-        anything that stops qualifying also gets correctly revoked.
-
-        The weapon-level unlock below is "any slot reachable" (same OR
-        semantics as _mod_vendor_weapons()), not the current slot's own
-        reachable value — a weapon with multiple mod slots split across
-        planets (one reachable, one not) must not have the later slot in
-        iteration order lock the weapon back down after an earlier slot
-        already unlocked it for display/purchase."""
+        Also force-unlocks the weapon's own `unlocked` byte in lockstep,
+        using "any slot reachable" rather than the current slot's value
+        alone — otherwise a weapon with mod slots split across planets could
+        have a later, unreachable slot re-lock it. Temporary: close() ->
+        revert_unowned() reverts anything not truly AP-owned."""
         reachable_weapons = set(self._mod_vendor_weapons())
         for (weapon, slot), loc in MOD_INTERNAL_TO_LOCATION.items():
             reachable = self._is_mod_location_accessible(loc)
@@ -366,20 +315,15 @@ class VendorInventory:
 
         WeaponInventory.check() diffs against its own raw-memory baseline
         (not the sticky ownership dict), so it correctly reports a purchase
-        even for a weapon already owned via an earlier AP item — see
-        check()'s docstring in weapons.py.
+        even for a weapon already owned via an earlier AP item.
         """
         if not self._weapon_vendor_open:
             self._weapon_vendor_open = True
-            # Zero level for the duration of this vendor visit — its
-            # displayed price apparently derives from the level field, so an
-            # already-leveled-but-still-purchasable-here weapon would show/
-            # charge the wrong price otherwise, AP-owned or not (see
-            # _weapons_to_zero_for_vendor()). Restored in close() (or, for
-            # the purchasable view, re-derived on every left/right toggle
-            # below). Core.tick() skips apply_progressive_leveling() while
-            # this menu is open so it can't fight this zero-out back to the
-            # real level mid-tick.
+            # Zero level for the duration of this visit — displayed price
+            # derives from the level field. Restored in close() or
+            # re-derived on left/right toggle. Core.tick() skips
+            # apply_progressive_leveling() while this menu is open so it
+            # can't fight this zero-out back mid-tick.
             self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
             purchasable = self._purchasable_names()
             if purchasable:
@@ -388,17 +332,13 @@ class VendorInventory:
                 self.weapons.apply_vendor_locations()
                 self._set_items(purchasable)
             else:
-                # Nothing left to buy — everything's already been
-                # purchased, so open straight into the owned-inventory
+                # Nothing left to buy — open straight into the owned-inventory
                 # (ammo) view instead of showing an empty left list.
                 self.show_purchasable_weapons = False
                 self.weapons.apply_vendor_locations(self._owned_names())
                 self.weapons.restore_levels(self._level_snapshot)
                 self._set_items(list(self._owned_names()))
             self.refresh(MenuStateValue.WEAPONS_VENDOR)
-            # TEMP DEBUG: dump the vendor-id -> name mapping actually written
-            # to game memory for this open, so a purchase can be cross-checked
-            # against what slot/id the player actually clicked.
             self._log(
                 "[RAC][vendor-debug] weapon vendor opened, items="
                 + ", ".join(f"{name}=0x{WEAPON_VENDOR_IDS[name]:02X}" for name in self._items)
@@ -409,39 +349,25 @@ class VendorInventory:
             if controller.pressed(PauseSelectButtons.D_PAD_RIGHT) and self.show_purchasable_weapons:
                 self.weapons.apply_vendor_locations(self._owned_names())
                 self.show_purchasable_weapons = False
-                # Right-hand view browses the player's own owned weapons
-                # (to buy ammo for them) — unlike the left view, ammo
-                # price/capacity here genuinely depends on the weapon's
-                # real level, so restore it for the duration of this view
-                # instead of leaving it zeroed. Re-zeroed below the moment
-                # the player flips back to the left view.
+                # Right-hand (ammo) view needs the real level for correct
+                # price/capacity; re-zeroed once the player flips back left.
                 self.weapons.restore_levels(self._level_snapshot)
                 self._set_items(list(self._owned_names()))
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
             # Only allow flipping back to the left (buy-new) view if there's
-            # actually something purchasable to show there — with nothing
-            # left to buy, the left/right toggle stops entirely and the
-            # vendor stays in the owned-inventory (ammo) view for the rest
-            # of this visit, same as it opened into.
+            # still something purchasable — otherwise the toggle stays in
+            # the owned-inventory view for the rest of this visit.
             if (controller.pressed(PauseSelectButtons.D_PAD_LEFT) and not self.show_purchasable_weapons
                     and self._purchasable_names()):
                 self.weapons.apply_vendor_locations()
                 self.show_purchasable_weapons = True
-                # Back to the left (buy-new) view — re-zero so an owned-
-                # but-not-vendor-purchased weapon's displayed price isn't
-                # skewed by its real level, same reasoning as the initial
-                # zero on open. Re-snapshots from the just-restored real
-                # levels above, so close() still restores the true value.
                 self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
                 self._set_items(self._purchasable_names())
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
         changed = self.weapons.check()
 
-        # TEMP DEBUG: log *any* struct-level change seen while this menu is
-        # open, regardless of which view is active, so a purchase that
-        # doesn't land on the expected internal weapon name still shows up.
         if changed["weapons"] or changed["gadgets"]:
             self._log(
                 f"[RAC][vendor-debug] check() saw changed weapons={changed['weapons']!r} "
@@ -449,37 +375,21 @@ class VendorInventory:
                 f"(show_purchasable={self.show_purchasable_weapons})"
             )
 
-        # Weapon Level Checks — Core._check_vendor_purchases() never sees
-        # this tick's check() result at all while either vendor menu is
-        # open (it returns immediately once the vendor is active, since
-        # this method owns weapons.check() while open), so a level newly
-        # reached during a purchase (most commonly: buying a weapon at
-        # level 0 for the first time) has to be sent from here instead —
-        # in both views, since apply_progressive_leveling() runs from
-        # Core.tick() independently of which view this menu is showing.
-        # Gated on the option directly, same reasoning as Core's own
-        # _check_vendor_purchases() — an unpooled location's no-op
-        # send_location() still logs a warning every time otherwise.
+        # Core._check_vendor_purchases() never sees this tick's check() while
+        # this menu is open, so a level newly reached during a purchase has
+        # to be sent from here instead, in both views.
         if self._is_weapon_level_checks_enabled():
             for name, level in changed["levels"]:
                 loc = WEAPON_LEVEL_LOOKUP.get((name, level))
                 if loc:
                     self.send_location(loc)
 
-        # The re-lock below must run every tick regardless of which view is
-        # active — check() above always runs regardless of view, and it
-        # unconditionally baselines self.weapons/gadgets[name] = True the
-        # instant it sees an unlocked bit in memory (dict entries never
-        # regress on their own). An early return here for the right-hand
-        # (AP-inventory/ammo) view used to skip this correction entirely: if
-        # the game's own vendor UI ever re-asserts an unlocked bit while
-        # browsing that view (e.g. still rendering the item you just bought
-        # as "owned" for its own display purposes) with nothing to correct
-        # it, that weapon/gadget stays permanently (and wrongly) marked
-        # AP-owned even after leaving the vendor. Only the "is this a fresh
-        # purchase to report as a location check" half is view-gated below —
-        # nothing new is purchasable to report from the right-hand view, but
-        # the correction itself must not depend on that.
+        # check() above unconditionally baselines weapons/gadgets[name] =
+        # True the instant it sees an unlocked bit in memory, regardless of
+        # view — this re-lock correction must therefore also run every tick
+        # regardless of view, or a weapon/gadget could stay wrongly marked
+        # AP-owned after leaving the vendor. Only the "report as a fresh
+        # purchase" half below is view-gated.
         report_as_purchase = self.show_purchasable_weapons
 
         newly_purchased = False
@@ -490,10 +400,8 @@ class VendorInventory:
                 self.weapons.vendor_locations[loc] = True
                 self.send_location(loc)
                 newly_purchased = True
-            # A vendor purchase only checks the location — it must not grant
-            # local functionality by itself. Re-lock immediately unless AP
-            # has already granted this weapon's actual item (e.g. it was
-            # also a starting weapon, or arrived from another check).
+            # A vendor purchase only checks the location, it must not grant
+            # local functionality by itself.
             if not self._is_weapon_ap_owned(name):
                 self.weapons.set(name, False)
                 self.weapons.weapons[name] = False
@@ -509,20 +417,16 @@ class VendorInventory:
                 self.weapons.gadgets[name] = False
 
         if not report_as_purchase:
-            # Right-hand (AP inventory) view — nothing here can be reported
-            # as a fresh purchase, and the post-purchase refresh below only
-            # applies to the left (buy-new) view's own item list.
+            # Right-hand (AP inventory) view has nothing to report as a
+            # fresh purchase; the refresh below only applies to the left view.
             return
         if newly_purchased:
-            # Refresh right away so the just-bought item drops off the
-            # purchasable list instead of waiting for the next open.
+            # Refresh right away so the just-bought item drops off the list.
             purchasable = self._purchasable_names()
             if purchasable:
                 self._set_items(purchasable)
             else:
-                # That was the last purchasable item — nothing left to show
-                # on the left, so drop straight into the owned-inventory
-                # view instead of refreshing onto an empty list.
+                # Nothing left to show on the left — drop into owned-inventory view.
                 self.show_purchasable_weapons = False
                 self.weapons.apply_vendor_locations(self._owned_names())
                 self.weapons.restore_levels(self._level_snapshot)
@@ -544,35 +448,22 @@ class VendorInventory:
             self.weapons.restore_levels(self._level_snapshot)
             self._level_snapshot = {}
         if was_mod_vendor:
-            # Undo _refresh_mod_vendor()'s temporary "give player the
-            # weapon" display grant for anything not genuinely AP-owned —
-            # it only exists so the weapon renders as a mod-vendor
-            # selection while browsing; leaving it in place after closing
-            # would mean walking away with a functional weapon (and its
-            # mods) AP never actually granted.
+            # Undo _refresh_mod_vendor()'s temporary "give player the weapon"
+            # display grant for anything not genuinely AP-owned.
             self.weapons.revert_unowned(self._is_weapon_ap_owned)
 
     def _refresh_mod_vendor(self) -> None:
         """(Re)build the mod vendor's weapon list and unlock flags. Shared by
-        the open edge, the manual D_PAD_UP refresh, and the post-purchase
-        refresh below — all three need the exact same sequence.
+        the open edge, the manual D_PAD_UP refresh, and the post-purchase refresh.
 
-        apply_vendor_locations() zeroes every weapon's display bit then
-        restores only vendor-purchased/allowed_extra ones — passing the
-        *entire* weapons_sold list as allowed_extra here (not just the
-        AP-owned subset) is deliberate: a weapon has to show as unlocked or
-        the game won't render it as a mod-vendor selection at all, and
-        that's true regardless of whether the player actually owns it yet.
-        This only touches display memory, never weapons.weapons directly —
-        but check() in mod_vendor() below will still see this unlock and
-        baseline weapons.weapons[name] = True the instant it does (dict
-        entries never regress on their own), so mod_vendor() corrects that
-        dict back inline every tick for anything not truly AP-owned. That
-        correction — not the vendor-close revert, and not apply_inventory()'s
-        own re-apply, which is purely additive and can never un-set an
-        already-True dict entry — is what actually keeps this from leaking
-        past the current vendor visit if the session ends any way that
-        doesn't cleanly trip close()/revert_unowned().
+        apply_vendor_locations() is passed the *entire* weapons_sold list,
+        not just the AP-owned subset — a weapon must show as unlocked to
+        render as a mod-vendor selection at all, regardless of real
+        ownership. mod_vendor()'s check() then corrects the ownership dict
+        back inline every tick for anything not truly AP-owned — that inline
+        correction is what prevents this display grant from leaking past
+        the current visit if the session ends without cleanly hitting
+        close()/revert_unowned().
         """
         weapons_sold = self._mod_vendor_weapons()
         self.weapons.apply_vendor_locations(frozenset(weapons_sold))
@@ -592,20 +483,13 @@ class VendorInventory:
 
         changed = self.weapons.check()
 
-        # Only a mod purchase counts as "purchased" here — changed["weapons"]
-        # is never treated or reported as one: any weapon transition this
-        # tick is just check() observing _refresh_mod_vendor()'s own
-        # force-unlock writes above, never a real purchase (this vendor
-        # doesn't sell whole weapons). But check() itself unconditionally
-        # baselines self.weapons[name] = True the instant it sees that
-        # display-only unlock in memory (dict entries never regress on their
-        # own) — relying solely on close()'s revert_unowned() to undo that
-        # later is a single point of failure if the session ever ends
-        # without cleanly tripping close(). Correct the dict back inline
-        # instead — memory must NOT be touched here (unlike weapon_vendor()'s
-        # equivalent correction): the weapon has to stay unlocked in memory
-        # for the whole visit or the game won't render it as a mod-vendor
-        # selection at all; only the ownership bookkeeping needs fixing.
+        # Only a mod purchase counts as "purchased" here — any weapon
+        # transition this tick is just check() observing
+        # _refresh_mod_vendor()'s own force-unlock writes, not a real
+        # purchase (this vendor doesn't sell whole weapons). Correct the
+        # ownership dict back inline; memory itself must NOT be touched
+        # (unlike weapon_vendor()'s equivalent) since the weapon needs to
+        # stay unlocked in memory for the whole visit to render as selectable.
         for name in changed["weapons"]:
             if not self._is_weapon_ap_owned(name):
                 self.weapons.weapons[name] = False
@@ -620,9 +504,7 @@ class VendorInventory:
 
         # Same reasoning as weapon_vendor() — Core never sees this tick's
         # check() while this menu is open, so a level reached in the
-        # background (e.g. automatic mode catching up to a Progressive item
-        # that arrived while browsing) must be sent from here too. Gated on
-        # the option same as weapon_vendor()'s equivalent loop.
+        # background must be sent from here too.
         if self._is_weapon_level_checks_enabled():
             for name, level in changed["levels"]:
                 loc = WEAPON_LEVEL_LOOKUP.get((name, level))
@@ -630,8 +512,6 @@ class VendorInventory:
                     self.send_location(loc)
 
         if newly_purchased:
-            # Refresh right away, same as weapon_vendor() does after a
-            # purchase, rather than waiting for the next menu open.
             self._refresh_mod_vendor()
 
     def add_weapon(self, weapon: str) -> None:

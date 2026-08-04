@@ -73,11 +73,8 @@ def _death_cause(player_state: int) -> str:
 
 class DeathLinkMixin:
     async def _set_death_link_enabled(self, enabled: bool) -> None:
-        """Toggle DeathLink at runtime: updates the local flag
-        _send_death_link_from_sync/_receive_death_link gate on, and the
-        server-side "DeathLink" connection tag via the base CommonContext
-        helper (handles adding/removing the tag and only sends ConnectUpdate
-        if it actually changed)."""
+        """Toggle DeathLink at runtime, updating both the local gate flag and
+        the server-side "DeathLink" connection tag."""
         self._death_link_enabled = enabled
         await self.update_death_link(enabled)
         logger.info(f"[RAC] DeathLink {'enabled' if enabled else 'disabled'}.")

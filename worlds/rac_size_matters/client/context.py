@@ -157,15 +157,22 @@ class RACContext(
         }
 
     def _dyanmic_pine_port(self) -> None:
-        """RAC uses Dynamic Pine's "simple" launcher_options - the hub's
-        combined Launch button already launches PCSX2 for this instance
-        before spawning this client process, so all this needs to do is
-        resolve the port it was assigned. RACSM itself never launches PCSX2."""
+        """Resolve the PCSX2 port Dynamic Pine assigned this instance. RACSM
+        never launches PCSX2 itself — the hub's Launch button already did.
+
+        Gated on launched_via_hub(), not just self.auth being set — self.auth
+        is set on every launch (including a plain Archipelago client launch),
+        so without this a slot name that was ever used through the hub would
+        keep resolving to that stale instance's port even when the player
+        later launches normally against a manually-started PCSX2. A normal
+        launch should just use Pine's own default port (28011)."""
         if not self.auth:
             return
         try:
-            from worlds.dynamicpine import get_pine_port
+            from worlds.dynamicpine import get_pine_port, launched_via_hub
         except ImportError:
+            return
+        if not launched_via_hub():
             return
         port = get_pine_port(GAME_NAME, self.auth)
         if port is not None:
@@ -207,6 +214,8 @@ class RACContext(
             self._wiring.weapon_level_checks_enabled = (
                 int(self.slot_data.get("weapon_level_checks", 0)) >= 1
             )
+            self._wiring.all_missions_enabled  = bool(self.slot_data.get("all_missions", True))
+            self._wiring.all_cutscenes_enabled = bool(self.slot_data.get("all_cutscenes", False))
             self._wiring.planet.weapons.experience_multiplier = (
                 int(self.slot_data.get("weapon_experience_multiplier", 0)) or 1
             )

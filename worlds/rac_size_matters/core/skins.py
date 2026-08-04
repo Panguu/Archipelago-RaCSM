@@ -17,10 +17,7 @@ class SkinData:
 
 
 class Skin(Enum):
-    """
-    Player Skin Enum
-    These are the values of unlocked and equiped values for skins.
-    """
+    """Unlock mask / equip id pairs for each player skin."""
     DEFAULT          = SkinData(unlock_mask=0x01, equip_id=0x00)
     PIRATE_RATCHET   = SkinData(unlock_mask=0x02, equip_id=0x01)
     GODZILLA_RATCHET = SkinData(unlock_mask=0x04, equip_id=0x02)

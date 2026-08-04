@@ -7,10 +7,8 @@ from ...constants import Rac5Planets, Rac5TBolts
 
 @dataclass(frozen=True)
 class TitaniumBolt:
-    # Usually a single planet ID; some locations (e.g. Outpost Omega Dream,
-    # reachable from both the first and second Outpost Omega visit) can be
-    # picked up while registered under more than one planet ID for the same
-    # physical location — pass a tuple in that case.
+    # Usually a single planet ID; a tuple for locations reachable/registered
+    # under more than one planet (e.g. Outpost Omega Dream, visited twice).
     planet_id: int | tuple[int, ...]
     bit:       int  # bit position in the pickup int64
     region:    str  # AP region name

@@ -19,10 +19,7 @@ _BOOTS_MASK = 0xF0  # module-level, not inside the enum body
 
 
 class ArmourSet(IntEnum):
-    """
-    Enum representing different armour sets in the game.
-    This is the value which is set in armour slots to represent what armour is currently equiped.
-    """
+    """Value set in armour slots to represent what armour is currently equiped."""
 
     Wildfire = 1
     Sludge = 2
@@ -195,11 +192,6 @@ class ArmourUnlocks:
 
 
 class ArmourPickup(NamedTuple):
-    """
-    Data record for an armour pickup's information.
-    This is used for monitoring and modifying armour pickups in the game.
-    """
-
     set_key: str
     piece: ArmourPiece
     name: str

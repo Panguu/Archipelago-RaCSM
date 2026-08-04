@@ -41,14 +41,10 @@ class VendorHandlerMixin:
     async def _send_vendor_hints(self) -> None:
         """Send AP location hints for all currently purchasable vendor items.
 
-        Called each time the vendor menu opens. Skips locations that have already
-        been hinted or checked this session.
-
-        Whichever vendor menu is open at this instant (weapon_vendor/mod_vendor
-        activate() before Core fires on_vendor_open — see
-        Core._check_vendor_purchases()) decides which of VendorInventory's two
-        location lists to hint; neither being active means this fired from some
-        other event entirely, so there's nothing to hint.
+        Called each time the vendor menu opens; skips locations already
+        hinted or checked this session. Whichever vendor menu is active
+        decides which item list to hint — if neither is active, this fired
+        from an unrelated event and there's nothing to hint.
         """
         if self.slot is None or not self.pine_connected:
             return
@@ -66,10 +62,8 @@ class VendorHandlerMixin:
             loc_id = self._location_name_to_id.get(name)
             if loc_id is None or loc_id in self._already_hinted or loc_id in checked:
                 continue
-            # Not every location in the static table exists in this seed —
-            # e.g. mods/armour-set/skyboard checks disabled by slot options
-            # remove them from the world entirely. Don't hint a location the
-            # server doesn't know about for this slot.
+            # Slot options can remove locations from the world entirely, so
+            # skip anything the server doesn't know about for this slot.
             if server_locations is not None and loc_id not in server_locations:
                 continue
             new_ids.append(loc_id)
@@ -83,12 +77,10 @@ class VendorHandlerMixin:
 
 # Inventory application
 #
-# Parses items_received into plain internal-name structures (this needs
-# NetworkItem/item_names, a client concern) and hands them to
-# Core.apply_inventory(), which writes them into game memory via the same
-# Inventory get/set methods everything else uses — nothing here pokes pine
-# directly except the bolt/trap filler grants below, which aren't tied to any
-# Inventory class.
+# Parses items_received into internal-name structures and hands them to
+# Core.apply_inventory() to write into game memory. Bolt/trap filler grants
+# below are the exception — they poke pine directly since they aren't tied
+# to any Inventory class.
 
 class InventoryMixin:
     def _parse_inventory(self) -> dict:
@@ -181,17 +173,11 @@ class InventoryMixin:
         """Force the player's in-game state to match what was received from AP,
         regardless of what's already been applied.
 
-        Wipes the current planet's weapon/gadget/mod array first (see
-        WeaponInventory.wipe()) so any leftover non-AP state — vanilla
-        progress, a stale prior session — is fully replaced by AP truth
-        instead of merely topped up on top of it, same reasoning as the
-        one-time wipe Core.tick() does on the very first planet-ready.
-        Skipped if the planet isn't ready yet (nothing to wipe) or a
-        vendor menu owns the display right now (that window has its own
-        zero/restore cycle already; wiping here would just get clobbered
-        by it) — apply_inventory() below already no-ops its own writes in
-        both cases, so wiping here would otherwise leave the array blank
-        with nothing to immediately rewrite it.
+        Wipes the current planet's weapon/gadget/mod array first so leftover
+        non-AP state (vanilla progress, a stale prior session) is fully
+        replaced rather than topped up. Skipped if the planet isn't ready or
+        a vendor menu is open, since both cases already have their own
+        zero/restore cycle that would just clobber a wipe here.
         """
         if not self.pine_connected:
             return
@@ -215,9 +201,8 @@ class InventoryMixin:
         inventory = self._parse_inventory()
         async with self._pine_lock:
             self._wiring.apply_inventory(**inventory)
-            # Bolts/traps are simple filler grants, unrelated to any
-            # Inventory class — apply immediately regardless of planet
-            # readiness (their addresses are global).
+            # Bolts/traps use global addresses, so apply them regardless of
+            # planet readiness.
             if self._filler_checkpoint_synced:
                 self._grant_new_bolt_items()
                 self._grant_new_trap_items()
@@ -227,12 +212,10 @@ class InventoryMixin:
 
     async def _persist_filler_checkpoint(self) -> None:
         """Persist how far into items_received bolts/traps have been granted,
-        so a client restart can resume from here instead of re-granting
-        everything or losing track of what's actually been applied (see
-        _filler_applied_key/_filler_checkpoint_synced in context.py).
+        so a restart can resume instead of re-granting everything.
 
-        "max" rather than "replace" guards against this client racing a
-        slightly-behind stale read of its own previous checkpoint.
+        Uses "max" rather than "replace" to guard against racing a
+        stale read of this client's own previous checkpoint.
         """
         checkpoint = max(self._processed_item_count, self._processed_trap_count)
         await self.send_msgs([{
@@ -257,18 +240,13 @@ class InventoryMixin:
 
     def _grant_random_bonus_item(self, trigger_name: str) -> None:
         """Called whenever lacerator/acid_bomb_glove/concussion_gun's unlocked
-        bit transitions 0->1 in memory — both when the player picks one at
-        Pokitaru's intro kiosk (a scripted event, not a normal vendor menu
-        purchase) and when we ourselves re-write that same bit while
-        re-applying an already-AP-owned weapon.
+        bit transitions 0->1 — either from the player picking one at
+        Pokitaru's intro kiosk, or from our own re-apply write for an
+        already-AP-owned weapon flipping the same bit.
 
-        Guarding on "is trigger_name already AP-owned" is wrong when
-        trigger_name was precollected/received before the player ever visits
-        the kiosk: our own resync write flips the bit first, so the real
-        in-game pickup never shows up as a 0->1 transition, and the location
-        never gets checked. Guard on whether the *location* was already
-        checked instead — _append_location_by_name() already dedupes against
-        that, so this only needs to skip the redundant bonus-item roll.
+        Guards on whether the *location* was already checked rather than
+        "is trigger_name AP-owned", since a precollected weapon's resync
+        write flips the bit before the real pickup ever happens.
         """
         if not self.pine_connected or not self._wiring.planet.is_ready:
             return
@@ -287,13 +265,10 @@ class InventoryMixin:
         wi.set(random.choice(candidates), True)
 
     def _handle_scripted_gadget_pickup(self, trigger_name: str) -> None:
-        """Called whenever hypershot's unlocked bit transitions 0->1.
-
-        Hypershot is handed to the player during Pokitaru's tutorial as a
-        scripted event, not a normal gadget-vendor purchase. Same
-        already-checked-location guard as _grant_random_bonus_item, for the
-        same reason — this also fires on our own re-apply writes.
-        """
+        """Called whenever hypershot's unlocked bit transitions 0->1 — handed
+        to the player during Pokitaru's tutorial as a scripted event rather
+        than a vendor purchase. Same already-checked-location guard as
+        _grant_random_bonus_item, for the same reason."""
         if not self.pine_connected or not self._wiring.planet.is_ready:
             return
         loc = GADGET_INTERNAL_TO_LOCATION.get(trigger_name)
@@ -323,20 +298,12 @@ class InventoryMixin:
         self._write_notification_text(msg)
 
     def _grant_new_bolt_items(self) -> None:
-        # PLAYER_BOLT_COUNT is a global address — safe to write during a transition.
-        # Starting bolts (the precollected "Bolts" item, if starting_bolts>0)
-        # are granted separately by _grant_starting_items(), fired from
-        # on_planet_ready and gated on a flag persisted to AP data storage —
-        # not here, since that grant needs to happen once a planet has
-        # actually loaded, not merely once this filler scan runs. This scan
-        # only needs to skip counting that one precollected item as generic
-        # filler, which it can determine purely from checkpoint position:
-        # precollected items are always the earliest entries in
-        # items_received, so the precollected Bolts item (if any) only ever
-        # appears in a scan starting from checkpoint 0 — a later scan
-        # (checkpoint already > 0) never sees it again regardless of
-        # _grant_starting_items()'s own timing, avoiding any race between
-        # the two.
+        # PLAYER_BOLT_COUNT is a global address, safe to write mid-transition.
+        # Starting bolts are granted separately by _grant_starting_items()
+        # once a planet is ready; this scan just needs to avoid double-
+        # counting that precollected item as generic filler. Precollected
+        # items are always the earliest entries in items_received, so they
+        # only ever appear in a scan starting from checkpoint 0.
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))
         skipped_precollected = self._processed_item_count != 0
         new_items = self.items_received[self._processed_item_count:]
@@ -360,15 +327,15 @@ class InventoryMixin:
                 grant = min(200000, max(75000, int(current * 0.2)))
                 current = min(current + grant, MAX_PLAYER_BOLTS)
             self.pine.write_int32(PLAYER_BOLT_COUNT, current)
-            # One-shot AP filler grant, not organic gameplay gain —
-            # rebaseline so Core's per-tick apply_boost() doesn't multiply it.
+            # Rebaseline so Core's per-tick apply_boost() doesn't treat this
+            # one-shot filler grant as organic gameplay gain.
             self._wiring.player_bolts.rebaseline(current)
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
 
     def _grant_new_trap_items(self) -> None:
-        # Trap addresses (DREAMTIME_EFFECT, BRIGHTNESS_ADDRESS, CHEATS) are all
-        # global — safe to write during a transition.
+        # Trap addresses (DREAMTIME_EFFECT, BRIGHTNESS_ADDRESS, CHEATS) are
+        # all global, safe to write mid-transition.
         new_items = self.items_received[self._processed_trap_count:]
         self._processed_trap_count = len(self.items_received)
 

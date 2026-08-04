@@ -115,24 +115,12 @@ def activate_trap(pine: Psp, trap_name: str) -> None:
 
 
 def reconcile_traps(pine: Psp) -> None:
-    """Clear any trap effect currently active in game memory that this
-    client process has no record of (i.e. not in _active_deadlines) —
-    called once whenever PINE (re)connects.
-
-    _active_deadlines/_revert_handles are this process's only source of
-    truth for "what's actually supposed to be active right now"; they're
-    plain in-memory dicts, not persisted, so a client restart always starts
-    with both empty. Game memory itself can still show a trap as active
-    across that restart (or across a PINE drop/reconnect racing a revert
-    timer's own write — see activate_trap()'s _revert(), which pops the
-    bookkeeping before writing, so a write that fails mid-drop leaves the
-    bit stuck with no bookkeeping left to retry it) — that combination is
-    exactly a trap PINE has no way to ever revert on its own again, so it
-    must be cleared here instead of waiting on a timer that no longer exists.
-
-    Deliberately does not touch any trap that _does_ still have a live
-    deadline (a PINE reconnect mid-trap keeps running as normal — its
-    existing revert timer will still fire and clean up on schedule).
+    """Clear any trap effect active in game memory that this client process
+    has no record of (not in _active_deadlines) — called once whenever PINE
+    (re)connects. _active_deadlines is in-memory only, so a client restart
+    (or a drop/reconnect racing a revert timer's write) can leave a trap bit
+    stuck in memory with nothing left to ever revert it; this cleans that up.
+    Traps with a live deadline are left alone since their timer is still running.
     """
     for trap_name, address in _DIRECT_ADDRESSES.items():
         if trap_name in _active_deadlines:

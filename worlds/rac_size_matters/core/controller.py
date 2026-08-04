@@ -42,10 +42,8 @@ class GlobalButtonState:
     """Snapshot of both controller bytes, read each tick.
 
     Reads PlanetAddresses.controller_pause_select_v2 (buttons byte at +1).
-    These bytes start at 0xFF (nothing held) and are decremented by a
-    button's PauseSelectButtons/ControllerButtons bit value while it's held,
-    so a bit reads 0 when pressed and 1 when released — the reverse of
-    controller_pause_select, hence the ``~x & 0xFF`` inversion below.
+    These bytes start at 0xFF and are decremented while a button is held, so
+    a bit reads 0 when pressed — hence the ``~x & 0xFF`` inversion below.
     """
 
     def __init__(self, pause_sel: int, buttons: int) -> None:

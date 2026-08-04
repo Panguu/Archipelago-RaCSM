@@ -93,14 +93,10 @@ WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
 # and playing, so there's no more specific region to anchor it to.
 from .core.weapons import WEAPON_DATA as _WEAPON_DATA
 
-# (internal weapon key, 1-indexed level) -> AP location name. Used by the
-# client to look up which location a newly-reached weapon level maps to.
-# Level 1 is deliberately excluded: it's synonymous with owning the weapon
-# at all (already covered by whatever location/item grants it), not a
-# distinct in-game milestone, so it isn't modelled as a location here.
-# Names come from WEAPON_LEVEL_NAMES (constants/weapon_levels.py) — an
-# explicit mapping, not a dynamically-built getattr() lookup — so a typo/
-# rename there is a KeyError at import time, not a silent lookup failure.
+# (internal weapon key, 1-indexed level) -> AP location name. Level 1 is
+# excluded since it's synonymous with owning the weapon, not a distinct
+# milestone. Sourced from WEAPON_LEVEL_NAMES so a typo/rename there is a
+# KeyError at import time rather than a silent lookup failure.
 WEAPON_LEVEL_LOOKUP: dict[tuple[str, int], str] = {
     (internal, level): WEAPON_LEVEL_NAMES[internal][level]
     for internal, data in _WEAPON_DATA.items()
@@ -136,18 +132,11 @@ ARMOUR_SET_CHECK_LOCATIONS: dict[str, RACLocationData] = {
     for idx, name in enumerate(ARMOUR_SET_CHECKS, start=1)
 }
 
-# NG+ Items option (options.py's NgPlusItems): RYNO and the Chameleon/
-# Hyperborean armour sets are New Game Plus exclusives in vanilla — with
-# that option off, none of their items are ever placed (see world.py's
-# create_items()/generate_basic()), so any location whose only
-# reward/rule depends on them has to be excluded too. Single source of
-# truth shared by regions.py (location creation) and rules/weapon_levels.py
-# + rules/armour_sets.py (rule assignment) — both must agree on exactly
-# what got created, or world.set_rule() ends up targeting a Location
-# regions.py never actually built. Stalker/Ice II are included here even
-# though they're not pure Chameleon/Hyperborean sets — both need one piece
-# from the excluded set to ever be completed (see rules/armour_sets.py's
-# _ARMOUR_SET_RULES).
+# NG+ Items option: with it off, RYNO and Chameleon/Hyperborean items are
+# never placed, so locations depending on them must be excluded too. Shared
+# by regions.py (creation) and rules/weapon_levels.py + rules/armour_sets.py
+# (rule assignment) — both must agree on the same exclusion. Stalker/Ice II
+# are included since each needs one piece from the excluded sets.
 NG_PLUS_WEAPON_LEVEL_LOCATIONS: frozenset[str] = frozenset(
     loc_name for (internal, _level), loc_name in WEAPON_LEVEL_LOOKUP.items()
     if internal == Rac5WeaponKeys.RYNO

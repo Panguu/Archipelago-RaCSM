@@ -27,15 +27,12 @@ _NEEDS_GOOD_EXP_PLANET: frozenset[str] = frozenset({
 
 def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     """Weapon Level Checks option: the rule differs by ProgressiveWeapons mode.
-    manual/automatic gate leveling entirely behind received Progressive Weapon
-    copies (see core/weapons.py's apply_progressive_leveling()), so the
-    location needs that many copies to ever be reachable. off mode has no such
-    gate — leveling is free once the weapon is owned — so the location just
-    needs the weapon itself.
+    manual/automatic gate leveling behind received Progressive Weapon copies,
+    so the location needs that many copies. off mode has no such gate —
+    leveling is free once owned — so the location just needs the weapon.
 
-    RYNO/Laser Tracer/Static Barrier levels also need HasGoodExpPlanet() —
-    those three only gain experience at a meaningful rate on specific
-    planets/gadget combos, not just from owning the weapon.
+    RYNO/Laser Tracer/Static Barrier also need HasGoodExpPlanet(), since those
+    three only gain experience at a meaningful rate on specific planets/gadgets.
     """
     tier = world.options.weapon_level_checks.value
     if tier < 1:

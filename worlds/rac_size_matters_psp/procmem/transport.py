@@ -7,12 +7,9 @@ from ..pypsp.psp import Psp
 from . import winmem
 from .winmem import WinMemError
 
-# Core/MemMap.h's GetPointerUnchecked()/GetPointerWriteUnchecked(): PPSSPP
-# unconditionally #define's MASKED_PSP_MEMORY, so every guest PSP address
-# gets this mask applied before being added to Memory::base — a no-op for
-# every address this codebase actually uses (all well under 0x40000000,
-# see core/address_maps/psp.py) but applied unconditionally anyway for
-# correctness/generality, not assumed away.
+# Core/MemMap.h always applies this mask to guest PSP addresses before adding
+# them to Memory::base. No-op for every address this codebase uses (all well
+# under 0x40000000), but applied unconditionally anyway for correctness.
 _PSP_ADDRESS_MASK = 0x3FFFFFFF
 
 
@@ -20,16 +17,12 @@ class ProcMemTransport:
     """Same public surface as pypsp.Psp, backed by direct ReadProcessMemory/
     WriteProcessMemory calls into PPSSPP's own process instead of its
     debugger WebSocket — except for connect()'s one-time bootstrap, which
-    still briefly uses the WebSocket (see module docstring)."""
+    still briefly uses the WebSocket."""
 
     # Re-exported so existing ``except Psp.RequestError``/``except
-    # Psp.ConnectionError`` call sites in core/*.py (core/core.py,
-    # core/planets.py) keep working completely unchanged against a
-    # ProcMemTransport instance too — those files import the exception
-    # classes off pypsp.Psp itself, and this class raises those exact same
-    # classes rather than reimplementing its own. See
-    # worlds/rac_size_matters_psp_plugin/filebridge/transport.py's
-    # FileBridge for the precedent this mirrors.
+    # Psp.ConnectionError`` call sites in core/*.py keep working unchanged
+    # against a ProcMemTransport instance too, since this class raises the
+    # same exception classes rather than reimplementing its own.
     ConnectionError = Psp.ConnectionError
     DuplicateConnectionError = Psp.DuplicateConnectionError
     RequestError = Psp.RequestError
@@ -41,10 +34,9 @@ class ProcMemTransport:
         timeout: float = 5.0,
         process_names: tuple[str, ...] = winmem.PPSSPP_PROCESS_NAMES,
     ) -> None:
-        """host/port/timeout: passed straight through to the short-lived
-        pypsp.Psp connection used for connect()'s bootstrap (None host/port
-        means auto-discover, same as pypsp.Psp itself — see pypsp/discover.py).
-        process_names: which Windows executable names to look for, in
+        """host/port/timeout: passed through to the short-lived pypsp.Psp
+        connection used for connect()'s bootstrap (None host/port means
+        auto-discover). process_names: Windows executable names to try, in
         order, when locating the running PPSSPP process."""
         self._host = host
         self._port = port
@@ -59,12 +51,9 @@ class ProcMemTransport:
 
     def _bootstrap(self) -> tuple[str, int]:
         """Open a short-lived pypsp.Psp WebSocket connection, fetch the
-        currently-loaded game id and Memory::base in the same session, then
-        close it. Raises Psp.ConnectionError (propagated straight from
-        pypsp.Psp) if PPSSPP's debugger WebSocket can't be reached at all —
-        deliberately NOT caught here, so connect()/get_game_id() callers see
-        the same kind of failure pypsp.Psp itself already raises rather than
-        a new error type."""
+        currently-loaded game id and Memory::base, then close it. Lets
+        Psp.ConnectionError propagate uncaught so callers see the same
+        failure type pypsp.Psp itself raises."""
         ws = Psp(self._host, self._port, timeout=self._timeout)
         try:
             ws.connect()
@@ -78,21 +67,15 @@ class ProcMemTransport:
         if self._handle is not None:
             return
 
-        # Bootstrap first: if PPSSPP's debugger WebSocket isn't reachable at
-        # all, there's no point scanning for/opening the process — let that
-        # failure surface as-is (Psp.ConnectionError) rather than masking it
-        # behind a process-not-found error.
+        # Bootstrap first: if the debugger WebSocket isn't reachable, don't
+        # bother scanning for the process — let that failure surface as-is.
         game_id, base = self._bootstrap()
         self._cached_game_id = game_id
         self._base = base
 
-        # Deliberately does NOT compare game_id against an expected value
-        # here — same as pypsp.Psp.connect() itself, that comparison is the
-        # caller's job (see client/psp_mixin.py's _attempt_psp_connect(),
-        # which calls connect() then get_game_id() and does the comparison
-        # itself so it can log the nicer "detected <other known Ratchet
-        # game>" message). Keeping that logic in one place means this
-        # transport doesn't need to know EXPECTED_GAME_ID at all.
+        # Doesn't compare game_id against an expected value — that's the
+        # caller's job (client/psp_mixin.py's _attempt_psp_connect()), so this
+        # transport doesn't need to know EXPECTED_GAME_ID.
         pid = winmem.find_pid_by_name(self._process_names)
         if pid is None:
             raise self.ConnectionError(
@@ -131,16 +114,10 @@ class ProcMemTransport:
     def _fail(self, verb: str, psp_address: int, host_address: int, length: int,
                exc: WinMemError) -> NoReturn:
         """Turn a raw WinMemError into either a Psp.ConnectionError (PPSSPP
-        itself is gone — matches how pypsp.Psp's _request() reacts to a
-        dropped socket) or a Psp.RequestError (PPSSPP is still running but
-        this specific address/op failed — matches how pypsp.Psp reacts to
-        PPSSPP's debugger protocol responding with an explicit "error" event,
-        e.g. for one of the still-unverified computed addresses in
-        core/address_maps/psp.py that land outside PPSSPP's real memory
-        windows). Distinguishing the two lets core.py's existing ``except
-        Psp.RequestError`` guards (core.py's notify()/tick(), for the
-        not-yet-verified Clank/Skyboard/text-box addresses) keep working
-        completely unchanged against this transport."""
+        itself is gone) or a Psp.RequestError (PPSSPP is running but this
+        address/op failed, e.g. one of the still-unverified computed addresses
+        in core/address_maps/psp.py). Distinguishing the two lets core.py's
+        existing ``except Psp.RequestError`` guards keep working unchanged."""
         if not winmem.is_process_alive(self._handle):
             self.disconnect()
             raise self.ConnectionError(
@@ -191,16 +168,9 @@ class ProcMemTransport:
         return self._read_raw(address, length)
 
     def read_string(self, address: int, max_length: int) -> str:
-        # Unlike pypsp.Psp.read_string() (which asks PPSSPP's own C++ side
-        # to find the null terminator via "memory.readString" and only
-        # slices the *decoded* string to max_length on the client side),
-        # there's no server here to do that for us — read max_length raw
-        # bytes and find the terminator locally instead. Matches
-        # worlds/rac_size_matters_psp_plugin/filebridge/transport.py's
-        # FileBridge.read_string() precedent. The one call site in this
-        # codebase (core/display_text.py) uses a fixed 256-byte buffer, well
-        # within any real string stored there, so this difference shouldn't
-        # matter in practice.
+        # Unlike pypsp.Psp.read_string() (which asks PPSSPP's C++ side to find
+        # the null terminator), there's no server here to do that — read
+        # max_length raw bytes and find the terminator locally instead.
         raw = self._read_raw(address, max_length)
         nul = raw.find(b"\x00")
         if nul != -1:
@@ -235,9 +205,7 @@ class ProcMemTransport:
     # ---- game / emu status --------------------------------------------------
 
     def get_game_id(self) -> str:
-        """Returns the currently-loaded game's disc id, cached from
-        connect()'s bootstrap check. Never re-opens the debugger WebSocket
-        itself — the id is only ever (re-)verified via a fresh connect()
-        (e.g. /reconnect), so a game swapped inside an already-running
-        PPSSPP process without restarting it won't be caught here."""
+        """Returns the currently-loaded game's disc id, cached from connect()'s
+        bootstrap check. Never re-opens the WebSocket itself, so a game
+        swapped inside an already-running PPSSPP process won't be caught here."""
         return self._cached_game_id

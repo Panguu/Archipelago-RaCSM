@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from ...constants import Rac5WeaponKeys, Rac5WeaponLevels
 
-# (internal weapon key) -> {level -> location name}, referencing the
-# Rac5WeaponLevels constants directly by name rather than building the
-# attribute name dynamically (e.g. getattr(Rac5WeaponLevels,
-# f"{internal.upper()}_LEVEL_{level}")) — explicit here so a typo/rename
-# is a NameError at import time, not a silent AttributeError wherever the
-# dynamic lookup happened to first run.
+# (internal weapon key) -> {level -> location name}. Written out explicitly
+# rather than built via getattr(Rac5WeaponLevels, f"...") so a typo/rename
+# is a NameError at import time, not a silent AttributeError later.
 WEAPON_LEVEL_NAMES: dict[str, dict[int, str]] = {
     Rac5WeaponKeys.LACERATOR: {
         2: Rac5WeaponLevels.LACERATOR_LEVEL_2,

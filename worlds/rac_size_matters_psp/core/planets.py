@@ -28,6 +28,7 @@ from .structs.game import (
     TransitionGateStruct,
 )
 from .traps import activate_trap as _activate_trap
+from .weapon_cycler import WeaponCyclerInventory
 from .weapons import WeaponInventory
 from ..pypsp import Psp
 
@@ -94,15 +95,14 @@ PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
 
 
 # Infobots / planet state
-# Infobots are AP items given to the player.  When received they set the
-# corresponding planet's unlock-status address to INFOBOT_UNLOCK_VALUE (3),
-# which allows Ratchet to travel to (or enter) that planet.
+# Infobots are AP items; when received they set the corresponding planet's
+# unlock-status address to INFOBOT_UNLOCK_VALUE (3), allowing travel there.
 #
-# Planets that are auto-unlocked from the start (no infobot item):
+# Auto-unlocked from the start (no infobot item):
 #   Dreamtime    -- unlocked through Outpost Omega automatically
 #   Inside Clank -- entrance only accessible from Dayni Moon; requires Shrink Ray
 
-INFOBOT_UNLOCK_VALUE = 3  # value written to the planet status address
+INFOBOT_UNLOCK_VALUE = 3
 
 # Display name -> planet key used in PLANET_STATE_ADDRESSES
 INFOBOT_ITEM_TO_PLANET: dict[str, str] = {
@@ -122,7 +122,7 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
     "kalidon":           PLANET_UNLOCK_ADDRESSES["KALIDON"],
     "metalis":           PLANET_UNLOCK_ADDRESSES["METALIS"],
     "outpost_omega":     PLANET_UNLOCK_ADDRESSES["OUTPOST_OMEGA"],
-    "outpost_omega_oo2": PLANET_UNLOCK_ADDRESSES["OUTPOST_OMEGA"] + PLANET_STATE_OFFSET,  # secondary state set alongside Outpost Omega
+    "outpost_omega_oo2": PLANET_UNLOCK_ADDRESSES["OUTPOST_OMEGA"] + PLANET_STATE_OFFSET,  # secondary state, set alongside Outpost Omega
     "challax":           PLANET_UNLOCK_ADDRESSES["CHALLAX"],
     "dayni_moon":        PLANET_UNLOCK_ADDRESSES["DAYNI_MOON"],
     "inside_clank":      PLANET_UNLOCK_ADDRESSES["INSIDE_CLANK"],  # unlocked via Dayni Moon infobot
@@ -132,8 +132,8 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
 # Planet unlock addresses always forced to INFOBOT_UNLOCK_VALUE because
 # these planets have no collectible infobot in the AP item pool.
 AUTO_UNLOCK_ADDRESSES: list[int] = [
-    PLANET_UNLOCK_ADDRESSES["POKITARU"],   # mandatory starting planet, always accessible
-    PLANET_UNLOCK_ADDRESSES["DREAMTIME"],  # auto-unlocked via Outpost Omega
+    PLANET_UNLOCK_ADDRESSES["POKITARU"],
+    PLANET_UNLOCK_ADDRESSES["DREAMTIME"],
 ]
 
 
@@ -179,6 +179,7 @@ class PlanetInventory:
         self.player           = PlayerInventory(pine)
         self.menu             = MenuInventory(pine)
         self.weapons          = WeaponInventory(pine)
+        self.weapon_cycler    = WeaponCyclerInventory(pine)
 
         self.planet_id: int | None = None
         # True once the current planet has fully loaded and every
@@ -187,52 +188,40 @@ class PlanetInventory:
         # is gated on this, since addresses are stale/unbound until then.
         self.is_ready: bool = False
         self._prev_gate: int = TRANSITION_GATE_IDLE
-        # Wall-clock timestamp (time.monotonic()) of the tick the gate was
-        # last seen leaving idle, or None when no transition is in flight.
-        # PSP has no "arrived" sentinel value to poll for like PS2 did —
-        # _LOADING_PLANET_ADDR simply isn't valid until roughly this long
-        # after the gate leaves idle, so the wait is timed instead of
-        # value-driven. See structs/game.py's gate-address comment.
+        # Timestamp of the tick the gate was last seen leaving idle, or None
+        # when no transition is in flight. PSP has no "arrived" sentinel
+        # value like PS2 did — _LOADING_PLANET_ADDR isn't valid until
+        # roughly this long after the gate leaves idle, so the wait is timed
+        # instead of value-driven.
         self._transition_started: float | None = None
-        # Quick select starts frozen; the first time a planet becomes ready
-        # it's zeroed (fresh boot), every time after that it's restored from
-        # the in-memory snapshot — same start/restore split QuickSelectState
-        # itself already exposes.
+        # Quick select starts frozen; zeroed the first time a planet becomes
+        # ready (fresh boot), restored from the in-memory snapshot every time after.
         self._quick_select_primed: bool = False
 
-        # Armour tracking: collected_armour is what's been picked up in-game
-        # this session, unlock_armour is what Archipelago has granted — kept
-        # separate the same way ArmourState used to split world/ap armour.
-        # equipped_armour only ever updates when the pause menu closes (see
-        # check_equipped_armour()) — never on any other tick.
+        # collected_armour is what's been picked up in-game this session,
+        # unlock_armour is what Archipelago has granted. equipped_armour
+        # only updates when the pause menu closes (check_equipped_armour()).
         self.collected_armour: dict[str, int] = dict.fromkeys(ArmourUnlocks._OFFSETS, 0)
         self.unlock_armour:    dict[str, int] = dict.fromkeys(ArmourUnlocks._OFFSETS, 0)
         self.equipped_armour:  dict[str, int] = dict.fromkeys(EquippedArmour._OFFSETS, 0)
         # Armour-pickup detection is gated to the player's pickup-animation
         # window (see check_collected_armour()) so an AP inventory resync —
-        # which writes the same UnlockedArmour bytes outside of any pickup
-        # animation, e.g. on every planet load — is never misread as a
-        # genuine in-game pickup. There's no separate "this specific pickup
-        # was collected" flag available to read (the per-set byte is the
-        # only signal that exists, and AP's own grant already writes that
-        # same byte), so an already-AP-owned piece would otherwise look
-        # identical to one that was never picked up. check_collected_armour()
-        # works around that by zeroing the bytes for the duration of the
-        # animation window instead of merely snapshotting them.
+        # which writes the same UnlockedArmour bytes outside any pickup
+        # animation — is never misread as a genuine pickup. There's no
+        # separate "collected" flag to read, so check_collected_armour()
+        # zeroes the bytes for the animation window instead of snapshotting.
         self._was_picking_up:    bool = False
-        # Picking up a new armour piece can auto-equip it for the pickup
-        # animation — snapshot the equipped slots at pickup-start and
-        # restore them at pickup-end so a mere pickup never silently changes
-        # what the player has equipped; equipping stays a deliberate action
-        # (quick select / pause menu).
+        # Picking up a piece can auto-equip it for the pickup animation —
+        # snapshot equipped slots at pickup-start and restore at pickup-end
+        # so a mere pickup never silently changes the player's loadout.
         self._equipped_pickup_baseline: dict[str, int] | None = None
 
         self.on_death:                 Callable[[], None]              = lambda: None
         self.on_respawn:               Callable[[], None]              = lambda: None
         self.on_equipped_armour_saved: Callable[[dict[str, int]], None] = lambda _: None
-        # Fires whenever the pause menu closes — alongside the equipped-armour
-        # save above, so anything else that should only persist on pause-close
-        # (e.g. quick select) can hook the same edge without its own tracking.
+        # Fires whenever the pause menu closes, alongside the equipped-armour
+        # save above, so other pause-close-only state (e.g. quick select)
+        # can hook the same edge.
         self.on_pause_close:           Callable[[], None]              = lambda: None
 
         self._prev_dead: bool = False
@@ -240,53 +229,36 @@ class PlanetInventory:
 
     def set_planet(self, planet_id: int) -> None:
         """Rebind every planet-dependent Inventory to the newly loaded planet
-        — including unbinding them (base/array None, every read/write on
-        them becomes a no-op) for a planet_id not in PLANET_ADDRESSES. Every
-        sub-inventory here must always be explicitly rebound on every call,
-        never left alone, or an unrecognized planet would keep whatever
-        addresses the last recognized planet had bound: player/menu/weapons
-        would then read/write a totally unrelated planet's memory instead of
-        just leaving those addresses untouched, and only truly global
-        addresses (bolts, skill points, missions, ...) would be safe."""
+        — including unbinding them (every read/write becomes a no-op) for a
+        planet_id not in PLANET_ADDRESSES. Every sub-inventory must be
+        explicitly rebound on every call, or an unrecognized planet would
+        keep whatever addresses the last recognized planet had bound and
+        read/write a totally unrelated planet's memory."""
         self.planet_id = planet_id
         self.player.set_base(planet_id)
         self.menu.set_base(planet_id)
         self.weapons.set_base(WEAPON_ARRAY_BASE_BY_PLANET.get(planet_id))
+        self.weapon_cycler.set_base(planet_id)
 
     def check_transition(self) -> bool:
         """Pull-based transition detector — call every tick.
 
-        Primary signal is the transition gate (structs/game.py's
-        _TRANSITION_GATE_ADDR): any change away from TRANSITION_GATE_IDLE
-        (0xFFFFFFFF) means a level transition has started, and blocks writes
-        immediately (is_ready False). Unlike PS2, PSP has no distinct
-        "arrived" gate value to poll for — _LOADING_PLANET_ADDR (the
-        destination planet id, right next to the gate) isn't valid until
-        roughly TRANSITION_ARRIVAL_DELAY_S seconds after the gate leaves
-        idle, so that read is timed on a wall-clock deadline
-        (time.monotonic()) rather than value-driven. Once the deadline
-        passes, the planet id there is read and — if non-zero — that's the
-        moment set_planet() actually rebinds every planet-dependent
-        Inventory and is_ready goes back to True.
+        Primary signal is the transition gate: any change away from
+        TRANSITION_GATE_IDLE means a level transition has started and blocks
+        writes immediately. Unlike PS2, PSP has no "arrived" gate value to
+        poll for — _LOADING_PLANET_ADDR isn't valid until roughly
+        TRANSITION_ARRIVAL_DELAY_S seconds after the gate leaves idle, so
+        that read is timed on a wall-clock deadline instead of value-driven.
 
-        Backed up — independent of the gate entirely — by a raw
-        CURRENT_PLANET_ADDRESS comparison, checked unconditionally every
-        tick (not just when the gate path stays quiet): catches the rare
-        planet swap that never touches the gate at all (e.g. the scripted
-        Outpost Omega 1 -> 2 area change), a gate address that's ever
-        unreadable, and the general case of the gate-based detection above
-        simply missing a transition for any other reason. Also lets a
-        gate-detected transition resolve early if the real planet id updates
-        before the timed wait above elapses, rather than always sitting out
-        the full delay.
+        Backed up by a raw CURRENT_PLANET_ADDRESS comparison, checked every
+        tick regardless of gate state: catches a planet swap that never
+        touches the gate (e.g. the scripted Outpost Omega 1 -> 2 change), a
+        gate address that's unreadable, or any other miss by the gate-based
+        path — and lets a gate-detected transition resolve early if the real
+        planet id updates before the timed wait elapses.
 
-        Quick select is frozen the moment writes are blocked, and restored
-        (or zeroed, the very first time) the moment the new planet is ready
-        — same lifecycle QuickSelectState.freeze()/restore()/zero() already
-        implements, just called at the right transition edges.
-
-        Planet ID 0x00 is never treated as ready, no matter what else reads
-        true, since there's nothing valid to bind addresses to.
+        Planet ID 0x00 is never treated as ready, since there's nothing
+        valid to bind addresses to.
 
         Returns True exactly once, the tick the new planet becomes ready.
         """
@@ -307,19 +279,26 @@ class PlanetInventory:
 
         # Timed wait for _LOADING_PLANET_ADDR to become valid — independent
         # of whether the gate itself changed *this* tick, since the deadline
-        # can (and usually does) land on a later tick than the one that set it.
+        # usually lands on a later tick than the one that set it.
         if self._transition_started is not None:
             if time.monotonic() - self._transition_started >= TRANSITION_ARRIVAL_DELAY_S:
-                planet_id = self.pine.read_int8(LoadingPlanetStruct.BASE_ADDRESS)
+                # Memory can be transiently unreadable mid-transition — treat
+                # a failed read as "not arrived yet" rather than raising.
+                try:
+                    planet_id = self.pine.read_int8(LoadingPlanetStruct.BASE_ADDRESS)
+                except Psp.RequestError:
+                    planet_id = 0
                 self._transition_started = None
                 if planet_id != 0:
                     self._ready_on_planet(planet_id)
                     return True
 
-        # Backup: plain planet-id-changed check, always evaluated regardless
-        # of gate/timer state above (see docstring) — this is the one signal
-        # that doesn't depend on the gate address working at all.
-        current_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
+        # Backup: plain planet-id-changed check, the one signal that doesn't
+        # depend on the gate address working at all.
+        try:
+            current_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
+        except Psp.RequestError:
+            return False
         if current_id != 0 and current_id != self.planet_id:
             self._transition_started = None
             self._ready_on_planet(current_id)
@@ -335,18 +314,11 @@ class PlanetInventory:
             self.quick_select.zero()
         else:
             self.quick_select.unfreeze()
-        # zero()'s own docstring already promises this: the in-memory
-        # snapshot survives the zero-out specifically so a previously
-        # restored AP loadout can be written back right after — but nothing
-        # actually called restore() on this first-time branch, so a loadout
-        # already loaded via context.py's Retrieved/SetReply handler (see
-        # QuickSelectState.load()) sat in memory doing nothing until the
-        # player's *next* planet transition ever wrote it out. Calling it
-        # unconditionally here closes that gap for both branches: on the
-        # very first ready it applies whatever's already been loaded (or
-        # harmlessly re-applies the same all-zero default zero() just
-        # wrote), and on every later one it's the same restore the old
-        # code already ran in the else branch above.
+        # zero()'s in-memory snapshot survives the zero-out so a previously
+        # loaded AP loadout can be written back right after — restore() is
+        # called unconditionally here so the first-ready branch also applies
+        # whatever was already loaded (via QuickSelectState.load()), not
+        # just later transitions.
         self.quick_select.restore()
         if planet_id == _METALIS_ID:
             self._suppress_giant_clank()
@@ -392,31 +364,21 @@ class PlanetInventory:
         pickup-animation window (player.is_picking_up), not by polling
         UnlockedArmour continuously — apply_inventory() writes those same
         bytes any time AP-owned armour gets re-synced (e.g. on every planet
-        load), completely outside of any pickup animation, and treating
-        every appeared bit as "new" would misreport that resync as a real
-        pickup the first time each session it happens.
+        load), which would otherwise be misread as a real pickup.
 
-        A snapshot-and-diff wouldn't be enough on its own though: if AP
-        already granted a piece before its own vanilla pickup was ever
-        visited, apply_inventory() has already written that same bit, so it
-        would sit in the "baseline" too and the game re-writing the
-        identical bit during the pickup would never look like a change.
-        There's no separate per-pickup "collected" flag to fall back on
-        (the per-set byte is the only signal that exists, and it's the same
-        one AP writes) — so instead of snapshotting, entering the animation
-        zeroes every set's bytes outright. Whatever's back to 1 on exit is
-        fresh from this pickup — except a piece already equipped going into
-        the animation, whose bit the game re-asserts on its own regardless
-        of any new pickup (e.g. the default starting armour, worn before AP
-        has granted it), so those bits are masked out of the diff using the
-        pre-pickup equipped-slot baseline before the result is OR'd into
-        collected_armour (so it's never reported twice), then
-        immediately rewrite memory for every set back to only what
-        Archipelago has actually granted (unlock_armour) — a local pickup
-        only proves the *location* was visited, it doesn't grant ownership,
-        so the raw bits the game just wrote must not be left sitting in
-        memory as if they were owned. Never touches unlock_armour itself —
-        that's only ever set by sync_unlock_armour() from AP data.
+        A snapshot-and-diff isn't enough on its own: if AP already granted a
+        piece before its vanilla pickup was ever visited, that bit is
+        already in the "baseline", so the game re-writing it during a real
+        pickup would look like no change. There's no separate per-pickup
+        "collected" flag to fall back on, so instead of snapshotting,
+        entering the animation zeroes every set's bytes outright — whatever
+        comes back on exit is fresh from this pickup, except bits for a
+        piece already equipped going in (the game re-asserts those
+        regardless of any new pickup), which are masked out using the
+        pre-pickup equipped-slot baseline. Memory is then rewritten back to
+        only what AP has actually granted (unlock_armour) — a local pickup
+        only proves the location was visited, it doesn't grant ownership.
+        Never touches unlock_armour itself.
 
         Also snapshots/restores the equipped-slot bytes across the same
         window — picking up a piece can auto-equip it for the animation,
@@ -455,7 +417,7 @@ class PlanetInventory:
 
     def sync_unlock_armour(self, ap_armour: dict[str, int]) -> None:
         """Record what Archipelago has granted, separate from collected_armour.
-        Not gated on is_ready — this only touches the in-memory dict, not the game."""
+        Not gated on is_ready — only touches the in-memory dict, not the game."""
         self.unlock_armour.update(ap_armour)
 
     def check_equipped_armour(self) -> bool:
@@ -478,6 +440,16 @@ class PlanetInventory:
         if not self.is_ready:
             return {"weapons": [], "gadgets": [], "mods": [], "levels": []}
         return self.weapons.check()
+
+    def check_weapon_cycler(
+        self, *, is_ap_owned: Callable[[int], bool], vendor_active: bool,
+        fallback_weapon_id: Callable[[], int | None],
+    ) -> None:
+        if not self.is_ready:
+            return
+        self.weapon_cycler.check(
+            is_ap_owned=is_ap_owned, vendor_active=vendor_active, fallback_weapon_id=fallback_weapon_id,
+        )
 
     def __repr__(self) -> str:
         return f"PlanetInventory(planet_id={self.planet_id})"
@@ -555,19 +527,15 @@ class PlanetUnlockState(BaseState):
 
     def _enforce_desired(self) -> None:
         """Unconditionally re-assert every non-natural planet's lock state
-        every call, rather than only when self.unlocked (mirroring just the
-        PlanetProgressStruct byte) looks out of sync with _desired.
+        every call, rather than only when it looks out of sync with _desired.
 
         _write_desired() also writes a second, independent byte per planet
-        (PLANET_UNLOCKS[name].state_addr — the one that actually gates ship
-        travel/selection) alongside the PlanetProgressStruct field this
-        class reads back for self.unlocked. Those two bytes can drift apart
-        without ever showing up as a mismatch here (e.g. a stale save/prior
-        session leaves state_addr unlocked while the struct field reads
-        locked) — a mismatch-gated write would then never touch state_addr
-        again, silently leaving a planet travelable despite never having
-        received its infobot. Writing every tick regardless closes that gap
-        instead of trusting a single derived signal to catch every case.
+        (state_addr — the one that actually gates ship travel/selection)
+        alongside the struct field this class reads back for self.unlocked.
+        Those two bytes can drift apart without ever showing as a mismatch
+        here (e.g. a stale save leaves state_addr unlocked while the struct
+        field reads locked) — writing every tick regardless of a detected
+        mismatch closes that gap.
         """
         if not self._enforce_active:
             return
@@ -578,9 +546,8 @@ class PlanetUnlockState(BaseState):
 
     def _write_desired(self, names: list[str]) -> None:
         # Per-field writes rather than one packed write, so planets in
-        # _NATURAL_UNLOCK_NAMES (e.g. Inside Clank) are never touched at all
-        # — a bulk write would clobber their live game-managed byte with
-        # whatever this instance's default/desired value happened to be.
+        # _NATURAL_UNLOCK_NAMES (e.g. Inside Clank) are never touched — a
+        # bulk write would clobber their live game-managed byte.
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
             if name not in names:
                 continue

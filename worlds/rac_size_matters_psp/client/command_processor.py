@@ -56,9 +56,8 @@ class RACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_vendor_refresh(self) -> bool:
-        """Force-rewrite the vendor item list right now (debug: rebuilds and
-        writes WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS immediately, without
-        waiting for the next tick or a menu open/close edge)."""
+        """Debug: force-rewrite the vendor item list immediately, without
+        waiting for the next tick or a menu open/close edge."""
         w = self.ctx._wiring
         w.vendor.force_refresh()
         logger.info(f"[RAC] {w.vendor!r}")

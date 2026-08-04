@@ -22,9 +22,8 @@ if TYPE_CHECKING:
 
 class ChallengeSlot:
     """Pine-backed accessor for a single challenge-completion byte at a fixed
-    absolute address (challenge addresses are scattered per-planet, not a
-    common base+offset struct like ArmourStruct, so this binds directly to
-    an address rather than an instance base)."""
+    absolute address (addresses are scattered per-planet, not a common
+    base+offset struct, so this binds directly to an address)."""
 
     def __init__(self, address: int) -> None:
         self.address = address
@@ -48,16 +47,10 @@ class ChallengeSlot:
 class ChallengeInventory:
     """Pine-backed live accessor for every clank-challenge completion byte.
 
-    One ChallengeSlot per AP location name — built dynamically from
-    ALL_CLANK_ADDRESS_MAP since the location set is too large (and not
-    identifier-safe) to hand-declare as named attributes like EquippedArmour.
-
-    Also owns completion tracking (replacing ClankChallengeState): check()
-    is a pull — call it whenever the caller decides to poll (planet load,
-    tick, etc.) and it reports newly-completed AP location names, including
-    the Ultimate Gladiator failsafe. There's no self-registered memory-change
-    listener here — when to check is an external concern (poll loop, planet
-    transition, ...), not something this class owns.
+    One ChallengeSlot per AP location name, built dynamically from
+    ALL_CLANK_ADDRESS_MAP. Also owns completion tracking: check() is a pull —
+    call it whenever the caller decides to poll — and reports newly-completed
+    AP location names, including the Ultimate Gladiator failsafe.
     """
 
     def __init__(self, pine: Pine) -> None:
@@ -84,9 +77,8 @@ class ChallengeInventory:
 
     def setup(self, all_challenges: bool = False) -> None:
         """Unlock every section on every tracked planet and, unless every
-        individual challenge is being tracked, preset default completion
-        values on the non-count-based (reward) bytes so undetected challenges
-        don't block sync."""
+        individual challenge is tracked, preset the non-count-based (reward)
+        bytes so undetected challenges don't block sync."""
         for planet, sections in CLANK_SECTION_UNLOCK_ADDRESSES.items():
             for section in sections:
                 self.unlock_section(planet, section)
@@ -97,9 +89,8 @@ class ChallengeInventory:
                 slot.__set__(self, 1)
 
     def check(self, all_challenges: bool = False) -> list[str]:
-        """Read every tracked byte, update completion state, and return newly
-        completed AP location names for this call (including any gladiator
-        failsafe locations newly satisfied)."""
+        """Read every tracked byte and return newly completed AP location
+        names for this call, including any gladiator failsafe locations."""
         newly: list[str] = []
         addr_map = ALL_CLANK_ADDRESS_MAP if all_challenges else CHALLENGE_ADDRESS_MAP
         for address, name in addr_map.items():
@@ -118,8 +109,8 @@ class ChallengeInventory:
         return newly
 
     def _check_gladiator_failsafe(self) -> list[str]:
-        """If every individual challenge on a planet is complete, report that
-        planet's Ultimate Gladiator skill point even if its own in-game
+        """Report a planet's Ultimate Gladiator skill point once every
+        individual challenge on it is complete, even if its own in-game
         detection never fired."""
         newly: list[str] = []
         if Rac5Planets.METALIS not in self.gladiator_sent and METALIS_CHALLENGE_NAMES <= self.completed:
@@ -151,9 +142,9 @@ class ChallengeInventory:
 class SkyboardSlot:
     """Pine-backed accessor for a single skyboard race's completion bit.
 
-    Unlike ChallengeSlot (one byte per location), all four races on a planet
-    share one completion byte — each race owns one SkyboardBit within it, so
-    reads/writes must mask/preserve the other three races' bits.
+    Unlike ChallengeSlot, all four races on a planet share one completion
+    byte, each owning one SkyboardBit — reads/writes mask/preserve the
+    other three races' bits.
     """
 
     def __init__(self, address: int, mask: SkyboardBit) -> None:
@@ -181,13 +172,9 @@ class SkyboardSlot:
 
 
 class SkyboardInventory:
-    """Pine-backed live accessor for every skyboard race's completion bit.
-
-    One SkyboardSlot per AP location name — built dynamically from
-    SKYBOARD_ADDRESS_MASK_MAP, same reasoning as ChallengeInventory. Also owns
-    completion tracking (replacing SkyboardChallengeState) via the same
-    pull-based check() pattern.
-    """
+    """Pine-backed live accessor + completion tracking for every skyboard
+    race's completion bit. One SkyboardSlot per AP location name, built
+    dynamically from SKYBOARD_ADDRESS_MASK_MAP."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
