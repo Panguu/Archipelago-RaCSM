@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: ruff check --fix --config ruff.toml
+        language: system
+        types: [python]
+      - id: pytest-full
+        name: pytest rac_size_matters
+        entry: python -m pytest
+        args: [worlds/rac_size_matters]
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
