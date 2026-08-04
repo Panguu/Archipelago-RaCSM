@@ -49,8 +49,9 @@ from .universal_tracker import setup_options_from_slot_data, tracker_world
 try:
     from worlds.dynamicpine import DynamicPineGame
     _DYNAMIC_PINE_SPEC = DynamicPineGame(
-        game_id="SCUS-97615",
+        game_ids="SCUS-97615",
         client_component="Ratchet & Clank: Size Matters Client",
+        launcher_options="simple",
     )
 except ImportError:
     _DYNAMIC_PINE_SPEC = None

@@ -18,40 +18,14 @@ import platform
 import socket
 from configparser import ConfigParser
 from pathlib import Path
-
-# Import from the inner package: the submodule's top-level __init__ at this pin
-# lists PineConfig in __all__ but doesn't actually import it.
 from .pypine.pypine.config import DEFAULT_PINE_PORT, PineConfig
+from .types import Overrides
 
-# Applied to every instance ini Dynamic Pine builds, after PineConfig's own
-# PINE/memcard handling and before per-game ini_overrides. Consumers that need
-# more than this add ini_overrides to their DynamicPineGame declaration instead
-# of editing here.
-BASE_INI_SETTINGS: dict[str, dict[str, str]] = {
-    # RetroAchievements' hardcore mode blocks the savestates/cheats randomizer
-    # play relies on, and randomized memory can trip its detection - always
-    # fully off in Dynamic Pine instances.
+BASE_INI_SETTINGS: Overrides = {
     "Achievements": {
         "Enabled": "false",
         "ChallengeMode": "false",
     },
-    # A brand new instance_id means a brand new, blank datapath, and both of
-    # these matter only on that very first launch of it - confirmed against a
-    # real PCSX2 by rac_size_matters/test/pcsx2_tests/harness.py:
-    #  - SetupWizardIncomplete: without this, PCSX2 shows its interactive
-    #    first-run setup wizard (EULA/welcome/GPU selection) and blocks
-    #    forever waiting for someone to click through it - -batch/-datapath
-    #    don't skip it on their own.
-    #  - SettingsVersion: a hand-built ini has no opinion on this, so a fresh
-    #    file leaves it unset/0. PCSX2 checks it and pops a blocking
-    #    "Settings failed to load, or are the incorrect version - reset to
-    #    defaults?" Yes/No confirmation dialog for ANY value it doesn't
-    #    recognize as current. 1 is what PCSX2 itself writes once you click
-    #    through that dialog by hand.
-    # PCSX2 overwrites both to their "already seen it" values on its own after
-    # the first launch, so re-applying them here every rebuild is harmless -
-    # it just means an instance's very first launch never blocks on either
-    # dialog waiting for someone to click through it by hand.
     "UI": {
         "SetupWizardIncomplete": "false",
         "SettingsVersion": "1",
@@ -117,15 +91,11 @@ class DynamicPineConfig(PineConfig):
 
     def __init__(self, config_path: Path, port: int = DEFAULT_PINE_PORT, memcard_name: str = "memcard.ps2",
                  bios_path: str | None = None, datapath: Path | None = None,
-                 ini_overrides: dict[str, dict[str, str]] | None = None):
+                 ini_overrides: Overrides | None = None):
         super().__init__(config_path, port=port, memcard_name=memcard_name)
-        # PCSX2 reads its settings from "<datapath>/inis/PCSX2.ini" - datapath
-        # itself is what gets passed to -datapath, which is config_path's
-        # grandparent in the paths_for() layout. Defaults to the immediate
-        # parent for standalone/manual use outside that layout.
         self.datapath = datapath if datapath is not None else config_path.parent
         self.bios_path = bios_path
-        self.ini_overrides: dict[str, dict[str, str]] = ini_overrides or {}
+        self.ini_overrides: Overrides = ini_overrides or {}
 
     @staticmethod
     def read_existing_port(config_path: Path) -> int:
@@ -158,7 +128,7 @@ class DynamicPineConfig(PineConfig):
     @classmethod
     def for_dynamic_pine_game(cls, data_root: Path, game_id: str, instance_id: str = "default",
                               memcard_name: str = "memcard.ps2", bios_path: str | None = None,
-                              ini_overrides: dict[str, dict[str, str]] | None = None,
+                              ini_overrides: Overrides | None = None,
                               reserved_ports: "set[int] | None" = None,
                               ) -> "DynamicPineConfig":
         """Builds (or reuses) a PINE-enabled PCSX2.ini for one instance of a game,
@@ -190,9 +160,6 @@ class DynamicPineConfig(PineConfig):
 
     def _verify_config(self):
         super()._verify_config()
-        # Each instance gets its own blank datapath, which would otherwise trigger
-        # PCSX2's first-run BIOS setup wizard every time a new instance is created.
-        # Pointing every instance at one shared BIOS folder avoids that repeat setup.
         if self.bios_path:
             self._normalize_keys('Folders', {'bios': 'Bios'})
             self.config['Folders'] = {
