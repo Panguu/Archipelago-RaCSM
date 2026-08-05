@@ -1,64 +1,70 @@
+"""
+Launcher entry point for the Odd Couple client.
+
+Two distinct actions live behind the one "Ratchet & Clank: The Odd Couple
+Client" component (see the world package's __init__.py), depending on how
+it's invoked:
+
+- Opening a .apoddcouple patch file: patches the player's local vanilla swf
+  with the Python patcher (patch.py/swf_patch.py) and installs the result.
+  Nothing else - no server, no browser tab.
+- Launching the client with no file: just opens the already-installed
+  frontend in the browser. The page connects to the Archipelago server
+  itself via archipelago.min.js; the only thing this process still runs is
+  the small static/relay server the patched swf's own button-gating calls
+  need (see backend.py) - there is no Archipelago protocol client here.
+"""
 from __future__ import annotations
 
-import asyncio
+import argparse
 import logging
 import webbrowser
 
-import colorama
-
+import Patch
 import Utils
-from CommonClient import get_base_parser, gui_enabled, server_loop
 
-from .backend import BASE_URL, find_installed_patched_swf, install_patched_swf
-from .client import OddCoupleContext
+from .backend import BASE_URL, OddCoupleServer, find_installed_patched_swf, install_patched_swf
 
 logger = logging.getLogger("OddCoupleClient")
 
 
 def launch(*launch_args: str) -> None:
-    colorama.just_fix_windows_console()
-    asyncio.run(main(*launch_args))
-    colorama.deinit()
-
-
-async def main(*launch_args: str) -> None:
     Utils.init_logging("OddCoupleClient", exception_logger="Client")
 
-    parser = get_base_parser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("diff_file", default="", type=str, nargs="?",
-                        help="Path to a .apoddcouple Archipelago patch file")
+                         help="Path to a .apoddcouple Archipelago patch file")
     args = parser.parse_args(launch_args)
 
-    swf_path = None
     if args.diff_file:
-        import Patch
         logger.info("Patch file was supplied - patching the local odd_couple.swf...")
-        meta, swf_path = Patch.create_rom_file(args.diff_file)
-        if meta.get("server") and not args.connect:
-            args.connect = meta["server"]
+        try:
+            _meta, swf_path = Patch.create_rom_file(args.diff_file)
+            install_patched_swf(swf_path)
+        except Exception as ex:
+            logger.exception("Failed to patch the local odd_couple.swf")
+            Utils.messagebox("Ratchet & Clank: The Odd Couple", f"Failed to patch the game:\n{ex}", error=True)
+            return
         logger.info(f"Wrote patched swf to {swf_path}")
+        Utils.messagebox("Ratchet & Clank: The Odd Couple",
+                          "Patched! You can now launch the Odd Couple client to play.")
+        return
 
-    ctx = OddCoupleContext(args.connect, args.password)
-    ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
-
-    if gui_enabled and not getattr(args, "nogui", False):
-        ctx.run_gui()
-    ctx.run_cli()
-
-    # Embedded server - no external project, subprocess, or virtualenv needed.
-    ctx.local_server.start_http()
-    await ctx.local_server.start_ws()
-
-    # The frontend always loads the one fixed patched-swf filename itself, so
-    # there's nothing to pass through the URL - just make sure that file
-    # actually exists, installing the freshly patched one if we have it, or
-    # warning if neither this run nor an earlier one ever installed it.
-    if swf_path:
-        install_patched_swf(swf_path)
-    elif not find_installed_patched_swf():
+    if not find_installed_patched_swf():
         logger.warning("No patched swf installed yet - open a .apoddcouple file to generate one.")
-    webbrowser.open(BASE_URL)
+        Utils.messagebox("Ratchet & Clank: The Odd Couple",
+                          "No patched game found. Open your .apoddcouple patch file first, "
+                          "then launch the client again.", error=True)
+        return
 
-    await ctx.exit_event.wait()
-    ctx.local_server.stop()
-    await ctx.shutdown()
+    server = OddCoupleServer()
+    server.start()
+    webbrowser.open(BASE_URL)
+    logger.info(f"Serving the Odd Couple client at {BASE_URL} - closing the browser tab will stop this too.")
+
+    try:
+        server.page_closed.wait()
+    except KeyboardInterrupt:
+        logger.info("Interrupted - shutting down.")
+    finally:
+        server.stop()

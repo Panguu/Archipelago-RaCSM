@@ -1,33 +1,45 @@
 """
-Embedded local server for the Ratchet & Clank: The Odd Couple client.
+Minimal static-file + button-gating relay server for the Odd Couple frontend.
 
-Runs entirely inside the Archipelago client process - no external project,
-subprocess, or virtualenv required. A stdlib HTTP server (in a background
-thread) serves the frontend and the locally patched swf, plus the small REST
-API the patched buttons call into; a `websockets` server (in the client's own
-asyncio loop) pushes live suppress/enable state to the browser tab. The only
-dependency used here beyond the standard library is `websockets`, which the
-Archipelago client already requires for talking to the multiworld server.
+No Archipelago protocol client runs in this process - the browser page
+(frontend/app.js) talks to the AP server directly via archipelago.min.js.
+This process only serves the frontend/patched-swf as static files and
+answers the patched swf's own LoadVars button-gating calls (see
+swf_patch.py): a SWF's ActionScript can only reach out over plain HTTP, it
+has no way to call into the page's JS directly. The frontend keeps this
+server's suppressed-event state in sync via POST /api/suppressed after every
+item update, and polls GET /api/poll-received to learn about scene-initiated
+events the swf reported, since there's no push channel (websocket) here. It
+also tracks whether the browser tab is still open (via a heartbeat the page
+pings on an interval, plus an immediate beacon on tab close) so the process
+can exit on its own once the page is gone instead of lingering forever.
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
+import shutil
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Awaitable, Callable, Optional
+from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
-import websockets
+import Utils
 
 logger = logging.getLogger("OddCoupleServer")
 
 HOST = "127.0.0.1"
 HTTP_PORT = 8000
-WS_PORT = 8001
 BASE_URL = f"http://{HOST}:{HTTP_PORT}"
+
+# How long without a heartbeat before we assume the tab is gone (crashed,
+# force-quit, lost network) and shut down. Generous, since backgrounded tabs
+# get their JS timers throttled by the browser and may go quiet for a while
+# without actually having been closed - the normal "user closed the tab"
+# case is handled instantly via the /api/closed beacon instead.
+HEARTBEAT_TIMEOUT_SECONDS = 90
 
 ALL_SCENES = ["stereo", "taxiDriver", "gimp", "phonecall1", "scissors", "tv"]
 
@@ -44,7 +56,6 @@ _CONTENT_TYPES = {
 def runtime_game_dir() -> str:
     """Writable folder where the patched swf is installed - independent of
     any external project, so this world has no runtime dependency on one."""
-    import Utils
     path = Utils.user_path("rac_odd_couple")
     os.makedirs(path, exist_ok=True)
     return path
@@ -54,7 +65,6 @@ def install_patched_swf(patched_swf_path: str) -> str:
     """Copy the freshly patched swf (built by Patch.create_rom_file from the
     .apoddcouple file) into our runtime folder, under a fixed name the
     frontend always requests."""
-    import shutil
     dest = os.path.join(runtime_game_dir(), PATCHED_SWF_NAME)
     shutil.copyfile(patched_swf_path, dest)
     return PATCHED_SWF_NAME
@@ -62,7 +72,7 @@ def install_patched_swf(patched_swf_path: str) -> str:
 
 def find_installed_patched_swf() -> Optional[str]:
     """Return PATCHED_SWF_NAME if a previous run already installed it, so a
-    reconnect-only launch (no .apoddcouple this time) still has a movie to
+    client-only launch (no .apoddcouple this time) still has a movie to
     serve instead of leaving the frontend with nothing to load."""
     if os.path.exists(os.path.join(runtime_game_dir(), PATCHED_SWF_NAME)):
         return PATCHED_SWF_NAME
@@ -70,22 +80,22 @@ def find_installed_patched_swf() -> Optional[str]:
 
 
 class OddCoupleServer:
-    """Embedded HTTP + WebSocket server bridging the browser-side SWF player
-    to the Archipelago client running in the same process."""
+    """Bare stdlib HTTP server bridging the browser-side SWF player's own
+    LoadVars calls to in-memory state the browser page keeps synced. Holds no
+    Archipelago connection itself - the browser page owns that directly via
+    archipelago.min.js."""
 
-    def __init__(self, on_scene_initiated: Callable[[str], Awaitable[None]]) -> None:
-        self.on_scene_initiated = on_scene_initiated
-        self.suppressed_events: set[str] = set(ALL_SCENES)
+    def __init__(self) -> None:
+        self.suppressed_events: "set[str]" = set(ALL_SCENES)
+        self._pending_received: "list[str]" = []
         self._lock = threading.Lock()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._ws_clients: "set[websockets.WebSocketServerProtocol]" = set()
         self._http_server: Optional[ThreadingHTTPServer] = None
         self._http_thread: Optional[threading.Thread] = None
-        self._ws_server = None
+        self._watchdog_thread: Optional[threading.Thread] = None
+        self._last_heartbeat: Optional[float] = None
+        self.page_closed = threading.Event()
 
-    # ---------- lifecycle ----------
-
-    def start_http(self) -> None:
+    def start(self) -> None:
         server_ref = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -141,6 +151,16 @@ class OddCoupleServer:
                 parsed = urlparse(self.path)
                 path, query = parsed.path, parse_qs(parsed.query)
 
+                if path == "/api/status":
+                    self._send_json(200, {"swf_installed": find_installed_patched_swf() is not None})
+                    return
+
+                if path == "/api/heartbeat":
+                    with server_ref._lock:
+                        server_ref._last_heartbeat = time.monotonic()
+                    self._send_text(200, "ok")
+                    return
+
                 if path == "/api/check":
                     scene = (query.get("scene") or [""])[0]
                     with server_ref._lock:
@@ -150,8 +170,15 @@ class OddCoupleServer:
 
                 if path == "/api/received":
                     scene = (query.get("scene") or [""])[0]
-                    server_ref._notify_scene_initiated(scene)
+                    with server_ref._lock:
+                        server_ref._pending_received.append(scene)
                     self._send_text(200, "ok")
+                    return
+
+                if path == "/api/poll-received":
+                    with server_ref._lock:
+                        pending, server_ref._pending_received = server_ref._pending_received, []
+                    self._send_json(200, pending)
                     return
 
                 if path == f"/game/{PATCHED_SWF_NAME}":
@@ -170,89 +197,46 @@ class OddCoupleServer:
                     payload = json.loads(raw)
                 except json.JSONDecodeError:
                     payload = {}
-                events = set(payload.get("events", []))
 
-                if self.path == "/api/suppress":
-                    server_ref.suppress(events)
-                elif self.path == "/api/enable":
-                    server_ref.enable(events)
-                elif self.path == "/api/set_suppressed":
-                    server_ref.set_suppressed(events)
-                else:
-                    self._send_text(404, "Not found")
+                if self.path == "/api/suppressed":
+                    with server_ref._lock:
+                        server_ref.suppressed_events = set(payload.get("events", []))
+                    self._send_text(200, "ok")
                     return
-                with server_ref._lock:
-                    self._send_json(200, sorted(server_ref.suppressed_events))
+
+                if self.path == "/api/closed":
+                    # navigator.sendBeacon() fires this on tab close/refresh - the
+                    # immediate signal; the heartbeat watchdog below is only the
+                    # fallback for a crashed/force-quit browser.
+                    logger.info("Browser tab closed - shutting down.")
+                    server_ref.page_closed.set()
+                    self._send_text(200, "ok")
+                    return
+
+                self._send_text(404, "Not found")
 
         self._http_server = ThreadingHTTPServer((HOST, HTTP_PORT), Handler)
         self._http_thread = threading.Thread(target=self._http_server.serve_forever, daemon=True)
         self._http_thread.start()
 
-    async def start_ws(self) -> None:
-        self._loop = asyncio.get_running_loop()
+        self._watchdog_thread = threading.Thread(target=self._watchdog, daemon=True)
+        self._watchdog_thread.start()
 
-        async def handler(ws: "websockets.WebSocketServerProtocol") -> None:
-            self._ws_clients.add(ws)
-            try:
-                with self._lock:
-                    suppressed = sorted(self.suppressed_events)
-                await ws.send(json.dumps({"type": "state", "suppressed": suppressed}))
-                async for _raw in ws:
-                    pass  # event_fired/movie_played reports from the browser are debug-only
-            except websockets.exceptions.WebSocketException:
-                pass
-            finally:
-                self._ws_clients.discard(ws)
-
-        self._ws_server = await websockets.serve(handler, HOST, WS_PORT)
+    def _watchdog(self) -> None:
+        # No timeout starts ticking until the page's first heartbeat arrives,
+        # so a slow-loading (or never-loaded) browser doesn't get flagged as
+        # "closed" before it's even had a chance to open.
+        while not self.page_closed.wait(2):
+            with self._lock:
+                last_heartbeat = self._last_heartbeat
+            if last_heartbeat is not None and time.monotonic() - last_heartbeat > HEARTBEAT_TIMEOUT_SECONDS:
+                logger.warning(f"No heartbeat from the browser tab in over {HEARTBEAT_TIMEOUT_SECONDS}s - "
+                               "assuming it's gone. Shutting down.")
+                self.page_closed.set()
+                return
 
     def stop(self) -> None:
+        logger.info("Stopping the Odd Couple relay server.")
+        self.page_closed.set()
         if self._http_server:
             self._http_server.shutdown()
-        if self._ws_server:
-            self._ws_server.close()
-
-    # ---------- state changes (called from the AP client's own event loop) ----------
-
-    def set_suppressed(self, suppressed: "set[str] | list[str]") -> None:
-        with self._lock:
-            self.suppressed_events = set(suppressed)
-        self._broadcast({"type": "set_suppressed", "events": sorted(self.suppressed_events)})
-
-    def enable(self, events: "set[str] | list[str]") -> None:
-        if not events:
-            return
-        with self._lock:
-            self.suppressed_events -= set(events)
-        self._broadcast({"type": "enable", "events": list(events)})
-
-    def suppress(self, events: "set[str] | list[str]") -> None:
-        if not events:
-            return
-        with self._lock:
-            self.suppressed_events |= set(events)
-        self._broadcast({"type": "suppress", "events": list(events)})
-
-    # ---------- bridging between the HTTP thread and the asyncio loop ----------
-
-    def _notify_scene_initiated(self, scene: str) -> None:
-        if self._loop is None:
-            return
-        asyncio.run_coroutine_threadsafe(self.on_scene_initiated(scene), self._loop)
-
-    def _broadcast(self, message: dict) -> None:
-        if self._loop is None or not self._ws_clients:
-            return
-        data = json.dumps(message)
-
-        async def _send_all() -> None:
-            dead = []
-            for ws in list(self._ws_clients):
-                try:
-                    await ws.send(data)
-                except websockets.exceptions.WebSocketException:
-                    dead.append(ws)
-            for ws in dead:
-                self._ws_clients.discard(ws)
-
-        asyncio.run_coroutine_threadsafe(_send_all(), self._loop)
