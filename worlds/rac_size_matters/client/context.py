@@ -4,12 +4,20 @@ import asyncio
 from collections.abc import Callable
 from typing import Any
 
+from worlds.tracker import UT_VERSION
+
 tracker_loaded: bool = False
+dynamicpine_loaded: bool = False
 try:
     from worlds.tracker.TrackerClient import TrackerGameContext as CommonContext
     tracker_loaded = True
 except ImportError:
     from CommonClient import CommonContext
+try:
+    from worlds.dynamicpine import DYNAMIC_PINE_VERSION
+    dynamicpine_loaded = True
+except ImportError:
+    DYNAMIC_PINE_VERSION = None
 from CommonClient import logger
 
 from ..core import TextColour, colored_text, set_trap_durations
@@ -342,5 +350,13 @@ class RACContext(
     def make_gui(self):
         ui = super().make_gui()
         version = RACSizeMatterWorld.world_version.as_simple_string()
-        ui.base_title = f"Archipelago R&C: Size Matters Client v{version}"
+        base_name = "R&C: 5" if tracker_loaded and dynamicpine_loaded else "R&C: Size Matters Client"
+        ui.base_title = f"{base_name} v{version}"
+        if tracker_loaded:
+            ui.base_title += f" | Universal Tracker {UT_VERSION}"
+        if dynamicpine_loaded:
+            ui.base_title += f" | Dynamic Pine v{DYNAMIC_PINE_VERSION}"
+
+        # AP version is added behind this automatically
+        ui.base_title += " | Archipelago"
         return ui
