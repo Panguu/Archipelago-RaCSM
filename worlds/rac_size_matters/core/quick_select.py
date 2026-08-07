@@ -8,7 +8,7 @@ from .states.base_state import BaseState
 from .structs.game import QuickSelectStruct
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 _ZERO_BYTES = bytes(4 * len(QuickSelectStruct.SLOT_ORDER))
 

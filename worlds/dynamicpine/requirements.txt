@@ -1,2 +1,1 @@
 psutil>=5.9.0
-pypine @ git+https://github.com/evilwb/pypine@24d7cc8e723ede5d27e0d54f15503fd58367d1e4

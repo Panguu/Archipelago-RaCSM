@@ -35,6 +35,7 @@ class Rac5Locations:
 
     CHALLAX_CLANK = "Challax: Destroy the space fortress (Giant Clank)"
     CHALLAX_HELMET = "Challax: Electroshock Helmet after Dropship fight"
+    CHALLAX_CHESTPLATE = "Challax: Electroshock Chestplate"
 
     DAYNI_MOON = "Dayni Moon: Catch Luna"
     DAYNI_MOON_HELMET = "Dayni Moon: Mega Bomb Helmet before Luna fight"

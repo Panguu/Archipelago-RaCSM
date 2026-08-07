@@ -8,6 +8,7 @@ from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
 from .constants import Rac5Infobots
+from .core.starting_planet import PLANET_TO_ID, PLANET_TO_INFOBOT, choose_starting_planets
 from .core.weapons import WEAPON_MOD_COUNTS
 from .items import (
     ALL_ITEMS,
@@ -38,6 +39,7 @@ from .options import (
     EnableSkyboardChallengeSkillPoints,
     ProgressiveWeapons,
     RACSizeMatterOptions,
+    RandomStartingPlanet,
     SkillPoints,
     SkyboardChallenges,
     WeaponLevelChecks,
@@ -46,6 +48,7 @@ from .options import (
 from .regions import create_regions
 from .rules import set_rules
 from .universal_tracker import setup_options_from_slot_data, tracker_world
+
 try:
     from worlds.dynamicpine import DynamicPineGame
     _DYNAMIC_PINE_SPEC = DynamicPineGame(
@@ -100,6 +103,12 @@ class RACSizeMatterWorld(World):
     disable_ut: bool = False
     tracker_world: ClassVar = tracker_world
     dynamic_pine = _DYNAMIC_PINE_SPEC
+
+    # Random Starting Planet: the runtime planet id the client should
+    # force-load into on its very first boot-in, instead of the game's
+    # hardcoded Pokitaru start. None when the option is off. Set in
+    # generate_basic(), read by fill_slot_data().
+    starting_planet_id: int | None = None
 
     def create_item(self, name: str) -> RACItem:
         data = ALL_ITEMS[name]
@@ -244,9 +253,22 @@ class RACSizeMatterWorld(World):
                 break
 
     def generate_basic(self) -> None:
-        # Pokitaru and Ryllus are always the starting planets.
-        self._precollect(Rac5Infobots.POKITARU)
-        self._precollect(Rac5Infobots.RYLLUS)
+        random_start = self.options.random_starting_planet.value
+        if random_start != RandomStartingPlanet.option_off:
+            # Two random planets replace the fixed Pokitaru/Ryllus start; their
+            # infobots stay in the normal item pool like any other infobot.
+            weighted = random_start == RandomStartingPlanet.option_logic
+            planets = choose_starting_planets(self, weighted=weighted)
+            # The client force-loads into the first pick on its very first
+            # boot-in, since the game itself always boots a fresh save into
+            # Pokitaru regardless of which planets are actually unlocked.
+            self.starting_planet_id = PLANET_TO_ID[planets[0]]
+            for planet in planets:
+                self._precollect(PLANET_TO_INFOBOT[planet])
+        else:
+            # Pokitaru and Ryllus are always the starting planets.
+            self._precollect(Rac5Infobots.POKITARU)
+            self._precollect(Rac5Infobots.RYLLUS)
 
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))
@@ -277,6 +299,7 @@ class RACSizeMatterWorld(World):
             "death_link": bool(self.options.death_link.value),
             "all_missions": bool(self.options.all_missions.value),
             "all_cutscenes": bool(self.options.all_cutscenes.value),
+            "giant_clank": bool(self.options.giant_clank.value),
             "clank_challenges": self.options.clank_challenges.value,
             "skyboard_challenges": self.options.skyboard_challenges.value,
 
@@ -292,6 +315,8 @@ class RACSizeMatterWorld(World):
             "progressive_armour": self.options.progressive_armour.value,
             "starting_weapons": self.options.starting_weapons.value,
             "starting_gadgets": self.options.starting_gadgets.value,
+            "random_starting_planet": self.options.random_starting_planet.value,
+            "starting_planet_id": self.starting_planet_id,
             "starting_skin": self.options.starting_skin.value,
             "weapon_experience_multiplier": self.options.weapon_experience_multiplier.value,
             "bolt_multiplier": self.options.bolt_multiplier.value,

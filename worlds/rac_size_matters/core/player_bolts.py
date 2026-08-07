@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from .address_maps import PLAYER_BOLT_COUNT
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 # Bolt balance never exceeds this regardless of source — also imported
 # directly by client/handlers.py and client/vendor.py for starting/filler

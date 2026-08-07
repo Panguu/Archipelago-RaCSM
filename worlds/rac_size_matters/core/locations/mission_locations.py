@@ -9,14 +9,16 @@ from ..address_maps import PLANET_MISSION_ADDRESSES
 
 _ADDRS = PLANET_MISSION_ADDRESSES
 
-# Bits that must be force-written on initial load (not location checks).
-PRESET_MISSION_BITS: list[tuple[int, int]] = [
-    (_ADDRS["Pokitaru"], 0x0004),   # Rescue the girl
-    (_ADDRS["Kalidon"],  0x0004),   # Search the factory
-    (_ADDRS["Challax"],  0x0004),   # Explore the miniature city
-]
-
 STORY_MISSION_MAP: dict[tuple[int, int], str] = {
+    # Story-required prerequisite bits — previously force-written on every
+    # load (PRESET_MISSION_BITS) so the game skipped them entirely and they
+    # never surfaced as checks. Now tracked for real: completing each one
+    # force-reloads its own planet (see core/core.py's _MISSION_FORCE_RELOAD),
+    # replacing whatever the force-write used to paper over.
+    (_ADDRS["Pokitaru"],      0x0004): Rac5CutsceneLocations.POKITARU_RESCUE,
+    (_ADDRS["Kalidon"],       0x0004): Rac5CutsceneLocations.KALIDON_SEARCH,
+    (_ADDRS["Challax"],       0x0004): Rac5CutsceneLocations.CHALLAX_EXPLORE,
+
     (_ADDRS["Pokitaru"],      0x0002): Rac5CutsceneLocations.POKITARU_FIGHT,
 
     (_ADDRS["Ryllus"],        0x0008): Rac5CutsceneLocations.RYLLUS_ARTIFACT,
@@ -25,14 +27,18 @@ STORY_MISSION_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Kalidon"],       0x0010): Rac5CutsceneLocations.KALIDON_WIN,
 
     (_ADDRS["Metalis"],       0x0002): Rac5CutsceneLocations.METALIS_WAR,
-    # (_ADDRS["Metalis"],     0x0004): Rac5CutsceneLocations.METALIS_ESCAPE,  # Giant Clank disabled — unreachable
+    # METALIS_ESCAPE is NOT mapped here — it's fired directly by
+    # PlanetInventory.check_giant_clank() (see core/planets.py), which
+    # watches the game's own scripted exit transition rather than this bit,
+    # so it isn't double-detected through MissionInventory too.
 
     (_ADDRS["Dreamtime"],     0x0004): Rac5CutsceneLocations.DREAMTIME_COMPLETE,
 
     (_ADDRS["Outpost Omega"], 0x0080): Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
     (_ADDRS["Outpost Omega"], 0x0010): Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,
 
-    # (_ADDRS["Challax"],     0x0020): Rac5CutsceneLocations.CHALLAX_CLANK,  # Giant Clank disabled — unreachable
+    # CHALLAX_CLANK is NOT mapped here — same reasoning as METALIS_ESCAPE
+    # above: fired directly by PlanetInventory.check_giant_clank().
 
     (_ADDRS["Dayni Moon"],    0x0008): Rac5CutsceneLocations.DAYNI_MOON,
     (_ADDRS["Dayni Moon"],    0x0004): Rac5CutsceneLocations.DAYNI_MOON_LUNA,
@@ -62,7 +68,10 @@ CUTSCENE_MAP: dict[tuple[int, int], str] = {
     (_ADDRS["Ryllus"],        0x0002): Rac5CutsceneLocations.RYLLUS_BUZZING,
     (_ADDRS["Kalidon"],       0x0008): Rac5CutsceneLocations.KALIDON_EXPLORE,
     (_ADDRS["Outpost Omega"], 0x0002): Rac5CutsceneLocations.OUTPOST_OMEGA,
-    # (_ADDRS["Challax"],     0x0010): Rac5CutsceneLocations.METALIS_CLANK,  # Giant Clank disabled — unreachable
+    # METALIS_CLANK is the shared Giant-Clank-trigger bit both sequences set
+    # on start (see planets.py's GIANT_CLANK_CONFIGS note) — still not
+    # tracked as a location, unlike CHALLAX_CLANK/METALIS_ESCAPE above.
+    # (_ADDRS["Challax"],     0x0010): Rac5CutsceneLocations.METALIS_CLANK,
     (_ADDRS["Dayni Moon"],    0x0010): Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,
     (_ADDRS["Dayni Moon"],    0x0002): Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,
     (_ADDRS["Dreamtime"],     0x0002): Rac5CutsceneLocations.DREAMTIME_SLEEPING_RATCHET,

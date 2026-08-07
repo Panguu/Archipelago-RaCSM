@@ -13,6 +13,7 @@ class Rac5CutsceneLocations:
     """
 
     POKITARU_ENTER = "Pokitaru: Enter Planet"
+    POKITARU_RESCUE = "Pokitaru: Rescue the girl"
     POKITARU_FIGHT = "Pokitaru: Fight some robots (Complete Luna's photoshoot)"
 
     RYLLUS_ENTER = "Ryllus: Enter Planet"
@@ -21,6 +22,7 @@ class Rac5CutsceneLocations:
     RYLLUS_TEMPLE = "Ryllus: Unlock the temple"
 
     KALIDON_ENTER = "Kalidon: Enter Planet"
+    KALIDON_SEARCH = "Kalidon: Search the factory"
     KALIDON_EXPLORE = "Kalidon: Explore the planet"
     KALIDON_WIN = "Kalidon: Win the skyboard race (Complete Learner's Permit)"
 
@@ -40,6 +42,7 @@ class Rac5CutsceneLocations:
     OUTPOST_OMEGA_REMATCH = "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)"
 
     CHALLAX_ENTER = "Challax: Enter Planet"
+    CHALLAX_EXPLORE = "Challax: Explore the miniature city"
     METALIS_CLANK = "Metalis: Start Giant Clank"
     CHALLAX_CLANK = "Challax: Destroy the space fortress (Giant Clank)"
 

@@ -2,22 +2,23 @@ from typing import NamedTuple
 
 from .constants import (
     Rac5ArmourSet,
+    Rac5CutsceneLocations,
     Rac5Locations,
     Rac5ModVendorLocations,
     Rac5Planets,
-    Rac5SkyboardChallenges as RACSMSKY,
+    Rac5SkillPoints,
+    Rac5SkyboardChallenges,
     Rac5VendorLocations,
-    Rac5CutsceneLocations,
     Rac5WeaponKeys,
 )
 from .core.armour import ARMOUR_PICKUPS
-from .core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
 from .core.locations.challenge_locations import (
     CHALLENGE_PICKUPS,
     DERBY_CLANK_PICKUPS,
     GADGETBOT_CLANK_PICKUPS,
     GADGETBOT_TOSS_CLANK_PICKUPS,
 )
+from .core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
 from .core.skill_points import (
     CLANK_CHALLENGE_SKILL_POINTS,
     HARD_SKILL_POINTS,
@@ -149,6 +150,19 @@ NG_PLUS_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
     Rac5ArmourSet.STALKER,
 })
 
+# Giant Clank option: with it off, both sequences are locked out entirely
+# (see PlanetInventory.giant_clank_allowed) so these must never be created
+# as locations. Shared by regions.py (creation) and rules/metalis.py +
+# rules/challax.py (rule assignment) — both must agree on the same exclusion.
+GIANT_CLANK_LOCATIONS: frozenset[str] = frozenset({
+    Rac5CutsceneLocations.METALIS_ESCAPE,
+    Rac5Locations.METALIS_GLOVES,
+    Rac5CutsceneLocations.CHALLAX_CLANK,
+    Rac5Locations.CHALLAX_CHESTPLATE,
+    Rac5SkillPoints.METALIS_TERROR,
+    Rac5SkillPoints.CHALLAX_VARMINTS,
+})
+
 SKILL_POINT_LOCATIONS: dict[str, RACLocationData] = {
     name: RACLocationData(BASE_ID + 4000 + idx, sp.region)
     for idx, (name, sp) in enumerate(SKILL_POINTS.items(), start=1)
@@ -179,21 +193,24 @@ SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS: dict[str, RACLocationData] = {
 GADGET_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
     Rac5Locations.RYLLUS_SPROUT:  RACLocationData(BASE_ID + 1401, Rac5Planets.RYLLUS),
     Rac5Locations.KALIDON_SHRINK: RACLocationData(BASE_ID + 1407, Rac5Planets.KALIDON),
-    # Rac5Locations.METALIS_GLOVES: RACLocationData(BASE_ID + 1406, Rac5Planets.METALIS),  # Giant Clank disabled
+    # Rac5Locations.METALIS_GLOVES is NOT here — it's an ArmourPickup
+    # (ARMOUR_PICKUP_LOCATIONS, see core/armour.py) since it's armour, not a
+    # gadget. Defining it in both would create two Location objects with the
+    # same name and different ids.
 }
 
 SKYBOARD_ITEM_LOCATIONS: dict[str, RACLocationData] = {
-    RACSMSKY.KALIDON_LEARNER:          RACLocationData(BASE_ID + 1402, Rac5Planets.KALIDON),
-    RACSMSKY.KALIDON_MASTER:           RACLocationData(BASE_ID + 1405, Rac5Planets.KALIDON),
-    RACSMSKY.OUTPOST_OMEGA_VERTIGO:    RACLocationData(BASE_ID + 1800, Rac5Planets.OUTPOST_OMEGA),
-    RACSMSKY.OUTPOST_OMEGA_INTERIOR:   RACLocationData(BASE_ID + 1801, Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.KALIDON_LEARNER:          RACLocationData(BASE_ID + 1402, Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.KALIDON_MASTER:           RACLocationData(BASE_ID + 1405, Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VERTIGO:    RACLocationData(BASE_ID + 1800, Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_INTERIOR:   RACLocationData(BASE_ID + 1801, Rac5Planets.OUTPOST_OMEGA),
 }
 
 EXTRA_SKYBOARD_LOCATIONS: dict[str, RACLocationData] = {
-    RACSMSKY.KALIDON_TICKET:           RACLocationData(BASE_ID + 1403, Rac5Planets.KALIDON),
-    RACSMSKY.KALIDON_TRICKY:           RACLocationData(BASE_ID + 1404, Rac5Planets.KALIDON),
-    RACSMSKY.OUTPOST_OMEGA_DANGER:     RACLocationData(BASE_ID + 1802, Rac5Planets.OUTPOST_OMEGA),
-    RACSMSKY.OUTPOST_OMEGA_VORTEX:     RACLocationData(BASE_ID + 1803, Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.KALIDON_TICKET:           RACLocationData(BASE_ID + 1403, Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.KALIDON_TRICKY:           RACLocationData(BASE_ID + 1404, Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_DANGER:     RACLocationData(BASE_ID + 1802, Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:     RACLocationData(BASE_ID + 1803, Rac5Planets.OUTPOST_OMEGA),
 }
 
 CHALLENGE_LOCATIONS: dict[str, RACLocationData] = {
@@ -219,13 +236,13 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.KALIDON_EXPLORE,          Rac5Planets.KALIDON,       True),
     (Rac5CutsceneLocations.KALIDON_WIN,              Rac5Planets.KALIDON,       False),
     (Rac5CutsceneLocations.METALIS_WAR,              Rac5Planets.METALIS,       False),
-    # (Rac5CutsceneLocations.METALIS_ESCAPE,         Rac5Planets.METALIS,       False),  # Giant Clank disabled
     (Rac5CutsceneLocations.DREAMTIME_COMPLETE,       Rac5Planets.DREAMTIME,     False),
     (Rac5CutsceneLocations.OUTPOST_OMEGA,            Rac5Planets.OUTPOST_OMEGA, True),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,     Rac5Planets.OUTPOST_OMEGA, False),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,    Rac5Planets.OUTPOST_OMEGA, False),
-    # (Rac5CutsceneLocations.METALIS_CLANK,          Rac5Planets.CHALLAX,       True),   # Giant Clank disabled
-    # (Rac5CutsceneLocations.CHALLAX_CLANK,          Rac5Planets.CHALLAX,       False),  # Giant Clank disabled
+    # METALIS_CLANK is the shared Giant-Clank-trigger mission bit (see
+    # planets.py's GIANT_CLANK_CONFIGS note) — still not tracked/used.
+    # (Rac5CutsceneLocations.METALIS_CLANK,          Rac5Planets.CHALLAX,       True),
     (Rac5CutsceneLocations.DAYNI_MOON,               Rac5Planets.DAYNI_MOON,    False),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,        Rac5Planets.DAYNI_MOON,    True),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,        Rac5Planets.DAYNI_MOON,    True),
@@ -250,6 +267,15 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
 
     # New locations appended here (same ID-stability reasoning as Enter Planet above).
     (Rac5CutsceneLocations.DREAMTIME_SLEEPING_RATCHET, Rac5Planets.DREAMTIME,   True),
+    # Both fired by PlanetInventory.check_giant_clank() (see core/planets.py's
+    # GIANT_CLANK_CONFIGS), not the mission-bit table in mission_locations.py.
+    (Rac5CutsceneLocations.METALIS_ESCAPE,           Rac5Planets.METALIS,       False),
+    (Rac5CutsceneLocations.CHALLAX_CLANK,            Rac5Planets.CHALLAX,       False),
+    # Former PRESET_MISSION_BITS — see mission_locations.py's STORY_MISSION_MAP
+    # comment and core/core.py's _MISSION_FORCE_RELOAD.
+    (Rac5CutsceneLocations.POKITARU_RESCUE,          Rac5Planets.POKITARU,      False),
+    (Rac5CutsceneLocations.KALIDON_SEARCH,           Rac5Planets.KALIDON,       False),
+    (Rac5CutsceneLocations.CHALLAX_EXPLORE,          Rac5Planets.CHALLAX,       False),
 ]
 
 STORY_MISSION_LOCATIONS: dict[str, RACLocationData] = {

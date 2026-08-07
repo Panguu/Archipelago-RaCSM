@@ -81,6 +81,18 @@ class AllCutscenes(Toggle):
     display_name = "All Cutscenes"
 
 
+class GiantClank(Toggle):
+    """Include the Giant Clank Metalis and Giant Clank Challax sequences: their
+    completion/armour-pickup location checks, and (with Skill Points on) their
+    skill point checks.
+    off (default): both sequences are locked out entirely — entering either one
+    immediately forces a load back out, exactly like vanilla before this option
+    existed. Nothing from them is ever checked or required.
+    on: both sequences become playable; entering plays them start-to-finish with
+    no AP items/notifications until their location(s) fire."""
+    display_name = "Giant Clank"
+
+
 class ArmourSetChecks(DefaultOnToggle):
     """Treat equipping a complete armour set as a location check. Adds 13 locations to the pool."""
     display_name = "Armour Set Checks"
@@ -138,6 +150,26 @@ class StartingGadgets(Range):
     range_start = 0
     range_end = 8
     default = 1
+
+
+class RandomStartingPlanet(Choice):
+    """Randomizes which two planets Ratchet starts with access to, instead of always
+    starting on Pokitaru and Ryllus. Their infobots go back into the normal item pool
+    and two random planets' infobots are precollected in their place. Dreamtime,
+    Inside Clank, and Quodrona are never candidates: the first two need extra gadgets
+    beyond their own infobot to enter, and Quodrona is the goal planet.
+    off: always start on Pokitaru and Ryllus, as in vanilla.
+    logic: candidate planets are weighted by how many locations they offer under the
+    current options, so denser planets are more likely to be picked. Weapon/Gadget
+    Vendor locations only count towards a planet's weight if Starting Weapons/Starting
+    Gadgets is set above 0.
+    no_logic: two of the 7 candidate planets are chosen completely at random, ignoring
+    location counts entirely."""
+    display_name = "Random Starting Planet"
+    option_off      = 0
+    option_logic    = 1
+    option_no_logic = 2
+    default = 0
 
 
 class DeathAmnesty(Range):
@@ -248,6 +280,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     death_amnesty: DeathAmnesty
     all_missions: AllMissions
     all_cutscenes: AllCutscenes
+    giant_clank: GiantClank
     clank_challenges: ClankChallenges
     skyboard_challenges: SkyboardChallenges
     armour_set_checks: ArmourSetChecks
@@ -257,6 +290,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     enable_skyboard_challenge_skill_points: EnableSkyboardChallengeSkillPoints
     starting_weapons: StartingWeapons
     starting_gadgets: StartingGadgets
+    random_starting_planet: RandomStartingPlanet
     starting_bolts: StartingBolts
     starting_skin: StartingSkin
     trap_chance: TrapChance
@@ -276,6 +310,7 @@ racsm_option_groups = [
     OptionGroup("RACSM Item Options", [
         StartingWeapons,
         StartingGadgets,
+        RandomStartingPlanet,
         StartingBolts,
         ProgressiveWeapons,
         ProgressiveMods,
@@ -289,6 +324,7 @@ racsm_option_groups = [
     OptionGroup("RACSM Location Options", [
         AllMissions,
         AllCutscenes,
+        GiantClank,
         ClankChallenges,
         SkyboardChallenges,
         SkillPoints,

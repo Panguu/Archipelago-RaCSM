@@ -14,17 +14,17 @@ from .locations.skill_point_locations import (
 )
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 __all__ = [
-    "SkillPoint",
-    "SKILL_POINTS",
-    "HARD_SKILL_POINTS",
     "CLANK_CHALLENGE_SKILL_POINTS",
-    "SKYBOARD_CHALLENGE_SKILL_POINTS",
-    "SKILL_POINT_BY_PLANET_AND_MASK",
+    "HARD_SKILL_POINTS",
     "LOCATION_SKILL_POINTS",
+    "SKILL_POINTS",
     "SKILL_POINT_ADDRESS",
+    "SKILL_POINT_BY_PLANET_AND_MASK",
+    "SKYBOARD_CHALLENGE_SKILL_POINTS",
+    "SkillPoint",
     "SkillPointInventory",
 ]
 

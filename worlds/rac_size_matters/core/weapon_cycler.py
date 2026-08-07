@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from .address_maps import WEAPON_CYCLER_ADDRS_BY_PLANET
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 
 class WeaponCycleState(IntEnum):

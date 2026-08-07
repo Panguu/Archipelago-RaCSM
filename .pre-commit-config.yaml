@@ -1,6 +1,15 @@
 repos:
   - repo: local
     hooks:
+      - id: ruff
+        name: ruff
+        # No --config: let ruff auto-discover the nearest ruff.toml per file, so
+        # worlds/rac_size_matters/ruff.toml's AP-pattern ignores (E402/RUF006/
+        # RUF012/PLW0108 etc.) actually apply there instead of being overridden
+        # by this repo-root config.
+        entry: ruff check --fix
+        language: system
+        types: [python]
       - id: pytest-full
         name: pytest rac_size_matters
         entry: python -m pytest

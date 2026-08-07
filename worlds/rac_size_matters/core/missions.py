@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .locations.mission_locations import PRESET_MISSION_BITS, VALIDATED_MISSION_MAP
+from .locations.mission_locations import VALIDATED_MISSION_MAP
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 __all__ = [
     "VALIDATED_MISSION_MAP",
@@ -60,12 +60,6 @@ class MissionInventory:
 
     def delete(self, name: str) -> None:
         self._slots[name].__delete__(self)
-
-    def setup(self) -> None:
-        """OR the preset mission bits into memory so they never fire as location checks."""
-        for addr, mask in PRESET_MISSION_BITS:
-            raw = self.pine.read_int16(addr)
-            self.pine.write_int16(addr, raw | mask)
 
     def check(self) -> list[str]:
         """Read every tracked bit and return newly completed AP location names for this call."""

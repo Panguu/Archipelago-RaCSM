@@ -10,7 +10,7 @@ from ..constants import Rac5GadgetKeys, Rac5WeaponKeys
 from .locations import weapon_locations as _weapon_locations
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 # Vendor/mod location lookups live in core.locations.weapon_locations, not
 # here — that module builds them lazily to avoid a circular import back into

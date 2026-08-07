@@ -2,17 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rule_builder.rules import Has, HasAll, True_
+
 from ..constants import (
+    Rac5CutsceneLocations,
     Rac5Gadgets,
     Rac5Locations,
     Rac5ModVendorLocations,
     Rac5SkillPoints,
-    Rac5SkyboardChallenges as RACSMSKY,
+    Rac5SkyboardChallenges,
     Rac5TBolts,
     Rac5VendorLocations,
-    Rac5CutsceneLocations,
 )
-from rule_builder.rules import Has, HasAll, True_
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -34,6 +35,7 @@ def set_kalidon_rules(world: RACSizeMatterWorld) -> None:
     if world.options.all_cutscenes:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.KALIDON_EXPLORE, player), _inside)
     if world.options.all_missions:
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.KALIDON_SEARCH, player), True_())
         # Skyboard racing is an alternate route around needing Shrink Ray
         # here — only required when that route isn't available.
         win_rule = True_() if world.options.skyboard_challenges.value >= 1 else Has(Rac5Gadgets.SHRINK_RAY)
@@ -47,10 +49,10 @@ def set_kalidon_rules(world: RACSizeMatterWorld) -> None:
     world.set_rule(mw.get_location(Rac5Locations.KALIDON_BOOTS, player), _inside)
 
     if world.options.skyboard_challenges.value >= 1:
-        world.set_rule(mw.get_location(RACSMSKY.KALIDON_LEARNER, player), True_())
-        world.set_rule(mw.get_location(RACSMSKY.KALIDON_MASTER, player), True_())
-        world.set_rule(mw.get_location(RACSMSKY.KALIDON_TICKET, player), True_())
-        world.set_rule(mw.get_location(RACSMSKY.KALIDON_TRICKY, player), True_())
+        world.set_rule(mw.get_location(Rac5SkyboardChallenges.KALIDON_LEARNER, player), True_())
+        world.set_rule(mw.get_location(Rac5SkyboardChallenges.KALIDON_MASTER, player), True_())
+        world.set_rule(mw.get_location(Rac5SkyboardChallenges.KALIDON_TICKET, player), True_())
+        world.set_rule(mw.get_location(Rac5SkyboardChallenges.KALIDON_TRICKY, player), True_())
 
     world.set_rule(mw.get_location(Rac5VendorLocations.KALIDON_SCORCHER, player), True_())
 
