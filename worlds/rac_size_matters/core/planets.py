@@ -130,9 +130,10 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
 }
 
 # Planet unlock addresses always forced to INFOBOT_UNLOCK_VALUE because
-# these planets have no collectible infobot in the AP item pool.
+# these planets have no collectible infobot in the AP item pool. Pokitaru has
+# a real infobot item (Rac5Infobots.POKITARU) and is gated by it like every
+# other infobot planet -- see PlanetUnlockState/_AUTO_UNLOCK_NAMES.
 AUTO_UNLOCK_ADDRESSES: list[int] = [
-    0x21F4C661,  # Pokitaru  -- mandatory starting planet, always accessible
     0x21F4C665,  # Dreamtime -- auto-unlocked via Outpost Omega
 ]
 
@@ -590,7 +591,6 @@ class PlanetLockValue(IntEnum):
 PLANET_UNLOCK_ORDER: list[str] = list(PlanetProgressStruct.PLANET_NAME_ORDER)
 
 _AUTO_UNLOCK_NAMES: frozenset[str] = frozenset({
-    "POKITARU",
     "DREAMTIME",
 })
 
@@ -621,6 +621,14 @@ class PlanetUnlockState(BaseState):
         self._enforce_active: bool     = True
         self._ryllus_released: bool    = False
         self._infobot_planets: set[str] = set()
+        # Random Starting Planet: set from slot_data (see set_random_start()).
+        # False (option off) keeps Ryllus force-opened until its intro
+        # cutscene ends, matching the game's own vanilla behavior (it force-
+        # unlocks Ryllus via Pokitaru's intro before AP gating can apply).
+        # True skips that entirely -- the player may not even start on
+        # Pokitaru, so Ryllus is gated purely by infobot ownership from tick
+        # one, like every other planet.
+        self._random_start: bool = False
 
     def _read_struct(self) -> PlanetProgressStruct:
         raw = self.pine.read_bytes(PlanetProgressStruct.BASE_ADDRESS, PlanetProgressStruct.size())
@@ -682,22 +690,26 @@ class PlanetUnlockState(BaseState):
                 state_val = max(int(unlock_val), pu.default_state)
                 self.pine.write_int8(pu.state_addr, state_val)
 
+    def set_random_start(self, enabled: bool) -> None:
+        self._random_start = enabled
+
     def set_unlocked_planets(self, planets: set[str]) -> None:
         self._infobot_planets = set(planets)
         for name in PLANET_UNLOCK_ORDER:
             self._desired[name] = name in planets or name in _AUTO_UNLOCK_NAMES
-        if not self._ryllus_released:
+        if not self._random_start and not self._ryllus_released:
             self._desired["RYLLUS"] = True
 
     def on_ryllus_cutscene_ended(self) -> None:
-        if self._ryllus_released:
+        if self._random_start or self._ryllus_released:
             return
         self._ryllus_released = True
         self._desired["RYLLUS"] = "RYLLUS" in self._infobot_planets
 
     def reset_session(self) -> None:
         self._ryllus_released = False
-        self._desired["RYLLUS"] = True
+        if not self._random_start:
+            self._desired["RYLLUS"] = True
 
     def unlock(self, planet: str) -> None:
         self._desired[planet] = True
