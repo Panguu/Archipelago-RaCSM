@@ -6,6 +6,7 @@ from ..locations import (
     BOSS_LOCATIONS,
     GADGET_PICKUP_LOCATIONS,
     GADGET_VENDOR_LOCATIONS,
+    GIANT_CLANK_LOCATIONS,
     TITANIUM_BOLT_LOCATIONS,
     WEAPON_MOD_VENDOR_LOCATIONS,
     WEAPON_VENDOR_LOCATIONS,
@@ -48,8 +49,13 @@ class TestDefaultGeneration(RACSizeMatterTestBase):
             self.assertIn(name, names)
 
     def test_all_armour_pickups_present(self) -> None:
+        # Giant Clank is off by default, so its two armour pieces (Metalis
+        # Gloves/Challax Chestplate) are excluded from generation — see
+        # TestGiantClankEnabled in test_giant_clank.py for the on case.
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in ARMOUR_PICKUP_LOCATIONS:
+            if name in GIANT_CLANK_LOCATIONS:
+                continue
             self.assertIn(name, names)
 
     def test_all_vendor_locations_present(self) -> None:

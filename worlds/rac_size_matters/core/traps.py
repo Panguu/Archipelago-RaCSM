@@ -4,12 +4,16 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5Traps
-from .address_maps import BRIGHTNESS_ADDRESS, CHEATS, DREAMTIME_EFFECT
+from .address_maps import (
+    BRIGHTNESS_ADDRESS,
+    CHEATS,
+    CURRENT_PLANET_ADDRESS,
+    DREAMTIME_EFFECT,
+    NEW_PLANET_START_LOAD_ADDR,
+)
 
 if TYPE_CHECKING:
-    from pypine import Pine
-
-# TRAP_RESET_LEVEL is intentionally absent below — not functional yet.
+    from ..pypine import Pine
 
 # Direct memory-flag traps: write 1 to activate, write 0 to revert.
 _DIRECT_ADDRESSES: dict[str, int] = {
@@ -38,6 +42,11 @@ TRAP_DURATIONS: dict[str, float] = {
     Rac5Traps.TRAP_MIRROR_LEVEL:     70,
     Rac5Traps.TRAP_REVERSE_CONTROLS: 70,
     Rac5Traps.TRAP_WEAPON_SWITCHING: 70,
+    # Reset Level is instantaneous (see activate_trap()) — this entry exists
+    # only so it gets an item id (items.py's TRAP_ITEM_TABLE enumerates this
+    # dict) and shows up in the TrapWeight/TrapDuration options. Appended
+    # last so existing traps' enumerated item ids don't shift.
+    Rac5Traps.TRAP_RESET_LEVEL:      1,
 }
 
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
@@ -66,8 +75,17 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
 
     Re-activating a still-active trap extends its revert deadline by another
     full duration (stacking) rather than reverting at the first deadline.
-    Unknown/unimplemented traps (e.g. Reset Level) are silently ignored.
+    Unknown/unimplemented traps are silently ignored.
     """
+    if trap_name == Rac5Traps.TRAP_RESET_LEVEL:
+        # One-shot, no revert: force-reload whatever planet the player is
+        # currently on by writing its own id back into the same forced-load
+        # address the Giant Clank redirect and menu travel use (see
+        # planets.py's check_giant_clank() and NEW_PLANET_START_LOAD_ADDR).
+        planet_id = pine.read_int8(CURRENT_PLANET_ADDRESS)
+        pine.write_int32(NEW_PLANET_START_LOAD_ADDR, planet_id)
+        return
+
     duration = _trap_durations.get(trap_name)
     if duration is None:
         return

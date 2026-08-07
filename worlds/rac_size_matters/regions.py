@@ -17,6 +17,7 @@ from .locations import (
     EXTRA_SKYBOARD_LOCATIONS,
     GADGET_PICKUP_LOCATIONS,
     GADGET_VENDOR_LOCATIONS,
+    GIANT_CLANK_LOCATIONS,
     HARD_SKILL_POINT_LOCATIONS,
     NG_PLUS_ARMOUR_SET_LOCATIONS,
     NG_PLUS_WEAPON_LEVEL_LOCATIONS,
@@ -59,9 +60,17 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         for name in PLANET_NAMES
     }
 
+    giant_clank = bool(world.options.giant_clank)
+    armour_pickup_locations = ARMOUR_PICKUP_LOCATIONS
+    if not giant_clank:
+        armour_pickup_locations = {
+            name: data for name, data in ARMOUR_PICKUP_LOCATIONS.items()
+            if name not in GIANT_CLANK_LOCATIONS
+        }
+
     location_tables = [
         TITANIUM_BOLT_LOCATIONS,
-        ARMOUR_PICKUP_LOCATIONS,
+        armour_pickup_locations,
         BOSS_LOCATIONS,
         GADGET_PICKUP_LOCATIONS,
         WEAPON_VENDOR_LOCATIONS,
@@ -74,16 +83,33 @@ def create_regions(world: RACSizeMatterWorld) -> None:
             # challenge, which never unlocks with clank challenges off —
             # drop it rather than create an unreachable location.
             story_missions = {
-                name: data for name, data in STORY_MISSION_LOCATIONS.items()
+                name: data for name, data in story_missions.items()
                 if name != Rac5CutsceneLocations.METALIS_WAR
+            }
+        if not giant_clank:
+            story_missions = {
+                name: data for name, data in story_missions.items()
+                if name not in GIANT_CLANK_LOCATIONS
             }
         location_tables.append(story_missions)
     if world.options.all_cutscenes:
         location_tables.append(CUTSCENE_LOCATIONS)
     if world.options.skill_points.value >= 1:
-        location_tables.append(EASY_SKILL_POINT_LOCATIONS)
+        easy_skill_points = EASY_SKILL_POINT_LOCATIONS
+        if not giant_clank:
+            easy_skill_points = {
+                name: data for name, data in easy_skill_points.items()
+                if name not in GIANT_CLANK_LOCATIONS
+            }
+        location_tables.append(easy_skill_points)
     if world.options.skill_points.value >= 2:
-        location_tables.append(HARD_SKILL_POINT_LOCATIONS)
+        hard_skill_points = HARD_SKILL_POINT_LOCATIONS
+        if not giant_clank:
+            hard_skill_points = {
+                name: data for name, data in hard_skill_points.items()
+                if name not in GIANT_CLANK_LOCATIONS
+            }
+        location_tables.append(hard_skill_points)
     if world.options.enable_clank_challenge_skill_points:
         location_tables.append(CLANK_CHALLENGE_SKILL_POINT_LOCATIONS)
     if world.options.enable_skyboard_challenge_skill_points:

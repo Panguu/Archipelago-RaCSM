@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from ..constants import Rac5CutsceneLocations, Rac5Locations
 from ..locations import WEAPON_LEVEL_LOOKUP
+from .address_maps import NEW_PLANET_START_LOAD_ADDR
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece, ArmourUnlocks
 from .challenges import ChallengeInventory, SkyboardInventory
 from .locations.mission_locations import CUTSCENE_MAP, STORY_MISSION_MAP
@@ -20,7 +21,7 @@ from .titanium_bolts import TitaniumBoltInventory
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 logger = logging.getLogger("CommonClient")
 
@@ -38,6 +39,19 @@ _SCRIPTED_PICKUP_GADGETS: frozenset[str] = frozenset()
 # flip 0->1 on any planet, not just at the kiosk. Without this gate that
 # resync would be misread as the scripted pickup on an unrelated planet.
 _POKITARU_ID: int = 0x01
+_KALIDON_ID:  int = 0x03
+_CHALLAX_ID:  int = 0x07
+
+# Former PRESET_MISSION_BITS (see mission_locations.py's STORY_MISSION_MAP):
+# story-required prerequisite missions that used to be force-written complete
+# on every load so the game skipped them. Now tracked for real — completing
+# one force-reloads its own planet, standing in for whatever that force-write
+# used to paper over.
+_MISSION_FORCE_RELOAD: dict[str, int] = {
+    Rac5CutsceneLocations.POKITARU_RESCUE: _POKITARU_ID,
+    Rac5CutsceneLocations.KALIDON_SEARCH:  _KALIDON_ID,
+    Rac5CutsceneLocations.CHALLAX_EXPLORE: _CHALLAX_ID,
+}
 
 # Scripted gadget handoffs with their OWN dedicated AP location, distinct
 # from the mission/cutscene location that coincides with them (e.g.
@@ -267,7 +281,7 @@ class Core:
         # regardless of whether the memory write below is skipped.
         self.planet.sync_unlock_armour(armour_unlocked)
         if (not self.vendor_active and not self.planet.player.is_dead
-                and not self.planet.player.is_picking_up):
+                and not self.planet.player.is_picking_up and not self.planet.giant_clank_active):
             self.armour.sync_unlocked(armour_unlocked)
 
         # Always kept current even while writes below are gated —
@@ -398,14 +412,27 @@ class Core:
         need their own is_ready check.
         """
         became_ready = self.planet.check_transition()
-        self.planet.check_controller()
-        self.planet.check_death()
-        self.planet.check_equipped_armour()
         # Planet-unlock addresses are fixed/global, not per-planet-relative
         # like weapons/menu/player — safe (and necessary) to keep enforcing
         # every tick even while a transition is in flight, unlike everything
         # gated below on is_ready.
         self.planet_unlock.check()
+
+        # Watched unconditionally (no-ops unless giant_clank_active) so a
+        # redirect (where configured) lands as soon as possible, even
+        # mid-transition.
+        for name in self.planet.check_giant_clank():
+            self.send_location(name)
+
+        if self.planet.giant_clank_active:
+            # Giant Clank Metalis is a self-contained vanilla sequence: no AP
+            # items, no notifications, nothing else runs while it's active —
+            # check_giant_clank() above is all the tracking it needs.
+            return
+
+        self.planet.check_controller()
+        self.planet.check_death()
+        self.planet.check_equipped_armour()
 
         if not self.planet.is_ready:
             return
@@ -449,6 +476,10 @@ class Core:
                 self.send_location(gadget_loc)
             if name == Rac5CutsceneLocations.QUODRONA_GOAL:
                 self.on_goal()
+
+            reload_planet = _MISSION_FORCE_RELOAD.get(name)
+            if reload_planet is not None:
+                self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, reload_planet)
 
             if name in _CUTSCENE_LOCATIONS and not self.all_cutscenes_enabled:
                 continue

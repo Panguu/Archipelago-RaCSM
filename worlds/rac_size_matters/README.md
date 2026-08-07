@@ -7,7 +7,6 @@ This is **not** all **Human written code**, this was developed with the help of 
 
 ## Known Bugs and issues
 - vendor purchases currently set ratchets active weapon (change to a unlocked weapon)
-- Giant Clank Metalis mission is currently not a checks (do not do this mission unless you have at least outpost omega so you dont get softlocked).
 
 ## Massive thank you's
 The PCSX2 PINE interface (`pcsx2_interface/`) is adapted from [evilwb/pypine](https://github.com/evilwb/pypine), based on https://projects.govanify.com/govanify/pine. This couldn't have been done without his pcsx2 interface.

@@ -4,20 +4,21 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
-from ..constants import Rac5Infobots
+from ..constants import Rac5CutsceneLocations, Rac5Infobots, Rac5Locations
 from .address_maps import (
     CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
-    PLANET_MISSION_ADDRESSES,
+    NEW_PLANET_START_LOAD_ADDR,
+    PLANET_LOAD_IDLE_VALUE,
     PLANET_STATE_OFFSET,
     PLANET_UNLOCK_ADDRESSES,
     WEAPON_ARRAY_BASE_BY_PLANET,
 )
-from .armour import ARMOUR_SET_TO_KEY, EQUIPPED_SLOT_TO_PIECE, ArmourUnlocks, EquippedArmour
+from .armour import ARMOUR_SET_TO_KEY, EQUIPPED_SLOT_TO_PIECE, ArmourPiece, ArmourUnlocks, EquippedArmour
 from .controller import GlobalButtonState
-from .display_text import small_text_box_inventory, multi_line_text_box_inventory
+from .display_text import multi_line_text_box_inventory, small_text_box_inventory
 from .menu import MenuInventory, MenuStateValue
 from .player import PlayerInventory
 from .states.base_state import BaseState
@@ -33,7 +34,7 @@ from .weapon_cycler import WeaponCyclerInventory
 from .weapons import WeaponInventory
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
     from .armour import ArmourInventory
     from .quick_select import QuickSelectState
 
@@ -56,8 +57,10 @@ class Planets:
     DAYNI_MOON      = Planet("Dayni Moon",            0x08, menu_addr=MENU_ADDR_BY_PLANET_ID[0x08])
     INSIDE_CLANK    = Planet("Inside Clank",          0x09)
     QUODRONA        = Planet("Quodrona",              0x0A, menu_addr=MENU_ADDR_BY_PLANET_ID[0x0A])
-    # GIANT_CLANK_META = Planet("Giant Clank (Metalis)", 0x0F)
-    # GIANT_CLANK_CHAL = Planet("Giant Clank (Challax)", 0x15)
+    # Special vanilla sub-modes entered from Metalis/Challax, not normal AP
+    # regions — see PlanetInventory.giant_clank_active / check_giant_clank().
+    GIANT_CLANK_METALIS = Planet("Giant Clank (Metalis)", 0x0F)
+    GIANT_CLANK_CHALLAX = Planet("Giant Clank (Challax)", 0x15)
     # KALIDON_RACE    = Planet("Kalidon Race Track",    0x16)
     OUTPOST_OMEGA_2 = Planet("Outpost Omega 2",       0x17, menu_addr=MENU_ADDR_BY_PLANET_ID[0x17])
 
@@ -127,9 +130,10 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
 }
 
 # Planet unlock addresses always forced to INFOBOT_UNLOCK_VALUE because
-# these planets have no collectible infobot in the AP item pool.
+# these planets have no collectible infobot in the AP item pool. Pokitaru has
+# a real infobot item (Rac5Infobots.POKITARU) and is gated by it like every
+# other infobot planet -- see PlanetUnlockState/_AUTO_UNLOCK_NAMES.
 AUTO_UNLOCK_ADDRESSES: list[int] = [
-    0x21F4C661,  # Pokitaru  -- mandatory starting planet, always accessible
     0x21F4C665,  # Dreamtime -- auto-unlocked via Outpost Omega
 ]
 
@@ -139,13 +143,46 @@ AUTO_UNLOCK_ADDRESSES: list[int] = [
 logger = logging.getLogger("CommonClient")
 
 _METALIS_ID: int = 0x04
+_CHALLAX_ID: int = 0x07
 
-# Giant Clank on Metalis is unreachable/disabled (no AP location for it — see
-# locations.py). Tracked via a bit on the Challax mission address (the game
-# shares that progress word between the two Giant Clank sequences); forcing
-# it set on every Metalis entry stops the game from triggering the sequence.
-_GIANT_CLANK_ADDR: int = PLANET_MISSION_ADDRESSES["Challax"]
-_GIANT_CLANK_MASK: int = 0x0010
+# Giant Clank Metalis/Challax (planet ids 0x0F/0x15) are self-contained
+# vanilla sequences, not normal AP regions — see
+# PlanetInventory.giant_clank_active below. NOTE: the game shares one
+# trigger bit between the two sequences (Challax mission address, mask
+# 0x0010) for *starting* Giant Clank; neither sequence here relies on that
+# bit at all — both are detected purely by planet id and completed by
+# watching an armour-piece pickup (see GIANT_CLANK_CONFIGS).
+_GIANT_CLANK_METALIS_ID:  int = 0x0F
+_GIANT_CLANK_CHALLAX_ID:  int = 0x15
+
+
+class GiantClankConfig(NamedTuple):
+    origin_id:        int            # planet the sequence is entered from
+    armour_set:       str            # ArmourUnlocks slot name (e.g. "electroshock")
+    piece:            ArmourPiece    # piece bit that signals completion when it appears
+    pickup_locations: tuple[str, ...]  # AP location(s) fired the moment that bit appears
+    # Some sequences (Metalis) end with the game scripting a transition to a
+    # different planet than the one the player started on — redirect_to
+    # forces NEW_PLANET_START_LOAD_ADDR back to origin_id instead of
+    # following it, firing escape_location once. None/None for sequences
+    # (Challax) the player naturally returns from on their own.
+    redirect_to:      int | None = None
+    escape_location:  str | None = None
+
+
+GIANT_CLANK_CONFIGS: dict[int, GiantClankConfig] = {
+    _GIANT_CLANK_METALIS_ID: GiantClankConfig(
+        origin_id=_METALIS_ID,
+        armour_set="electroshock", piece=ArmourPiece.GLOVES,
+        pickup_locations=(Rac5Locations.METALIS_GLOVES,),
+        redirect_to=_METALIS_ID, escape_location=Rac5CutsceneLocations.METALIS_ESCAPE,
+    ),
+    _GIANT_CLANK_CHALLAX_ID: GiantClankConfig(
+        origin_id=_CHALLAX_ID,
+        armour_set="electroshock", piece=ArmourPiece.CHESTPLATE,
+        pickup_locations=(Rac5Locations.CHALLAX_CHESTPLATE, Rac5CutsceneLocations.CHALLAX_CLANK),
+    ),
+}
 
 
 class PlanetInventory:
@@ -183,11 +220,34 @@ class PlanetInventory:
         self.is_ready: bool = False
         self._pending_planet_id: int | None = None
         self._prev_gate: int = TRANSITION_GATE_IDLE
+
+        # Random Starting Planet: the game always boots a fresh save into
+        # Pokitaru regardless of which planets are AP-unlocked, so the very
+        # first Pokitaru arrival must be redirected once. Set from slot_data
+        # (see set_starting_planet()) — None (option off) leaves vanilla
+        # behavior untouched.
+        self.starting_planet_id: int | None = None
+        self._start_redirect_pending: bool = False
         # Quick select starts frozen; the first time a planet becomes ready
         # it's zeroed (fresh boot), every time after that it's restored from
         # the in-memory snapshot — same start/restore split QuickSelectState
         # itself already exposes.
         self._quick_select_primed: bool = False
+
+        # Giant Clank Metalis/Challax: self-contained vanilla sequences played
+        # start-to-finish with no AP items/notifications (see
+        # Core.tick()/apply_inventory()). check_giant_clank() tracks each
+        # sequence's completion pickup (see GIANT_CLANK_CONFIGS) and, where
+        # configured, redirects the game's own scripted exit transition back
+        # to the origin planet instead of following it onward.
+        # Set directly by the client from slot_data (GiantClank option) —
+        # see _ready_on_planet(). Defaults True so standalone/test usage
+        # without slot_data wiring doesn't get silently locked out.
+        self.giant_clank_allowed: bool = True
+        self.giant_clank_active: bool = False
+        self._giant_clank_config: GiantClankConfig | None = None
+        self._giant_clank_had_piece: bool = False
+        self._giant_clank_escape_sent: bool = False
 
         # Armour tracking: collected_armour is what's been picked up in-game
         # this session, unlock_armour is what Archipelago has granted — kept
@@ -219,6 +279,14 @@ class PlanetInventory:
 
         self._prev_dead: bool = False
         self._prev_menu: MenuStateValue | None = None
+
+    def set_starting_planet(self, planet_id: int | None) -> None:
+        """Set once from slot_data (Random Starting Planet option): the planet
+        id the very first Pokitaru arrival should be redirected to instead of
+        the vanilla boot-in. None (option off, or the chosen planet already
+        is Pokitaru) leaves the first arrival untouched."""
+        self.starting_planet_id = planet_id
+        self._start_redirect_pending = planet_id is not None and planet_id != Planets.POKITARU.planet_id
 
     def set_planet(self, planet_id: int) -> None:
         """Rebind every planet-dependent Inventory to the newly loaded planet
@@ -286,6 +354,26 @@ class PlanetInventory:
         return False
 
     def _ready_on_planet(self, planet_id: int) -> None:
+        if self._start_redirect_pending and planet_id == Planets.POKITARU.planet_id:
+            # Random Starting Planet: redirect the game's hardcoded first
+            # Pokitaru boot-in to the AP-chosen starting planet instead.
+            # One-shot — cleared immediately so a later, legitimate visit to
+            # Pokitaru is never redirected again.
+            self._start_redirect_pending = False
+            self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, self.starting_planet_id)
+            return
+
+        config = GIANT_CLANK_CONFIGS.get(planet_id)
+        if config is not None and not self.giant_clank_allowed:
+            # Giant Clank option is off: block entry entirely by forcing an
+            # immediate load back to whatever planet this sequence is
+            # entered from — is_ready is deliberately left as-is (still
+            # False from the transition that got us here) so nothing else
+            # runs against this half-loaded state; the redirect's own
+            # arrival calls _ready_on_planet() again for real.
+            self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.origin_id)
+            return
+
         self.set_planet(planet_id)
         self.is_ready = True
         if not self._quick_select_primed:
@@ -298,15 +386,66 @@ class PlanetInventory:
         # QuickSelectState.load() (or harmlessly re-applies zero()'s
         # all-zero default), and on every later one it's the normal restore.
         self.quick_select.restore()
-        if planet_id == _METALIS_ID:
-            self._suppress_giant_clank()
 
-    def _suppress_giant_clank(self) -> None:
-        """Force the Giant Clank trigger bit already set so the game treats
-        it as done and never starts the (unreachable) sequence."""
-        value = self.pine.read_int16(_GIANT_CLANK_ADDR)
-        if not value & _GIANT_CLANK_MASK:
-            self.pine.write_int16(_GIANT_CLANK_ADDR, value | _GIANT_CLANK_MASK)
+        if config is not None:
+            self._enter_giant_clank(config)
+        elif self.giant_clank_active:
+            self._exit_giant_clank()
+
+    def _enter_giant_clank(self, config: GiantClankConfig) -> None:
+        """Strip armour on entry so nothing AP-granted shows during the
+        sequence, and so the completion pickup (checked live via
+        check_giant_clank()) is a clean 0->1 transition."""
+        self.giant_clank_active = True
+        self._giant_clank_config = config
+        self._giant_clank_had_piece = False
+        self._giant_clank_escape_sent = False
+        self.armour.sync_unlocked(dict.fromkeys(ArmourUnlocks._OFFSETS, 0))
+
+    def _exit_giant_clank(self) -> None:
+        """Restore true AP armour ownership once back on a regular planet."""
+        self.giant_clank_active = False
+        self._giant_clank_config = None
+        self.armour.sync_unlocked(self.unlock_armour)
+
+    def check_giant_clank(self) -> list[str]:
+        """Poll-based: call every tick regardless of is_ready/transition
+        state, so a redirect (where configured) lands as soon as possible.
+        No-ops unless giant_clank_active.
+
+        Returns the AP location name(s) to send this tick:
+          - config.pickup_locations, the moment config.piece's unlocked bit
+            appears (armour was stripped on entry, so any appearance here is
+            a genuine pickup) — for Challax this is both the armour pickup
+            and the "Giant Clank" mission location at once.
+          - config.escape_location, once, when the game starts its own
+            scripted exit transition (NEW_PLANET_START_LOAD_ADDR leaves the
+            idle value) — immediately overwritten with config.redirect_to so
+            the player is forced back to the origin planet instead of
+            following it onward. Only set for sequences that need it
+            (Metalis); Challax's is left to return on its own.
+        """
+        config = self._giant_clank_config
+        if not self.giant_clank_active or config is None:
+            return []
+
+        to_send: list[str] = []
+
+        has_piece = bool(getattr(self.armour.UnlockedArmour, config.armour_set) & config.piece)
+        if has_piece and not self._giant_clank_had_piece:
+            to_send.extend(config.pickup_locations)
+        self._giant_clank_had_piece = has_piece
+
+        if config.redirect_to is not None:
+            load_value = self.pine.read_int32(NEW_PLANET_START_LOAD_ADDR)
+            if load_value != PLANET_LOAD_IDLE_VALUE:
+                self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.redirect_to)
+                if not self._giant_clank_escape_sent:
+                    self._giant_clank_escape_sent = True
+                    if config.escape_location:
+                        to_send.append(config.escape_location)
+
+        return to_send
 
     # Text chat — the entry point external code calls to show a message.
     # Deciding *when* to call it is entirely external.
@@ -452,7 +591,6 @@ class PlanetLockValue(IntEnum):
 PLANET_UNLOCK_ORDER: list[str] = list(PlanetProgressStruct.PLANET_NAME_ORDER)
 
 _AUTO_UNLOCK_NAMES: frozenset[str] = frozenset({
-    "POKITARU",
     "DREAMTIME",
 })
 
@@ -483,6 +621,14 @@ class PlanetUnlockState(BaseState):
         self._enforce_active: bool     = True
         self._ryllus_released: bool    = False
         self._infobot_planets: set[str] = set()
+        # Random Starting Planet: set from slot_data (see set_random_start()).
+        # False (option off) keeps Ryllus force-opened until its intro
+        # cutscene ends, matching the game's own vanilla behavior (it force-
+        # unlocks Ryllus via Pokitaru's intro before AP gating can apply).
+        # True skips that entirely -- the player may not even start on
+        # Pokitaru, so Ryllus is gated purely by infobot ownership from tick
+        # one, like every other planet.
+        self._random_start: bool = False
 
     def _read_struct(self) -> PlanetProgressStruct:
         raw = self.pine.read_bytes(PlanetProgressStruct.BASE_ADDRESS, PlanetProgressStruct.size())
@@ -544,22 +690,26 @@ class PlanetUnlockState(BaseState):
                 state_val = max(int(unlock_val), pu.default_state)
                 self.pine.write_int8(pu.state_addr, state_val)
 
+    def set_random_start(self, enabled: bool) -> None:
+        self._random_start = enabled
+
     def set_unlocked_planets(self, planets: set[str]) -> None:
         self._infobot_planets = set(planets)
         for name in PLANET_UNLOCK_ORDER:
             self._desired[name] = name in planets or name in _AUTO_UNLOCK_NAMES
-        if not self._ryllus_released:
+        if not self._random_start and not self._ryllus_released:
             self._desired["RYLLUS"] = True
 
     def on_ryllus_cutscene_ended(self) -> None:
-        if self._ryllus_released:
+        if self._random_start or self._ryllus_released:
             return
         self._ryllus_released = True
         self._desired["RYLLUS"] = "RYLLUS" in self._infobot_planets
 
     def reset_session(self) -> None:
         self._ryllus_released = False
-        self._desired["RYLLUS"] = True
+        if not self._random_start:
+            self._desired["RYLLUS"] = True
 
     def unlock(self, planet: str) -> None:
         self._desired[planet] = True

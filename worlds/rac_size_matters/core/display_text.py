@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 # Colour encoding
 # 0x09 = colour-change marker; the following byte selects the colour.

@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rule_builder.rules import Has, HasAll, True_
+
 from ..constants import (
+    Rac5CutsceneLocations,
     Rac5Gadgets,
     Rac5Infobots,
     Rac5Locations,
@@ -11,7 +14,6 @@ from ..constants import (
     Rac5TBolts,
     Rac5VendorLocations,
 )
-from rule_builder.rules import Has, HasAll, True_
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -24,14 +26,24 @@ def set_challax_rules(world: RACSizeMatterWorld) -> None:
     _base   = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER)
     _sprout = HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER, Rac5Gadgets.SPROUT_O_MATIC)
 
-    # Rac5SkillPoints.CHALLAX_VARMINTS ("No More Varmints!") is commented out
-    # of SKILL_POINTS in skill_point_locations.py — Giant Clank disabled,
-    # unreachable — so no rule is set for it here.
     if world.options.skill_points.value >= 2:
         world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_MASTER, player), _sprout)
 
-    # Giant Clank disabled/unreachable — METALIS_CLANK and CHALLAX_CLANK are
-    # commented out of the location pool in locations.py, so no rule is set here.
+    if world.options.all_missions:
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.CHALLAX_EXPLORE, player), _base)
+
+    # Giant Clank Challax: locked out entirely by the Giant Clank option (see
+    # regions.py/GIANT_CLANK_LOCATIONS and PlanetInventory.giant_clank_allowed)
+    # — when on, completed by collecting the Electroshock Chestplate during
+    # the sequence, no extra item needed beyond Challax itself being
+    # reachable. METALIS_CLANK (the shared trigger bit, not a completion)
+    # remains untracked regardless — see locations.py.
+    if world.options.giant_clank:
+        if world.options.skill_points.value >= 1:
+            world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_VARMINTS, player), True_())
+        if world.options.all_missions:
+            world.set_rule(mw.get_location(Rac5CutsceneLocations.CHALLAX_CLANK, player), True_())
+        world.set_rule(mw.get_location(Rac5Locations.CHALLAX_CHESTPLATE, player), True_())
 
     world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_MECH_PAD, player), True_())
     world.set_rule(mw.get_location(Rac5TBolts.CHALLAX_ROOM, player), _base)

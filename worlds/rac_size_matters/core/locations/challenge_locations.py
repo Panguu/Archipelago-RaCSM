@@ -4,10 +4,10 @@ from enum import IntEnum, IntFlag
 from typing import NamedTuple
 
 from ...constants import (
-    Rac5ClankChallenges as RACSMCLANK,
+    Rac5ClankChallenges,
     Rac5Planets,
     Rac5SkillPoints,
-    Rac5SkyboardChallenges as RACSMSKY,
+    Rac5SkyboardChallenges,
 )
 from ..address_maps import PLANET_ADDRESSES
 
@@ -80,51 +80,51 @@ CLANK_SECTION_UNLOCK_ADDRESSES: dict[str, dict[ChallengeSection, int]] = {
 
 
 _METALIS_DERBY: dict[str, int] = {
-    RACSMCLANK.METALIS_BUZZSAW:      _METALIS_BASE + 3,
-    RACSMCLANK.METALIS_CHARGE:       _METALIS_BASE + 4,
-    RACSMCLANK.METALIS_BOOGALOO:     _METALIS_BASE + 5,
-    RACSMCLANK.METALIS_SHOWDOWN:     _METALIS_BASE + 6,
-    RACSMCLANK.METALIS_REVENGE:      _METALIS_BASE + 7,   # reward
+    Rac5ClankChallenges.METALIS_BUZZSAW:      _METALIS_BASE + 3,
+    Rac5ClankChallenges.METALIS_CHARGE:       _METALIS_BASE + 4,
+    Rac5ClankChallenges.METALIS_BOOGALOO:     _METALIS_BASE + 5,
+    Rac5ClankChallenges.METALIS_SHOWDOWN:     _METALIS_BASE + 6,
+    Rac5ClankChallenges.METALIS_REVENGE:      _METALIS_BASE + 7,   # reward
 }
 
 _METALIS_GADGETBOT_TOSS: dict[str, int] = {
-    RACSMCLANK.METALIS_LEAGUE:       _METALIS_BASE + 8,
-    RACSMCLANK.METALIS_BRACKET:      _METALIS_BASE + 9,
-    RACSMCLANK.METALIS_DIVISION:     _METALIS_BASE + 10,
-    RACSMCLANK.METALIS_PROFESSIONAL: _METALIS_BASE + 11,
-    RACSMCLANK.METALIS_UBER:         _METALIS_BASE + 12,  # reward
+    Rac5ClankChallenges.METALIS_LEAGUE:       _METALIS_BASE + 8,
+    Rac5ClankChallenges.METALIS_BRACKET:      _METALIS_BASE + 9,
+    Rac5ClankChallenges.METALIS_DIVISION:     _METALIS_BASE + 10,
+    Rac5ClankChallenges.METALIS_PROFESSIONAL: _METALIS_BASE + 11,
+    Rac5ClankChallenges.METALIS_UBER:         _METALIS_BASE + 12,  # reward
 }
 
 _METALIS_GADGETBOT: dict[str, int] = {
-    RACSMCLANK.METALLIS_TEAM:        _METALIS_BASE + 13,
-    RACSMCLANK.METALIS_GAP:          _METALIS_BASE + 14,
-    RACSMCLANK.METALIS_TELEPORTERS:  _METALIS_BASE + 15,
-    RACSMCLANK.METALIS_BRAIN:        _METALIS_BASE + 16,
-    RACSMCLANK.METALIS_NIGHT:        _METALIS_BASE + 17,  # reward
+    Rac5ClankChallenges.METALLIS_TEAM:        _METALIS_BASE + 13,
+    Rac5ClankChallenges.METALIS_GAP:          _METALIS_BASE + 14,
+    Rac5ClankChallenges.METALIS_TELEPORTERS:  _METALIS_BASE + 15,
+    Rac5ClankChallenges.METALIS_BRAIN:        _METALIS_BASE + 16,
+    Rac5ClankChallenges.METALIS_NIGHT:        _METALIS_BASE + 17,  # reward
 }
 
 _DAYNI_DERBY: dict[str, int] = {
-    RACSMCLANK.DAYNI_MOON_WELCOME:   _DAYNI_BASE + 3,
-    RACSMCLANK.DAYNI_MOON_ROUND:     _DAYNI_BASE + 4,
-    RACSMCLANK.DAYNI_MOON_VARIETY:   _DAYNI_BASE + 5,
-    RACSMCLANK.DAYNI_MOON_SAWYER:    _DAYNI_BASE + 6,
-    RACSMCLANK.DAYNI_MOON_SMASHER:   _DAYNI_BASE + 7,
+    Rac5ClankChallenges.DAYNI_MOON_WELCOME:   _DAYNI_BASE + 3,
+    Rac5ClankChallenges.DAYNI_MOON_ROUND:     _DAYNI_BASE + 4,
+    Rac5ClankChallenges.DAYNI_MOON_VARIETY:   _DAYNI_BASE + 5,
+    Rac5ClankChallenges.DAYNI_MOON_SAWYER:    _DAYNI_BASE + 6,
+    Rac5ClankChallenges.DAYNI_MOON_SMASHER:   _DAYNI_BASE + 7,
 }
 
 _DAYNI_GADGETBOT_TOSS: dict[str, int] = {
-    RACSMCLANK.DAYNI_MOON_HAY:        _DAYNI_BASE + 8,
-    RACSMCLANK.DAYNI_MOON_TOURNAMENT: _DAYNI_BASE + 9,
-    RACSMCLANK.DAYNI_MOON_AROUND:     _DAYNI_BASE + 10,
-    RACSMCLANK.DAYNI_MOON_LINE:       _DAYNI_BASE + 11,
-    RACSMCLANK.DAYNI_MOON_SHOWDOWN:   _DAYNI_BASE + 12,  # reward
+    Rac5ClankChallenges.DAYNI_MOON_HAY:        _DAYNI_BASE + 8,
+    Rac5ClankChallenges.DAYNI_MOON_TOURNAMENT: _DAYNI_BASE + 9,
+    Rac5ClankChallenges.DAYNI_MOON_AROUND:     _DAYNI_BASE + 10,
+    Rac5ClankChallenges.DAYNI_MOON_LINE:       _DAYNI_BASE + 11,
+    Rac5ClankChallenges.DAYNI_MOON_SHOWDOWN:   _DAYNI_BASE + 12,  # reward
 }
 
 _DAYNI_GADGETBOT: dict[str, int] = {
-    RACSMCLANK.DAYNI_MOON_CROWD:     _DAYNI_BASE + 13,
-    RACSMCLANK.DAYNI_MOON_REVERSE:   _DAYNI_BASE + 14,
-    RACSMCLANK.DAYNI_MOON_BRIDGE:    _DAYNI_BASE + 15,
-    RACSMCLANK.DAYNI_MOON_LEAP:      _DAYNI_BASE + 16,
-    RACSMCLANK.DAYNI_MOON_INFINITE:  _DAYNI_BASE + 17,   # reward
+    Rac5ClankChallenges.DAYNI_MOON_CROWD:     _DAYNI_BASE + 13,
+    Rac5ClankChallenges.DAYNI_MOON_REVERSE:   _DAYNI_BASE + 14,
+    Rac5ClankChallenges.DAYNI_MOON_BRIDGE:    _DAYNI_BASE + 15,
+    Rac5ClankChallenges.DAYNI_MOON_LEAP:      _DAYNI_BASE + 16,
+    Rac5ClankChallenges.DAYNI_MOON_INFINITE:  _DAYNI_BASE + 17,   # reward
 }
 
 
@@ -150,12 +150,16 @@ GADGETBOT_CLANK_PICKUPS: list[ChallengePickup] = [
 # Reward locations (item grants on challenge completion)
 # Subset of the above: the final challenge of each type grants an item.
 CHALLENGE_PICKUPS: list[ChallengePickup] = [
-    ChallengePickup(_METALIS_BASE + 3,  RACSMCLANK.METALIS_BUZZSAW,     Rac5Planets.METALIS),   # Derby first
-    ChallengePickup(_METALIS_BASE + 7,  RACSMCLANK.METALIS_REVENGE,     Rac5Planets.METALIS),   # Derby reward
-    ChallengePickup(_METALIS_BASE + 12, RACSMCLANK.METALIS_UBER,        Rac5Planets.METALIS),   # Gadgetbot Toss reward
-    ChallengePickup(_METALIS_BASE + 17, RACSMCLANK.METALIS_NIGHT,       Rac5Planets.METALIS),   # Gadgetbot reward
-    ChallengePickup(_DAYNI_BASE   + 12, RACSMCLANK.DAYNI_MOON_SHOWDOWN, Rac5Planets.DAYNI_MOON), # Gadgetbot Toss reward
-    ChallengePickup(_DAYNI_BASE   + 17, RACSMCLANK.DAYNI_MOON_INFINITE, Rac5Planets.DAYNI_MOON), # Gadgetbot reward
+    ChallengePickup(_METALIS_BASE + 3,  Rac5ClankChallenges.METALIS_BUZZSAW,     Rac5Planets.METALIS),    # Derby first
+    ChallengePickup(_METALIS_BASE + 7,  Rac5ClankChallenges.METALIS_REVENGE,     Rac5Planets.METALIS),    # Derby reward
+    # Gadgetbot Toss reward
+    ChallengePickup(_METALIS_BASE + 12, Rac5ClankChallenges.METALIS_UBER,        Rac5Planets.METALIS),
+    # Gadgetbot reward
+    ChallengePickup(_METALIS_BASE + 17, Rac5ClankChallenges.METALIS_NIGHT,       Rac5Planets.METALIS),
+    # Gadgetbot Toss reward
+    ChallengePickup(_DAYNI_BASE   + 12, Rac5ClankChallenges.DAYNI_MOON_SHOWDOWN, Rac5Planets.DAYNI_MOON),
+    # Gadgetbot reward
+    ChallengePickup(_DAYNI_BASE   + 17, Rac5ClankChallenges.DAYNI_MOON_INFINITE, Rac5Planets.DAYNI_MOON),
 ]
 
 CHALLENGE_ADDRESS_MAP: dict[int, str] = {
@@ -198,17 +202,17 @@ GLADIATOR_FAILSAFE: dict[str, str] = {
 
 # Maps AP location name (constant) → (unlock_addr, completed_addr, mask).
 _KALIDON_SKYBOARD: dict[str, tuple[int, int, int]] = {
-    RACSMSKY.KALIDON_LEARNER: (_KALIDON_SKY, _KALIDON_SKY + 1, 0x01),
-    RACSMSKY.KALIDON_TICKET:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x04),
-    RACSMSKY.KALIDON_TRICKY:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x10),
-    RACSMSKY.KALIDON_MASTER:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x40),
+    Rac5SkyboardChallenges.KALIDON_LEARNER: (_KALIDON_SKY, _KALIDON_SKY + 1, 0x01),
+    Rac5SkyboardChallenges.KALIDON_TICKET:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x04),
+    Rac5SkyboardChallenges.KALIDON_TRICKY:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x10),
+    Rac5SkyboardChallenges.KALIDON_MASTER:  (_KALIDON_SKY, _KALIDON_SKY + 1, 0x40),
 }
 
 _OUTPOST_OMEGA_SKYBOARD: dict[str, tuple[int, int, int]] = {
-    RACSMSKY.OUTPOST_OMEGA_INTERIOR: (_OO_SKY, _OO_SKY + 1, 0x01),
-    RACSMSKY.OUTPOST_OMEGA_DANGER:   (_OO_SKY, _OO_SKY + 1, 0x04),
-    RACSMSKY.OUTPOST_OMEGA_VORTEX:   (_OO_SKY, _OO_SKY + 1, 0x10),
-    RACSMSKY.OUTPOST_OMEGA_VERTIGO:  (_OO_SKY, _OO_SKY + 1, 0x40),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_INTERIOR: (_OO_SKY, _OO_SKY + 1, 0x01),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_DANGER:   (_OO_SKY, _OO_SKY + 1, 0x04),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:   (_OO_SKY, _OO_SKY + 1, 0x10),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VERTIGO:  (_OO_SKY, _OO_SKY + 1, 0x40),
 }
 
 KALIDON_SKYBOARD_PICKUPS: list[SkyboardPickup] = [

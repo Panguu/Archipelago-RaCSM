@@ -5,12 +5,12 @@ from enum import IntEnum, IntFlag
 from typing import NamedTuple
 
 from ..constants import (
-    Rac5ClankChallenges as RACSMCLANK,
+    Rac5ClankChallenges,
     Rac5Locations,
     Rac5Planets,
-    Rac5SkyboardChallenges as RACSMSKY,
+    Rac5SkyboardChallenges,
 )
-from pypine import Pine
+from ..pypine import Pine
 from .states.base_state import BaseState
 from .structs.pickups import ArmourStruct
 
@@ -224,26 +224,25 @@ ARMOUR_PICKUPS: list[ArmourPickup] = [
     ArmourPickup("wildfire", ArmourPiece.HELMET, Rac5Locations.RYLLUS_HELMET, Rac5Planets.RYLLUS),
     ArmourPickup("sludge", ArmourPiece.CHESTPLATE, Rac5Locations.KALIDON_CHESTPLATE, Rac5Planets.KALIDON),
     ArmourPickup("wildfire", ArmourPiece.BOOTS, Rac5Locations.KALIDON_BOOTS, Rac5Planets.KALIDON),
-    # ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES,
-    #              Rac5Planets.METALIS),  # currently unreachable
     ArmourPickup("crystallix", ArmourPiece.CHESTPLATE, Rac5Locations.DREAMTIME_CHESTPLATE, Rac5Planets.DREAMTIME),
     ArmourPickup("crystallix", ArmourPiece.BOOTS, Rac5Locations.OUTPOST_OMEGA_BOOTS, Rac5Planets.OUTPOST_OMEGA),
-    # ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, "Challax: Electroshock Chestplate",
-    #              Rac5Planets.CHALLAX),  # not reachable
     ArmourPickup("electroshock", ArmourPiece.HELMET, Rac5Locations.CHALLAX_HELMET, Rac5Planets.CHALLAX),
     ArmourPickup("mega_bomb", ArmourPiece.HELMET, Rac5Locations.DAYNI_MOON_HELMET, Rac5Planets.DAYNI_MOON),
     ArmourPickup("mega_bomb", ArmourPiece.CHESTPLATE, Rac5Locations.INSIDE_CLANK_CHESTPLATE, Rac5Planets.INSIDE_CLANK),
+
+    ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES, Rac5Planets.METALIS),
+    ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, Rac5Locations.CHALLAX_CHESTPLATE, Rac5Planets.CHALLAX),
 ]
 
 ARMOUR_FLAG_TO_LOCATION: dict[tuple[str, ArmourPiece], str] = {(ap.set_key, ap.piece): ap.name for ap in ARMOUR_PICKUPS}
 
 CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
-    RACSMCLANK.METALIS_REVENGE: ("crystallix", ArmourPiece.HELMET),
-    RACSMCLANK.METALIS_UBER: ("crystallix", ArmourPiece.GLOVES),
-    RACSMCLANK.METALIS_NIGHT: ("sludge", ArmourPiece.GLOVES),
-    RACSMCLANK.DAYNI_MOON_SHOWDOWN: ("mega_bomb", ArmourPiece.GLOVES),
-    RACSMCLANK.DAYNI_MOON_INFINITE: ("mega_bomb", ArmourPiece.BOOTS),
-    RACSMSKY.OUTPOST_OMEGA_VERTIGO: ("electroshock", ArmourPiece.BOOTS),
+    Rac5ClankChallenges.METALIS_REVENGE: ("crystallix", ArmourPiece.HELMET),
+    Rac5ClankChallenges.METALIS_UBER: ("crystallix", ArmourPiece.GLOVES),
+    Rac5ClankChallenges.METALIS_NIGHT: ("sludge", ArmourPiece.GLOVES),
+    Rac5ClankChallenges.DAYNI_MOON_SHOWDOWN: ("mega_bomb", ArmourPiece.GLOVES),
+    Rac5ClankChallenges.DAYNI_MOON_INFINITE: ("mega_bomb", ArmourPiece.BOOTS),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VERTIGO: ("electroshock", ArmourPiece.BOOTS),
 }
 
 

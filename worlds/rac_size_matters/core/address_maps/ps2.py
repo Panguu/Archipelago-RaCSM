@@ -18,6 +18,12 @@ PLAYER_BOLT_COUNT          = 0x21F4C768
 BOLT_PICKUP_MASK           = 0x000000FFFFFFFFFF
 PLANET_LOAD_ADDRESS        = 0x21F4C770
 NEW_PLANET_START_LOAD_ADDR = 0x21F4A744
+# Idle/sentinel value of NEW_PLANET_START_LOAD_ADDR when no forced load is
+# pending. A forced load is encoded as plain planet_id written via
+# write_int32 (pypine's write_int32 is little-endian, so this puts the id in
+# the first byte and zeroes the rest) — e.g. Pokitaru (0x01) is written as
+# raw bytes 01 00 00 00.
+PLANET_LOAD_IDLE_VALUE     = 0xFFFFFFFF
 CONTROLLER_PAUSE_SELECT_ADDRESS = 0x20F7F414
 CONTROLLER_BUTTONS_ADDRESS      = 0x20F7F415
 

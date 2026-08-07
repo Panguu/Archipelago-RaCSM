@@ -1,6 +1,6 @@
 from enum import IntFlag
 
-from pypine import Pine
+from ..pypine import Pine
 from .address_maps import PLANET_ADDRESSES
 
 """

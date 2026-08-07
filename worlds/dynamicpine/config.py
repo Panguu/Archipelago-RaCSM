@@ -1,12 +1,12 @@
 """Dynamic Pine's PCSX2 ini builder.
 
-pypine (installed via requirements.txt, pinned to a specific commit) provides
-the PINE protocol and the base PineConfig, which handles enabling PINE on a
-port and pointing Slot1 at a memcard. Everything multi-instance lives here on
-top of that: per-instance portable datapaths grouped by game serial then slot
-name, port reuse/probing so instances never collide, a shared BIOS folder so
-PCSX2's first-run setup happens once, RetroAchievements disabled, and
-per-game ini_overrides from the game's DynamicPineGame declaration.
+pypine (pinned at its "pine config builder" commit) provides the PINE protocol
+and the base PineConfig, which handles enabling PINE on a port and pointing
+Slot1 at a memcard. Everything multi-instance lives here on top of that:
+per-instance portable datapaths grouped by game serial then slot name, port
+reuse/probing so instances never collide, a shared BIOS folder so PCSX2's
+first-run setup happens once, RetroAchievements disabled, and per-game
+ini_overrides from the game's DynamicPineGame declaration.
 
 The port/datapath logic is ported from rac_size_matters' extended pypine
 working tree (its uncommitted additions to the same base commit)."""
@@ -18,7 +18,8 @@ import platform
 import socket
 from configparser import ConfigParser
 from pathlib import Path
-from pypine.config import DEFAULT_PINE_PORT, PineConfig
+
+from .pypine.pypine.config import DEFAULT_PINE_PORT, PineConfig
 from .types import Overrides
 
 BASE_INI_SETTINGS: Overrides = {
@@ -69,7 +70,7 @@ def is_pine_port_open(port: int) -> bool:
         return False
 
 
-def find_free_port(start: int = 28021, end: int = 28031, exclude: "set[int] | None" = None) -> int:
+def find_free_port(start: int = 28021, end: int = 28031, exclude: set[int] | None = None) -> int:
     """Finds a PINE port with no emulator currently listening on it and not in
     exclude (ports promised to still-booting instances that aren't listening
     yet - see launcher._reserved_ports), falling back to DEFAULT_PINE_PORT if
@@ -99,11 +100,11 @@ class DynamicPineConfig(PineConfig):
 
     @staticmethod
     def read_existing_port(config_path: Path) -> int:
-        existing = ConfigParser(delimiters=('='))
+        existing = ConfigParser(delimiters=("="))
         existing.optionxform = str
         existing.read(config_path)
         try:
-            return int(existing.get('EmuCore', 'PINESlot', fallback=DEFAULT_PINE_PORT))
+            return int(existing.get("EmuCore", "PINESlot", fallback=DEFAULT_PINE_PORT))
         except ValueError:
             return DEFAULT_PINE_PORT
 
@@ -129,8 +130,8 @@ class DynamicPineConfig(PineConfig):
     def for_dynamic_pine_game(cls, data_root: Path, game_id: str, instance_id: str = "default",
                               memcard_name: str = "memcard.ps2", bios_path: str | None = None,
                               ini_overrides: Overrides | None = None,
-                              reserved_ports: "set[int] | None" = None,
-                              ) -> "DynamicPineConfig":
+                              reserved_ports: set[int] | None = None,
+                              ) -> DynamicPineConfig:
         """Builds (or reuses) a PINE-enabled PCSX2.ini for one instance of a game,
         in a subfolder of data_root named after the game's serial (e.g. SCUS-97615)
         and then the instance_id (e.g. a slot/player name), so running several
@@ -161,10 +162,10 @@ class DynamicPineConfig(PineConfig):
     def _verify_config(self):
         super()._verify_config()
         if self.bios_path:
-            self._normalize_keys('Folders', {'bios': 'Bios'})
-            self.config['Folders'] = {
-                **self.config['Folders'],
-                'Bios': self.bios_path,
+            self._normalize_keys("Folders", {"bios": "Bios"})
+            self.config["Folders"] = {
+                **self.config["Folders"],
+                "Bios": self.bios_path,
             }
         for source in (BASE_INI_SETTINGS, self.ini_overrides):
             for section, values in source.items():

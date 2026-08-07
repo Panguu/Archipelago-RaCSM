@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .address_maps import MENU_ADDR_BY_PLANET_ID
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 # +0x00 state  — current menu value, set by the game itself
 # +0x04 update — write a MenuStateValue here to request a menu change;

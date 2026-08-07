@@ -42,8 +42,6 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.KALIDON_SUPER_LOMBAX:    SkillPoint(0x03,  9, Rac5Planets.KALIDON),
     Rac5SkillPoints.KALIDON_SKYBOARDER:      SkillPoint(0x03, 10, Rac5Planets.KALIDON),
     Rac5SkillPoints.METALIS_SHUTOUT:         SkillPoint(0x04, 12, Rac5Planets.METALIS),
-    # Rac5SkillPoints.METALIS_TERROR: SkillPoint(0x04, 13, Rac5Planets.METALIS)
-    # Giant Clank disabled — unreachable.
     Rac5SkillPoints.METALIS_GLADIATOR:       SkillPoint(0x04, 14, Rac5Planets.METALIS),
     Rac5SkillPoints.DREAMTIME_FRIENDS:       SkillPoint(0x05, 16, Rac5Planets.DREAMTIME),
     Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS: SkillPoint(0x05, 17, Rac5Planets.DREAMTIME),
@@ -51,8 +49,6 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     # Rac5SkillPoints.CHALLAX_SHOCK: SkillPoint(0x07, 24, Rac5Planets.CHALLAX)
     # Excluded: only one opportunity to complete this in the whole game (bit 24).
     Rac5SkillPoints.CHALLAX_MASTER:          SkillPoint(0x07, 25, Rac5Planets.CHALLAX),
-    # Rac5SkillPoints.CHALLAX_VARMINTS: SkillPoint(0x07, 26, Rac5Planets.CHALLAX)
-    # Giant Clank disabled — unreachable.
     Rac5SkillPoints.DAYNI_MOON_GLADIATOR:    SkillPoint(0x08, 28, Rac5Planets.DAYNI_MOON),
     Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST: SkillPoint(0x08, 29, Rac5Planets.DAYNI_MOON),
     Rac5SkillPoints.DAYNI_MOON_BOUNCY:       SkillPoint(0x08, 30, Rac5Planets.DAYNI_MOON),
@@ -60,6 +56,13 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.INSIDE_CLANK_RATCHET:    SkillPoint(0x09, 33, Rac5Planets.INSIDE_CLANK),
     Rac5SkillPoints.QUODRONA_ELITE:          SkillPoint(0x0A, 36, Rac5Planets.QUODRONA),
     Rac5SkillPoints.QUODRONA_STORM:          SkillPoint(0x0A, 37, Rac5Planets.QUODRONA),
+    # Both appended last (rather than restored to their original spots
+    # above) so every other skill point's positionally-derived id in
+    # SKILL_POINT_LOCATIONS (locations.py) stays stable. Earned during their
+    # respective Giant Clank sequences — see core/planets.py's
+    # GIANT_CLANK_CONFIGS/Core.tick() for how those are now reachable.
+    Rac5SkillPoints.METALIS_TERROR:          SkillPoint(0x04, 13, Rac5Planets.METALIS),
+    Rac5SkillPoints.CHALLAX_VARMINTS:        SkillPoint(0x07, 26, Rac5Planets.CHALLAX),
 }
 
 # Curated "hard" tier for the Skill Points option. Everything else in SKILL_POINTS
@@ -67,7 +70,7 @@ SKILL_POINTS: dict[str, SkillPoint] = {
 HARD_SKILL_POINTS: frozenset[str] = frozenset({
     Rac5SkillPoints.RYLLUS_BURY,
     Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
-    # Rac5SkillPoints.METALIS_TERROR,  # Giant Clank disabled — unreachable
+    Rac5SkillPoints.METALIS_TERROR,
     Rac5SkillPoints.DREAMTIME_FRIENDS,
     Rac5SkillPoints.DREAMTIME_NIGHT_TERRORS,
     Rac5SkillPoints.CHALLAX_MASTER,

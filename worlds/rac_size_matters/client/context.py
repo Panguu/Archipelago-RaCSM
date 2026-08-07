@@ -15,7 +15,7 @@ from CommonClient import logger
 from ..core import TextColour, colored_text, set_trap_durations
 from ..core.core import Core
 from ..locations import ALL_LOCATIONS
-from pypine import Pine
+from ..pypine import Pine
 from ..world import RACSizeMatterWorld
 from .command_processor import RACCommandProcessor
 from .constants import GAME_NAME
@@ -216,6 +216,11 @@ class RACContext(
             )
             self._wiring.all_missions_enabled  = bool(self.slot_data.get("all_missions", True))
             self._wiring.all_cutscenes_enabled = bool(self.slot_data.get("all_cutscenes", False))
+            self._wiring.planet.giant_clank_allowed = bool(self.slot_data.get("giant_clank", False))
+            self._wiring.planet.set_starting_planet(self.slot_data.get("starting_planet_id"))
+            self._wiring.planet_unlock.set_random_start(
+                int(self.slot_data.get("random_starting_planet", 0)) != 0
+            )
             self._wiring.planet.weapons.experience_multiplier = (
                 int(self.slot_data.get("weapon_experience_multiplier", 0)) or 1
             )

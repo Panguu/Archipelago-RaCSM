@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .address_maps import PLAYER_ADDRS
 
 if TYPE_CHECKING:
-    from pypine import Pine
+    from ..pypine import Pine
 
 class PlayerMovementState(IntEnum):
     Alive           = 0x00

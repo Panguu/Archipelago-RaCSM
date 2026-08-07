@@ -2,9 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5SkillPoints, Rac5TBolts, Rac5VendorLocations, Rac5CutsceneLocations, Rac5Weapons, Rac5Locations
-from ._helpers import HasProjectileWeapon, HasWeapon
 from rule_builder.rules import True_
+
+from ..constants import (
+    Rac5CutsceneLocations,
+    Rac5Locations,
+    Rac5SkillPoints,
+    Rac5TBolts,
+    Rac5VendorLocations,
+    Rac5Weapons,
+)
+from ._helpers import HasProjectileWeapon, HasWeapon
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -20,6 +28,7 @@ def set_pokitaru_rules(world: RACSizeMatterWorld) -> None:
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_COWS, player), HasWeapon(Rac5Weapons.MOOTATOR))
 
     if world.options.all_missions:
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_RESCUE, player), True_())
         world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_FIGHT, player), True_())
 
     world.set_rule(mw.get_location(Rac5TBolts.POKITARU_ZIPLINE, player), True_())
