@@ -266,9 +266,9 @@ class RACSizeMatterWorld(World):
             for planet in planets:
                 self._precollect(PLANET_TO_INFOBOT[planet])
         else:
-            # Pokitaru and Ryllus are always the starting planets.
+            # Pokitaru and Ryllus are always the starting planets, unlocked
+            # together by their single merged infobot.
             self._precollect(Rac5Infobots.POKITARU)
-            self._precollect(Rac5Infobots.RYLLUS)
 
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))

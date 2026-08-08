@@ -117,7 +117,7 @@ class InventoryMixin:
                 continue
 
             if item_name in INFOBOT_ITEM_TO_PLANET:
-                infobot_planets.add(INFOBOT_ITEM_TO_PLANET[item_name].upper())
+                infobot_planets.update(planet.upper() for planet in INFOBOT_ITEM_TO_PLANET[item_name])
             elif item_name in WEAPON_DISPLAY_TO_INTERNAL:
                 weapon_unlocked[WEAPON_DISPLAY_TO_INTERNAL[item_name]] = True
             elif item_name in GADGET_DISPLAY_TO_INTERNAL:

@@ -104,16 +104,17 @@ PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
 
 INFOBOT_UNLOCK_VALUE = 3  # value written to the planet status address
 
-# Display name -> planet key used in PLANET_STATE_ADDRESSES
-INFOBOT_ITEM_TO_PLANET: dict[str, str] = {
-    Rac5Infobots.POKITARU:     "pokitaru",
-    Rac5Infobots.RYLLUS:       "ryllus",
-    Rac5Infobots.KALIDON:      "kalidon",
-    Rac5Infobots.METALIS:      "metalis",
-    Rac5Infobots.OUTPOST_OMEGA: "outpost_omega",
-    Rac5Infobots.CHALLAX:      "challax",
-    Rac5Infobots.DAYNI_MOON:   "dayni_moon",
-    Rac5Infobots.QUODRONA:     "quodrona",
+# Display name -> planet key(s) used in PLANET_STATE_ADDRESSES. Most infobots
+# unlock a single planet; Pokitaru's also unlocks Ryllus since the two share
+# one merged item.
+INFOBOT_ITEM_TO_PLANET: dict[str, tuple[str, ...]] = {
+    Rac5Infobots.POKITARU:     ("pokitaru", "ryllus"),
+    Rac5Infobots.KALIDON:      ("kalidon",),
+    Rac5Infobots.METALIS:      ("metalis",),
+    Rac5Infobots.OUTPOST_OMEGA: ("outpost_omega",),
+    Rac5Infobots.CHALLAX:      ("challax",),
+    Rac5Infobots.DAYNI_MOON:   ("dayni_moon",),
+    Rac5Infobots.QUODRONA:     ("quodrona",),
 }
 
 PLANET_STATE_ADDRESSES: dict[str, int] = {

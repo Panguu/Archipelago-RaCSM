@@ -60,8 +60,7 @@ class Rac5ProgressiveArmours:
 class Rac5Infobots:
     """String constants for each infobot"""
 
-    POKITARU = "Infobot: Pokitaru"
-    RYLLUS = "Infobot: Ryllus"
+    POKITARU = "Infobot: Pokitaru and Ryllus"
     KALIDON = "Infobot: Kalidon"
     METALIS = "Infobot: Metalis"
     OUTPOST_OMEGA = "Infobot: Outpost Omega"

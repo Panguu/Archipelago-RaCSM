@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 # own infobot (see rules/entrances.py), so precollecting it is always enough
 # on its own. Dreamtime and Inside Clank need extra gadgets beyond their own
 # infobot to enter, and Quodrona is the goal planet, so none of them are ever
-# candidates.
+# candidates. Ryllus isn't its own candidate either -- it shares Pokitaru's
+# merged infobot, so it can't be independently rolled as one of the two picks.
 STARTING_PLANET_CANDIDATES: tuple[str, ...] = (
     Rac5Planets.POKITARU,
-    Rac5Planets.RYLLUS,
     Rac5Planets.KALIDON,
     Rac5Planets.METALIS,
     Rac5Planets.OUTPOST_OMEGA,
@@ -31,7 +31,6 @@ STARTING_PLANET_CANDIDATES: tuple[str, ...] = (
 
 PLANET_TO_INFOBOT: dict[str, str] = {
     Rac5Planets.POKITARU:      Rac5Infobots.POKITARU,
-    Rac5Planets.RYLLUS:        Rac5Infobots.RYLLUS,
     Rac5Planets.KALIDON:       Rac5Infobots.KALIDON,
     Rac5Planets.METALIS:       Rac5Infobots.METALIS,
     Rac5Planets.OUTPOST_OMEGA: Rac5Infobots.OUTPOST_OMEGA,
