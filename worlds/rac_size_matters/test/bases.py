@@ -6,10 +6,11 @@ class RACSizeMatterTestBase(WorldTestBase):
 
 
 # Shared item sets used across test files.
-# Ryllus has no entrance access_rule (the game force-unlocks it via the
-# Pokitaru intro cutscene before AP gating can apply), so RYLLUS_ITEMS is
-# just a baseline of gadgets, not a Ryllus access requirement. Every planet
-# after that is gated by its "Infobot: <Planet>" item (see rules/entrances.py).
+# Pokitaru and Ryllus are both gated on "Infobot: Pokitaru and Ryllus", same
+# as every other planet's own infobot (see rules/entrances.py) -- but with
+# random_starting_planet off (the default in these tests), that infobot is
+# always precollected as the fixed start, so RYLLUS_ITEMS only needs to list
+# the gadgets actually required past that point, not the infobot itself.
 ANY_PROJECTILE  = "Lacerator"
 RYLLUS_ITEMS    = [ANY_PROJECTILE, "Hypershot", "Sprout-O-Matic"]
 KALIDON_ITEMS   = [*RYLLUS_ITEMS, "Infobot: Kalidon"]

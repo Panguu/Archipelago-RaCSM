@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rule_builder.rules import HasAll
+
 from ..constants import Rac5Gadgets, Rac5Infobots
 from ._helpers import HasInfobot, HasProjectileWeapon
-from rule_builder.rules import HasAll
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -14,6 +15,8 @@ def set_entrance_rules(world: RACSizeMatterWorld) -> None:
     player = world.player
     mw = world.multiworld
 
+    world.set_rule(mw.get_entrance("To Pokitaru", player), HasInfobot(Rac5Infobots.POKITARU))
+    world.set_rule(mw.get_entrance("To Ryllus", player), HasInfobot(Rac5Infobots.POKITARU))
     world.set_rule(mw.get_entrance("To Kalidon", player), HasInfobot(Rac5Infobots.KALIDON))
     world.set_rule(mw.get_entrance("To Metalis", player), HasInfobot(Rac5Infobots.METALIS))
     world.set_rule(

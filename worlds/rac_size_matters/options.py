@@ -163,7 +163,7 @@ class RandomStartingPlanet(Choice):
     current options, so denser planets are more likely to be picked. Weapon/Gadget
     Vendor locations only count towards a planet's weight if Starting Weapons/Starting
     Gadgets is set above 0.
-    no_logic: two of the 7 candidate planets are chosen completely at random, ignoring
+    no_logic: two of the 6 candidate planets are chosen completely at random, ignoring
     location counts entirely."""
     display_name = "Random Starting Planet"
     option_off      = 0

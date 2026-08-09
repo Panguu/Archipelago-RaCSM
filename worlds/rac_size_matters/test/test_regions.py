@@ -19,13 +19,30 @@ class TestRegionAccess(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_region("Pokitaru"))
 
     def test_ryllus_always_reachable_even_without_weapon(self) -> None:
-        # Ryllus has no entrance access_rule: the game force-unlocks it via the
-        # Pokitaru intro cutscene, so it's reachable from the start regardless
-        # of items (see core/planets.py PlanetUnlockState._ryllus_released).
+        # Ryllus is gated on "Infobot: Pokitaru and Ryllus" like any other
+        # planet (see rules/entrances.py), but with random_starting_planet
+        # off that infobot is always precollected as the fixed start, so
+        # it's reachable from the start regardless of gadgets.
         self.assertTrue(self.can_reach_region("Ryllus"))
 
     def test_ryllus_reachable_with_projectile(self) -> None:
         self.collect_by_name([ANY_PROJECTILE])
+        self.assertTrue(self.can_reach_region("Ryllus"))
+
+    def test_pokitaru_and_ryllus_gated_on_infobot(self) -> None:
+        # With random_starting_planet off, the merged infobot is precollected
+        # as the fixed start (and so isn't in the itempool for remove_by_name
+        # to find), but the entrance itself is still gated on it (see
+        # rules/entrances.py) -- this matters once random_starting_planet can
+        # leave Pokitaru un-precollected. Removing a transient copy directly
+        # from state simulates that case without depending on random planet
+        # selection.
+        infobot = self.world.create_item("Infobot: Pokitaru and Ryllus")
+        self.remove([infobot])
+        self.assertFalse(self.can_reach_region("Pokitaru"))
+        self.assertFalse(self.can_reach_region("Ryllus"))
+        self.collect([infobot])
+        self.assertTrue(self.can_reach_region("Pokitaru"))
         self.assertTrue(self.can_reach_region("Ryllus"))
 
     def test_kalidon_unreachable_without_gadgets(self) -> None:
