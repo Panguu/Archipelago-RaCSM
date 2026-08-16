@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 _LAUNCHED_VIA_HUB_ENV_VAR = "ARCHIPELAGO_DYNAMIC_PINE_HUB"
 _PINE_PORT_ENV_VAR = "ARCHIPELAGO_DYNAMIC_PINE_PORT"
 _PCSX2_ALREADY_LAUNCHED_ENV_VAR = "ARCHIPELAGO_DYNAMIC_PINE_PCSX2_LAUNCHED"
+_AUTH_ENV_VAR = "ARCHIPELAGO_DYNAMIC_PINE_AUTH"
 
 
 def launched_via_hub() -> bool:
@@ -46,6 +47,23 @@ def get_pine_port_from_env() -> int | None:
         return int(raw) if raw else None
     except ValueError:
         return None
+
+
+def mark_pending_auth(slot_name: str) -> None:
+    """Records the slot name the hub launched this client's instance under
+    (its "instance" argument to /launch, which by convention must already
+    match the slot the player will connect with - see get_pine_port), so
+    the about-to-be-spawned client can pre-fill its own auth with it
+    instead of prompting the player to type the same name again."""
+    os.environ[_AUTH_ENV_VAR] = slot_name
+
+
+def get_pending_auth() -> str | None:
+    """The slot name mark_pending_auth() recorded for this launch, or None
+    if the hub wasn't given one (e.g. "instance" left as the "default"
+    default). A fast-path read only - doesn't validate the name is actually
+    correct for the seed being connected to."""
+    return os.environ.get(_AUTH_ENV_VAR) or None
 
 
 def mark_pcsx2_already_launched() -> None:
@@ -102,12 +120,12 @@ class DynamicPineGame:
             raise ValueError("DynamicPineGame needs at least one game id")
 
 
-def discover_games() -> "dict[str, tuple[type[World], DynamicPineGame]]":
+def discover_games() -> dict[str, tuple[type[World], DynamicPineGame]]:
     """All installed worlds that declare Dynamic Pine support, as
     {game name: (world class, its DynamicPineGame declaration)}."""
     from worlds.AutoWorld import AutoWorldRegister
 
-    found: "dict[str, tuple[type[World], DynamicPineGame]]" = {}
+    found: dict[str, tuple[type[World], DynamicPineGame]] = {}
     for game_name, world_type in AutoWorldRegister.world_types.items():
         spec = getattr(world_type, "dynamic_pine", None)
         if isinstance(spec, DynamicPineGame):

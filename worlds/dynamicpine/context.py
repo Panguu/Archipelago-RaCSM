@@ -10,15 +10,30 @@ from typing import TYPE_CHECKING
 from CommonClient import ClientCommandProcessor, CommonContext, logger
 
 from . import DYNAMIC_PINE_VERSION
-from .api import DynamicPineGame, discover_games, get_bios_path, get_iso_path, mark_pcsx2_already_launched
-from .launcher import (InstanceAlreadyRunningError, NoBiosConfigured, NoIsoConfigured, NoPCSX2Executable,
-                       clear_unused_instances, ensure_instance_config, launch_pcsx2, list_instances,
-                       prompt_for_bios, prompt_for_iso)
+from .api import (
+    DynamicPineGame,
+    discover_games,
+    get_bios_path,
+    get_iso_path,
+    mark_pcsx2_already_launched,
+    mark_pending_auth,
+)
+from .launcher import (
+    InstanceAlreadyRunningError,
+    NoBiosConfigured,
+    NoIsoConfigured,
+    NoPCSX2Executable,
+    clear_unused_instances,
+    ensure_instance_config,
+    launch_pcsx2,
+    list_instances,
+    prompt_for_bios,
+)
 
 if TYPE_CHECKING:
     from kvui import GameManager
 
-__all__ = ["DynamicPineContext", "DynamicPineCommandProcessor"]
+__all__ = ["DynamicPineCommandProcessor", "DynamicPineContext"]
 
 _LAUNCH_ERRORS = (InstanceAlreadyRunningError, NoPCSX2Executable, NoIsoConfigured, NoBiosConfigured)
 
@@ -53,10 +68,18 @@ def launch_game_client(spec: DynamicPineGame, game_name: str, instance: str | No
     starting the client, even though the client isn't launched here -
     previously that only happened as a side effect of the "Launch PCSX2"
     button, so a client started on its own had no instance settings to pick up
-    until it made its own launch_pcsx2 call later."""
+    until it made its own launch_pcsx2 call later.
+
+    Also records `instance` via mark_pending_auth() when given, so the
+    client can pre-fill its own auth instead of prompting the player to
+    retype the same slot name they already gave the hub - see
+    get_pending_auth()."""
     if not spec.client_component:
         logger.warning(f"[DynamicPine] {game_name} does not declare a client_component to launch.")
         return False
+
+    if instance:
+        mark_pending_auth(instance)
 
     try:
         ensure_instance_config(spec, instance)
@@ -94,7 +117,7 @@ def launch_simple(spec: DynamicPineGame, game_name: str, instance: str | None = 
 
 
 class DynamicPineCommandProcessor(ClientCommandProcessor):
-    ctx: "DynamicPineContext"
+    ctx: DynamicPineContext
 
     def _cmd_games(self) -> bool:
         """List installed Dynamic Pine games, their configured ISOs, and running PCSX2 instances."""
@@ -169,7 +192,7 @@ class DynamicPineContext(CommonContext):
     command_processor = DynamicPineCommandProcessor
     game = ""  # the hub is not tied to any one game
 
-    def make_gui(self) -> "type[GameManager]":
+    def make_gui(self) -> type[GameManager]:
         ui = super().make_gui()  # before the kivy imports so kvui gets loaded first
 
         class DynamicPineManager(ui):
@@ -199,13 +222,14 @@ class DynamicPineContext(CommonContext):
 
         return DynamicPineManager
 
-    def build_gui(self, manager: "GameManager") -> None:
+    def build_gui(self, manager: GameManager) -> None:
         """Adds one "Dynamic Pine" tab (same add_client_tab mechanism Universal
         Tracker uses for its Tracker/Map pages) containing a scrollable column
         with a group of controls for each installed Dynamic Pine game."""
         from kivy.metrics import dp
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.scrollview import MDScrollView
+
         from kvui import MDDivider, MDLabel
 
         from .gui import build_bios_row, build_game_group
