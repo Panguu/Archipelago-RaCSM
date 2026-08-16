@@ -5,11 +5,12 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5CutsceneLocations, Rac5GadgetKeys, Rac5Locations
-from ..locations import WEAPON_INTERNAL_TO_LOCATION, WEAPON_LEVEL_LOOKUP
+from ..locations import TITAN_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION, WEAPON_LEVEL_LOOKUP
 from .address_maps import NEW_PLANET_START_LOAD_ADDR
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece, ArmourUnlocks
 from .challenge_mode import ChallengeModeState
 from .challenges import ChallengeInventory, SkyboardInventory
+from .ghost_ratchet import GhostRatchetInventory
 from .locations.mission_locations import CUTSCENE_MAP, STORY_MISSION_MAP
 from .menu import MenuStateValue
 from .missions import MissionInventory
@@ -147,6 +148,7 @@ class Core:
         self.skin         = SkinInventory(pine)
         self.challenge_mode = ChallengeModeState(pine)
         self.shrink_ray    = ShrinkRaySkipInventory(pine)
+        self.ghost_ratchet = GhostRatchetInventory(pine)
 
         # PlanetInventory is planet-agnostic — one instance rebinds itself to
         # whichever planet is loaded via check_transition().
@@ -422,6 +424,16 @@ class Core:
         self.missions.sync_from_ap(checked_locations)
         self.restore_armour_from_locations(checked_locations)
 
+    def spawn_ghost_ratchet(self) -> bool:
+        """Manually triggered via the /spawn_ghost client command: spawns a
+        static clone of Ratchet at his own current position. Only works on
+        planets present in GHOST_RATCHET_ADDRESSES — returns False (no-op)
+        on any other planet."""
+        planet_id = self.planet.planet_id
+        if planet_id is None:
+            return False
+        return self.ghost_ratchet.spawn(planet_id)
+
     # -- Notifications ---------------------------------------------------------
 
     def notify(self, text: bytes | str) -> None:
@@ -540,6 +552,12 @@ class Core:
         if self.shrink_ray_locations_enabled:
             for name in self.shrink_ray.check():
                 self.send_location(name)
+
+        # Ghost Ratchet — see spawn_ghost_ratchet(). No-op unless a ghost
+        # has actually been spawned (GhostRatchetInventory.active); also
+        # self-deactivates if the planet has changed since spawning.
+        if self.planet.planet_id is not None:
+            self.ghost_ratchet.keep_alive(self.planet.planet_id)
 
         self.planet.weapons.apply_experience_boost()
         # Skipped while the weapons vendor is open — it zeroes every
@@ -718,6 +736,24 @@ class Core:
                 loc = WEAPON_LEVEL_LOOKUP.get((name, level))
                 if loc:
                     self.send_location(loc)
+
+        # Titan variant "purchase": with Progressive Weapons (manual or
+        # automatic) + Challenge Mode, apply_progressive_leveling() already
+        # lets a weapon climb from level 4 to 5 purely from owning the 5th
+        # Progressive Weapon copy, with no vendor purchase needed — see
+        # WeaponInventory.apply_progressive_leveling(). check()'s "titans"
+        # derivation catches that same level 4->5 jump regardless of cause,
+        # but VendorInventory.weapon_vendor() only ever consumes it while
+        # the weapons vendor menu is open — without this, a player who
+        # levels up organically without ever opening the vendor would never
+        # get credit for this location. Unlike the levels loop above, not
+        # gated on weapon_level_checks_enabled — the Titan purchase location
+        # is its own thing, gated only by Challenge Mode (see regions.py).
+        for name in changed["titans"]:
+            titan_loc = TITAN_INTERNAL_TO_LOCATION.get(name)
+            if titan_loc:
+                self.planet.weapons.titan_purchased[name] = True
+                self.send_location(titan_loc)
 
     def _handle_death(self) -> None:
         # The death sequence needs to see every piece the player has

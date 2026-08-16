@@ -169,6 +169,9 @@ class PineMixin:
         # everything else here is checkpoint-based and idempotent.
         await self._apply_received_items()
         self._maybe_persist_weapon_state()
+        self._maybe_sync_ammo_link()
+        self._maybe_sync_bolt_link()
+        self._maybe_sync_ghost_link()
 
     def _maybe_persist_weapon_state(self) -> None:
         """Push the current weapon level/experience snapshot to AP data

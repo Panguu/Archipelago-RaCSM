@@ -25,7 +25,6 @@ from .locations import (
     GADGET_VENDOR_LOCATIONS,
     GIANT_CLANK_LOCATIONS,
     HARD_SKILL_POINT_LOCATIONS,
-    NANOTECH_LEVEL_LOCATIONS,
     NG_PLUS_ARMOUR_SET_LOCATIONS,
     NG_PLUS_WEAPON_LEVEL_LOCATIONS,
     SHRINK_RAY_SKIP_LOCATIONS,
@@ -38,7 +37,10 @@ from .locations import (
     WEAPON_SUB_MAX_LEVEL_LOCATIONS,
     WEAPON_TITAN_VENDOR_LOCATIONS,
     WEAPON_VENDOR_LOCATIONS,
+    enabled_clank_challenge_names,
+    nanotech_level_locations_for,
 )
+from .options import ShrinkRayOptions, WeaponLevelChecks
 
 if TYPE_CHECKING:
     from .world import RACSizeMatterWorld
@@ -152,13 +154,18 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         }
     location_tables.append(weapon_mod_vendor_locations)
     if world.options.clank_challenges.value >= 1:
-        location_tables.append(CHALLENGE_LOCATIONS)
+        enabled_challenge_names = enabled_clank_challenge_names(dict(world.options.clank_challenge_groups.value))
+        location_tables.append({
+            name: data for name, data in CHALLENGE_LOCATIONS.items() if name in enabled_challenge_names
+        })
     if world.options.clank_challenges.value >= 2:
-        location_tables.append(ALL_CLANK_LOCATIONS)
+        location_tables.append({
+            name: data for name, data in ALL_CLANK_LOCATIONS.items() if name in enabled_challenge_names
+        })
     if world.options.skyboard_challenges.value >= 1:
         location_tables.append(SKYBOARD_ITEM_LOCATIONS)
         location_tables.append(EXTRA_SKYBOARD_LOCATIONS)
-    if world.options.shrink_ray_locations:
+    if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
         location_tables.append(SHRINK_RAY_SKIP_LOCATIONS)
     if world.options.armour_set_checks:
         armour_set_locations = ARMOUR_SET_CHECK_LOCATIONS
@@ -168,7 +175,15 @@ def create_regions(world: RACSizeMatterWorld) -> None:
                 if name not in NG_PLUS_ARMOUR_SET_LOCATIONS
             }
         location_tables.append(armour_set_locations)
-    if world.options.weapon_level_checks.value >= 1:
+    weapon_level_tier = world.options.weapon_level_checks.value
+    wants_level_4 = weapon_level_tier in (
+        WeaponLevelChecks.option_level_4, WeaponLevelChecks.option_level_4_and_8, WeaponLevelChecks.option_all,
+    )
+    wants_level_8 = weapon_level_tier in (
+        WeaponLevelChecks.option_level_8, WeaponLevelChecks.option_level_4_and_8, WeaponLevelChecks.option_all,
+    )
+    wants_sub_levels = weapon_level_tier == WeaponLevelChecks.option_all
+    if wants_level_4:
         max_level_locations = WEAPON_MAX_LEVEL_LOCATIONS
         if not ng_plus:
             max_level_locations = {
@@ -176,9 +191,9 @@ def create_regions(world: RACSizeMatterWorld) -> None:
                 if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
             }
         location_tables.append(max_level_locations)
-        if challenge_mode >= 1:
-            location_tables.append(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
-    if world.options.weapon_level_checks.value >= 2:
+    if wants_level_8 and challenge_mode >= 1:
+        location_tables.append(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
+    if wants_sub_levels:
         sub_max_level_locations = WEAPON_SUB_MAX_LEVEL_LOCATIONS
         if not ng_plus:
             sub_max_level_locations = {
@@ -188,8 +203,11 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         location_tables.append(sub_max_level_locations)
         if challenge_mode >= 1:
             location_tables.append(CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS)
-    if world.options.nanotech_level_checks:
-        location_tables.append(NANOTECH_LEVEL_LOCATIONS)
+    nanotech_locations = nanotech_level_locations_for(
+        world.options.nanotech_level_interval.value, world.options.nanotech_level_max.value,
+    )
+    if nanotech_locations:
+        location_tables.append(nanotech_locations)
 
     for table in location_tables:
         for loc_name, loc_data in table.items():

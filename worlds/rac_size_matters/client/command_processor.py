@@ -64,6 +64,16 @@ class RACCommandProcessor(ClientCommandProcessor):
         logger.info(f"[RAC] {w.vendor!r}")
         return True
 
+    def _cmd_spawn_ghost(self) -> bool:
+        """Spawn a static ghost clone of Ratchet at his current position
+        (only on planets with confirmed Ghost Ratchet addresses)."""
+        w = self.ctx._wiring
+        if w.spawn_ghost_ratchet():
+            logger.info("[RAC] Ghost Ratchet spawned.")
+        else:
+            logger.info("[RAC] Ghost Ratchet isn't available on this planet yet.")
+        return True
+
     def _cmd_debug(self) -> bool:
         """Toggle printing of state changes as they occur."""
         self.ctx._debug_messages = not self.ctx._debug_messages
@@ -79,4 +89,55 @@ class RACCommandProcessor(ClientCommandProcessor):
     def _cmd_disable_deathlink(self) -> bool:
         """Disable DeathLink for this session."""
         asyncio.create_task(self.ctx._set_death_link_enabled(False))
+        return True
+
+    def _cmd_enable_ammolink(self) -> bool:
+        """Enable AmmoLink for this session."""
+        asyncio.create_task(self.ctx._set_ammo_link_enabled(True))
+        return True
+
+    def _cmd_disable_ammolink(self) -> bool:
+        """Disable AmmoLink for this session."""
+        asyncio.create_task(self.ctx._set_ammo_link_enabled(False))
+        return True
+
+    def _cmd_enable_boltlink(self) -> bool:
+        """Enable BoltLink for this session."""
+        asyncio.create_task(self.ctx._set_bolt_link_enabled(True))
+        return True
+
+    def _cmd_disable_boltlink(self) -> bool:
+        """Disable BoltLink for this session."""
+        asyncio.create_task(self.ctx._set_bolt_link_enabled(False))
+        return True
+
+    def _cmd_enable_ghostlink(self) -> bool:
+        """Enable GhostLink for this session."""
+        asyncio.create_task(self.ctx._set_ghost_link_enabled(True))
+        return True
+
+    def _cmd_disable_ghostlink(self) -> bool:
+        """Disable GhostLink for this session."""
+        asyncio.create_task(self.ctx._set_ghost_link_enabled(False))
+        return True
+
+    def _cmd_ghost_link_interval(self, seconds: str = "") -> bool:
+        """Override how often (in seconds) your position is broadcast to
+        other Ghost Link players, without regenerating — overrides
+        whatever the ghost_link_update_interval YAML option set for this
+        session. 0 stops broadcasting your own position (you can still see
+        others). Run with no argument to see the current value."""
+        if not seconds:
+            logger.info(f"[RAC] GhostLink update interval: {self.ctx._ghost_link_interval}s")
+            return True
+        try:
+            value = float(seconds)
+        except ValueError:
+            logger.warning(f"[RAC] Invalid interval {seconds!r} — must be a number of seconds.")
+            return True
+        if value < 0:
+            logger.warning("[RAC] Interval can't be negative.")
+            return True
+        self.ctx._ghost_link_interval = value
+        logger.info(f"[RAC] GhostLink update interval set to {value}s.")
         return True

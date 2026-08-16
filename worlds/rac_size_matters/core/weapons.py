@@ -236,10 +236,16 @@ class WeaponAddresses:
         "mod_unlock_two":   0x41,
         "mod_unlock_three": 0x42,
         "unlocked":         0x45,
+        # Already read (as a raw struct.unpack_from) by is_weapon_candidate/
+        # is_ps2_weapon_candidate above purely to sanity-check a struct
+        # guess (ammo > 9999 => reject) — this is the first live accessor
+        # for it. Used by AmmoLink to mirror ammo counts across players.
+        "ammo":             0x31,
     }
 
     level            = WeaponInt32Field("level")
     experience       = WeaponInt32Field("experience")
+    ammo             = WeaponInt32Field("ammo")
     mod_slot_one     = WeaponByteField("mod_slot_one")
     mod_slot_two     = WeaponByteField("mod_slot_two")
     mod_slot_three   = WeaponByteField("mod_slot_three")
@@ -461,6 +467,22 @@ class WeaponInventory:
         addr = self._weapon_addrs.get(weapon)
         if addr is not None:
             addr.experience = value
+
+    def get_ammo(self, weapon: str) -> int:
+        addr = self._weapon_addrs.get(weapon)
+        if addr is None:
+            return 0
+        return addr.ammo
+
+    def set_ammo(self, weapon: str, value: int) -> None:
+        """Write a weapon's ammo directly — used by AmmoLink to mirror an
+        incoming shared value onto this player's own weapon; doesn't
+        distinguish that from organic in-game gain/spend, since ammo has
+        no location-check/level-up bookkeeping tied to it the way
+        set_level()/experience do."""
+        addr = self._weapon_addrs.get(weapon)
+        if addr is not None:
+            addr.ammo = value
 
     def get_level(self, weapon: str) -> int:
         addr = self._weapon_addrs.get(weapon)
@@ -803,7 +825,7 @@ class WeaponInventory:
         be misread as a batch of brand-new pickups the instant check() first
         runs, since every raw baseline starts blank/-1.
         """
-        for name, addr in self._weapon_addrs.items():
+        for addr in self._weapon_addrs.values():
             addr.unlocked = False
             for slot in _MOD_SLOTS:
                 setattr(addr, slot, False)

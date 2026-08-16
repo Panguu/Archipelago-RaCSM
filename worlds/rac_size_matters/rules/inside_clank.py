@@ -12,6 +12,7 @@ from ..constants import (
     Rac5TitanVendorLocations,
     Rac5VendorLocations,
 )
+from ..options import ShrinkRayOptions
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -38,7 +39,7 @@ def set_inside_clank_rules(world: "RACSizeMatterWorld") -> None:
     # Static Barrier vendor — freely accessible on arrival.
     world.set_rule(mw.get_location(Rac5VendorLocations.INSIDE_CLANK_STATIC, player), _base)
 
-    if world.options.shrink_ray_locations:
+    if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
         world.set_rule(
             mw.get_location(Rac5ShrinkRayGrindrail.INSIDE_CLANK_GRINDRAIL, player),
                 HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT)

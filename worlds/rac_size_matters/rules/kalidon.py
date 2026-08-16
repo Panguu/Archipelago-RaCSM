@@ -15,6 +15,7 @@ from ..constants import (
     Rac5VendorLocations,
 )
 from ..items import GLITCHES_ITEM_NAME
+from ..options import ShrinkRayOptions
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -52,7 +53,7 @@ def set_kalidon_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(
         mw.get_location(Rac5TBolts.KALIDON_FACTORY, player), Has(Rac5Gadgets.HYPERSHOT) | Has(GLITCHES_ITEM_NAME)
     )
-    world.set_rule(mw.get_location(Rac5TBolts.KALIDON_RAMP, player), _inside | Has(GLITCHES_ITEM_NAME))
+    world.set_rule(mw.get_location(Rac5TBolts.KALIDON_RAMP, player), _inside)
 
     world.set_rule(mw.get_location(Rac5Locations.KALIDON_CHESTPLATE, player), _inside)
     world.set_rule(mw.get_location(Rac5Locations.KALIDON_BOOTS, player), _inside)
@@ -71,8 +72,10 @@ def set_kalidon_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(mw.get_location(Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK, player), True_())
     world.set_rule(mw.get_location(Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT, player), True_())
 
-    if world.options.shrink_ray_locations:
-        world.set_rule(mw.get_location(Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY, player), Has(Rac5Gadgets.SHRINK_RAY))
+    if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
+        world.set_rule(
+            mw.get_location(Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY, player), Has(Rac5Gadgets.SHRINK_RAY)
+        )
         world.set_rule(mw.get_location(Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY, player), _inside)
 
     # Challenge Mode — NG+ Items only controls the item pool, not location

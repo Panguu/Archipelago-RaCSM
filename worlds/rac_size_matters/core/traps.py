@@ -37,11 +37,11 @@ _CHEAT_BITS: dict[str, int] = {
 # TrapDuration option's default. Never mutated — _trap_durations below is
 # the live copy activate_trap() reads from.
 TRAP_DURATIONS: dict[str, float] = {
-    Rac5Traps.TRAP_FEVERDREAMTIME:   70,
-    Rac5Traps.TRAP_BRIGHTNESS:       70,
-    Rac5Traps.TRAP_MIRROR_LEVEL:     70,
-    Rac5Traps.TRAP_REVERSE_CONTROLS: 70,
-    Rac5Traps.TRAP_WEAPON_SWITCHING: 70,
+    Rac5Traps.TRAP_FEVERDREAMTIME:   20,
+    Rac5Traps.TRAP_BRIGHTNESS:       20,
+    Rac5Traps.TRAP_MIRROR_LEVEL:     20,
+    Rac5Traps.TRAP_REVERSE_CONTROLS: 20,
+    Rac5Traps.TRAP_WEAPON_SWITCHING: 20,
     # Reset Level is instantaneous (see activate_trap()) — this entry exists
     # only so it gets an item id (items.py's TRAP_ITEM_TABLE enumerates this
     # dict) and shows up in the TrapWeight/TrapDuration options. Appended

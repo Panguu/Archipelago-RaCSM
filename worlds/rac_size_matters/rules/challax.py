@@ -14,6 +14,7 @@ from ..constants import (
     Rac5TitanVendorLocations,
     Rac5VendorLocations,
 )
+from ..options import ShrinkRayOptions
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -69,7 +70,7 @@ def set_challax_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE, player), _base)
     world.set_rule(mw.get_location(Rac5ModVendorLocations.CHALLAX_BEE_WORKER, player), _base)
 
-    if world.options.shrink_ray_locations:
+    if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
         world.set_rule(mw.get_location(Rac5ShrinkRayGrindrail.CHALLAX_GRINDRAIL, player), _shrink_ray)
 
     # Challenge Mode — NG+ Items only controls the item pool, not location

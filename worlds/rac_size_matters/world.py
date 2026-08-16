@@ -41,7 +41,7 @@ from .options import (
     ProgressiveWeapons,
     RACSizeMatterOptions,
     RandomStartingPlanet,
-    ShrinkRayLocations,
+    ShrinkRayOptions,
     SkillPoints,
     SkyboardChallenges,
     WeaponLevelChecks,
@@ -49,6 +49,7 @@ from .options import (
 )
 from .regions import create_regions
 from .rules import set_rules
+from .settings import RACSizeMatterSettings
 from .universal_tracker import setup_options_from_slot_data, tracker_world
 
 try:
@@ -95,6 +96,7 @@ class RACSizeMatterWorld(World):
     web = RACWeb()
     options_dataclass = RACSizeMatterOptions
     options: RACSizeMatterOptions
+    settings: ClassVar[RACSizeMatterSettings]
 
     item_name_to_id: dict[str, int] = {name: data.code for name, data in ALL_ITEMS.items()}
     location_name_to_id: dict[str, int] = {name: data.code for name, data in ALL_LOCATIONS.items()}
@@ -150,12 +152,6 @@ class RACSizeMatterWorld(World):
 
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
-        if self.options.shrink_ray_locations and self.options.shrink_ray_skips:
-            raise OptionError(
-                f"{self.player_name}: Shrink Ray Locations and Shrink Ray Skips cannot both be enabled — "
-                "Skips forces every puzzle gate to solved every tick, which would instantly auto-complete "
-                "every Locations check regardless of what the player has actually done."
-            )
 
     def create_regions(self) -> None:
         create_regions(self)
@@ -301,8 +297,8 @@ class RACSizeMatterWorld(World):
             option_list.append(ClankChallenges.display_name)
         if self.options.skyboard_challenges.value < SkyboardChallenges.option_all:
             option_list.append(SkyboardChallenges.display_name)
-        if not self.options.shrink_ray_locations:
-            option_list.append(ShrinkRayLocations.display_name)
+        if self.options.shrink_ray_options.value != ShrinkRayOptions.option_locations:
+            option_list.append(ShrinkRayOptions.display_name)
         if excluded_count > 10:
             option_list.append("Exclude Locations")
         if not option_list:
@@ -326,13 +322,21 @@ class RACSizeMatterWorld(World):
     def fill_slot_data(self) -> dict[str, Any]:
         return {
             "death_link": bool(self.options.death_link.value),
+            "ammo_link": bool(self.options.ammo_link.value),
+            "bolt_link": bool(self.options.bolt_link.value),
+            # AND'd with the host.yaml kill switch (settings.py) — the host
+            # can shut Ghost Link off multiworld-wide regardless of what any
+            # individual player set in their own YAML. DeathLink/AmmoLink/
+            # BoltLink have no such switch, so they aren't gated here.
+            "ghost_link": bool(self.options.ghost_link.value) and bool(self.settings.ghost_link),
+            "ghost_link_update_interval": int(self.options.ghost_link_update_interval.value),
             "all_missions": bool(self.options.all_missions.value),
             "all_cutscenes": bool(self.options.all_cutscenes.value),
             "giant_clank": bool(self.options.giant_clank.value),
             "clank_challenges": self.options.clank_challenges.value,
+            "clank_challenge_groups": dict(self.options.clank_challenge_groups.value),
             "skyboard_challenges": self.options.skyboard_challenges.value,
-            "shrink_ray_skips": bool(self.options.shrink_ray_skips.value),
-            "shrink_ray_locations": bool(self.options.shrink_ray_locations.value),
+            "shrink_ray_options": self.options.shrink_ray_options.value,
 
             "skill_points": self.options.skill_points.value,
             "enable_clank_challenge_skill_points": bool(self.options.enable_clank_challenge_skill_points.value),
@@ -353,7 +357,8 @@ class RACSizeMatterWorld(World):
             "weapon_experience_multiplier": self.options.weapon_experience_multiplier.value,
             "bolt_multiplier": self.options.bolt_multiplier.value,
             "nanotech_experience_multiplier": self.options.nanotech_experience_multiplier.value,
-            "nanotech_level_checks": self.options.nanotech_level_checks.value,
+            "nanotech_level_interval": self.options.nanotech_level_interval.value,
+            "nanotech_level_max": self.options.nanotech_level_max.value,
             "weapon_level_checks": self.options.weapon_level_checks.value,
             "trap_duration": dict(self.options.trap_duration.value),
         }

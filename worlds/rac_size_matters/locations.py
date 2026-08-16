@@ -15,6 +15,10 @@ from .constants import (
 )
 from .core.armour import ARMOUR_PICKUPS
 from .core.locations.challenge_locations import (
+    CHALLENGE_GROUP_DERBY,
+    CHALLENGE_GROUP_GADGETBOT,
+    CHALLENGE_GROUP_GADGETBOT_TOSS,
+    CHALLENGE_NAME_TO_GROUP,
     CHALLENGE_PICKUPS,
     DERBY_CLANK_PICKUPS,
     GADGETBOT_CLANK_PICKUPS,
@@ -182,6 +186,21 @@ NANOTECH_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     for idx, loc_name in enumerate(NANOTECH_LEVEL_LOOKUP.values(), start=1)
 }
 
+
+def nanotech_level_locations_for(interval: int, max_level: int) -> dict[str, RACLocationData]:
+    """Subset of NANOTECH_LEVEL_LOCATIONS for the NanotechLevelInterval +
+    NanotechLevelMax options: every level in NANOTECH_LEVEL_LOOKUP (6-75)
+    that's both a multiple of `interval` and no higher than `max_level`.
+    Empty (feature off) when interval <= 0. Shared by regions.py (creation)
+    and rules/nanotech_levels.py (rule assignment) — both must agree."""
+    if interval <= 0:
+        return {}
+    return {
+        loc_name: NANOTECH_LEVEL_LOCATIONS[loc_name]
+        for level, loc_name in NANOTECH_LEVEL_LOOKUP.items()
+        if level % interval == 0 and level <= max_level
+    }
+
 from .core.locations.armour_set_locations import ARMOUR_SET_CHECKS
 
 ARMOUR_SET_CHECK_LOCATIONS: dict[str, RACLocationData] = {
@@ -347,6 +366,30 @@ ALL_CLANK_LOCATIONS: dict[str, RACLocationData] = {
     for idx, cp in enumerate(_ALL_CLANK_PICKUPS, start=1)
     if cp.name not in CHALLENGE_LOCATIONS  # combined reward-challenge names live in CHALLENGE_LOCATIONS
 }
+
+# ClankChallengeGroups default: every group included (matches
+# options.py's ClankChallengeGroups.default).
+DEFAULT_CLANK_CHALLENGE_GROUPS: dict[str, int] = dict.fromkeys(
+    (CHALLENGE_GROUP_DERBY, CHALLENGE_GROUP_GADGETBOT_TOSS, CHALLENGE_GROUP_GADGETBOT), 1
+)
+
+
+def enabled_clank_challenge_names(group_weights: dict[str, int]) -> frozenset[str]:
+    """Names of individual Clank Challenge completions (including the
+    reward ones in CHALLENGE_LOCATIONS) whose group has a nonzero weight in
+    the ClankChallengeGroups option — shared by regions.py (location
+    creation) and rules/metalis.py + rules/dayni_moon.py (rule assignment),
+    which must agree on the same exclusion.
+
+    Presence in `group_weights`, not `.get(group, 1) > 0` — ItemDict (see
+    options.py's ClankChallengeGroups) culls zero-valued entries on its own
+    __init__, so a group the player explicitly zeroed out is simply absent
+    here, not present with value 0. Defaulting a missing key to "included"
+    would silently re-enable exactly the group the player turned off."""
+    return frozenset(
+        name for name, group in CHALLENGE_NAME_TO_GROUP.items()
+        if group in group_weights
+    )
 
 # Each entry: (name, region, is_cutscene).
 # Enumeration order is fixed to keep location IDs stable across option changes.

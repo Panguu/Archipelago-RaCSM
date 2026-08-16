@@ -14,6 +14,8 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5Weapons,
 )
+from ..locations import enabled_clank_challenge_names
+from ..options import ShrinkRayOptions
 from ._helpers import HasProjectileWeapon, HasTitanPrereq
 
 if TYPE_CHECKING:
@@ -46,31 +48,33 @@ def set_dayni_moon_rules(world: "RACSizeMatterWorld") -> None:
 
     world.set_rule(mw.get_location(Rac5Locations.DAYNI_MOON_HELMET, player), _base)
 
-    # Clank Challenges — item rewards (clank_challenges >= 1)
+    # Clank Challenges — item rewards (clank_challenges >= 1) and individual
+    # completions (clank_challenges >= 2), both further filtered by
+    # ClankChallengeGroups — must match regions.py's own filtering, or
+    # set_rule() below would target a Location that was never created.
+    enabled_names = enabled_clank_challenge_names(dict(world.options.clank_challenge_groups.value))
     if world.options.clank_challenges.value >= 1:
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_SHOWDOWN, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_INFINITE, player), True_())
+        for name in (Rac5ClankChallenges.DAYNI_MOON_SHOWDOWN, Rac5ClankChallenges.DAYNI_MOON_INFINITE):
+            if name in enabled_names:
+                world.set_rule(mw.get_location(name, player), True_())
 
-    # Clank Challenges — individual completions (clank_challenges >= 2)
     if world.options.clank_challenges.value >= 2:
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_CROWD, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_REVERSE, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_BRIDGE, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_LEAP, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_WELCOME, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_ROUND, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_VARIETY, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_SAWYER, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_SMASHER, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_TOURNAMENT, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_AROUND, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_LINE, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.DAYNI_MOON_HAY, player), True_())
+        for name in (
+            Rac5ClankChallenges.DAYNI_MOON_CROWD, Rac5ClankChallenges.DAYNI_MOON_REVERSE,
+            Rac5ClankChallenges.DAYNI_MOON_BRIDGE, Rac5ClankChallenges.DAYNI_MOON_LEAP,
+            Rac5ClankChallenges.DAYNI_MOON_WELCOME, Rac5ClankChallenges.DAYNI_MOON_ROUND,
+            Rac5ClankChallenges.DAYNI_MOON_VARIETY, Rac5ClankChallenges.DAYNI_MOON_SAWYER,
+            Rac5ClankChallenges.DAYNI_MOON_SMASHER, Rac5ClankChallenges.DAYNI_MOON_TOURNAMENT,
+            Rac5ClankChallenges.DAYNI_MOON_AROUND, Rac5ClankChallenges.DAYNI_MOON_LINE,
+            Rac5ClankChallenges.DAYNI_MOON_HAY,
+        ):
+            if name in enabled_names:
+                world.set_rule(mw.get_location(name, player), True_())
 
     world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_SHOCK, player), True_())
     world.set_rule(mw.get_location(Rac5VendorLocations.DAYNI_MOON_MAP, player), True_())
 
-    if world.options.shrink_ray_locations:
+    if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
         world.set_rule(
             mw.get_location(
                 Rac5ShrinkRayGrindrail.DAYNI_MOON_TITANIUM_BOLT_ENTRANCE, player),

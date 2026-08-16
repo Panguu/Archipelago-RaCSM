@@ -16,6 +16,12 @@ from Options import (
 )
 
 from .core.traps import TRAP_DURATIONS
+from .locations import (
+    CHALLENGE_GROUP_DERBY,
+    CHALLENGE_GROUP_GADGETBOT,
+    CHALLENGE_GROUP_GADGETBOT_TOSS,
+    DEFAULT_CLANK_CHALLENGE_GROUPS,
+)
 
 
 class ProgressiveWeapons(Choice):
@@ -59,6 +65,20 @@ class ClankChallenges(Choice):
     default = 1
 
 
+class ClankChallengeGroups(ItemDict):
+    """Selects which Clank Challenge groups (Metalis/Dayni Moon) are included
+    as location checks, whenever Clank Challenges is on. Set a group to 0 to
+    exclude all of its locations (both the item-reward and individual-
+    completion tiers) from generation entirely — the challenge is still
+    playable in-game, it just has no AP checks. Default 1 includes every
+    group."""
+    display_name = "Clank Challenge Groups"
+    min = 0
+    max = 1
+    valid_keys = (CHALLENGE_GROUP_DERBY, CHALLENGE_GROUP_GADGETBOT_TOSS, CHALLENGE_GROUP_GADGETBOT)
+    default = DEFAULT_CLANK_CHALLENGE_GROUPS
+
+
 class SkyboardChallenges(Choice):
     """Controls whether Skyboard race challenges are included as location checks.
     all: every individual race completion is a separate check."""
@@ -68,16 +88,54 @@ class SkyboardChallenges(Choice):
     default = 0
 
 
-class ShrinkRaySkips(Toggle):
-    """Skip Shrink Ray puzzles: writes every tracked puzzle-gate bit to
-    solved every tick, bypassing whatever it would otherwise block."""
-    display_name = "Shrink Ray Skips"
+class ShrinkRayOptions(Choice):
+    """Controls how Shrink Ray puzzles are handled.
+    off: normal vanilla behavior — puzzles must be solved as usual, no checks.
+    locations: include Shrink Ray puzzle completions as location checks.
+    skip: writes every tracked puzzle-gate bit to solved every tick, bypassing
+    whatever it would otherwise block."""
+    display_name = "Shrink Ray Options"
+    option_off       = 0
+    option_locations = 1
+    option_skip      = 2
+    default = 1
 
 
-class ShrinkRayLocations(Toggle):
-    """Include Shrink Ray puzzle completions as location checks."""
-    display_name = "Shrink Ray Locations"
+class AmmoLink(Toggle):
+    """Share weapon ammo with every other connected player who also has
+    AmmoLink enabled (and toggled on client-side, same as DeathLink):
+    whenever your ammo for a weapon changes, everyone else linked for that
+    weapon gets mirrored to the same count, and vice versa. Players don't
+    need to own the same weapons for this to work — a weapon you don't
+    have simply isn't affected."""
+    display_name = "Ammo Link"
 
+
+class BoltLink(Toggle):
+    """Share your bolt count with every other connected player who also has
+    Bolt Link enabled (and toggled on client-side, same as DeathLink): your
+    bolt count mirrors everyone else's -- spend or collect bolts on any
+    linked player and everyone else's balance matches."""
+    display_name = "Bolt Link"
+
+
+class GhostLink(Toggle):
+    """See another connected player as a ghost clone whenever you're both on
+    the same planet (and they also have Ghost Link enabled and toggled on
+    client-side, same as DeathLink). Only one ghost can be rendered at a
+    time -- if more than one linked player shares your planet, one is
+    picked automatically."""
+    display_name = "Ghost Link"
+
+
+class GhostLinkUpdateInterval(Range):
+    """How often (in seconds) your position is broadcast to other Ghost Link
+    players while Ghost Link is enabled. 0 broadcasts as fast as possible
+    (every poll tick, no throttling)."""
+    display_name = "Ghost Link Update Interval"
+    range_start = 0
+    range_end = 100
+    default = 5
 
 
 class AllMissions(DefaultOnToggle):
@@ -247,59 +305,73 @@ class TrapDuration(OptionCounter):
     default = dict(TRAP_DURATIONS)
 
 
-class WeaponExperienceMultiplier(Choice):
+class WeaponExperienceMultiplier(Range):
     """Multiplies weapon experience gained each time the game grants it, speeding up
     weapon leveling. Stops applying once a weapon reaches level 4 (max level for
-    every weapon)."""
+    every weapon). 0/1 = no boost."""
     display_name = "Weapon Experience Multiplier"
-    option_off = 0
-    option_2x  = 2
-    option_4x  = 4
-    option_8x  = 8
-    option_16x = 16
-    default = 0
+    range_start = 0
+    range_end = 16
+    default = 4
 
 
-class BoltMultiplier(Choice):
+class BoltMultiplier(Range):
     """Multiplies bolts gained each time the game grants them (crates, enemies, etc.),
-    speeding up bolt income. Does not affect one-off AP grants like starting bolts."""
+    speeding up bolt income. Does not affect one-off AP grants like starting bolts.
+    0/1 = no boost."""
     display_name = "Bolt Multiplier"
-    option_off = 0
-    option_2x  = 2
-    option_4x  = 4
-    option_8x  = 8
-    option_16x = 16
-    default = 0
+    range_start = 0
+    range_end = 16
+    default = 4
 
 
-class NanotechExperienceMultiplier(Choice):
+class NanotechExperienceMultiplier(Range):
     """Multiplies Nanotech (health) experience gained each time the game grants it,
-    speeding up Nanotech leveling."""
+    speeding up Nanotech leveling. 0/1 = no boost."""
     display_name = "Nanotech Experience Multiplier"
-    option_off = 0
-    option_2x  = 2
-    option_4x  = 4
-    option_8x  = 8
-    option_16x = 16
+    range_start = 0
+    range_end = 16
+    default = 4
+
+
+class NanotechLevelInterval(Choice):
+    """Include reaching Nanotech (health) Levels as location checks, one every N
+    levels (e.g. every_5 checks levels 10, 15, 20, ...). See Nanotech Level Max
+    for where this stops. Levels above 20 require access to a good EXP planet."""
+    display_name = "Nanotech Level Interval"
+    option_off     = 0
+    option_every_5  = 5
+    option_every_10 = 10
+    option_every_25 = 25
     default = 0
 
 
-class NanotechLevelChecks(Toggle):
-    """Include reaching Nanotech (health) Levels 6-75 as location checks. Adds 70 locations
-    to the pool. Levels above 20 require access to a good EXP planet."""
-    display_name = "Nanotech Level Checks"
+class NanotechLevelMax(Range):
+    """Highest Nanotech Level Nanotech Level Interval creates a check for — e.g.
+    every_5 with this set to 25 checks only levels 10, 15, 20, 25. No effect while
+    Nanotech Level Interval is off."""
+    display_name = "Nanotech Level Max"
+    range_start = 6
+    range_end = 75
+    default = 75
 
 
 class WeaponLevelChecks(Choice):
     """Adds location checks for reaching weapon levels, in addition to whatever
     unlocks the weapon in the first place.
     off: no weapon level checks.
-    max_level: one check per weapon, for reaching its max level (4).
-    all: one check per weapon per level (1 through 4)."""
+    level_4: one check per weapon, for reaching level 4 (vanilla max level).
+    level_8: one check per weapon, for reaching level 8 (Challenge Mode Titan max
+    level) — only meaningful with Challenge Mode 1+.
+    level_4_and_8: both of the above.
+    all: one check per weapon per level (2 through 8, Challenge Mode levels 5-8
+    included when Challenge Mode is 1+)."""
     display_name = "Weapon Level Checks"
-    option_off       = 0
-    option_max_level = 1
-    option_all       = 2
+    option_off           = 0
+    option_level_4       = 1
+    option_level_8       = 2
+    option_level_4_and_8 = 3
+    option_all           = 4
     default = 0
 
 
@@ -325,19 +397,23 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     progressive_armour: ProgressiveArmour
     death_link: DeathLink
     death_amnesty: DeathAmnesty
+    ammo_link: AmmoLink
+    bolt_link: BoltLink
+    ghost_link: GhostLink
+    ghost_link_update_interval: GhostLinkUpdateInterval
     all_missions: AllMissions
     all_cutscenes: AllCutscenes
     giant_clank: GiantClank
     clank_challenges: ClankChallenges
+    clank_challenge_groups: ClankChallengeGroups
+    enable_clank_challenge_skill_points: EnableClankChallengeSkillPoints
     skyboard_challenges: SkyboardChallenges
-    shrink_ray_skips: ShrinkRaySkips
-    shrink_ray_locations: ShrinkRayLocations
+    enable_skyboard_challenge_skill_points: EnableSkyboardChallengeSkillPoints
+    shrink_ray_options: ShrinkRayOptions
     armour_set_checks: ArmourSetChecks
     ng_plus_items: NgPlusItems
     challenge_mode: ChallengeMode
     skill_points: SkillPoints
-    enable_clank_challenge_skill_points: EnableClankChallengeSkillPoints
-    enable_skyboard_challenge_skill_points: EnableSkyboardChallengeSkillPoints
     starting_weapons: StartingWeapons
     starting_gadgets: StartingGadgets
     random_starting_planet: RandomStartingPlanet
@@ -350,14 +426,21 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     bolt_multiplier: BoltMultiplier
     nanotech_experience_multiplier: NanotechExperienceMultiplier
     weapon_level_checks: WeaponLevelChecks
-    nanotech_level_checks: NanotechLevelChecks
+    nanotech_level_interval: NanotechLevelInterval
+    nanotech_level_max: NanotechLevelMax
 
 racsm_option_groups = [
     OptionGroup("Generic Options", [
         ProgressionBalancing,
         Accessibility,
-        DeathLink,
         DeathAmnesty,
+    ]),
+    OptionGroup("RACSM Game Links", [
+        DeathLink,
+        AmmoLink,
+        BoltLink,
+        GhostLink,
+        GhostLinkUpdateInterval,
     ]),
     OptionGroup("RACSM Item Options", [
         StartingWeapons,
@@ -374,24 +457,25 @@ racsm_option_groups = [
         BoltMultiplier,
         NanotechExperienceMultiplier,
     ]),
+    OptionGroup("RACSM Challenges", [
+        ClankChallenges,
+        ClankChallengeGroups,
+        EnableClankChallengeSkillPoints,
+        SkyboardChallenges,
+        EnableSkyboardChallengeSkillPoints,
+        GiantClank,
+    ]),
     OptionGroup("RACSM Location Options", [
         AllMissions,
         AllCutscenes,
-        GiantClank,
-        ClankChallenges,
-        SkyboardChallenges,
-        ShrinkRayLocations,
+        ShrinkRayOptions,
         SkillPoints,
-        EnableClankChallengeSkillPoints,
-        EnableSkyboardChallengeSkillPoints,
         ArmourSetChecks,
         WeaponLevelChecks,
-        NanotechLevelChecks,
+        NanotechLevelInterval,
+        NanotechLevelMax,
         NgPlusItems,
         ChallengeMode,
-    ]),
-    OptionGroup("RACSM Skip Options", [
-        ShrinkRaySkips,
     ]),
     OptionGroup("RACSM Cosmetic Options", [
         StartingSkin,

@@ -12,6 +12,7 @@ from ..constants import (
     Rac5SkillPoints,
     Rac5TBolts,
 )
+from ..locations import enabled_clank_challenge_names
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -48,24 +49,28 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
         HasAll(Rac5Gadgets.POLARIZER, Rac5Gadgets.HYPERSHOT),
     )
 
-    # Clank Challenges — item rewards (clank_challenges >= 1)
+    # Clank Challenges — item rewards (clank_challenges >= 1) and individual
+    # completions (clank_challenges >= 2), both further filtered by
+    # ClankChallengeGroups — must match regions.py's own filtering, or
+    # set_rule() below would target a Location that was never created.
+    enabled_names = enabled_clank_challenge_names(dict(world.options.clank_challenge_groups.value))
     if world.options.clank_challenges.value >= 1:
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_BUZZSAW, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_REVENGE, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_UBER, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_NIGHT, player), True_())
+        for name in (
+            Rac5ClankChallenges.METALIS_BUZZSAW, Rac5ClankChallenges.METALIS_REVENGE,
+            Rac5ClankChallenges.METALIS_UBER, Rac5ClankChallenges.METALIS_NIGHT,
+        ):
+            if name in enabled_names:
+                world.set_rule(mw.get_location(name, player), True_())
 
-    # Clank Challenges — individual completions (clank_challenges >= 2)
     if world.options.clank_challenges.value >= 2:
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALLIS_TEAM, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_CHARGE, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_BOOGALOO, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_SHOWDOWN, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_LEAGUE, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_BRACKET, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_DIVISION, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_PROFESSIONAL, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_GAP, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_TELEPORTERS, player), True_())
-        world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_BRAIN, player), True_())
+        for name in (
+            Rac5ClankChallenges.METALLIS_TEAM, Rac5ClankChallenges.METALIS_CHARGE,
+            Rac5ClankChallenges.METALIS_BOOGALOO, Rac5ClankChallenges.METALIS_SHOWDOWN,
+            Rac5ClankChallenges.METALIS_LEAGUE, Rac5ClankChallenges.METALIS_BRACKET,
+            Rac5ClankChallenges.METALIS_DIVISION, Rac5ClankChallenges.METALIS_PROFESSIONAL,
+            Rac5ClankChallenges.METALIS_GAP, Rac5ClankChallenges.METALIS_TELEPORTERS,
+            Rac5ClankChallenges.METALIS_BRAIN,
+        ):
+            if name in enabled_names:
+                world.set_rule(mw.get_location(name, player), True_())
 

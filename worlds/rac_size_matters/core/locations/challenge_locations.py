@@ -199,6 +199,23 @@ GLADIATOR_FAILSAFE: dict[str, str] = {
     Rac5Planets.DAYNI_MOON: Rac5SkillPoints.DAYNI_MOON_GLADIATOR,
 }
 
+# ClankChallengeGroups option: display names for the three independently
+# selectable challenge groups (see ChallengeSection), and the per-location
+# name -> group mapping used to filter both location creation (regions.py)
+# and rule assignment (rules/metalis.py, rules/dayni_moon.py) by group
+# weight. Covers every name in DERBY_/GADGETBOT_TOSS_/GADGETBOT_CLANK_PICKUPS
+# — including the reward locations in CHALLENGE_PICKUPS, which are each
+# already one of that group's individual completions too.
+CHALLENGE_GROUP_DERBY:          str = "Demolition Derby"
+CHALLENGE_GROUP_GADGETBOT_TOSS: str = "Gadgetbot Toss"
+CHALLENGE_GROUP_GADGETBOT:      str = "Gadgetbot"
+
+CHALLENGE_NAME_TO_GROUP: dict[str, str] = {
+    **dict.fromkeys((*_METALIS_DERBY, *_DAYNI_DERBY), CHALLENGE_GROUP_DERBY),
+    **dict.fromkeys((*_METALIS_GADGETBOT_TOSS, *_DAYNI_GADGETBOT_TOSS), CHALLENGE_GROUP_GADGETBOT_TOSS),
+    **dict.fromkeys((*_METALIS_GADGETBOT, *_DAYNI_GADGETBOT), CHALLENGE_GROUP_GADGETBOT),
+}
+
 
 # Maps AP location name (constant) → (unlock_addr, completed_addr, mask).
 _KALIDON_SKYBOARD: dict[str, tuple[int, int, int]] = {

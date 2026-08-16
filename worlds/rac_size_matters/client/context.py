@@ -12,7 +12,7 @@ try:
 except ImportError:
     from CommonClient import CommonContext
 try:
-    from worlds.dynamicpine import DYNAMIC_PINE_VERSION
+    from worlds.dynamicpine import DYNAMIC_PINE_VERSION, get_pending_auth, get_pine_port, launched_via_hub
     dynamicpine_loaded = True
 except ImportError:
     DYNAMIC_PINE_VERSION = None
@@ -23,9 +23,12 @@ from ..core.core import Core
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
 from ..world import RACSizeMatterWorld
+from .ammo_link import AmmoLinkMixin
+from .bolt_link import BoltLinkMixin
 from .command_processor import RACCommandProcessor
 from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
+from .ghost_link import GhostLinkMixin
 from .handlers import CutsceneHandlerMixin, EventsHandlerMixin
 from .pine_mixin import PineMixin
 from .vendor import InventoryMixin, VendorHandlerMixin
@@ -33,7 +36,7 @@ from .vendor import InventoryMixin, VendorHandlerMixin
 
 class RACContext(
     PineMixin, CutsceneHandlerMixin, EventsHandlerMixin,
-    DeathLinkMixin, VendorHandlerMixin, InventoryMixin, CommonContext,
+    DeathLinkMixin, AmmoLinkMixin, BoltLinkMixin, GhostLinkMixin, VendorHandlerMixin, InventoryMixin, CommonContext,
 ):
     game = GAME_NAME
     command_processor = RACCommandProcessor
@@ -74,6 +77,23 @@ class RACContext(
         self._last_death_link = 0.0
         self._debug_messages = False
         self._challenge_defaults_written = False
+
+        self._ammo_link_enabled = False
+        self._last_ammo_link_push: float = 0.0
+        self._pushed_ammo_link: dict[str, int] = {}
+        self._applied_ammo_link: dict[str, int] = {}
+
+        self._bolt_link_enabled = False
+        self._last_bolt_link_push: float = 0.0
+        self._pushed_bolt_link: int | None = None
+
+        self._ghost_link_enabled = False
+        self._ghost_link_interval: float = 5.0
+        self._last_ghost_link_push: float = 0.0
+        self._ghost_link_slots: list[int] = []
+        # slot -> (planet_id, x, y, z, received_at [time.monotonic()])
+        self._ghost_link_peers: dict[int, tuple[int, float, float, float, float]] = {}
+        self._ghost_link_following: int | None = None
 
         self._wiring = Core(self.pine, log=self._log)
 
@@ -172,17 +192,42 @@ class RACContext(
         keep resolving to that stale instance's port even when the player
         later launches normally against a manually-started PCSX2. A normal
         launch should just use Pine's own default port (28011)."""
-        if not self.auth:
-            return
-        try:
-            from worlds.dynamicpine import get_pine_port, launched_via_hub
-        except ImportError:
+        if not self.auth or not dynamicpine_loaded:
             return
         if not launched_via_hub():
             return
         port = get_pine_port(GAME_NAME, self.auth)
         if port is not None:
             self.pine.set_slot(port)
+
+    def _dynamic_pine_auth(self) -> None:
+        """Pre-fills auth from whatever slot name the hub's /launch command
+        was given (see DynamicPine's mark_pending_auth/get_pending_auth), so
+        the player isn't asked to retype the same slot name they already
+        gave the hub — and so it can't drift from what _dyanmic_pine_port()
+        later looks the PCSX2 instance's port up under.
+
+        Gated on launched_via_hub() and only applied when auth isn't
+        already set, same reasoning as _dyanmic_pine_port()."""
+        if self.auth or not dynamicpine_loaded:
+            return
+        if not launched_via_hub():
+            return
+        pending = get_pending_auth()
+        if pending:
+            self.auth = pending
+
+    async def _update_link_tag(self, tag: str, enabled: bool) -> None:
+        """Generic counterpart to CommonContext.update_death_link (which is
+        hardcoded to the "DeathLink" tag) — sets/clears an arbitrary
+        connection tag and pushes ConnectUpdate if already connected."""
+        old_tags = self.tags.copy()
+        if enabled:
+            self.tags.add(tag)
+        else:
+            self.tags -= {tag}
+        if old_tags != self.tags and self.server and not self.server.socket.closed:
+            await self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}])
 
     def _log(self, msg: str, level: str = "info") -> None:
         if not self._debug_messages:
@@ -195,6 +240,7 @@ class RACContext(
     async def server_auth(self, password_requested: bool = False) -> None:
         if password_requested and not self.password:
             await super().server_auth(password_requested)
+        self._dynamic_pine_auth()
         await self.get_username()
         await self.send_connect(game=self.game)
 
@@ -207,13 +253,20 @@ class RACContext(
             self._ap_loadout_restored = False
             self._weapon_state_restored = False
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
+            self._ammo_link_enabled = bool(self.slot_data.get("ammo_link", False))
+            self._bolt_link_enabled = bool(self.slot_data.get("bolt_link", False))
+            self._ghost_link_enabled = bool(self.slot_data.get("ghost_link", False))
+            self._ghost_link_interval = float(self.slot_data.get("ghost_link_update_interval", 5) or 0)
+            if self._ghost_link_enabled:
+                self._refresh_ghost_link_slots()
             self._armour_set_checks_enabled = bool(self.slot_data.get("armour_set_checks", False))
             clank_mode = int(self.slot_data.get("clank_challenges", 1))
             self._wiring.clank_enabled        = clank_mode >= 1
             self._wiring.clank_all_challenges = clank_mode >= 2
             self._wiring.skyboard_enabled     = int(self.slot_data.get("skyboard_challenges", 0)) >= 1
-            self._wiring.shrink_ray_skips_enabled     = bool(self.slot_data.get("shrink_ray_skips", False))
-            self._wiring.shrink_ray_locations_enabled = bool(self.slot_data.get("shrink_ray_locations", False))
+            shrink_ray_mode = int(self.slot_data.get("shrink_ray_options", 1))
+            self._wiring.shrink_ray_skips_enabled     = shrink_ray_mode == 2
+            self._wiring.shrink_ray_locations_enabled = shrink_ray_mode == 1
             self._wiring.skill_points_enabled = (
                 int(self.slot_data.get("skill_points", 0)) >= 1
                 or bool(self.slot_data.get("enable_clank_challenge_skill_points", False))
@@ -222,8 +275,8 @@ class RACContext(
             self._wiring.weapon_level_checks_enabled = (
                 int(self.slot_data.get("weapon_level_checks", 0)) >= 1
             )
-            self._wiring.nanotech_level_checks_enabled = bool(
-                self.slot_data.get("nanotech_level_checks", False)
+            self._wiring.nanotech_level_checks_enabled = (
+                int(self.slot_data.get("nanotech_level_interval", 0)) > 0
             )
             self._wiring.all_missions_enabled  = bool(self.slot_data.get("all_missions", True))
             self._wiring.all_cutscenes_enabled = bool(self.slot_data.get("all_cutscenes", False))
@@ -251,8 +304,15 @@ class RACContext(
             if isinstance(trap_duration, dict):
                 set_trap_durations(trap_duration)
             self._starting_skin_option = int(self.slot_data.get("starting_skin", 0))
-            if self._death_link_enabled:
-                asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": ["DeathLink"]}]))
+            link_tags = [tag for tag, enabled in (
+                ("DeathLink", self._death_link_enabled),
+                ("AmmoLink", self._ammo_link_enabled),
+                ("BoltLink", self._bolt_link_enabled),
+                ("GhostLink", self._ghost_link_enabled),
+            ) if enabled]
+            if link_tags:
+                self.tags |= set(link_tags)
+                asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}]))
             self._wiring.wire(
                 send_location      = self._append_location_by_name,
                 send_deathlink     = self._send_death_link_from_sync,
@@ -289,12 +349,20 @@ class RACContext(
             self._wiring.quick_select.on_save = (
                 lambda data: asyncio.create_task(self._persist_quick_select(data))
             )
+            link_keys = []
+            if self._ammo_link_enabled:
+                link_keys.append(self._ammo_link_key())
+            if self._bolt_link_enabled:
+                link_keys.append(self._bolt_link_key())
+            if self._ghost_link_enabled:
+                link_keys += [self._ghost_link_key(slot) for slot in self._ghost_link_slots]
             for key in (
                 self._filler_applied_key(),
                 self._qs_storage_key(),
                 self._armour_slots_storage_key(),
                 self._starting_items_key(),
                 self._weapon_state_storage_key(),
+                *link_keys,
             ):
                 self.set_notify(key)
             asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [
@@ -303,6 +371,7 @@ class RACContext(
                 self._armour_slots_storage_key(),
                 self._starting_items_key(),
                 self._weapon_state_storage_key(),
+                *link_keys,
             ]}]))
             return
 
@@ -319,6 +388,12 @@ class RACContext(
                         self._wiring.armour.sync_equipped(self.stored_data[armour_key])
                 self._ap_loadout_restored = True
             self._try_restore_weapon_state()
+            if self._ammo_link_enabled:
+                asyncio.create_task(self._guarded_wiring_call(self._apply_ammo_link_update))
+            if self._bolt_link_enabled:
+                asyncio.create_task(self._guarded_wiring_call(self._apply_bolt_link_update))
+            if self._ghost_link_enabled:
+                self._refresh_ghost_link_peers()
             starting_items_key = self._starting_items_key()
             if starting_items_key in self.stored_data:
                 self._starting_items_sent = self._starting_items_sent or bool(self.stored_data[starting_items_key])

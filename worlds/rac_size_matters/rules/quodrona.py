@@ -13,6 +13,7 @@ from ..constants import (
     Rac5TitanVendorLocations,
     Rac5VendorLocations,
 )
+from ..options import ShrinkRayOptions
 from ._helpers import HasInfobot
 
 if TYPE_CHECKING:
@@ -60,9 +61,13 @@ def set_quodrona_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK, player), True_())
     world.set_rule(mw.get_location(Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER, player), True_())
 
-    if world.options.shrink_ray_locations:
-        world.set_rule(mw.get_location(Rac5ShrinkRayGrindrail.QUODRONA_ENTRANCE, player), Has(Rac5Gadgets.SHRINK_RAY))
-        world.set_rule(mw.get_location(Rac5ShrinkRayGrindrail.QUODRONA_CLONE_TRAINING_ROOM, player), Has(Rac5Gadgets.SHRINK_RAY))
+    if world.options.shrink_ray_options.value == ShrinkRayOptions.option_locations:
+        world.set_rule(
+            mw.get_location(Rac5ShrinkRayGrindrail.QUODRONA_ENTRANCE, player), Has(Rac5Gadgets.SHRINK_RAY)
+        )
+        world.set_rule(
+            mw.get_location(Rac5ShrinkRayGrindrail.QUODRONA_CLONE_TRAINING_ROOM, player), Has(Rac5Gadgets.SHRINK_RAY)
+        )
 
     # Challenge Mode — NG+ Items only controls the item pool, not location
     # existence (see regions.py, which both tables must agree with on

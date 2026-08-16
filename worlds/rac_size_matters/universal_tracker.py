@@ -48,9 +48,11 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.progressive_armour.value = world.passthrough["progressive_armour"]
             world.options.death_link.value = world.passthrough["death_link"]
             world.options.clank_challenges.value = world.passthrough.get("clank_challenges", 0)
+            world.options.clank_challenge_groups.value = world.passthrough.get(
+                "clank_challenge_groups", dict(world.options.clank_challenge_groups.default)
+            )
             world.options.skyboard_challenges.value = world.passthrough.get("skyboard_challenges", 0)
-            world.options.shrink_ray_skips.value = world.passthrough.get("shrink_ray_skips", False)
-            world.options.shrink_ray_locations.value = world.passthrough.get("shrink_ray_locations", False)
+            world.options.shrink_ray_options.value = world.passthrough.get("shrink_ray_options", 1)
             world.options.skill_points.value = world.passthrough.get("skill_points", True)
             world.options.enable_clank_challenge_skill_points.value = \
                 world.passthrough.get("enable_clank_challenge_skill_points", False)
@@ -66,7 +68,8 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.starting_bolts.value = world.passthrough["starting_bolts"]
             world.options.death_amnesty.value = world.passthrough["death_amnesty"]
             world.options.weapon_level_checks.value = world.passthrough.get("weapon_level_checks", 0)
-            world.options.nanotech_level_checks.value = world.passthrough.get("nanotech_level_checks", 0)
+            world.options.nanotech_level_interval.value = world.passthrough.get("nanotech_level_interval", 0)
+            world.options.nanotech_level_max.value = world.passthrough.get("nanotech_level_max", 75)
             world.options.weapon_experience_multiplier.value = \
                 world.passthrough.get("weapon_experience_multiplier", 0)
             world.options.bolt_multiplier.value = world.passthrough.get("bolt_multiplier", 0)

@@ -38,6 +38,86 @@ POKITARU_RYLLUS_ALT_TRIGGER = 0x2F9CC6  # releases Ryllus when it changes from 0
 PLAYER_STATE  = 0x20F805C0  # fallback when planet not in PLANET_ADDRESSES
 PLAYER_HEALTH = 0x20F80E2C
 
+@dataclass(frozen=True)
+class GhostRatchetPlanetAddresses:
+    """Per-planet addresses for the Ghost Ratchet feature (see
+    core/ghost_ratchet.py).
+
+    player_position: Ratchet's own live world-space X/Y/Z (3 consecutive
+    floats) — read-only source for the one-shot spawn snapshot. Y only
+    visibly updates while actually moving.
+    ghost_base: the ghost entity's own struct base (see
+    core/ghost_ratchet.py's GhostRatchetAddresses for its field layout).
+    trigger: arms the spawn — a separate address from ghost_base, not an
+    offset within it.
+    """
+    player_position: int
+    ghost_base: int
+    trigger: int
+
+
+# Filled in as each planet is confirmed in-game — GhostRatchetInventory
+# only works on planets present here. Kalidon Race (0x16) and both Giant
+# Clank sub-modes (0x0F/0x15) have no clone struct at all and are
+# deliberately absent.
+GHOST_RATCHET_ADDRESSES: dict[int, GhostRatchetPlanetAddresses] = {
+    0x01: GhostRatchetPlanetAddresses(  # Pokitaru
+        player_position=0x202E62E0,
+        ghost_base=0x202F4144,
+        trigger=0x202CD554,
+    ),
+    0x02: GhostRatchetPlanetAddresses(  # Ryllus
+        player_position=0x205BAB00,
+        ghost_base=0x205C6E64,
+        trigger=0x205A8D34,
+    ),
+    0x03: GhostRatchetPlanetAddresses(  # Kalidon
+        player_position=0x2050E8A0,
+        ghost_base=0x2051EC84,
+        trigger=0x204F3934,
+    ),
+    0x04: GhostRatchetPlanetAddresses(  # Metalis
+        player_position=0x201E65B0,
+        ghost_base=0x201F3A94,
+        trigger=0x201CFB8C,
+    ),
+    0x05: GhostRatchetPlanetAddresses(  # Dreamtime
+        player_position=0x2020BFF0,
+        ghost_base=0x202143D4,
+        trigger=0x201F77E8,
+    ),
+    0x06: GhostRatchetPlanetAddresses(  # Outpost Omega
+        player_position=0x20480E10,
+        ghost_base=0x2048E0F4,
+        trigger=0x2046E8EC,
+    ),
+    0x07: GhostRatchetPlanetAddresses(  # Challax
+        player_position=0x20482010,
+        ghost_base=0x2048D474,
+        trigger=0x20471B04,
+    ),
+    0x08: GhostRatchetPlanetAddresses(  # Dayni Moon
+        player_position=0x202FFB00,
+        ghost_base=0x2032EB64,
+        trigger=0x202F4964,
+    ),
+    0x09: GhostRatchetPlanetAddresses(  # Inside Clank
+        player_position=0x203E4F30,
+        ghost_base=0x203EF894,
+        trigger=0x203CE028,
+    ),
+    0x0A: GhostRatchetPlanetAddresses(  # Quodrona
+        player_position=0x203E0990,
+        ghost_base=0x20404774,
+        trigger=0x203D9A58,
+    ),
+    0x17: GhostRatchetPlanetAddresses(  # Outpost Omega 2
+        player_position=0x2045F290,
+        ghost_base=0x2047CBF4,
+        trigger=0x2045A454,
+    ),
+}
+
 # Global (non-per-planet) health EXP counter. Crossing a Nanotech Level
 # threshold (see constants/nanotech_levels.py) is checked as an AP location.
 PLAYER_HEALTH_EXP = 0x21F4C774

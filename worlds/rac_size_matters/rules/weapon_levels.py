@@ -15,6 +15,7 @@ from ..locations import (
     WEAPON_MAX_LEVEL_LOCATIONS,
     WEAPON_SUB_MAX_LEVEL_LOCATIONS,
 )
+from ..options import WeaponLevelChecks
 from ._helpers import HasGoodExpPlanet, HasWeapon
 
 if TYPE_CHECKING:
@@ -35,11 +36,21 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
     RYNO/Laser Tracer/Static Barrier also need HasGoodExpPlanet().
     """
     tier = world.options.weapon_level_checks.value
-    if tier < 1:
+    if tier == WeaponLevelChecks.option_off:
         return
 
-    created = set(WEAPON_MAX_LEVEL_LOCATIONS)
-    if tier >= 2:
+    wants_level_4 = tier in (
+        WeaponLevelChecks.option_level_4, WeaponLevelChecks.option_level_4_and_8, WeaponLevelChecks.option_all,
+    )
+    wants_level_8 = tier in (
+        WeaponLevelChecks.option_level_8, WeaponLevelChecks.option_level_4_and_8, WeaponLevelChecks.option_all,
+    )
+    wants_sub_levels = tier == WeaponLevelChecks.option_all
+
+    created: set[str] = set()
+    if wants_level_4:
+        created |= set(WEAPON_MAX_LEVEL_LOCATIONS)
+    if wants_sub_levels:
         created |= set(WEAPON_SUB_MAX_LEVEL_LOCATIONS)
     if not world.options.ng_plus_items:
         # RYNO's own levels never got created (regions.py excludes them the
@@ -47,10 +58,11 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
         # Location that was never actually built.
         created -= NG_PLUS_WEAPON_LEVEL_LOCATIONS
     if world.options.challenge_mode.value >= 1:
-        # Levels 5-8 (Challenge Mode Titan variant) — same tier mirroring as
-        # above, gated the same way regions.py gates them.
-        created |= set(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
-        if tier >= 2:
+        # Levels 5-8 (Challenge Mode Titan variant) — same gating as
+        # regions.py uses to create them.
+        if wants_level_8:
+            created |= set(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
+        if wants_sub_levels:
             created |= set(CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS)
 
     player = world.player
