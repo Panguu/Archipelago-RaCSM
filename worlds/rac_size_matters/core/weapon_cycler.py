@@ -132,10 +132,14 @@ class WeaponCyclerInventory:
         extra tick right after the vendor closes too, so the vendor's own
         writes have a tick to settle before this starts checking again.
 
-        If current_weapon ends up empty (EMPTY_WEAPON_ID, or a raw 0) — a
-        fresh boot, or just cleared above — hands the player
-        fallback_weapon_id() instead of leaving them with nothing equipped,
-        provided AP actually owns at least one weapon yet.
+        EMPTY_WEAPON_ID (1) is also the id the wrench itself reads as once
+        equipped — the wrench is always available and isn't an AP-tracked
+        weapon, so it must never be treated as "empty" and overwritten with
+        fallback_weapon_id(); doing so is what used to yank the wheel back
+        to the player's lowest-id owned weapon the instant they pulled out
+        the wrench. Only a raw 0 (truly never set, e.g. fresh boot) gets
+        filled with fallback_weapon_id() — provided AP actually owns at
+        least one weapon yet — or with the wrench itself otherwise.
         """
         just_closed_vendor = self._prev_vendor_active and not vendor_active
         self._prev_vendor_active = vendor_active
@@ -149,14 +153,12 @@ class WeaponCyclerInventory:
         # watches for that.
         current = self.current_weapon
         if current is not None and current not in (0, EMPTY_WEAPON_ID) and not is_ap_owned(current):
-            self.applied_weapon = EMPTY_WEAPON_ID
-            current = EMPTY_WEAPON_ID
-        if not current or current == EMPTY_WEAPON_ID:
             fallback = fallback_weapon_id()
-            if fallback:
-                self.applied_weapon = fallback
-            elif current != EMPTY_WEAPON_ID:
-                self.applied_weapon = EMPTY_WEAPON_ID
+            self.applied_weapon = fallback if fallback else EMPTY_WEAPON_ID
+            current = self.applied_weapon
+        elif current == 0:
+            fallback = fallback_weapon_id()
+            self.applied_weapon = fallback if fallback else EMPTY_WEAPON_ID
 
         stored = self.stored_weapon
         if stored is not None and stored not in (0, EMPTY_WEAPON_ID) and not is_ap_owned(stored):

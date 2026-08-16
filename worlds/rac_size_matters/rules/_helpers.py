@@ -1,10 +1,13 @@
-from __future__ import annotations
+from typing import TYPE_CHECKING
 
+from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or
 
 from ..constants import Rac5Gadgets, Rac5Infobots
 from ..core.weapons import WEAPON_DATA
 from ..items import PROGRESSIVE_ARMOUR_NAME, PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
-from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or
+
+if TYPE_CHECKING:
+    from ..world import RACSizeMatterWorld
 
 _PROJECTILE_WEAPONS = [
     display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
@@ -28,6 +31,17 @@ def HasArmourPiece(set_display: str, piece_name: str) -> HasAnyCount:
 def HasWeapon(weapon: str) -> HasAny:
     return HasAny(weapon, PROGRESSIVE_WEAPON_NAME[weapon])
 
+def HasTitanPrereq(world: "RACSizeMatterWorld", weapon: str) -> HasAny | Has:
+    """Weapon Titan variant purchase prerequisite: reaching level 4 is what
+    unlocks the purchase in-game (see core/vendor.py's Titan-purchase
+    handling, which floors the weapon to level 5 the moment it's bought).
+    Off mode has no logic-checkable level gate (leveling is unconstrained by
+    play alone, same reasoning as HasWeapon() elsewhere), so just owning the
+    weapon is enough; manual/automatic require 4 Progressive Weapon copies."""
+    if world.options.progressive_weapons:
+        return Has(PROGRESSIVE_WEAPON_NAME[weapon], 4)
+    return HasWeapon(weapon)
+
 def HasArmourSet(set_display: str) -> And:
     return And(*(HasArmourPiece(set_display, piece) for piece in _ARMOUR_PIECE_INDEX))
 
@@ -41,6 +55,6 @@ def HasGoodExpPlanet() -> Or:
     return Or(
         HasAll(Rac5Infobots.QUODRONA, Rac5Gadgets.SHRINK_RAY),
         HasAll(Rac5Infobots.DAYNI_MOON, Rac5Gadgets.SPROUT_O_MATIC),
-        HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER),
+        HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         HasAll(Rac5Infobots.OUTPOST_OMEGA, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
     )

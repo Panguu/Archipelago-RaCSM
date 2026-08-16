@@ -61,7 +61,11 @@ class Planets:
     # regions — see PlanetInventory.giant_clank_active / check_giant_clank().
     GIANT_CLANK_METALIS = Planet("Giant Clank (Metalis)", 0x0F)
     GIANT_CLANK_CHALLAX = Planet("Giant Clank (Challax)", 0x15)
-    # KALIDON_RACE    = Planet("Kalidon Race Track",    0x16)
+    # Kalidon's skyboard race sub-level: no known per-planet addresses of its
+    # own (not in PLANET_ADDRESSES) — only the fixed/global skyboard
+    # completion bits are safe to read while it's loaded, see
+    # Core.tick()'s _KALIDON_RACE_ID branch.
+    KALIDON_RACE    = Planet("Kalidon Race Track",    0x16)
     OUTPOST_OMEGA_2 = Planet("Outpost Omega 2",       0x17, menu_addr=MENU_ADDR_BY_PLANET_ID[0x17])
 
 
@@ -475,7 +479,7 @@ class PlanetInventory:
         if not self.is_ready or self.planet_id is None:
             return
         buttons = GlobalButtonState.read(self.pine, self.planet_id)
-        if buttons.opens_planet_menu:
+        if buttons is not None and buttons.opens_planet_menu:
             self.menu.set(MenuStateValue.PLANET_MENU)
 
     # Quick select / traps

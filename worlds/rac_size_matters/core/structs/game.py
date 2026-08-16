@@ -61,6 +61,15 @@ class SkinStruct(MemoryStruct):
     ]
 
 
+class ChallengeModeStruct(MemoryStruct):
+    # Written once on connect from slot_data's challenge_mode (options.py's
+    # ChallengeMode Range 0-2) — mirrors the AP option into the game's own
+    # Challenge Mode (New Game Plus) tier.
+    BASE_ADDRESS = 0x21F4C778
+    _pack_ = 1
+    _fields_ = [("tier", ctypes.c_uint8)]
+
+
 class VendorVisibilityStruct(MemoryStruct):
 
     BASE_ADDRESS = 0

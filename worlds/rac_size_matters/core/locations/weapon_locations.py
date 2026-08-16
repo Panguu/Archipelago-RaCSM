@@ -9,6 +9,8 @@ WEAPON_INTERNAL_TO_LOCATION: dict[str, str] = {}
 GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {}
 _MOD_LOC: dict[str, tuple[str, str]] = {}
 MOD_INTERNAL_TO_LOCATION: dict[tuple[str, str], str] = {}
+_TITAN_LOC: dict[str, str] = {}
+TITAN_INTERNAL_TO_LOCATION: dict[str, str] = {}
 
 _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
     "mod_slot_one": "mod_unlock_one",
@@ -32,6 +34,7 @@ def _ensure_loc_data() -> None:
     global _LOC_DATA_LOADED, VENDOR_WEAPON_LOC, VENDOR_GADGET_LOC
     global WEAPON_INTERNAL_TO_LOCATION, GADGET_INTERNAL_TO_LOCATION
     global _MOD_LOC, MOD_INTERNAL_TO_LOCATION
+    global _TITAN_LOC, TITAN_INTERNAL_TO_LOCATION
     global MOD_UNLOCK_PLANET, MOD_UNLOCK_EXTRA_GADGETS
     if _LOC_DATA_LOADED:
         return
@@ -39,6 +42,7 @@ def _ensure_loc_data() -> None:
     from ...locations import (
         GADGET_INTERNAL_TO_LOCATION as _GADGET_INTERNAL_TO_LOCATION,
         MOD_INTERNAL_TO_LOCATION as _MOD_INTERNAL_TO_LOCATION,
+        TITAN_INTERNAL_TO_LOCATION as _TITAN_INTERNAL_TO_LOCATION,
         VENDOR_GADGET_LOC as _VENDOR_GADGET_LOC,
         VENDOR_WEAPON_LOC as _VENDOR_WEAPON_LOC,
         WEAPON_INTERNAL_TO_LOCATION as _WEAPON_INTERNAL_TO_LOCATION,
@@ -50,6 +54,8 @@ def _ensure_loc_data() -> None:
     GADGET_INTERNAL_TO_LOCATION = _GADGET_INTERNAL_TO_LOCATION
     MOD_INTERNAL_TO_LOCATION = _MOD_INTERNAL_TO_LOCATION
     _MOD_LOC = {v: k for k, v in _MOD_INTERNAL_TO_LOCATION.items()}
+    TITAN_INTERNAL_TO_LOCATION = _TITAN_INTERNAL_TO_LOCATION
+    _TITAN_LOC = {v: k for k, v in _TITAN_INTERNAL_TO_LOCATION.items()}
     MOD_UNLOCK_PLANET = {
         (weapon, _SLOT_TO_UNLOCK_ATTR[slot]): _WEAPON_MOD_VENDOR_LOCATIONS[loc].region
         for (weapon, slot), loc in _MOD_INTERNAL_TO_LOCATION.items()
@@ -66,6 +72,7 @@ def __getattr__(name: str):
         "VENDOR_WEAPON_LOC", "VENDOR_GADGET_LOC",
         "WEAPON_INTERNAL_TO_LOCATION", "GADGET_INTERNAL_TO_LOCATION",
         "MOD_INTERNAL_TO_LOCATION", "_MOD_LOC",
+        "TITAN_INTERNAL_TO_LOCATION", "_TITAN_LOC",
         "MOD_UNLOCK_PLANET", "MOD_UNLOCK_EXTRA_GADGETS",
     ):
         _ensure_loc_data()

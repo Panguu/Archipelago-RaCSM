@@ -67,6 +67,7 @@ class Rac5WeaponMods:
     SCORCHER_MOD_SUNFLARE = "Scorcher: Sunflare Mod"
     LASER_TRACER_MOD_PIERCE = "Laser Tracer: Pierce Mod"
     LASER_TRACER_MOD_RICOCHET = "Laser Tracer: Ricochet Mod"
+    SUCK_CANNON_MOD_BOUNCE = "Suck Cannon: Bounce Mod"
 
 
 @dataclass(frozen=True)

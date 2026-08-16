@@ -11,6 +11,12 @@ from .locations import (
     ARMOUR_SET_CHECK_LOCATIONS,
     BOSS_LOCATIONS,
     CHALLENGE_LOCATIONS,
+    CHALLENGE_MODE_1_ARMOUR_LOCATIONS,
+    CHALLENGE_MODE_2_ARMOUR_LOCATIONS,
+    CHALLENGE_MODE_MAX_LEVEL_LOCATIONS,
+    CHALLENGE_MODE_MOD_LOCATIONS,
+    CHALLENGE_MODE_RYNO_LOCATION,
+    CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS,
     CLANK_CHALLENGE_SKILL_POINT_LOCATIONS,
     CUTSCENE_LOCATIONS,
     EASY_SKILL_POINT_LOCATIONS,
@@ -19,8 +25,10 @@ from .locations import (
     GADGET_VENDOR_LOCATIONS,
     GIANT_CLANK_LOCATIONS,
     HARD_SKILL_POINT_LOCATIONS,
+    NANOTECH_LEVEL_LOCATIONS,
     NG_PLUS_ARMOUR_SET_LOCATIONS,
     NG_PLUS_WEAPON_LEVEL_LOCATIONS,
+    SHRINK_RAY_SKIP_LOCATIONS,
     SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS,
     SKYBOARD_ITEM_LOCATIONS,
     STORY_MISSION_LOCATIONS,
@@ -28,6 +36,7 @@ from .locations import (
     WEAPON_MAX_LEVEL_LOCATIONS,
     WEAPON_MOD_VENDOR_LOCATIONS,
     WEAPON_SUB_MAX_LEVEL_LOCATIONS,
+    WEAPON_TITAN_VENDOR_LOCATIONS,
     WEAPON_VENDOR_LOCATIONS,
 )
 
@@ -61,11 +70,30 @@ def create_regions(world: RACSizeMatterWorld) -> None:
     }
 
     giant_clank = bool(world.options.giant_clank)
+    # NG+ Items only controls which NG+-exclusive ITEMS are in the pool
+    # (see world.py) — it doesn't gate location existence. Challenge Mode
+    # alone gates the tables below; computed once up top rather than
+    # per-table like clank_challenges etc.
+    ng_plus = bool(world.options.ng_plus_items)
+    challenge_mode = world.options.challenge_mode.value
+
     armour_pickup_locations = ARMOUR_PICKUP_LOCATIONS
-    if not giant_clank:
+    excluded_armour = set(GIANT_CLANK_LOCATIONS) if not giant_clank else set()
+    if challenge_mode < 1:
+        excluded_armour |= CHALLENGE_MODE_1_ARMOUR_LOCATIONS
+    if challenge_mode < 2:
+        excluded_armour |= CHALLENGE_MODE_2_ARMOUR_LOCATIONS
+    if excluded_armour:
         armour_pickup_locations = {
             name: data for name, data in ARMOUR_PICKUP_LOCATIONS.items()
-            if name not in GIANT_CLANK_LOCATIONS
+            if name not in excluded_armour
+        }
+
+    weapon_vendor_locations = WEAPON_VENDOR_LOCATIONS
+    if challenge_mode < 1:
+        weapon_vendor_locations = {
+            name: data for name, data in WEAPON_VENDOR_LOCATIONS.items()
+            if name not in CHALLENGE_MODE_RYNO_LOCATION
         }
 
     location_tables = [
@@ -73,9 +101,11 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         armour_pickup_locations,
         BOSS_LOCATIONS,
         GADGET_PICKUP_LOCATIONS,
-        WEAPON_VENDOR_LOCATIONS,
+        weapon_vendor_locations,
         GADGET_VENDOR_LOCATIONS,
     ]
+    if challenge_mode >= 1:
+        location_tables.append(WEAPON_TITAN_VENDOR_LOCATIONS)
     if world.options.all_missions:
         story_missions = STORY_MISSION_LOCATIONS
         if world.options.clank_challenges.value < 1:
@@ -114,7 +144,13 @@ def create_regions(world: RACSizeMatterWorld) -> None:
         location_tables.append(CLANK_CHALLENGE_SKILL_POINT_LOCATIONS)
     if world.options.enable_skyboard_challenge_skill_points:
         location_tables.append(SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS)
-    location_tables.append(WEAPON_MOD_VENDOR_LOCATIONS)
+    weapon_mod_vendor_locations = WEAPON_MOD_VENDOR_LOCATIONS
+    if challenge_mode < 1:
+        weapon_mod_vendor_locations = {
+            name: data for name, data in WEAPON_MOD_VENDOR_LOCATIONS.items()
+            if name not in CHALLENGE_MODE_MOD_LOCATIONS
+        }
+    location_tables.append(weapon_mod_vendor_locations)
     if world.options.clank_challenges.value >= 1:
         location_tables.append(CHALLENGE_LOCATIONS)
     if world.options.clank_challenges.value >= 2:
@@ -122,7 +158,8 @@ def create_regions(world: RACSizeMatterWorld) -> None:
     if world.options.skyboard_challenges.value >= 1:
         location_tables.append(SKYBOARD_ITEM_LOCATIONS)
         location_tables.append(EXTRA_SKYBOARD_LOCATIONS)
-    ng_plus = bool(world.options.ng_plus_items)
+    if world.options.shrink_ray_locations:
+        location_tables.append(SHRINK_RAY_SKIP_LOCATIONS)
     if world.options.armour_set_checks:
         armour_set_locations = ARMOUR_SET_CHECK_LOCATIONS
         if not ng_plus:
@@ -139,6 +176,8 @@ def create_regions(world: RACSizeMatterWorld) -> None:
                 if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
             }
         location_tables.append(max_level_locations)
+        if challenge_mode >= 1:
+            location_tables.append(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
     if world.options.weapon_level_checks.value >= 2:
         sub_max_level_locations = WEAPON_SUB_MAX_LEVEL_LOCATIONS
         if not ng_plus:
@@ -147,6 +186,10 @@ def create_regions(world: RACSizeMatterWorld) -> None:
                 if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
             }
         location_tables.append(sub_max_level_locations)
+        if challenge_mode >= 1:
+            location_tables.append(CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS)
+    if world.options.nanotech_level_checks:
+        location_tables.append(NANOTECH_LEVEL_LOCATIONS)
 
     for table in location_tables:
         for loc_name, loc_data in table.items():

@@ -1,23 +1,23 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
+from rule_builder.rules import HasAll
+
 from ..constants import (
+    Rac5CutsceneLocations,
     Rac5Gadgets,
     Rac5Locations,
     Rac5SkillPoints,
     Rac5TBolts,
+    Rac5TitanVendorLocations,
     Rac5VendorLocations,
-    Rac5CutsceneLocations,
 )
 from ._helpers import HasProjectileWeapon
-from rule_builder.rules import HasAll
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
 
 
-def set_dreamtime_rules(world: RACSizeMatterWorld) -> None:
+def set_dreamtime_rules(world: "RACSizeMatterWorld") -> None:
     player = world.player
     mw = world.multiworld
 
@@ -40,3 +40,14 @@ def set_dreamtime_rules(world: RACSizeMatterWorld) -> None:
     world.set_rule(mw.get_location(Rac5Locations.DREAMTIME_CHESTPLATE, player), _base)
 
     world.set_rule(mw.get_location(Rac5VendorLocations.DREAMTIME_SUCK, player), _base)
+
+    # Challenge Mode — NG+ Items only controls the item pool, not location
+    # existence (see regions.py, which both tables must agree with on
+    # which of these locations actually exist).
+    if world.options.challenge_mode.value >= 1:
+        world.set_rule(mw.get_location(Rac5Locations.DREAMTIME_HYPERBOREAN_CHESTPLATE, player), _base)
+        # Titan variant available once the base weapon is purchasable at
+        # its own vendor — buying it there is what actually unlocks the
+        # Titan re-purchase in-game now (see core/vendor.py), matching
+        # DREAMTIME_SUCK's own rule above.
+        world.set_rule(mw.get_location(Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN, player), _base)

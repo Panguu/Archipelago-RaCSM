@@ -1,7 +1,17 @@
 """Tests for the Giant Clank option: the Metalis/Challax Giant Clank sequence
 locations (armour pickup, story mission, and skill point checks)."""
-from ..locations import ARMOUR_PICKUP_LOCATIONS, GIANT_CLANK_LOCATIONS
+from ..locations import (
+    ARMOUR_PICKUP_LOCATIONS,
+    CHALLENGE_MODE_1_ARMOUR_LOCATIONS,
+    CHALLENGE_MODE_2_ARMOUR_LOCATIONS,
+    GIANT_CLANK_LOCATIONS,
+)
 from .bases import RACSizeMatterTestBase
+
+# Challenge Mode is off by default in both classes below, so its 8 armour
+# pieces (4 Hyperborean, 4 Chameleon) are always excluded regardless of
+# Giant Clank — same reasoning as GIANT_CLANK_LOCATIONS itself.
+_CHALLENGE_MODE_ARMOUR_LOCATIONS = CHALLENGE_MODE_1_ARMOUR_LOCATIONS | CHALLENGE_MODE_2_ARMOUR_LOCATIONS
 
 
 class TestGiantClankDisabled(RACSizeMatterTestBase):
@@ -15,7 +25,7 @@ class TestGiantClankDisabled(RACSizeMatterTestBase):
     def test_other_armour_pickups_still_present(self) -> None:
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in ARMOUR_PICKUP_LOCATIONS:
-            if name in GIANT_CLANK_LOCATIONS:
+            if name in GIANT_CLANK_LOCATIONS or name in _CHALLENGE_MODE_ARMOUR_LOCATIONS:
                 continue
             self.assertIn(name, names)
 
@@ -37,6 +47,8 @@ class TestGiantClankEnabled(RACSizeMatterTestBase):
     def test_all_armour_pickups_present(self) -> None:
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in ARMOUR_PICKUP_LOCATIONS:
+            if name in _CHALLENGE_MODE_ARMOUR_LOCATIONS:
+                continue
             self.assertIn(name, names)
 
     def test_item_count_matches_location_count(self) -> None:

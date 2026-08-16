@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5Infobots, Rac5Planets
@@ -57,7 +55,7 @@ _WEAPON_LOCATION_NAMES = frozenset(WEAPON_VENDOR_LOCATIONS) | frozenset(WEAPON_M
 _GADGET_LOCATION_NAMES = frozenset(GADGET_PICKUP_LOCATIONS) | frozenset(GADGET_VENDOR_LOCATIONS)
 
 
-def _planet_location_weight(world: RACSizeMatterWorld, planet: str) -> int:
+def _planet_location_weight(world: "RACSizeMatterWorld", planet: str) -> int:
     """Locations available on `planet` under the current options. Always counts
     everything except weapon/gadget vendor (and gadget pickup) locations; those
     only count towards the weight when the player is also starting with random
@@ -78,7 +76,7 @@ def _planet_location_weight(world: RACSizeMatterWorld, planet: str) -> int:
     return max(weight, 1)
 
 
-def choose_starting_planets(world: RACSizeMatterWorld, weighted: bool, count: int = 2) -> list[str]:
+def choose_starting_planets(world: "RACSizeMatterWorld", weighted: bool, count: int = 2) -> list[str]:
     """Pick `count` distinct planets from STARTING_PLANET_CANDIDATES.
     weighted=True (Logic): sampled without replacement, weighted by
     _planet_location_weight, so denser planets are more likely to be picked.

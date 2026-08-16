@@ -5,11 +5,12 @@ from worlds.LauncherComponents import Component, Type, components
 
 from .options import DynamicPineSettings
 
-DYNAMIC_PINE_VERSION = "v0.1.0"
+DYNAMIC_PINE_VERSION = "0.1.0"
 
 
 def launch_client(*args) -> None:
     from worlds.LauncherComponents import launch
+
     from .client import run_client
     launch(run_client, name="Dynamic Pine client", args=args)
 

@@ -31,6 +31,9 @@ class Rac5VendorLocations:
 
     QUODRONA_LASER = "Quodrona: Gadgetron Vendor: Laser Tracer - 85,000"
 
+    # Challenge Mode 1+ only — RYNO has no normal-game vendor listing.
+    POKITARU_RYNO = "Pokitaru: Gadgetron Vendor: RYNO - 9,990,000"
+
 
 class Rac5ModVendorLocations:
     """String constants for Weapon Mod locations"""
@@ -50,3 +53,34 @@ class Rac5ModVendorLocations:
     QUODRONA_SNIPER_SPLIT = "Quodrona: Slim Cognito: Sniper Mine Split Beam Mod - 25,000"
     QUODRONA_SHOCK_LOCK = "Quodrona: Slim Cognito: Shock Rocket Lock On Mod - 5,000"
     QUODRONA_SHOCK_AFTER = "Quodrona: Slim Cognito: Shock Rocket After Shock Mod - 25,000"
+
+    # Challenge Mode 1+ only.
+    KALIDON_AGENTS_EXPLOSIVE = "Kalidon: Slim Cognito: Agents of Doom Explosive Mod - 450,000"
+    KALIDON_SCORCHER_SUNFLARE = "Kalidon: Slim Cognito: Scorcher Sunflare Mod - 200,000"
+    KALIDON_SUCK_CANNON_BOUNCE = "Kalidon: Slim Cognito: Suck Cannon Bounce Mod - 600,000"
+    KALIDON_BEE_HIVE_BOMB = "Kalidon: Slim Cognito: Bee Mine Glove Hive Bomb Mod - 300,000"
+    CHALLAX_SNIPER_SMART_REFLECTOR = "Challax: Slim Cognito: Sniper Mine Smart Reflector Mod - 750,000"
+    CHALLAX_SHOCK_MULTI_LAUNCHER = "Challax: Slim Cognito: Shock Rocket Multi Launcher Mod - 2,000,000"
+    KALIDON_STATIC_REFLECTION = "Kalidon: Slim Cognito: Static Barrier Reflection Mod - 250,000"
+    QUODRONA_STATIC_MIRAGE = "Quodrona: Slim Cognito: Static Barrier Mirage Mod - 1,250,000"
+    CHALLAX_LASER_PIERCE = "Challax: Slim Cognito: Laser Tracer Pierce Mod - 1,250,000"
+    QUODRONA_LASER_RICOCHET = "Quodrona: Slim Cognito: Laser Tracer Ricochet Mod - 500,000"
+
+
+class Rac5TitanVendorLocations:
+    """String constants for Titan variant purchase locations (Challenge Mode
+    1+ only). Buying a weapon's Titan variant floors its level at 5 and opens
+    up leveling to 8. RYNO has no Titan variant."""
+
+    POKITARU_LACERATOR_TITAN = "Pokitaru: Gadgetron Vendor: Lacerator Titan - 250,000"
+    POKITARU_ACID_TITAN = "Pokitaru: Gadgetron Vendor: Acid Bomb Glove Titan - 250,000"
+    POKITARU_CONCUSSION_TITAN = "Pokitaru: Gadgetron Vendor: Concussion Gun Titan - 250,000"
+    RYLLUS_AGENTS_TITAN = "Ryllus: Gadgetron Vendor: Agents of Doom Titan - 250,000"
+    KALIDON_SCORCHER_TITAN = "Kalidon: Gadgetron Vendor: Scorcher Titan - 250,000"
+    DREAMTIME_SUCK_TITAN = "Dreamtime: Gadgetron Vendor: Suck Cannon Titan - 300,000"
+    OUTPOST_OMEGA_BEE_TITAN = "Outpost Omega: Gadgetron Vendor: Bee Mine Glove Titan - 250,000"
+    CHALLAX_SNIPER_TITAN = "Challax: Gadgetron Vendor: Sniper Mine Titan - 500,000"
+    DAYNI_MOON_MOOTATOR_TITAN = "Dayni Moon: Gadgetron Vendor: Mootator Titan - 1,500,000"
+    DAYNI_MOON_SHOCK_TITAN = "Dayni Moon: Gadgetron Vendor: Shock Rocket Titan - 1,250,000"
+    INSIDE_CLANK_STATIC_TITAN = "Inside Clank: Gadgetron Vendor: Static Barrier Titan - 2,500,000"
+    QUODRONA_LASER_TITAN = "Quodrona: Gadgetron Vendor: Laser Tracer Titan - 250,000"

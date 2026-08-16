@@ -232,6 +232,26 @@ ARMOUR_PICKUPS: list[ArmourPickup] = [
 
     ArmourPickup("electroshock", ArmourPiece.GLOVES, Rac5Locations.METALIS_GLOVES, Rac5Planets.METALIS),
     ArmourPickup("electroshock", ArmourPiece.CHESTPLATE, Rac5Locations.CHALLAX_CHESTPLATE, Rac5Planets.CHALLAX),
+
+    # Challenge Mode pickups — Hyperborean (tier 1+), Chameleon (tier 2 only).
+    # See rules/challenge_mode.py + regions.py for the tier/NG+ Items gating.
+    ArmourPickup("hyperborean", ArmourPiece.GLOVES, Rac5Locations.POKITARU_HYPERBOREAN_GLOVES, Rac5Planets.POKITARU),
+    ArmourPickup("hyperborean", ArmourPiece.BOOTS, Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS, Rac5Planets.RYLLUS),
+    ArmourPickup(
+        "hyperborean", ArmourPiece.CHESTPLATE,
+        Rac5Locations.DREAMTIME_HYPERBOREAN_CHESTPLATE, Rac5Planets.DREAMTIME,
+    ),
+    ArmourPickup("hyperborean", ArmourPiece.HELMET, Rac5Locations.CHALLAX_HYPERBOREAN_HELMET, Rac5Planets.CHALLAX),
+    ArmourPickup("chameleon", ArmourPiece.BOOTS, Rac5Locations.POKITARU_CHAMELEON_BOOTS, Rac5Planets.POKITARU),
+    ArmourPickup("chameleon", ArmourPiece.CHESTPLATE, Rac5Locations.KALIDON_CHAMELEON_CHESTPLATE, Rac5Planets.KALIDON),
+    ArmourPickup(
+        "chameleon", ArmourPiece.GLOVES,
+        Rac5Locations.OUTPOST_OMEGA_CHAMELEON_GLOVES, Rac5Planets.OUTPOST_OMEGA,
+    ),
+    ArmourPickup(
+        "chameleon", ArmourPiece.HELMET,
+        Rac5Locations.INSIDE_CLANK_CHAMELEON_HELMET, Rac5Planets.INSIDE_CLANK,
+    ),
 ]
 
 ARMOUR_FLAG_TO_LOCATION: dict[tuple[str, ArmourPiece], str] = {(ap.set_key, ap.piece): ap.name for ap in ARMOUR_PICKUPS}

@@ -10,6 +10,7 @@ from .entrances import set_entrance_rules
 from .inside_clank import set_inside_clank_rules
 from .kalidon import set_kalidon_rules
 from .metalis import set_metalis_rules
+from .nanotech_levels import set_nanotech_level_rules
 from .outpost_omega import set_outpost_omega_rules
 from .pokitaru import set_pokitaru_rules
 from .quodrona import set_quodrona_rules
@@ -37,3 +38,4 @@ def set_rules(world: RACSizeMatterWorld) -> None:
     set_quodrona_rules(world)
     set_armour_set_rules(world)
     set_weapon_level_rules(world)
+    set_nanotech_level_rules(world)

@@ -29,6 +29,7 @@ PLANET_ID_TO_REGION: dict[int, str] = {
     0x08: "Dayni Moon",
     0x09: "Inside Clank",
     0x0A: "Quodrona",
+    0x16: "Kalidon",
     0x17: "Outpost Omega",
 }
 
@@ -41,12 +42,15 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.passthrough = world.multiworld.re_gen_passthrough[world.game]
             world.options.all_missions.value = world.passthrough.get("all_missions", True)
             world.options.all_cutscenes.value = world.passthrough.get("all_cutscenes", False)
+            world.options.giant_clank.value = world.passthrough.get("giant_clank", False)
             world.options.progressive_weapons.value = world.passthrough["progressive_weapons"]
             world.options.progressive_mods.value = world.passthrough.get("progressive_mods", False)
             world.options.progressive_armour.value = world.passthrough["progressive_armour"]
             world.options.death_link.value = world.passthrough["death_link"]
             world.options.clank_challenges.value = world.passthrough.get("clank_challenges", 0)
             world.options.skyboard_challenges.value = world.passthrough.get("skyboard_challenges", 0)
+            world.options.shrink_ray_skips.value = world.passthrough.get("shrink_ray_skips", False)
+            world.options.shrink_ray_locations.value = world.passthrough.get("shrink_ray_locations", False)
             world.options.skill_points.value = world.passthrough.get("skill_points", True)
             world.options.enable_clank_challenge_skill_points.value = \
                 world.passthrough.get("enable_clank_challenge_skill_points", False)
@@ -54,14 +58,20 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
                 world.passthrough.get("enable_skyboard_challenge_skill_points", False)
 
             world.options.armour_set_checks.value = world.passthrough["armour_set_checks"]
+            world.options.ng_plus_items.value = world.passthrough.get("ng_plus_items", True)
+            world.options.challenge_mode.value = world.passthrough.get("challenge_mode", 0)
+            world.options.random_starting_planet.value = world.passthrough.get("random_starting_planet", 0)
             world.options.starting_weapons.value = world.passthrough["starting_weapons"]
             world.options.starting_gadgets.value = world.passthrough["starting_gadgets"]
             world.options.starting_bolts.value = world.passthrough["starting_bolts"]
             world.options.death_amnesty.value = world.passthrough["death_amnesty"]
             world.options.weapon_level_checks.value = world.passthrough.get("weapon_level_checks", 0)
+            world.options.nanotech_level_checks.value = world.passthrough.get("nanotech_level_checks", 0)
             world.options.weapon_experience_multiplier.value = \
                 world.passthrough.get("weapon_experience_multiplier", 0)
             world.options.bolt_multiplier.value = world.passthrough.get("bolt_multiplier", 0)
+            world.options.nanotech_experience_multiplier.value = \
+                world.passthrough.get("nanotech_experience_multiplier", 0)
         else:
             world.using_ut = False
     else:

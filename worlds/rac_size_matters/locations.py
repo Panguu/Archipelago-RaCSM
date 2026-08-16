@@ -5,9 +5,11 @@ from .constants import (
     Rac5CutsceneLocations,
     Rac5Locations,
     Rac5ModVendorLocations,
+    Rac5NanotechLevels,
     Rac5Planets,
     Rac5SkillPoints,
     Rac5SkyboardChallenges,
+    Rac5TitanVendorLocations,
     Rac5VendorLocations,
     Rac5WeaponKeys,
 )
@@ -19,6 +21,7 @@ from .core.locations.challenge_locations import (
     GADGETBOT_TOSS_CLANK_PICKUPS,
 )
 from .core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
+from .core.shrink_ray import SHRINK_RAY_SKIP_LOCATION_NAMES
 from .core.skill_points import (
     CLANK_CHALLENGE_SKILL_POINTS,
     HARD_SKILL_POINTS,
@@ -62,6 +65,8 @@ WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5VendorLocations.DAYNI_MOON_SHOCK:    RACLocationData(BASE_ID + 2009, Rac5Planets.DAYNI_MOON),
     Rac5VendorLocations.INSIDE_CLANK_STATIC: RACLocationData(BASE_ID + 2010, Rac5Planets.INSIDE_CLANK),
     Rac5VendorLocations.QUODRONA_LASER:      RACLocationData(BASE_ID + 2011, Rac5Planets.QUODRONA),
+    # Challenge Mode 1+ only — RYNO has no vendor listing in vanilla.
+    Rac5VendorLocations.POKITARU_RYNO:       RACLocationData(BASE_ID + 2300, Rac5Planets.POKITARU),
 }
 
 GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
@@ -86,6 +91,35 @@ WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
     Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(BASE_ID + 2212, Rac5Planets.QUODRONA),
     Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(BASE_ID + 2213, Rac5Planets.QUODRONA),
     Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(BASE_ID + 2214, Rac5Planets.QUODRONA),
+    # Challenge Mode 1+ only.
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE:      RACLocationData(BASE_ID + 2501, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE:     RACLocationData(BASE_ID + 2502, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE:    RACLocationData(BASE_ID + 2503, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB:         RACLocationData(BASE_ID + 2504, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR: RACLocationData(BASE_ID + 2505, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER:  RACLocationData(BASE_ID + 2506, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION:     RACLocationData(BASE_ID + 2507, Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE:        RACLocationData(BASE_ID + 2508, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE:          RACLocationData(BASE_ID + 2509, Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET:       RACLocationData(BASE_ID + 2510, Rac5Planets.QUODRONA),
+}
+
+# Challenge Mode 1+ only — Titan variant purchases, one per weapon except
+# RYNO (no Titan variant). Buying one floors that weapon's level at 5 and
+# opens leveling up to 8 (see core/weapons.py's apply_progressive_leveling).
+WEAPON_TITAN_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
+    Rac5TitanVendorLocations.POKITARU_LACERATOR_TITAN:   RACLocationData(BASE_ID + 2401, Rac5Planets.POKITARU),
+    Rac5TitanVendorLocations.POKITARU_ACID_TITAN:         RACLocationData(BASE_ID + 2402, Rac5Planets.POKITARU),
+    Rac5TitanVendorLocations.POKITARU_CONCUSSION_TITAN:   RACLocationData(BASE_ID + 2403, Rac5Planets.POKITARU),
+    Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN:         RACLocationData(BASE_ID + 2404, Rac5Planets.RYLLUS),
+    Rac5TitanVendorLocations.KALIDON_SCORCHER_TITAN:      RACLocationData(BASE_ID + 2405, Rac5Planets.KALIDON),
+    Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN:        RACLocationData(BASE_ID + 2406, Rac5Planets.DREAMTIME),
+    Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN:     RACLocationData(BASE_ID + 2407, Rac5Planets.OUTPOST_OMEGA),
+    Rac5TitanVendorLocations.CHALLAX_SNIPER_TITAN:        RACLocationData(BASE_ID + 2408, Rac5Planets.CHALLAX),
+    Rac5TitanVendorLocations.DAYNI_MOON_MOOTATOR_TITAN:   RACLocationData(BASE_ID + 2409, Rac5Planets.DAYNI_MOON),
+    Rac5TitanVendorLocations.DAYNI_MOON_SHOCK_TITAN:      RACLocationData(BASE_ID + 2410, Rac5Planets.DAYNI_MOON),
+    Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN:   RACLocationData(BASE_ID + 2411, Rac5Planets.INSIDE_CLANK),
+    Rac5TitanVendorLocations.QUODRONA_LASER_TITAN:        RACLocationData(BASE_ID + 2412, Rac5Planets.QUODRONA),
 }
 
 # Weapon level locations — one per weapon per level (1-4, every weapon's max).
@@ -112,18 +146,40 @@ WEAPON_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     for idx, loc_name in enumerate(WEAPON_LEVEL_LOOKUP.values(), start=1)
 }
 
-# weapon_level_checks == max_level: only the "reached max level" check per weapon.
+# weapon_level_checks == max_level: only the "reached max level" check per
+# weapon. Fixed at level 4 (the true vanilla max for every weapon, RYNO
+# included) rather than _WEAPON_DATA[internal].max_level — that field is 8
+# for Challenge Mode's Titan-extended weapons, but "max_level" here still
+# means the pre-Challenge-Mode vanilla cap; levels 5-8 are their own
+# separate Challenge-Mode-gated tier (see CHALLENGE_MODE_WEAPON_LEVEL_LOCATIONS
+# below), not folded into this option.
 WEAPON_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
     loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
-    for (internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
-    if level == _WEAPON_DATA[internal].max_level
+    for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
+    if level == 4
 }
 
-# weapon_level_checks == all: every other (non-max) level check, added on top
-# of WEAPON_MAX_LEVEL_LOCATIONS so the two tables never overlap.
+# weapon_level_checks == all: every other non-max, non-Challenge-Mode level
+# check (2-3), added on top of WEAPON_MAX_LEVEL_LOCATIONS so the two tables
+# never overlap.
 WEAPON_SUB_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
-    loc_name: data for loc_name, data in WEAPON_LEVEL_LOCATIONS.items()
-    if loc_name not in WEAPON_MAX_LEVEL_LOCATIONS
+    loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
+    for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
+    if level in (2, 3)
+}
+
+# Nanotech Level locations — one per level, 6 through 75 (levels 1-5 aren't
+# locations; the player starts at level 5, see constants/nanotech_levels.py).
+# Region is Pokitaru, same reasoning as weapon levels above: leveling isn't
+# tied to any one planet.
+NANOTECH_LEVEL_LOOKUP: dict[int, str] = {
+    level: getattr(Rac5NanotechLevels, f"LEVEL_{level}")
+    for level in range(6, 76)
+}
+
+NANOTECH_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
+    loc_name: RACLocationData(BASE_ID + 6000 + idx, Rac5Planets.POKITARU)
+    for idx, loc_name in enumerate(NANOTECH_LEVEL_LOOKUP.values(), start=1)
 }
 
 from .core.locations.armour_set_locations import ARMOUR_SET_CHECKS
@@ -143,11 +199,69 @@ NG_PLUS_WEAPON_LEVEL_LOCATIONS: frozenset[str] = frozenset(
     if internal == Rac5WeaponKeys.RYNO
 )
 
+# Levels 5-8 (Challenge Mode Titan variant) — gated on both NG+ Items and
+# Challenge Mode 1+, same as CHALLENGE_MODE_1_ARMOUR_LOCATIONS etc. above.
+# Split the same way as WEAPON_MAX_LEVEL_LOCATIONS/WEAPON_SUB_MAX_LEVEL_LOCATIONS:
+# level 8 gates on weapon_level_checks >= 1 (mirrors "reached max level"),
+# levels 5-7 gate on weapon_level_checks >= 2 (mirrors "every other level").
+# Shared by regions.py (creation) and rules/weapon_levels.py (rule
+# assignment) — both must agree on the same sets.
+CHALLENGE_MODE_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
+    loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
+    for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
+    if level == 8
+}
+
+CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
+    loc_name: WEAPON_LEVEL_LOCATIONS[loc_name]
+    for (_internal, level), loc_name in WEAPON_LEVEL_LOOKUP.items()
+    if level in (5, 6, 7)
+}
+
+CHALLENGE_MODE_WEAPON_LEVEL_LOCATIONS: frozenset[str] = frozenset(
+    {*CHALLENGE_MODE_MAX_LEVEL_LOCATIONS, *CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS}
+)
+
 NG_PLUS_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
     Rac5ArmourSet.HYPERBOREAN,
     Rac5ArmourSet.CHAMELEON,
     Rac5ArmourSet.ICE_II,
     Rac5ArmourSet.STALKER,
+})
+
+# Challenge Mode option: locations that only exist at tier 1+ / tier 2. All of
+# these are also still gated on NG+ Items being on (same as RYNO/Hyperborean/
+# Chameleon/these same mods being in the item pool at all — see items.py's
+# NG_PLUS_WEAPONS/NG_PLUS_ARMOUR_SETS/NG_PLUS_WEAPON_MODS). Shared by
+# regions.py (creation) and rules/challenge_mode.py (rule assignment) — both
+# must agree on the same sets.
+CHALLENGE_MODE_1_ARMOUR_LOCATIONS: frozenset[str] = frozenset({
+    Rac5Locations.POKITARU_HYPERBOREAN_GLOVES,
+    Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS,
+    Rac5Locations.DREAMTIME_HYPERBOREAN_CHESTPLATE,
+    Rac5Locations.CHALLAX_HYPERBOREAN_HELMET,
+})
+
+CHALLENGE_MODE_2_ARMOUR_LOCATIONS: frozenset[str] = frozenset({
+    Rac5Locations.POKITARU_CHAMELEON_BOOTS,
+    Rac5Locations.KALIDON_CHAMELEON_CHESTPLATE,
+    Rac5Locations.OUTPOST_OMEGA_CHAMELEON_GLOVES,
+    Rac5Locations.INSIDE_CLANK_CHAMELEON_HELMET,
+})
+
+CHALLENGE_MODE_RYNO_LOCATION: frozenset[str] = frozenset({Rac5VendorLocations.POKITARU_RYNO})
+
+CHALLENGE_MODE_MOD_LOCATIONS: frozenset[str] = frozenset({
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE,
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE,
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE,
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB,
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR,
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER,
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION,
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE,
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE,
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET,
 })
 
 # Giant Clank option: with it off, both sequences are locked out entirely
@@ -211,6 +325,15 @@ EXTRA_SKYBOARD_LOCATIONS: dict[str, RACLocationData] = {
     Rac5SkyboardChallenges.KALIDON_TRICKY:           RACLocationData(BASE_ID + 1404, Rac5Planets.KALIDON),
     Rac5SkyboardChallenges.OUTPOST_OMEGA_DANGER:     RACLocationData(BASE_ID + 1802, Rac5Planets.OUTPOST_OMEGA),
     Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:     RACLocationData(BASE_ID + 1803, Rac5Planets.OUTPOST_OMEGA),
+}
+
+# One location per tracked Shrink Ray puzzle-gate bit (see
+# core/address_maps's SHRINK_RAY_PUZZLE_BITS) — anchored to Kalidon since
+# that's where Shrink Ray first becomes usable; access is gated on owning it
+# regardless of which planet the puzzle is actually on (rules/shrink_ray.py).
+SHRINK_RAY_SKIP_LOCATIONS: dict[str, RACLocationData] = {
+    name: RACLocationData(BASE_ID + 1900 + idx, Rac5Planets.KALIDON)
+    for idx, name in enumerate(SHRINK_RAY_SKIP_LOCATION_NAMES, start=1)
 }
 
 CHALLENGE_LOCATIONS: dict[str, RACLocationData] = {
@@ -303,12 +426,15 @@ ALL_LOCATIONS: dict[str, RACLocationData] = {
     **WEAPON_VENDOR_LOCATIONS,
     **GADGET_VENDOR_LOCATIONS,
     **WEAPON_MOD_VENDOR_LOCATIONS,
+    **WEAPON_TITAN_VENDOR_LOCATIONS,
     **WEAPON_LEVEL_LOCATIONS,
+    **NANOTECH_LEVEL_LOCATIONS,
     **ARMOUR_SET_CHECK_LOCATIONS,
     **CHALLENGE_LOCATIONS,
     **ALL_CLANK_LOCATIONS,
     **SKYBOARD_ITEM_LOCATIONS,
     **EXTRA_SKYBOARD_LOCATIONS,
+    **SHRINK_RAY_SKIP_LOCATIONS,
 }
 
 LOCATION_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_LOCATIONS.items()}
@@ -331,7 +457,27 @@ VENDOR_WEAPON_LOC: dict[str, str] = {
     Rac5VendorLocations.DAYNI_MOON_SHOCK:    WEAPON_DISPLAY_TO_INTERNAL["Shock Rocket"],
     Rac5VendorLocations.INSIDE_CLANK_STATIC: WEAPON_DISPLAY_TO_INTERNAL["Static Barrier"],
     Rac5VendorLocations.QUODRONA_LASER:      WEAPON_DISPLAY_TO_INTERNAL["Laser Tracer"],
+    Rac5VendorLocations.POKITARU_RYNO:       WEAPON_DISPLAY_TO_INTERNAL["RYNO"],
 }
+
+# Titan variant purchase location -> internal weapon name (Challenge Mode 1+,
+# every weapon except RYNO — see WEAPON_TITAN_VENDOR_LOCATIONS above).
+VENDOR_TITAN_LOC: dict[str, str] = {
+    Rac5TitanVendorLocations.POKITARU_LACERATOR_TITAN:   WEAPON_DISPLAY_TO_INTERNAL["Lacerator"],
+    Rac5TitanVendorLocations.POKITARU_ACID_TITAN:         WEAPON_DISPLAY_TO_INTERNAL["Acid Bomb Glove"],
+    Rac5TitanVendorLocations.POKITARU_CONCUSSION_TITAN:   WEAPON_DISPLAY_TO_INTERNAL["Concussion Gun"],
+    Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN:         WEAPON_DISPLAY_TO_INTERNAL["Agents of Doom"],
+    Rac5TitanVendorLocations.KALIDON_SCORCHER_TITAN:      WEAPON_DISPLAY_TO_INTERNAL["Scorcher"],
+    Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN:        WEAPON_DISPLAY_TO_INTERNAL["Suck Cannon"],
+    Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN:     WEAPON_DISPLAY_TO_INTERNAL["Bee Mine Glove"],
+    Rac5TitanVendorLocations.CHALLAX_SNIPER_TITAN:        WEAPON_DISPLAY_TO_INTERNAL["Sniper Mine"],
+    Rac5TitanVendorLocations.DAYNI_MOON_MOOTATOR_TITAN:   WEAPON_DISPLAY_TO_INTERNAL["Mootator"],
+    Rac5TitanVendorLocations.DAYNI_MOON_SHOCK_TITAN:      WEAPON_DISPLAY_TO_INTERNAL["Shock Rocket"],
+    Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN:   WEAPON_DISPLAY_TO_INTERNAL["Static Barrier"],
+    Rac5TitanVendorLocations.QUODRONA_LASER_TITAN:        WEAPON_DISPLAY_TO_INTERNAL["Laser Tracer"],
+}
+
+TITAN_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_TITAN_LOC.items()}
 
 VENDOR_GADGET_LOC: dict[str, str] = {
     Rac5VendorLocations.POKITARU_HYPERSHOT:      GADGET_DISPLAY_TO_INTERNAL["Hypershot"],
@@ -361,6 +507,18 @@ _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
     ("sniper_mine",     1, Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT),
     ("shock_rocket",    3, Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK),
     ("shock_rocket",    1, Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER),
+
+    # Challenge Mode 1+ only — confirmed in-game.
+    ("agents_of_doom",  1, Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE),
+    ("scorcher",        1, Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE),
+    ("suck_cannon",     1, Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE),
+    ("bee_mine_glove",  2, Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB),
+    ("sniper_mine",     2, Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR),
+    ("shock_rocket",    2, Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER),
+    ("static_barrier",  1, Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION),
+    ("static_barrier",  2, Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE),
+    ("laser_tracer",    1, Rac5ModVendorLocations.CHALLAX_LASER_PIERCE),
+    ("laser_tracer",    2, Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET),
 ]
 
 _ATTR_NAMES = ("mod_slot_one", "mod_slot_two", "mod_slot_three")

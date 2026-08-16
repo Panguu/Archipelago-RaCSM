@@ -4,21 +4,25 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5CutsceneLocations, Rac5Locations
-from ..locations import WEAPON_LEVEL_LOOKUP
+from ..constants import Rac5CutsceneLocations, Rac5GadgetKeys, Rac5Locations
+from ..locations import WEAPON_INTERNAL_TO_LOCATION, WEAPON_LEVEL_LOOKUP
 from .address_maps import NEW_PLANET_START_LOAD_ADDR
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece, ArmourUnlocks
+from .challenge_mode import ChallengeModeState
 from .challenges import ChallengeInventory, SkyboardInventory
 from .locations.mission_locations import CUTSCENE_MAP, STORY_MISSION_MAP
 from .menu import MenuStateValue
 from .missions import MissionInventory
 from .planets import AUTO_UNLOCK_ADDRESSES, INFOBOT_UNLOCK_VALUE, PlanetInventory, PlanetUnlockState
 from .player_bolts import PlayerBoltInventory
+from .player_health_exp import PlayerHealthExpInventory
 from .quick_select import QuickSelectState
+from .shrink_ray import ShrinkRaySkipInventory
 from .skill_points import SkillPointInventory
 from .skins import SkinInventory
 from .titanium_bolts import TitaniumBoltInventory
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
+from .weapons import TITAN_ELIGIBLE_WEAPONS
 
 if TYPE_CHECKING:
     from ..pypine import Pine
@@ -41,6 +45,12 @@ _SCRIPTED_PICKUP_GADGETS: frozenset[str] = frozenset()
 _POKITARU_ID: int = 0x01
 _KALIDON_ID:  int = 0x03
 _CHALLAX_ID:  int = 0x07
+# Kalidon's skyboard race sub-level -- not in PLANET_ADDRESSES, so none of
+# the normal per-planet reads (controller/weapons/player/menu) are valid
+# while it's loaded. Only the fixed/global skyboard completion bits and
+# planet-unlock enforcement (already unconditional, above tick()'s early
+# returns) are safe to touch here.
+_KALIDON_RACE_ID: int = 0x16
 
 # Former PRESET_MISSION_BITS (see mission_locations.py's STORY_MISSION_MAP):
 # story-required prerequisite missions that used to be force-written complete
@@ -74,9 +84,8 @@ _MISSION_GADGET_LOCATION: dict[str, str] = {
 }
 
 # Weapon-cycler current_weapon/stored_weapon id -> internal weapon/gadget
-# name, reused from WEAPON_VENDOR_IDS's id scheme. UNVERIFIED — same
-# "verify in-game" caveat WEAPON_VENDOR_IDS carries; only Pokitaru's cycler
-# addresses are wired up yet (see WeaponCyclerInventory).
+# name, reused from WEAPON_VENDOR_IDS's id scheme (confirmed in-game). Only
+# Pokitaru's cycler addresses are wired up yet (see WeaponCyclerInventory).
 _CYCLER_ID_TO_WEAPON_NAME: dict[int, str] = {wid: name for name, wid in WEAPON_VENDOR_IDS.items()}
 
 # missions.check() fires on the mission bit regardless of all_missions/
@@ -132,9 +141,12 @@ class Core:
         self.skyboard     = SkyboardInventory(pine)
         self.bolts        = TitaniumBoltInventory(pine)
         self.player_bolts = PlayerBoltInventory(pine)
+        self.player_health_exp = PlayerHealthExpInventory(pine)
         self.skill_points = SkillPointInventory(pine)
         self.missions     = MissionInventory(pine)
         self.skin         = SkinInventory(pine)
+        self.challenge_mode = ChallengeModeState(pine)
+        self.shrink_ray    = ShrinkRaySkipInventory(pine)
 
         # PlanetInventory is planet-agnostic — one instance rebinds itself to
         # whichever planet is loaded via check_transition().
@@ -149,8 +161,11 @@ class Core:
         self.clank_enabled:              bool = True
         self.clank_all_challenges:       bool = False
         self.skyboard_enabled:           bool = False
+        self.shrink_ray_skips_enabled:     bool = False
+        self.shrink_ray_locations_enabled: bool = False
         self.skill_points_enabled:       bool = False
         self.weapon_level_checks_enabled: bool = False
+        self.nanotech_level_checks_enabled: bool = False
         # Mirrors options.py's AllMissions (default on)/AllCutscenes (default
         # off) — gates which of missions.check()'s completions get sent as
         # location checks (see _STORY_MISSION_LOCATIONS/_CUTSCENE_LOCATIONS).
@@ -320,6 +335,19 @@ class Core:
 
         self._apply_mod_unlock_flags()
 
+    def _is_titan_pending(self, name: str) -> bool:
+        """Mirrors VendorInventory._is_titan_pending(): True once a
+        Titan-eligible weapon's base purchase is done but its Titan variant
+        hasn't been bought yet. weapon_vendor()'s purchase-detection loop
+        force-keeps such a weapon permanently unlocked regardless of true
+        AP ownership, so _sync_weapon_gadget_ownership() below must not
+        fight that back the moment the vendor closes."""
+        wi = self.planet.weapons
+        if wi.challenge_mode < 1 or name not in TITAN_ELIGIBLE_WEAPONS or wi.titan_purchased.get(name, False):
+            return False
+        loc = WEAPON_INTERNAL_TO_LOCATION.get(name)
+        return bool(loc and wi.vendor_locations.get(loc, False))
+
     def _sync_weapon_gadget_ownership(self) -> None:
         """Force every weapon/gadget's unlocked bit (memory + tracking dict)
         to match true AP ownership. Runs after sync_slots() re-baselines
@@ -330,6 +358,8 @@ class Core:
         that ever sees that transition before it's corrected away."""
         wi = self.planet.weapons
         for name in wi._weapon_addrs:
+            if self._is_titan_pending(name):
+                continue
             owned = self._ap_owned_weapons.get(name, False)
             if wi.weapons.get(name, False) != owned:
                 wi.set(name, owned)
@@ -386,6 +416,7 @@ class Core:
         yet, so it's not included here."""
         self.clank.sync_from_ap(checked_locations)
         self.skyboard.sync_from_ap(checked_locations)
+        self.shrink_ray.sync_from_ap(checked_locations)
         self.planet.weapons.sync_from_ap(checked_locations)
         self.skill_points.sync_from_ap(checked_locations)
         self.missions.sync_from_ap(checked_locations)
@@ -430,6 +461,16 @@ class Core:
             # check_giant_clank() above is all the tracking it needs.
             return
 
+        if self.planet.planet_id == _KALIDON_RACE_ID:
+            # No known addresses of its own -- skip every normal per-planet
+            # check (controller/weapons/armour/quick select/etc, all of
+            # which would read unbound/garbage state here) and just poll the
+            # skyboard completion bits, which live at fixed addresses.
+            if self.planet.is_ready and self.skyboard_enabled:
+                for name in self.skyboard.check():
+                    self.send_location(name)
+            return
+
         self.planet.check_controller()
         self.planet.check_death()
         self.planet.check_equipped_armour()
@@ -448,6 +489,7 @@ class Core:
                 self.planet.weapons.wipe()
                 self.planet.weapon_cycler.initialize(self._first_owned_weapon_id)
             self.skin.setup()
+            self.challenge_mode.setup()
             if self.clank_enabled:
                 # Unlocks every Clank Challenge section on every tracked
                 # planet (fixed per-planet addresses, safe regardless of
@@ -492,6 +534,12 @@ class Core:
         if self.skyboard_enabled:
             for name in self.skyboard.check():
                 self.send_location(name)
+        self.shrink_ray.force_outpost_omega_open()
+        if self.shrink_ray_skips_enabled and self._ap_owned_gadgets.get(Rac5GadgetKeys.SHRINK_RAY, False):
+            self.shrink_ray.skip_all()
+        if self.shrink_ray_locations_enabled:
+            for name in self.shrink_ray.check():
+                self.send_location(name)
 
         self.planet.weapons.apply_experience_boost()
         # Skipped while the weapons vendor is open — it zeroes every
@@ -501,6 +549,10 @@ class Core:
         if not self.weapon_vendor.active:
             self.planet.weapons.apply_progressive_leveling()
         self.player_bolts.apply_boost()
+        self.player_health_exp.apply_boost()
+        if self.nanotech_level_checks_enabled:
+            for name in self.player_health_exp.check_level(self.planet.player.max_health):
+                self.send_location(name)
         self._check_armour_pickups()
         self._check_vendor_purchases()
         self.planet.check_weapon_cycler(

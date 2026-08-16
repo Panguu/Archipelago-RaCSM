@@ -32,7 +32,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         w = self.ctx._wiring
         for state in (
             w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
-            w.clank, w.skyboard, w.skill_points, w.missions, w.skin,
+            w.clank, w.skyboard, w.shrink_ray, w.skill_points, w.missions, w.skin,
             w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
             w.weapon_vendor, w.mod_vendor, w.vendor,
         ):
@@ -48,7 +48,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         w = ctx._wiring
         states = (
             w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
-            w.clank, w.skyboard, w.skill_points, w.missions, w.skin,
+            w.clank, w.skyboard, w.shrink_ray, w.skill_points, w.missions, w.skin,
             w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
             w.weapon_vendor, w.mod_vendor, w.vendor,
         )

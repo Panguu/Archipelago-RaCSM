@@ -47,3 +47,14 @@ class Rac5Locations:
 
     QUODRONA_FIND = "Quodrona: Find Otto Destruct"
     QUODRONA_GOAL = "Quodrona: Defeat Otto Destruct"
+
+    # Challenge Mode armour pickups (Challenge Mode 1+ for Hyperborean,
+    # Challenge Mode 2 for Chameleon).
+    POKITARU_HYPERBOREAN_GLOVES = "Pokitaru: Hyperborean Gloves"
+    RYLLUS_HYPERBOREAN_BOOTS = "Ryllus: Hyperborean Boots"
+    DREAMTIME_HYPERBOREAN_CHESTPLATE = "Dreamtime: Hyperborean Chestplate"
+    CHALLAX_HYPERBOREAN_HELMET = "Challax: Hyperborean Helmet"
+    POKITARU_CHAMELEON_BOOTS = "Pokitaru: Chameleon Boots"
+    KALIDON_CHAMELEON_CHESTPLATE = "Kalidon: Chameleon Chestplate"
+    OUTPOST_OMEGA_CHAMELEON_GLOVES = "Outpost Omega: Chameleon Gloves"
+    INSIDE_CLANK_CHAMELEON_HELMET = "Inside Clank: Chameleon Helmet"

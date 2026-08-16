@@ -69,4 +69,3 @@ def set_metalis_rules(world: RACSizeMatterWorld) -> None:
         world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_TELEPORTERS, player), True_())
         world.set_rule(mw.get_location(Rac5ClankChallenges.METALIS_BRAIN, player), True_())
 
-    # No vendor on Metalis

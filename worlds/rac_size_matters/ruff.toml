@@ -10,6 +10,8 @@ ignore = [
     "C901",    # Author disagrees with limiting branch complexity
     "E402",    # Imports after try/except tracker block are intentional in AP clients.
     "E731",    # Lambda assignments used as local helpers in rules/pollers are intentional.
+    "N802",    # rules/_helpers.py's HasWeapon/HasInfobot/etc. are deliberately PascalCase to match the
+               # rule_builder.rules constructors (Has, HasAll, HasAny, And, Or, True_) they wrap and compose with.
     "N806",    # Uppercase scan constants (SCAN_START, SCAN_LENGTH) in functions are intentional.
     "N818",    # Author agrees with this rule, but Core AP violates this and changing it would be a hassle.
     "PLC0415", # In AP, we consider local imports totally fine & necessary

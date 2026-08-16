@@ -68,6 +68,17 @@ class SkyboardChallenges(Choice):
     default = 0
 
 
+class ShrinkRaySkips(Toggle):
+    """Skip Shrink Ray puzzles: writes every tracked puzzle-gate bit to
+    solved every tick, bypassing whatever it would otherwise block."""
+    display_name = "Shrink Ray Skips"
+
+
+class ShrinkRayLocations(Toggle):
+    """Include Shrink Ray puzzle completions as location checks."""
+    display_name = "Shrink Ray Locations"
+
+
 
 class AllMissions(DefaultOnToggle):
     """Include story mission completions as location checks.
@@ -107,6 +118,24 @@ class NgPlusItems(DefaultOnToggle):
     Armour Set checks along with Stalker/Ice II (both of which need a Chameleon or
     Hyperborean piece to complete)."""
     display_name = "NG+ Items"
+
+
+class ChallengeMode(Range):
+    """Enables the game's Challenge Mode (New Game Plus) and controls how far
+    into it generation reaches. Also written to game memory at connect so the
+    game itself enters the matching Challenge Mode tier.
+    0: vanilla — no Challenge Mode content.
+    1: Challenge Mode 1 — adds the RYNO vendor purchase, 10 Challenge-Mode-only
+    weapon mod purchases, and the 4 Hyperborean armour pieces as real pickups.
+    2: Challenge Mode 2 — everything from tier 1, plus the 4 Chameleon armour
+    pieces as real pickups.
+    Every item this unlocks a location for is still governed by NG+ Items —
+    with that option off, none of them are placed in the pool at all, so this
+    option alone has no effect."""
+    display_name = "Challenge Mode"
+    range_start = 0
+    range_end = 2
+    default = 0
 
 
 class SkillPoints(Choice):
@@ -243,6 +272,24 @@ class BoltMultiplier(Choice):
     default = 0
 
 
+class NanotechExperienceMultiplier(Choice):
+    """Multiplies Nanotech (health) experience gained each time the game grants it,
+    speeding up Nanotech leveling."""
+    display_name = "Nanotech Experience Multiplier"
+    option_off = 0
+    option_2x  = 2
+    option_4x  = 4
+    option_8x  = 8
+    option_16x = 16
+    default = 0
+
+
+class NanotechLevelChecks(Toggle):
+    """Include reaching Nanotech (health) Levels 6-75 as location checks. Adds 70 locations
+    to the pool. Levels above 20 require access to a good EXP planet."""
+    display_name = "Nanotech Level Checks"
+
+
 class WeaponLevelChecks(Choice):
     """Adds location checks for reaching weapon levels, in addition to whatever
     unlocks the weapon in the first place.
@@ -283,8 +330,11 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     giant_clank: GiantClank
     clank_challenges: ClankChallenges
     skyboard_challenges: SkyboardChallenges
+    shrink_ray_skips: ShrinkRaySkips
+    shrink_ray_locations: ShrinkRayLocations
     armour_set_checks: ArmourSetChecks
     ng_plus_items: NgPlusItems
+    challenge_mode: ChallengeMode
     skill_points: SkillPoints
     enable_clank_challenge_skill_points: EnableClankChallengeSkillPoints
     enable_skyboard_challenge_skill_points: EnableSkyboardChallengeSkillPoints
@@ -298,7 +348,9 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     trap_duration: TrapDuration
     weapon_experience_multiplier: WeaponExperienceMultiplier
     bolt_multiplier: BoltMultiplier
+    nanotech_experience_multiplier: NanotechExperienceMultiplier
     weapon_level_checks: WeaponLevelChecks
+    nanotech_level_checks: NanotechLevelChecks
 
 racsm_option_groups = [
     OptionGroup("Generic Options", [
@@ -320,6 +372,7 @@ racsm_option_groups = [
         TrapDuration,
         WeaponExperienceMultiplier,
         BoltMultiplier,
+        NanotechExperienceMultiplier,
     ]),
     OptionGroup("RACSM Location Options", [
         AllMissions,
@@ -327,12 +380,18 @@ racsm_option_groups = [
         GiantClank,
         ClankChallenges,
         SkyboardChallenges,
+        ShrinkRayLocations,
         SkillPoints,
         EnableClankChallengeSkillPoints,
         EnableSkyboardChallengeSkillPoints,
         ArmourSetChecks,
         WeaponLevelChecks,
+        NanotechLevelChecks,
         NgPlusItems,
+        ChallengeMode,
+    ]),
+    OptionGroup("RACSM Skip Options", [
+        ShrinkRaySkips,
     ]),
     OptionGroup("RACSM Cosmetic Options", [
         StartingSkin,

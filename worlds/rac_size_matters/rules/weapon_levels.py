@@ -2,17 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rule_builder.rules import Has
+
 from ..constants import Rac5Weapons
 from ..core.weapons import WEAPON_DATA
 from ..items import PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
 from ..locations import (
+    CHALLENGE_MODE_MAX_LEVEL_LOCATIONS,
+    CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS,
     NG_PLUS_WEAPON_LEVEL_LOCATIONS,
     WEAPON_LEVEL_LOOKUP,
     WEAPON_MAX_LEVEL_LOCATIONS,
     WEAPON_SUB_MAX_LEVEL_LOCATIONS,
 )
 from ._helpers import HasGoodExpPlanet, HasWeapon
-from rule_builder.rules import Has
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -43,6 +46,12 @@ def set_weapon_level_rules(world: RACSizeMatterWorld) -> None:
         # same way) — must match here too, or set_rule() below targets a
         # Location that was never actually built.
         created -= NG_PLUS_WEAPON_LEVEL_LOCATIONS
+    if world.options.challenge_mode.value >= 1:
+        # Levels 5-8 (Challenge Mode Titan variant) — same tier mirroring as
+        # above, gated the same way regions.py gates them.
+        created |= set(CHALLENGE_MODE_MAX_LEVEL_LOCATIONS)
+        if tier >= 2:
+            created |= set(CHALLENGE_MODE_SUB_MAX_LEVEL_LOCATIONS)
 
     player = world.player
     mw = world.multiworld

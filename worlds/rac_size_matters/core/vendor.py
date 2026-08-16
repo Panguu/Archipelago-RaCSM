@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -7,12 +5,14 @@ from ..constants import Rac5GadgetKeys, Rac5ModVendorLocations
 from ..locations import (
     GADGET_INTERNAL_TO_LOCATION,
     MOD_INTERNAL_TO_LOCATION,
+    TITAN_INTERNAL_TO_LOCATION,
     WEAPON_INTERNAL_TO_LOCATION,
     WEAPON_LEVEL_LOOKUP,
 )
 from .address_maps import PLANET_ADDRESSES, WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS
 from .controller import GlobalButtonState, PauseSelectButtons
 from .menu import MenuStateValue
+from .weapons import TITAN_ELIGIBLE_WEAPONS
 
 if TYPE_CHECKING:
     from ..pypine import Pine
@@ -29,8 +29,7 @@ MAX_VENDOR_SLOTS = (WEAPON_VENDOR_SLOTS - WEAPON_VENDOR_ITEMS) // 4
 # Vendor item IDs written to WEAPON_VENDOR_ITEMS.
 # Each 4-byte entry identifies one slot in the vendor menu UI.
 # Derivation: combined weapon+gadget array slot index + 2 offset.
-# lacerator (slot 0) = 0x02 is the only in-game confirmed value.
-# All others are inferred from array layout — verify in-game.
+# Confirmed in-game.
 WEAPON_VENDOR_IDS: dict[str, int] = {
     # weapons (WEAPON_ORDER slots 0-13; slot 12 is None gap → 0x0E skipped)
     "lacerator":        0x02,  # confirmed
@@ -59,6 +58,17 @@ WEAPON_VENDOR_IDS: dict[str, int] = {
     "box_breaker":      0x18,
 }
 
+# Challenge Mode 1+ Titan variant purchases reuse the base weapon's own
+# vendor slot/item id (WEAPON_VENDOR_IDS) and its owned/unlocked address —
+# there is no separate Titan vendor item id. Buying a weapon a second time,
+# once it's already sitting at the level-4 floor set below, is what the game
+# treats as the Titan purchase; see _is_titan_pending() and
+# weapon_vendor()'s purchase-detection loop.
+
+# Lookup used everywhere the vendor item list resolves a weapon/gadget name
+# to its menu item id.
+_ITEM_IDS: dict[str, int] = WEAPON_VENDOR_IDS
+
 # internal weapon/gadget name -> PlanetUnlockState key, for deciding which
 # items are currently purchasable (their vendor planet is AP-accessible).
 # Ryno/mootator/sprout_o_matic/polarizer/shrink_ray aren't sold at any
@@ -75,7 +85,23 @@ _WEAPON_TO_PLANET_KEY: dict[str, str] = {
     "shock_rocket":    "DAYNI_MOON",
     "static_barrier":  "INSIDE_CLANK",
     "laser_tracer":    "QUODRONA",
+    # Challenge Mode 1+ only — RYNO has no vendor listing in vanilla.
+    "ryno":            "POKITARU",
 }
+
+# Weapons requiring Challenge Mode 1+ before their vendor listing appears at
+# all, on top of the usual planet-accessibility gate above.
+_CHALLENGE_MODE_ONLY_WEAPONS: frozenset[str] = frozenset({"ryno"})
+
+# internal weapon name -> PlanetUnlockState key for its Titan variant vendor
+# listing (Challenge Mode 1+, every weapon except RYNO). Mootator has no
+# normal-weapon vendor listing at all, hence its own entry here rather than
+# reusing _WEAPON_TO_PLANET_KEY.
+_TITAN_TO_PLANET_KEY: dict[str, str] = {
+    **_WEAPON_TO_PLANET_KEY,
+    "mootator": "DAYNI_MOON",
+}
+del _TITAN_TO_PLANET_KEY["ryno"]
 
 _GADGET_TO_PLANET_KEY: dict[str, str] = {
     "hypershot":    "POKITARU",
@@ -101,7 +127,33 @@ _MOD_LOCATION_TO_PLANET_KEY: dict[str, str] = {
     Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:      "QUODRONA",
     Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:        "QUODRONA",
     Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:       "QUODRONA",
+    # Challenge Mode 1+ only — see _CHALLENGE_MODE_MOD_LOCATIONS below.
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE:       "KALIDON",
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE:      "KALIDON",
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE:     "KALIDON",
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB:          "KALIDON",
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR: "CHALLAX",
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER:   "CHALLAX",
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION:      "KALIDON",
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE:         "QUODRONA",
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE:           "CHALLAX",
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET:        "QUODRONA",
 }
+
+# Mod vendor locations that only exist at Challenge Mode 1+, on top of the
+# usual planet-accessibility gate above.
+_CHALLENGE_MODE_MOD_LOCATIONS: frozenset[str] = frozenset({
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE,
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE,
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE,
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB,
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR,
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER,
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION,
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE,
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE,
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET,
+})
 
 # Planets whose mod vendor requires extra gadgets beyond the planet itself
 # being AP-accessible — mirrors rules/challax.py's _base rule (Shrink Ray +
@@ -164,9 +216,9 @@ class VendorInventory:
 
     def __init__(
         self,
-        pine: Pine,
-        planet: PlanetInventory,
-        planet_unlock: PlanetUnlockState,
+        pine: "Pine",
+        planet: "PlanetInventory",
+        planet_unlock: "PlanetUnlockState",
         send_location: Callable[[str], None],
         log: Callable[[str], None] | None = None,
         is_weapon_ap_owned: Callable[[str], bool] | None = None,
@@ -189,6 +241,11 @@ class VendorInventory:
         self._is_weapon_level_checks_enabled = is_weapon_level_checks_enabled or (lambda: False)
         self.weapons: WeaponInventory = planet.weapons
         self._items: list[str] = []
+
+        # Challenge Mode option (options.py's ChallengeMode Range 0-2): 0 =
+        # off. Set directly by the client from slot_data. Gates RYNO, the
+        # Challenge-Mode-only mods, and every Titan variant purchase below.
+        self.challenge_mode: int = 0
 
         # weapon_vendor()/mod_vendor() are called every tick while their menu
         # is open (not just once on open) so the D-pad toggle below can be
@@ -219,45 +276,127 @@ class VendorInventory:
         return frozenset(owned)
 
     def _weapons_to_zero_for_vendor(self) -> frozenset[str]:
-        """Weapons whose level zero_levels_for_vendor() should hide for the
-        duration of this vendor visit.
+        """Weapons whose level zero_levels_for_vendor() should force to 0
+        for the vendor's default (left, buy-new) view.
 
-        An AP-owned weapon only shows its real level once it's no longer
-        purchasable here (this vendor's own location for it has already
-        been bought). Still-purchasable weapons stay zeroed regardless of AP
-        ownership, since this vendor's own copy hasn't been bought yet and
-        its price shouldn't be skewed by an unpaid-for level.
+        The vendor's own displayed level is binary — every weapon currently
+        shown for purchase there is at either 0 (still needs its base
+        purchase) or 0x03 (base purchase done, re-listed for the Titan
+        purchase — see _is_titan_pending()), nothing else. So this is
+        simply every currently-purchasable weapon that ISN'T already
+        Titan-pending; a Titan-pending one must never be zeroed back, or it
+        would silently turn back into the base listing on every vendor
+        open/toggle.
         """
-        purchasable = set(self._purchasable_names())
         return frozenset(
-            name for name in self.weapons.weapons
-            if not (self._is_weapon_ap_owned(name) and name not in purchasable)
+            name for name in self._purchasable_names()
+            if not self._is_titan_pending(name)
         )
 
     def _is_purchased(self, name: str) -> bool:
         loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
         return bool(loc and self.weapons.vendor_locations.get(loc, False))
 
+    def _is_titan_eligible(self, name: str) -> bool:
+        """Whether `name` still has an unbought Titan variant to offer:
+        Challenge Mode 1+, one of TITAN_ELIGIBLE_WEAPONS, not yet bought."""
+        return (self.challenge_mode >= 1 and name in TITAN_ELIGIBLE_WEAPONS
+                and not self.weapons.titan_purchased.get(name, False))
+
+    def _is_titan_pending(self, name: str) -> bool:
+        """True once `name`'s vendor slot should show at the level-4 floor
+        (0x03) for its Titan purchase, as opposed to the plain base-weapon
+        purchase (level 0): its base vendor location has actually been
+        bought AT THIS VENDOR. Deliberately NOT satisfied by AP ownership
+        alone — apply_vendor_locations() zeroes `unlocked` for the left
+        view unless vendor_locations[loc] is true, precisely so a weapon
+        already AP-owned via some other location still shows as
+        purchasable here and its OWN base location can actually be sent;
+        gating this on AP ownership too would skip that location
+        permanently for anyone who receives the item before ever visiting
+        this vendor. Mootator has no base listing at all, so it goes by its
+        real live level instead — once that's organically reached the
+        level-4 floor through play/Progressive Weapons.
+        """
+        if not self._is_titan_eligible(name):
+            return False
+        base_loc = WEAPON_INTERNAL_TO_LOCATION.get(name)
+        if base_loc is None:
+            return self.weapons.get_level(name) >= 3
+        return self._is_purchased(name)
+
+    def _apply_titan_pending_levels(self, purchasable: list[str]) -> None:
+        """Force the level-4 floor (0x03) for every currently Titan-pending
+        weapon in `purchasable` — the companion to zero_levels_for_vendor()
+        zeroing everything else. Needed as an explicit step (called at
+        vendor open/D-pad-left-toggle time) rather than left to whatever
+        the real level happens to be, since _is_titan_pending() can now be
+        true purely from AP ownership, without the weapon ever having gone
+        through a purchase event at this vendor to set its level itself.
+
+        Deliberately does NOT touch _level_snapshot: that's the player's
+        real, organically-earned level (could genuinely be below 3 — the
+        Titan floor only trims EXCESS level, see _titan_bound(), it never
+        forces a minimum), and it must stay that way so restore_levels()
+        shows the true level on the right-hand (ammo) view / on close. This
+        0x03 write is a left-view-only display fake; overwriting the
+        snapshot with it would leak that fake value into the right view and
+        into what's restored on close too.
+        """
+        for name in purchasable:
+            if self._is_titan_pending(name):
+                self.weapons.set_level(name, 3)
+
     def _purchasable_names(self) -> list[str]:
-        """Weapons/gadgets whose vendor planet is currently AP-accessible and
-        haven't been bought yet — the default (left) view's item list."""
+        """Weapons/gadgets currently shown on the vendor's default (left,
+        buy-new) view.
+
+        A Titan-eligible weapon stays in this list for as long as its Titan
+        variant hasn't been bought: first at level 0 (the base purchase),
+        then — once that's done — explicitly re-set to level 4 and
+        re-locked so the SAME vendor slot re-lists as the Titan purchase
+        (see weapon_vendor()'s purchase-detection loop). No separate
+        pseudo name or vendor item id for the Titan variant. Mootator has no
+        base vendor listing at all, so it only ever appears in this
+        Titan-pending state. Every other weapon/gadget drops out for good
+        once its one-time vendor location is bought.
+        """
         names: list[str] = []
         for name, planet_key in _WEAPON_TO_PLANET_KEY.items():
-            if self.planet_unlock.is_vendor_accessible(planet_key) and not self._is_purchased(name):
+            if name in _CHALLENGE_MODE_ONLY_WEAPONS and self.challenge_mode < 1:
+                continue
+            if not self.planet_unlock.is_vendor_accessible(planet_key):
+                continue
+            if self._is_titan_eligible(name) or not self._is_purchased(name):
                 names.append(name)
+        if self._is_titan_eligible("mootator") and self.weapons.get_level("mootator") >= 3:
+            # Mootator has no base vendor listing/purchase to gate this on
+            # (unlike every other Titan-eligible weapon, which only starts
+            # showing its Titan purchase once its OWN base purchase has
+            # actually happened) — it must instead wait for its real level
+            # to organically reach the level-4 floor through play/Progressive
+            # Weapons before appearing here at all, or it would show up
+            # looking exactly like a buyable base weapon (level 0) despite
+            # never having any base purchase behind it.
+            mootator_planet_key = _TITAN_TO_PLANET_KEY["mootator"]
+            if self.planet_unlock.is_vendor_accessible(mootator_planet_key):
+                names.append("mootator")
         for name, planet_key in _GADGET_TO_PLANET_KEY.items():
             if self.planet_unlock.is_vendor_accessible(planet_key) and not self._is_purchased(name):
                 names.append(name)
         return names
 
     def purchasable_locations(self) -> list[str]:
-        """AP location names for every weapon/gadget currently purchasable
-        at the weapons vendor's default view — used to send hints the
-        moment that vendor opens, so a purchasable check is hinted before
-        the player has to browse for it."""
+        """AP location names for every weapon/gadget/Titan variant currently
+        purchasable at the weapons vendor's default view — used to send
+        hints the moment that vendor opens, so a purchasable check is
+        hinted before the player has to browse for it."""
         locations: list[str] = []
         for name in self._purchasable_names():
-            loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
+            if self._is_titan_pending(name):
+                loc = TITAN_INTERNAL_TO_LOCATION.get(name)
+            else:
+                loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
             if loc:
                 locations.append(loc)
         return locations
@@ -275,7 +414,10 @@ class VendorInventory:
         """Whether the mod vendor selling this location's planet is
         actually reachable — planet AP-accessibility alone isn't enough
         where an extra gadget check gates the vendor's area (see
-        _MOD_VENDOR_EXTRA_GADGETS)."""
+        _MOD_VENDOR_EXTRA_GADGETS), or where the mod itself is Challenge
+        Mode 1+ only (see _CHALLENGE_MODE_MOD_LOCATIONS)."""
+        if loc in _CHALLENGE_MODE_MOD_LOCATIONS and self.challenge_mode < 1:
+            return False
         planet_key = _MOD_LOCATION_TO_PLANET_KEY.get(loc)
         if not planet_key or not self.planet_unlock.is_vendor_accessible(planet_key):
             return False
@@ -350,6 +492,7 @@ class VendorInventory:
             # it can't fight this zero-out back mid-tick.
             self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
             purchasable = self._purchasable_names()
+            self._apply_titan_pending_levels(purchasable)
             if purchasable:
                 # Default (left) view.
                 self.show_purchasable_weapons = True
@@ -367,34 +510,10 @@ class VendorInventory:
             # TEMP DEBUG: vendor-id -> name mapping written for this open.
             self._log(
                 "[RAC][vendor-debug] weapon vendor opened, items="
-                + ", ".join(f"{name}=0x{WEAPON_VENDOR_IDS[name]:02X}" for name in self._items)
+                + ", ".join(f"{name}=0x{_ITEM_IDS[name]:02X}" for name in self._items)
             )
 
         controller = self.controller()
-        if controller is not None:
-            if controller.pressed(PauseSelectButtons.D_PAD_RIGHT) and self.show_purchasable_weapons:
-                self.weapons.apply_vendor_locations(self._owned_names())
-                self.show_purchasable_weapons = False
-                # Right-hand view browses owned weapons for ammo — ammo
-                # price/capacity depends on the real level, so restore it
-                # here (re-zeroed below when flipping back to the left view).
-                self.weapons.restore_levels(self._level_snapshot)
-                self._set_items(list(self._owned_names()))
-                self.refresh(MenuStateValue.WEAPONS_VENDOR)
-
-            # Only allow flipping back to the left (buy-new) view if there's
-            # still something purchasable — otherwise the toggle stops and
-            # the vendor stays in the owned-inventory view for this visit.
-            if (controller.pressed(PauseSelectButtons.D_PAD_LEFT) and not self.show_purchasable_weapons
-                    and self._purchasable_names()):
-                self.weapons.apply_vendor_locations()
-                self.show_purchasable_weapons = True
-                # Re-zero so an owned-but-not-vendor-purchased weapon's price
-                # isn't skewed by its real level, same as the initial zero
-                # on open. Re-snapshots from the just-restored real levels.
-                self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
-                self._set_items(self._purchasable_names())
-                self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
         changed = self.weapons.check()
 
@@ -410,10 +529,26 @@ class VendorInventory:
         # this tick's check() result while either vendor menu is open (it
         # returns immediately, since this method owns weapons.check() while
         # open), so a level newly reached during a purchase has to be sent
-        # from here instead. Gated on the option to avoid an unpooled
-        # location's no-op send_location() logging a warning every time.
+        # from here instead — this catches a genuine organic level-up that
+        # happens to land while the vendor is open (apply_experience_boost()
+        # runs every tick regardless of vendor state, unlike
+        # apply_progressive_leveling() which is skipped while it's active).
+        # Excludes any weapon in changed["titans"] this tick, but only when
+        # Challenge Mode is actually active: that's the game's own level
+        # 4 -> 5 jump firing purely because the player just bought its
+        # Titan variant here, not something earned by play, and already has
+        # its own dedicated Titan-purchase location sent below. With
+        # Challenge Mode off there's no Titan purchase to duplicate — a
+        # weapon can still organically reach level 5 there (Progressive
+        # Weapons imposes no titan ceiling without it), and that's a
+        # genuine level-up that must still be reported normally.
+        # Gated on the option to avoid an unpooled location's no-op
+        # send_location() logging a warning every time.
         if self._is_weapon_level_checks_enabled():
+            titan_names = frozenset(changed["titans"]) if self.challenge_mode >= 1 else frozenset()
             for name, level in changed["levels"]:
+                if name in titan_names:
+                    continue
                 loc = WEAPON_LEVEL_LOOKUP.get((name, level))
                 if loc:
                     self.send_location(loc)
@@ -431,10 +566,34 @@ class VendorInventory:
         for name in changed["weapons"]:
             loc = WEAPON_INTERNAL_TO_LOCATION.get(name)
             self._log(f"[RAC][vendor-debug] weapon {name!r} newly unlocked -> loc={loc!r}")
-            if report_as_purchase and loc:
+            if report_as_purchase and loc and not self._is_purchased(name):
+                # Base purchase.
                 self.weapons.vendor_locations[loc] = True
                 self.send_location(loc)
                 newly_purchased = True
+                if self._is_titan_eligible(name):
+                    # Set to the level-4 floor — the in-game prerequisite
+                    # for the Titan purchase to appear at this same vendor
+                    # slot — and force this weapon PERMANENTLY unlocked
+                    # (memory + tracking dict), bypassing the normal
+                    # AP-ownership relock below entirely. Without this, the
+                    # relock zeroes both the moment AP hasn't granted the
+                    # real item yet; on the next vendor open,
+                    # apply_vendor_locations() then can't restore `unlocked`
+                    # either (it also reads that same zeroed tracking dict),
+                    # so the base purchase looks entirely undone and the
+                    # player can buy it again instead of only ever seeing
+                    # the Titan purchase from here on.
+                    #
+                    # _level_snapshot is deliberately left untouched — it
+                    # holds the player's real, organically-earned level
+                    # (could be below 3), which restore_levels() needs to
+                    # show correctly on the right-hand (ammo) view and on
+                    # close; this 0x03 is a left-view-only display fake.
+                    self.weapons.set_level(name, 3)
+                    self.weapons.set(name, True)
+                    self.weapons.weapons[name] = True
+                    continue
             # A vendor purchase only checks the location; re-lock immediately
             # unless AP has already granted this weapon's actual item.
             if not self._is_weapon_ap_owned(name):
@@ -451,16 +610,94 @@ class VendorInventory:
                 self.weapons.set(name, False)
                 self.weapons.gadgets[name] = False
 
+        # Titan purchase: the game itself bumps a Titan-eligible weapon's
+        # level from the 4 floor set above straight to 5 (addr.level 3 -> 4)
+        # the moment the player actually buys the Titan variant — see
+        # WeaponInventory.check()'s "titans" derivation. Runs regardless of
+        # which view is showing (unlike the base purchase above): the
+        # weapon is genuinely owned and visible on both, so the purchase
+        # can happen from either.
+        for name in changed["titans"]:
+            titan_loc = TITAN_INTERNAL_TO_LOCATION.get(name)
+            self._log(f"[RAC][vendor-debug] titan {name!r} purchased -> loc={titan_loc!r}")
+            if titan_loc:
+                self.weapons.titan_purchased[name] = True
+                self.send_location(titan_loc)
+                newly_purchased = True
+                # Drop any stale snapshot entry from the earlier
+                # base-weapon purchase: restore_levels() on close() would
+                # otherwise write that pre-Titan value back over the game's
+                # own (already-correct) post-Titan level.
+                self._level_snapshot.pop(name, None)
+                # Reset the vendor's own display level back to 0 — purely
+                # for consistency with the binary 0/0x03 model; titan_purchased
+                # above already excludes this weapon from
+                # _purchasable_names() for good, so it can never be
+                # re-offered regardless of this value. Safe even though
+                # this is also the REAL level field: titan_purchased being
+                # true floors it straight back up to the actual Titan tier
+                # via apply_progressive_leveling() (skipped only while this
+                # menu stays open) the moment the vendor closes.
+                self.weapons.set_level(name, 0)
+
+        # D-Pad view toggle — deliberately handled here, AFTER all purchase
+        # processing above has fully settled this tick (locations sent,
+        # levels/ownership/snapshot updated), not before it. Handling it
+        # first (the original position, before check()) meant pressing
+        # D-Pad Right on the exact same tick as a purchase would apply the
+        # toggle using stale pre-purchase state: report_as_purchase would
+        # already reflect the switched-to view instead of the one the
+        # purchase actually happened under, and apply_vendor_locations()/
+        # restore_levels() would run before this tick's level/ownership
+        # writes above landed — showing wrong data (e.g. a Titan purchase
+        # that hadn't actually been recorded yet) on the view being
+        # switched to.
+        if controller is not None:
+            if controller.pressed(PauseSelectButtons.D_PAD_RIGHT) and self.show_purchasable_weapons:
+                self.weapons.apply_vendor_locations(self._owned_names())
+                self.show_purchasable_weapons = False
+                # Right-hand view browses owned weapons for ammo — ammo
+                # price/capacity depends on the real level, so restore it
+                # here (re-zeroed below when flipping back to the left view).
+                self.weapons.restore_levels(self._level_snapshot)
+                self._set_items(list(self._owned_names()))
+                self.refresh(MenuStateValue.WEAPONS_VENDOR)
+
+            # Only allow flipping back to the left (buy-new) view if there's
+            # still something purchasable — otherwise the toggle stops and
+            # the vendor stays in the owned-inventory view for this visit.
+            still_purchasable = self._purchasable_names()
+            if (controller.pressed(PauseSelectButtons.D_PAD_LEFT) and not self.show_purchasable_weapons
+                    and still_purchasable):
+                self.weapons.apply_vendor_locations()
+                self.show_purchasable_weapons = True
+                # Re-zero so an owned-but-not-vendor-purchased weapon's price
+                # isn't skewed by its real level, same as the initial zero
+                # on open. Re-snapshots from the just-restored real levels.
+                self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
+                self._apply_titan_pending_levels(still_purchasable)
+                self._set_items(still_purchasable)
+                self.refresh(MenuStateValue.WEAPONS_VENDOR)
+
         if not report_as_purchase:
-            # Right-hand (AP inventory) view — nothing here can be reported
-            # as a fresh purchase, and the post-purchase refresh below only
-            # applies to the left (buy-new) view's own item list.
+            # Wasn't browsing the buy-new view when this tick's purchases
+            # (if any) happened — a Titan purchase above still registers
+            # either way, but nothing here can be reported as a fresh BASE
+            # purchase. Any D-Pad Left toggle just above already rebuilt
+            # the left-view list fresh on its own if it fired.
             return
-        if newly_purchased:
-            # Refresh right away so the just-bought item drops off the
-            # purchasable list instead of waiting for the next open.
+
+        if newly_purchased and self.show_purchasable_weapons:
+            # Refresh right away so the just-bought item drops off (or, for
+            # a Titan-eligible weapon, re-lists as) the purchasable list
+            # instead of waiting for the next open. Skipped if the D-Pad
+            # Right toggle just above already switched away from this view
+            # this same tick — that already wrote the correct (right-view)
+            # item list, and refreshing here would clobber it back to the
+            # left-view one.
             purchasable = self._purchasable_names()
             if purchasable:
+                self._apply_titan_pending_levels(purchasable)
                 self._set_items(purchasable)
             else:
                 # That was the last purchasable item — nothing left to show
@@ -564,9 +801,10 @@ class VendorInventory:
             self._refresh_mod_vendor()
 
     def add_weapon(self, weapon: str) -> None:
-        """Add a rac5 weapon/gadget (internal name, e.g. "lacerator") to the
-        vendor's unlocked-item list."""
-        if weapon in WEAPON_VENDOR_IDS and weapon not in self._items:
+        """Add a rac5 weapon/gadget/Titan-variant pseudo name (internal name,
+        e.g. "lacerator" or "lacerator_titan") to the vendor's unlocked-item
+        list."""
+        if weapon in _ITEM_IDS and weapon not in self._items:
             self._items.append(weapon)
 
     def force_refresh(self) -> None:
@@ -591,7 +829,7 @@ class VendorInventory:
         update field (the same address self.planet.menu.set() writes to
         request a menu change) so the game actually redraws the vendor with
         the new list instead of showing whatever it already had on screen."""
-        item_ids = [WEAPON_VENDOR_IDS[name] for name in self._items]
+        item_ids = [_ITEM_IDS[name] for name in self._items]
         self.pine.write_bytes(WEAPON_VENDOR_SLOTS, len(item_ids).to_bytes(4, "little"))
         for i, item_id in enumerate(item_ids):
             self.pine.write_bytes(WEAPON_VENDOR_ITEMS + i * 4, item_id.to_bytes(4, "little"))

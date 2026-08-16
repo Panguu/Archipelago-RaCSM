@@ -4,12 +4,10 @@ import asyncio
 from collections.abc import Callable
 from typing import Any
 
-from worlds.tracker import UT_VERSION
-
 tracker_loaded: bool = False
 dynamicpine_loaded: bool = False
 try:
-    from worlds.tracker.TrackerClient import TrackerGameContext as CommonContext
+    from worlds.tracker.TrackerClient import UT_VERSION, TrackerGameContext as CommonContext
     tracker_loaded = True
 except ImportError:
     from CommonClient import CommonContext
@@ -214,6 +212,8 @@ class RACContext(
             self._wiring.clank_enabled        = clank_mode >= 1
             self._wiring.clank_all_challenges = clank_mode >= 2
             self._wiring.skyboard_enabled     = int(self.slot_data.get("skyboard_challenges", 0)) >= 1
+            self._wiring.shrink_ray_skips_enabled     = bool(self.slot_data.get("shrink_ray_skips", False))
+            self._wiring.shrink_ray_locations_enabled = bool(self.slot_data.get("shrink_ray_locations", False))
             self._wiring.skill_points_enabled = (
                 int(self.slot_data.get("skill_points", 0)) >= 1
                 or bool(self.slot_data.get("enable_clank_challenge_skill_points", False))
@@ -221,6 +221,9 @@ class RACContext(
             )
             self._wiring.weapon_level_checks_enabled = (
                 int(self.slot_data.get("weapon_level_checks", 0)) >= 1
+            )
+            self._wiring.nanotech_level_checks_enabled = bool(
+                self.slot_data.get("nanotech_level_checks", False)
             )
             self._wiring.all_missions_enabled  = bool(self.slot_data.get("all_missions", True))
             self._wiring.all_cutscenes_enabled = bool(self.slot_data.get("all_cutscenes", False))
@@ -235,8 +238,14 @@ class RACContext(
             self._wiring.planet.weapons.progressive_mode = (
                 int(self.slot_data.get("progressive_weapons", 0))
             )
+            challenge_mode_option = int(self.slot_data.get("challenge_mode", 0))
+            self._wiring.planet.weapons.challenge_mode = challenge_mode_option
+            self._wiring.vendor.challenge_mode = challenge_mode_option
             self._wiring.player_bolts.multiplier = (
                 int(self.slot_data.get("bolt_multiplier", 0)) or 1
+            )
+            self._wiring.player_health_exp.multiplier = (
+                int(self.slot_data.get("nanotech_experience_multiplier", 0)) or 1
             )
             trap_duration = self.slot_data.get("trap_duration")
             if isinstance(trap_duration, dict):
@@ -263,6 +272,7 @@ class RACContext(
             asyncio.create_task(self._guarded_wiring_call(
                 lambda: (
                     self._wiring.skin.set_by_option(starting_skin),
+                    self._wiring.challenge_mode.set_by_option(challenge_mode_option),
                     self._wiring.sync_from_ap(checked),
                 )
             ))

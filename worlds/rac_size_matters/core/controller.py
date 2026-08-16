@@ -51,10 +51,14 @@ class GlobalButtonState:
         self.buttons   = ControllerButtons(~buttons & 0xFF)
 
     @classmethod
-    def read(cls, ipc: Pine, planet_id: int) -> "GlobalButtonState":
-        pause_select_addr = PLANET_ADDRESSES[planet_id].controller_pause_select_v2
+    def read(cls, ipc: Pine, planet_id: int) -> "GlobalButtonState | None":
+        """None for a planet id with no known controller address — e.g. the
+        Kalidon skyboard race sub-level (0x16), which isn't in
+        PLANET_ADDRESSES at all. Callers must treat None as "nothing held"."""
+        addrs = PLANET_ADDRESSES.get(planet_id)
+        pause_select_addr = addrs.controller_pause_select_v2 if addrs is not None else None
         if pause_select_addr is None:
-            raise ValueError(f"No controller_pause_select_v2 mapped for planet {planet_id:#x}")
+            return None
         # Values in the table are stored short-form (no 0x20 EE-RAM prefix),
         # matching the convention used for controller_pause_select.
         full_addr = 0x20000000 | pause_select_addr

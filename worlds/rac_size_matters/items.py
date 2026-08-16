@@ -91,6 +91,23 @@ ARMOUR_DISPLAY_TO_INTERNAL: dict[str, tuple[str, int]] = {
 NG_PLUS_WEAPONS: frozenset[str] = frozenset({Rac5Weapons.RYNO})
 NG_PLUS_ARMOUR_SETS: frozenset[str] = frozenset({"hyperborean", "chameleon"})
 
+# Challenge Mode weapon mods: real vendor-purchase locations only exist for
+# these (see rules/challenge_mode.py + regions.py), but like RYNO/Hyperborean/
+# Chameleon above, they're only ever placed in the pool at all when NG+ Items
+# is on.
+NG_PLUS_WEAPON_MODS: frozenset[str] = frozenset({
+    Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
+    Rac5WeaponMods.SCORCHER_MOD_SUNFLARE,
+    Rac5WeaponMods.SUCK_CANNON_MOD_BOUNCE,
+    Rac5WeaponMods.BEE_MINE_GLOVE_MOD_HIVE_BOMB,
+    Rac5WeaponMods.SNIPER_MINE_MOD_SMART_REFLECTOR,
+    Rac5WeaponMods.SHOCK_ROCKET_MOD_MULTI_LAUNCHER,
+    Rac5WeaponMods.STATIC_BARRIER_MOD_REFLECTION,
+    Rac5WeaponMods.STATIC_BARRIER_MOD_MIRAGE,
+    Rac5WeaponMods.LASER_TRACER_MOD_PIERCE,
+    Rac5WeaponMods.LASER_TRACER_MOD_RICOCHET,
+})
+
 WEAPON_ITEM_TABLE: dict[str, RACItemData] = {
     name: RACItemData(BASE_ID + idx, WEAPON_DATA[internal].classification)
     for idx, (name, internal) in enumerate(WEAPON_DISPLAY_TO_INTERNAL.items(), start=1)
@@ -141,6 +158,7 @@ PROGRESSIVE_MOD_NAME: dict[str, str] = {
     Rac5Weapons.SNIPER_MINE:     Rac5ProgressiveWeaponMods.SNIPER_MINE,
     Rac5Weapons.SCORCHER:        Rac5ProgressiveWeaponMods.SCORCHER,
     Rac5Weapons.LASER_TRACER:    Rac5ProgressiveWeaponMods.LASER_TRACER,
+    Rac5Weapons.SUCK_CANNON:     Rac5ProgressiveWeaponMods.SUCK_CANNON,
 }
 
 # One "Progressive {Weapon} Mod" item per mod slot — each additional copy
@@ -166,9 +184,12 @@ WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
         Rac5WeaponMods.ACID_BOMB_GLOVE_MOD_ACID_BOMB,
         Rac5WeaponMods.ACID_BOMB_GLOVE_MOD_EPOXY,
     ],
+    # Launcher (normal) before Explosive (Challenge Mode only) — Progressive
+    # Mod items unlock slots in this list order, so the non-NG+ mod must
+    # come first or a reduced (NG+-off) copy count would unlock the wrong one.
     Rac5Weapons.AGENTS_OF_DOOM: [
-        Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
         Rac5WeaponMods.AGENTS_OF_DOOM_MOD_LAUNCHER,
+        Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
     ],
     Rac5Weapons.BEE_MINE_GLOVE: [
         Rac5WeaponMods.BEE_MINE_GLOVE_MOD_WORKER,
@@ -195,6 +216,10 @@ WEAPON_MOD_SLOT_NAMES: dict[str, list[str]] = {
         Rac5WeaponMods.LASER_TRACER_MOD_PIERCE,
         Rac5WeaponMods.LASER_TRACER_MOD_RICOCHET,
     ],
+    # Challenge Mode only — Suck Cannon has no mod in vanilla.
+    Rac5Weapons.SUCK_CANNON: [
+        Rac5WeaponMods.SUCK_CANNON_MOD_BOUNCE,
+    ],
 }
 
 WEAPON_MOD_ITEM_TABLE: dict[str, RACItemData] = {
@@ -211,6 +236,16 @@ WEAPON_MOD_NAME_TO_SLOT: dict[str, tuple[str, int]] = {
     name: (display, i)
     for display in _WEAPONS_WITH_MODS
     for i, name in enumerate(WEAPON_MOD_SLOT_NAMES[display], start=1)
+}
+
+# internal weapon key -> count of that weapon's mods gated behind NG+ Items
+# (the Challenge Mode subset of NG_PLUS_WEAPON_MODS) — world.py subtracts
+# this from WEAPON_MOD_COUNTS when sizing each weapon's Progressive Mod item
+# count with NG+ Items off, since a Progressive Mod item is one item per
+# weapon (not per individual mod).
+WEAPON_NG_PLUS_MOD_COUNTS: dict[str, int] = {
+    WEAPON_DISPLAY_TO_INTERNAL[display]: sum(1 for name in mods if name in NG_PLUS_WEAPON_MODS)
+    for display, mods in WEAPON_MOD_SLOT_NAMES.items()
 }
 
 
@@ -268,6 +303,20 @@ TRAP_ITEM_TABLE: dict[str, RACItemData] = {
     for idx, name in enumerate(TRAP_DURATIONS, start=1)
 }
 
+# Virtual item for Universal Tracker's glitched-logic sweep only (see
+# world.glitches_item_name / worlds/tracker/TrackerCore.py) — collected into
+# a separate alternate-reachability state UT uses purely for its own
+# glitched-location highlighting. Never added to create_items()'s real pool,
+# so it can never appear in an actual seed; still needs a registered
+# code/classification here since UT creates it via the normal
+# multiworld.create_item() path.
+GLITCHES_ITEM_NAME = "Glitches"
+GLITCHES_ITEM_TABLE: dict[str, RACItemData] = {
+    # +900, not +700: WEAPON_MOD_ITEM_TABLE already starts at BASE_ID + 700
+    # (its enumerate() starts at 0), so +700 collided with Suck Cannon's mod.
+    GLITCHES_ITEM_NAME: RACItemData(BASE_ID + 900, ItemClassification.progression),
+}
+
 ALL_ITEMS: dict[str, RACItemData] = {
     **WEAPON_ITEM_TABLE,
     **GADGET_ITEM_TABLE,
@@ -279,6 +328,7 @@ ALL_ITEMS: dict[str, RACItemData] = {
     **INFOBOT_ITEM_TABLE,
     **FILLER_ITEM_TABLE,
     **TRAP_ITEM_TABLE,
+    **GLITCHES_ITEM_TABLE,
 }
 
 ITEM_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_ITEMS.items()}

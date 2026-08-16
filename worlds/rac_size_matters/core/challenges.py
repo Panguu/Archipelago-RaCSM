@@ -76,17 +76,14 @@ class ChallengeInventory:
         self.pine.write_int8(CLANK_SECTION_UNLOCK_ADDRESSES[planet][section], value)
 
     def setup(self, all_challenges: bool = False) -> None:
-        """Unlock every section on every tracked planet and, unless every
-        individual challenge is tracked, preset the non-count-based (reward)
-        bytes so undetected challenges don't block sync."""
+        """Unlock every section on every tracked planet. Deliberately never
+        writes into any individual challenge-completion byte — those are
+        the game's own save data, and completion is read from whatever's
+        actually there rather than preset/forced by this client."""
+        del all_challenges
         for planet, sections in CLANK_SECTION_UNLOCK_ADDRESSES.items():
             for section in sections:
                 self.unlock_section(planet, section)
-        if all_challenges:
-            return  # don't preset values — every completion is a check
-        for slot in self._slots.values():
-            if slot.address not in COUNT_BASED_CHALLENGE_ADDRS and slot.__get__(self, type(self)) == 0:
-                slot.__set__(self, 1)
 
     def check(self, all_challenges: bool = False) -> list[str]:
         """Read every tracked byte and return newly completed AP location
