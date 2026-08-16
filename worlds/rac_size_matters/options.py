@@ -73,6 +73,7 @@ class ClankChallengeGroups(ItemDict):
     playable in-game, it just has no AP checks. Default 1 includes every
     group."""
     display_name = "Clank Challenge Groups"
+    verify_item_name = False
     min = 0
     max = 1
     valid_keys = (CHALLENGE_GROUP_DERBY, CHALLENGE_GROUP_GADGETBOT_TOSS, CHALLENGE_GROUP_GADGETBOT)
@@ -433,10 +434,10 @@ racsm_option_groups = [
     OptionGroup("Generic Options", [
         ProgressionBalancing,
         Accessibility,
-        DeathAmnesty,
     ]),
     OptionGroup("RACSM Game Links", [
         DeathLink,
+        DeathAmnesty,
         AmmoLink,
         BoltLink,
         GhostLink,
