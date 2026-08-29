@@ -12,6 +12,7 @@ The rest of these are open design questions we're deliberately not resolving rig
 - **Pokitaru/Ryllus starting infobot is merged, not split.** Vanilla treats Pokitaru and Ryllus as two separate starting planets, but a split into two independent infobots broke other logic when tried, so they currently share a single combined "Infobot: Pokitaru and Ryllus" item instead.
 - **Nanotech (health) level check rule scaling isn't tuned.** The difficulty curve for higher Nanotech Levels is a rough cut, not a carefully considered scale — we don't yet know the right way to space it out, so it's parked until we get more playtesting feedback.
 - **Skyboard Challenges has no item-only tier.** Unlike Clank Challenges (off / item rewards only / all completions), Skyboard Challenges is only off/all — no middle option for just the reward-bearing checks, and no separate "all checks" toggle for Skyboard missions specifically.
+- **Shrink Ray Skips.** not all skips work currently kalidon, outpost omega are the only 2 confirmed with quodrona and challax not being fully implemented yet.
 
 ## Massive thank you's
 The PCSX2 PINE interface (`pcsx2_interface/`) is adapted from [evilwb/pypine](https://github.com/evilwb/pypine), based on https://projects.govanify.com/govanify/pine. This couldn't have been done without his pcsx2 interface.
