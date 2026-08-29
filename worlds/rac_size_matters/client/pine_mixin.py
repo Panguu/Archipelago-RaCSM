@@ -10,21 +10,14 @@ from ..universal_tracker import PLANET_ID_TO_REGION
 from .constants import EXPECTED_GAME_ID, PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
 
-# Throttle for pushing weapon level/experience to AP data storage — experience
-# changes continuously during combat, so pushing every poll tick would spam
-# the server for no benefit.
+# Throttle weapon level/experience pushes — experience changes continuously during combat,
+# so pushing every poll tick would spam the server for no benefit.
 _WEAPON_STATE_PUSH_INTERVAL: float = 5.0
 
 
 class PineMixin:
-    """Owns the raw PINE socket: connect/reconnect/teardown, and the poll
-    loop that drives Core.tick() every cycle.
-
-    The game's SCUS id is re-verified on every poll, not just at connect
-    time, so Core never has to reason about connection health or which game
-    is loaded. Any PINE error here is caught and turned into a clean
-    disconnect + log line.
-    """
+    """Owns the raw PINE socket and poll loop that drives Core.tick(). The game's SCUS id is
+    re-verified every poll, not just at connect, so Core never has to reason about connection health."""
 
     async def _teardown_pine_connection(self) -> None:
         """Drop the raw socket. Safe to call even if it's already down."""
@@ -64,9 +57,8 @@ class PineMixin:
             await self._teardown_pine_connection()
 
     async def _attempt_pine_connect(self, is_reconnect: bool = False) -> None:
-        # PINE calls run in-line on the event loop, never via run_in_executor —
-        # a blocked thread-pool worker would hold _pine_lock and freeze every
-        # other PINE consumer behind it.
+        # PINE calls run in-line on the event loop, never via run_in_executor — a blocked
+        # thread-pool worker would hold _pine_lock and freeze every other PINE consumer.
         async with self._pine_lock:
             def _connect_and_get_game_id() -> str:
                 self.pine.connect()
@@ -82,9 +74,8 @@ class PineMixin:
             await self._reject_wrong_game(game_id, is_disconnect=False)
             return
 
-        # Dynamic Pine boots PCSX2 straight into the ISO, so gameplay state
-        # may not be valid yet even though PINE is reachable. Give it a
-        # moment before the first real memory read.
+        # Dynamic Pine boots PCSX2 straight into the ISO, so gameplay state may not be valid
+        # yet even though PINE is reachable — give it a moment before the first real read.
         await asyncio.sleep(PINE_CONNECT_SETTLE_DELAY_S)
 
         async with self._pine_lock:
@@ -96,9 +87,8 @@ class PineMixin:
             self.pine_connected = True
             try:
                 self._read_initial_state_sync()
-                # Trap bookkeeping isn't persisted, so it starts empty on
-                # every restart — reconcile now so a trap left stuck in game
-                # memory from before (crash, PINE drop) doesn't linger.
+                # Trap bookkeeping isn't persisted, so reconcile now to clear any trap left
+                # stuck in game memory from before (crash, PINE drop).
                 reconcile_traps(self.pine)
             except Exception as exc:
                 logger.warning(
@@ -163,10 +153,8 @@ class PineMixin:
         if self.current_planet != prev_planet:
             await self._send_map_page(self.current_planet)
 
-        # Re-applied every cycle rather than only at event boundaries, to
-        # self-heal drift. Safe to call unconditionally: apply_inventory()
-        # already no-ops writes it must not make mid-vendor/mid-death, and
-        # everything else here is checkpoint-based and idempotent.
+        # Re-applied every cycle rather than only at event boundaries, to self-heal drift — safe
+        # since apply_inventory() already no-ops writes it must not make mid-vendor/mid-death.
         await self._apply_received_items()
         self._maybe_persist_weapon_state()
         self._maybe_sync_ammo_link()
@@ -174,11 +162,8 @@ class PineMixin:
         self._maybe_sync_ghost_link()
 
     def _maybe_persist_weapon_state(self) -> None:
-        """Push the current weapon level/experience snapshot to AP data
-        storage, throttled and skipped if unchanged since the last push.
-        No AP item records this progress, so without an explicit save a
-        reconnect's wipe() would lose it for good.
-        """
+        """Push the weapon level/experience snapshot to AP data storage, throttled and skipped
+        if unchanged, since no AP item records this progress and a reconnect's wipe() would lose it."""
         if self.slot is None or not self.pine_connected or not self._wiring.planet.is_ready:
             return
         now = time.monotonic()
@@ -204,22 +189,19 @@ class PineMixin:
         }])
 
     def _append_location_by_name(self, name: str) -> None:
-        """Wired as Core.wire(send_location=...) — dispatches async immediately."""
+        """Wired as Core.wire(send_location=...). Silently no-ops for a name outside the location
+        table, already checked, or excluded from this seed's pool (e.g. an option-gated location)."""
         loc_id = self._location_name_to_id.get(name)
         if loc_id is None:
-            logger.warning(f"[RAC] unknown location {name!r} — not in location table")
             return
         if loc_id in self._locally_checked_locations or loc_id in self.checked_locations:
             return
         server_locations = getattr(self, "server_locations", None)
         if server_locations is not None and loc_id not in server_locations:
-            logger.warning(f"[RAC] {name!r} (id={loc_id}) not in server locations"
-                           " — was game generated with the current options?")
             return
         self._locally_checked_locations.add(loc_id)
         self._log(f"[RAC] Location checked: {name}")
-        # Refresh the vendor-purchase cache immediately rather than waiting
-        # for the next ReceivedItems/Connected packet, since a check made
-        # just before opening the vendor menu must be visible right away.
+        # Refresh the vendor-purchase cache immediately, since a check made just before opening
+        # the vendor menu must be visible right away.
         self._wiring.planet.weapons.sync_from_ap(self._checked_location_names())
         asyncio.create_task(self.check_locations({loc_id}))

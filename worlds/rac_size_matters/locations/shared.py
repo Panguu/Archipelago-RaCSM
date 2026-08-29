@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from .constants import (
+from ..constants import (
     Rac5ArmourSet,
     Rac5CutsceneLocations,
     Rac5Locations,
@@ -13,8 +13,8 @@ from .constants import (
     Rac5VendorLocations,
     Rac5WeaponKeys,
 )
-from .core.armour import ARMOUR_PICKUPS
-from .core.locations.challenge_locations import (
+from ..core.armour import ARMOUR_PICKUPS
+from ..core.locations.challenge_locations import (
     CHALLENGE_GROUP_DERBY,
     CHALLENGE_GROUP_GADGETBOT,
     CHALLENGE_GROUP_GADGETBOT_TOSS,
@@ -24,15 +24,18 @@ from .core.locations.challenge_locations import (
     GADGETBOT_CLANK_PICKUPS,
     GADGETBOT_TOSS_CLANK_PICKUPS,
 )
-from .core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
-from .core.shrink_ray import SHRINK_RAY_SKIP_LOCATION_NAMES
-from .core.skill_points import (
+from ..core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
+from ..core.shrink_ray import SHRINK_RAY_SKIP_LOCATION_NAMES
+from ..core.skill_points import (
     CLANK_CHALLENGE_SKILL_POINTS,
     HARD_SKILL_POINTS,
     SKILL_POINTS,
     SKYBOARD_CHALLENGE_SKILL_POINTS,
 )
-from .core.titanium_bolts import TITANIUM_BOLTS
+from ..core.titanium_bolts import TITANIUM_BOLTS
+from ..core.weapons import WEAPON_DATA as _WEAPON_DATA
+from ..core.locations.armour_set_locations import ARMOUR_SET_CHECKS
+from ..items import GADGET_DISPLAY_TO_INTERNAL, WEAPON_DISPLAY_TO_INTERNAL
 
 BASE_ID = 77_700_000
 
@@ -42,96 +45,144 @@ class RACLocationData(NamedTuple):
     region: str
 
 
+# --- ID assignment -----------------------------------------------------
+#
+# Every location gets a numeric AP id, laid out in fixed-size blocks: one
+# block per planet (in PLANET_ORDER), plus one trailing "shared" block for
+# locations that aren't really tied to a single planet (weapon levels,
+# nanotech levels, armour-set-combo checks — all anchored to Pokitaru only
+# because the AP region graph needs *some* region, not because they belong
+# there). IDs are free to be renumbered (no live seeds depend on the old
+# numbering), so blocks are sized generously (300 slots) — comfortably more
+# than any planet's real location count, leaving well over the requested
+# 20-id buffer before the next block starts.
+PLANET_ORDER: tuple[str, ...] = (
+    Rac5Planets.POKITARU,
+    Rac5Planets.RYLLUS,
+    Rac5Planets.KALIDON,
+    Rac5Planets.METALIS,
+    Rac5Planets.DREAMTIME,
+    Rac5Planets.OUTPOST_OMEGA,
+    Rac5Planets.CHALLAX,
+    Rac5Planets.DAYNI_MOON,
+    Rac5Planets.INSIDE_CLANK,
+    Rac5Planets.QUODRONA,
+)
+
+_PLANET_BLOCK_SIZE = 300
+_PLANET_BLOCK_BASE: dict[str, int] = {
+    planet: BASE_ID + i * _PLANET_BLOCK_SIZE for i, planet in enumerate(PLANET_ORDER)
+}
+_SHARED_BLOCK_BASE = BASE_ID + len(PLANET_ORDER) * _PLANET_BLOCK_SIZE
+
+_planet_counters: dict[str, int] = dict.fromkeys(PLANET_ORDER, 0)
+_shared_counter = 0
+
+
+def _planet_id(region: str) -> int:
+    """Next id in `region`'s block. Raises KeyError for a region not in PLANET_ORDER —
+    every planet-scoped location's region must be a real planet."""
+    _planet_counters[region] += 1
+    return _PLANET_BLOCK_BASE[region] + _planet_counters[region]
+
+
+def _shared_id() -> int:
+    """Next id in the trailing shared block, for locations not tied to one planet."""
+    global _shared_counter
+    _shared_counter += 1
+    return _SHARED_BLOCK_BASE + _shared_counter
+
+
 TITANIUM_BOLT_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(BASE_ID + 1000 + idx, bolt.region)
-    for idx, (name, bolt) in enumerate(TITANIUM_BOLTS.items(), start=1)
+    name: RACLocationData(_planet_id(bolt.region), bolt.region)
+    for name, bolt in TITANIUM_BOLTS.items()
 }
 
 ARMOUR_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
-    ap.name: RACLocationData(BASE_ID + 1100 + idx, ap.planet)
-    for idx, ap in enumerate(ARMOUR_PICKUPS, start=1)
+    ap.name: RACLocationData(_planet_id(ap.planet), ap.planet)
+    for ap in ARMOUR_PICKUPS
 }
 
 
 BOSS_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5Locations.QUODRONA_GOAL: RACLocationData(BASE_ID + 1200, Rac5Planets.QUODRONA),
+    Rac5Locations.QUODRONA_GOAL: RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
 }
 
 WEAPON_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5VendorLocations.POKITARU_LACERATOR:  RACLocationData(BASE_ID + 2001, Rac5Planets.POKITARU),
-    Rac5VendorLocations.POKITARU_ACID:       RACLocationData(BASE_ID + 2002, Rac5Planets.POKITARU),
-    Rac5VendorLocations.POKITARU_CONCUSSION: RACLocationData(BASE_ID + 2003, Rac5Planets.POKITARU),
-    Rac5VendorLocations.RYLLUS_AGENTS:       RACLocationData(BASE_ID + 2004, Rac5Planets.RYLLUS),
-    Rac5VendorLocations.KALIDON_SCORCHER:    RACLocationData(BASE_ID + 2005, Rac5Planets.KALIDON),
-    Rac5VendorLocations.DREAMTIME_SUCK:      RACLocationData(BASE_ID + 2006, Rac5Planets.DREAMTIME),
-    Rac5VendorLocations.OUTPOST_OMEGA_BEE:   RACLocationData(BASE_ID + 2007, Rac5Planets.OUTPOST_OMEGA),
-    Rac5VendorLocations.CHALLAX_SNIPER:      RACLocationData(BASE_ID + 2008, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.DAYNI_MOON_SHOCK:    RACLocationData(BASE_ID + 2009, Rac5Planets.DAYNI_MOON),
-    Rac5VendorLocations.INSIDE_CLANK_STATIC: RACLocationData(BASE_ID + 2010, Rac5Planets.INSIDE_CLANK),
-    Rac5VendorLocations.QUODRONA_LASER:      RACLocationData(BASE_ID + 2011, Rac5Planets.QUODRONA),
+    Rac5VendorLocations.POKITARU_LACERATOR:  RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5VendorLocations.POKITARU_ACID:       RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5VendorLocations.POKITARU_CONCUSSION: RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5VendorLocations.RYLLUS_AGENTS:       RACLocationData(_planet_id(Rac5Planets.RYLLUS), Rac5Planets.RYLLUS),
+    Rac5VendorLocations.KALIDON_SCORCHER:    RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5VendorLocations.DREAMTIME_SUCK:      RACLocationData(_planet_id(Rac5Planets.DREAMTIME), Rac5Planets.DREAMTIME),
+    Rac5VendorLocations.OUTPOST_OMEGA_BEE:   RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
+    Rac5VendorLocations.CHALLAX_SNIPER:      RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5VendorLocations.DAYNI_MOON_SHOCK:    RACLocationData(_planet_id(Rac5Planets.DAYNI_MOON), Rac5Planets.DAYNI_MOON),
+    Rac5VendorLocations.INSIDE_CLANK_STATIC: RACLocationData(_planet_id(Rac5Planets.INSIDE_CLANK), Rac5Planets.INSIDE_CLANK),
+    Rac5VendorLocations.QUODRONA_LASER:      RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
     # Challenge Mode 1+ only — RYNO has no vendor listing in vanilla.
-    Rac5VendorLocations.POKITARU_RYNO:       RACLocationData(BASE_ID + 2300, Rac5Planets.POKITARU),
+    Rac5VendorLocations.POKITARU_RYNO:       RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
 }
 
 GADGET_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5VendorLocations.POKITARU_HYPERSHOT:      RACLocationData(BASE_ID + 2101, Rac5Planets.POKITARU),
-    Rac5VendorLocations.CHALLAX_PDA:             RACLocationData(BASE_ID + 2102, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.DAYNI_MOON_MAP:          RACLocationData(BASE_ID + 2103, Rac5Planets.DAYNI_MOON),
-    Rac5VendorLocations.CHALLAX_BOLT_GRABBER:    RACLocationData(BASE_ID + 2104, Rac5Planets.CHALLAX),
-    Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER: RACLocationData(BASE_ID + 2105, Rac5Planets.OUTPOST_OMEGA),
+    Rac5VendorLocations.POKITARU_HYPERSHOT:      RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5VendorLocations.CHALLAX_PDA:             RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5VendorLocations.DAYNI_MOON_MAP:          RACLocationData(_planet_id(Rac5Planets.DAYNI_MOON), Rac5Planets.DAYNI_MOON),
+    Rac5VendorLocations.CHALLAX_BOLT_GRABBER:    RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER: RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
 }
 
 WEAPON_MOD_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(BASE_ID + 2202, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(BASE_ID + 2205, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE:  RACLocationData(BASE_ID + 2201, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.CHALLAX_ACID_BURN:         RACLocationData(BASE_ID + 2203, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.CHALLAX_ACID_EPOXY:        RACLocationData(BASE_ID + 2204, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK:   RACLocationData(BASE_ID + 2206, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE: RACLocationData(BASE_ID + 2207, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.CHALLAX_BEE_WORKER:        RACLocationData(BASE_ID + 2211, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER:  RACLocationData(BASE_ID + 2209, Rac5Planets.QUODRONA),
-    Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE: RACLocationData(BASE_ID + 2210, Rac5Planets.QUODRONA),
-    Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(BASE_ID + 2212, Rac5Planets.QUODRONA),
-    Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(BASE_ID + 2213, Rac5Planets.QUODRONA),
-    Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(BASE_ID + 2214, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK:    RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT:  RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE:  RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_ACID_BURN:         RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_ACID_EPOXY:        RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK:   RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE: RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_BEE_WORKER:        RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.QUODRONA_AGENTS_LAUNCHER:  RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SCORCHER_SPITFIRE: RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:     RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:       RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:      RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
     # Challenge Mode 1+ only.
-    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE:      RACLocationData(BASE_ID + 2501, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE:     RACLocationData(BASE_ID + 2502, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE:    RACLocationData(BASE_ID + 2503, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB:         RACLocationData(BASE_ID + 2504, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR: RACLocationData(BASE_ID + 2505, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER:  RACLocationData(BASE_ID + 2506, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION:     RACLocationData(BASE_ID + 2507, Rac5Planets.KALIDON),
-    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE:        RACLocationData(BASE_ID + 2508, Rac5Planets.QUODRONA),
-    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE:          RACLocationData(BASE_ID + 2509, Rac5Planets.CHALLAX),
-    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET:       RACLocationData(BASE_ID + 2510, Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE:      RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE:     RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE:    RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB:         RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR: RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER:  RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION:     RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE:        RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE:          RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET:       RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
 }
 
 # Challenge Mode 1+ only — Titan variant purchases, one per weapon except
 # RYNO (no Titan variant). Buying one floors that weapon's level at 5 and
 # opens leveling up to 8 (see core/weapons.py's apply_progressive_leveling).
 WEAPON_TITAN_VENDOR_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5TitanVendorLocations.POKITARU_LACERATOR_TITAN:   RACLocationData(BASE_ID + 2401, Rac5Planets.POKITARU),
-    Rac5TitanVendorLocations.POKITARU_ACID_TITAN:         RACLocationData(BASE_ID + 2402, Rac5Planets.POKITARU),
-    Rac5TitanVendorLocations.POKITARU_CONCUSSION_TITAN:   RACLocationData(BASE_ID + 2403, Rac5Planets.POKITARU),
-    Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN:         RACLocationData(BASE_ID + 2404, Rac5Planets.RYLLUS),
-    Rac5TitanVendorLocations.KALIDON_SCORCHER_TITAN:      RACLocationData(BASE_ID + 2405, Rac5Planets.KALIDON),
-    Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN:        RACLocationData(BASE_ID + 2406, Rac5Planets.DREAMTIME),
-    Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN:     RACLocationData(BASE_ID + 2407, Rac5Planets.OUTPOST_OMEGA),
-    Rac5TitanVendorLocations.CHALLAX_SNIPER_TITAN:        RACLocationData(BASE_ID + 2408, Rac5Planets.CHALLAX),
-    Rac5TitanVendorLocations.DAYNI_MOON_MOOTATOR_TITAN:   RACLocationData(BASE_ID + 2409, Rac5Planets.DAYNI_MOON),
-    Rac5TitanVendorLocations.DAYNI_MOON_SHOCK_TITAN:      RACLocationData(BASE_ID + 2410, Rac5Planets.DAYNI_MOON),
-    Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN:   RACLocationData(BASE_ID + 2411, Rac5Planets.INSIDE_CLANK),
-    Rac5TitanVendorLocations.QUODRONA_LASER_TITAN:        RACLocationData(BASE_ID + 2412, Rac5Planets.QUODRONA),
+    Rac5TitanVendorLocations.POKITARU_LACERATOR_TITAN:   RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5TitanVendorLocations.POKITARU_ACID_TITAN:         RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5TitanVendorLocations.POKITARU_CONCUSSION_TITAN:   RACLocationData(_planet_id(Rac5Planets.POKITARU), Rac5Planets.POKITARU),
+    Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN:         RACLocationData(_planet_id(Rac5Planets.RYLLUS), Rac5Planets.RYLLUS),
+    Rac5TitanVendorLocations.KALIDON_SCORCHER_TITAN:      RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN:        RACLocationData(_planet_id(Rac5Planets.DREAMTIME), Rac5Planets.DREAMTIME),
+    Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN:     RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
+    Rac5TitanVendorLocations.CHALLAX_SNIPER_TITAN:        RACLocationData(_planet_id(Rac5Planets.CHALLAX), Rac5Planets.CHALLAX),
+    Rac5TitanVendorLocations.DAYNI_MOON_MOOTATOR_TITAN:   RACLocationData(_planet_id(Rac5Planets.DAYNI_MOON), Rac5Planets.DAYNI_MOON),
+    Rac5TitanVendorLocations.DAYNI_MOON_SHOCK_TITAN:      RACLocationData(_planet_id(Rac5Planets.DAYNI_MOON), Rac5Planets.DAYNI_MOON),
+    Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN:   RACLocationData(_planet_id(Rac5Planets.INSIDE_CLANK), Rac5Planets.INSIDE_CLANK),
+    Rac5TitanVendorLocations.QUODRONA_LASER_TITAN:        RACLocationData(_planet_id(Rac5Planets.QUODRONA), Rac5Planets.QUODRONA),
 }
 
 # Weapon level locations — one per weapon per level (1-4, every weapon's max).
 # Region is Pokitaru for all of them (same as ARMOUR_SET_CHECK_LOCATIONS
 # below): leveling isn't tied to any one planet, just to owning the weapon
-# and playing, so there's no more specific region to anchor it to.
-from .core.weapons import WEAPON_DATA as _WEAPON_DATA
-
+# and playing, so there's no more specific region to anchor it to. IDs come
+# from the shared block, not Pokitaru's, since these aren't really Pokitaru
+# locations.
 # (internal weapon key, 1-indexed level) -> AP location name. Level 1 is
 # excluded since it's synonymous with owning the weapon, not a distinct
 # milestone. Sourced from WEAPON_LEVEL_NAMES so a typo/rename there is a
@@ -146,8 +197,8 @@ WEAPON_LEVEL_LOOKUP: dict[tuple[str, int], str] = {
 # always present in ALL_LOCATIONS regardless of weapon_level_checks — same
 # pattern as SKILL_POINT_LOCATIONS vs EASY_/HARD_SKILL_POINT_LOCATIONS.
 WEAPON_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
-    loc_name: RACLocationData(BASE_ID + 5000 + idx, Rac5Planets.POKITARU)
-    for idx, loc_name in enumerate(WEAPON_LEVEL_LOOKUP.values(), start=1)
+    loc_name: RACLocationData(_shared_id(), Rac5Planets.POKITARU)
+    for loc_name in WEAPON_LEVEL_LOOKUP.values()
 }
 
 # weapon_level_checks == max_level: only the "reached max level" check per
@@ -182,8 +233,8 @@ NANOTECH_LEVEL_LOOKUP: dict[int, str] = {
 }
 
 NANOTECH_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
-    loc_name: RACLocationData(BASE_ID + 6000 + idx, Rac5Planets.POKITARU)
-    for idx, loc_name in enumerate(NANOTECH_LEVEL_LOOKUP.values(), start=1)
+    loc_name: RACLocationData(_shared_id(), Rac5Planets.POKITARU)
+    for loc_name in NANOTECH_LEVEL_LOOKUP.values()
 }
 
 
@@ -201,11 +252,9 @@ def nanotech_level_locations_for(interval: int, max_level: int) -> dict[str, RAC
         if level % interval == 0 and level <= max_level
     }
 
-from .core.locations.armour_set_locations import ARMOUR_SET_CHECKS
-
 ARMOUR_SET_CHECK_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(BASE_ID + 1500 + idx, Rac5Planets.POKITARU)
-    for idx, name in enumerate(ARMOUR_SET_CHECKS, start=1)
+    name: RACLocationData(_shared_id(), Rac5Planets.POKITARU)
+    for name in ARMOUR_SET_CHECKS
 }
 
 # NG+ Items option: with it off, RYNO and Chameleon/Hyperborean items are
@@ -297,8 +346,8 @@ GIANT_CLANK_LOCATIONS: frozenset[str] = frozenset({
 })
 
 SKILL_POINT_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(BASE_ID + 4000 + idx, sp.region)
-    for idx, (name, sp) in enumerate(SKILL_POINTS.items(), start=1)
+    name: RACLocationData(_planet_id(sp.region), sp.region)
+    for name, sp in SKILL_POINTS.items()
 }
 
 EASY_SKILL_POINT_LOCATIONS: dict[str, RACLocationData] = {
@@ -324,8 +373,8 @@ SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS: dict[str, RACLocationData] = {
 }
 
 GADGET_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5Locations.RYLLUS_SPROUT:  RACLocationData(BASE_ID + 1401, Rac5Planets.RYLLUS),
-    Rac5Locations.KALIDON_SHRINK: RACLocationData(BASE_ID + 1407, Rac5Planets.KALIDON),
+    Rac5Locations.RYLLUS_SPROUT:  RACLocationData(_planet_id(Rac5Planets.RYLLUS), Rac5Planets.RYLLUS),
+    Rac5Locations.KALIDON_SHRINK: RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
     # Rac5Locations.METALIS_GLOVES is NOT here — it's an ArmourPickup
     # (ARMOUR_PICKUP_LOCATIONS, see core/armour.py) since it's armour, not a
     # gadget. Defining it in both would create two Location objects with the
@@ -333,17 +382,17 @@ GADGET_PICKUP_LOCATIONS: dict[str, RACLocationData] = {
 }
 
 SKYBOARD_ITEM_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5SkyboardChallenges.KALIDON_LEARNER:          RACLocationData(BASE_ID + 1402, Rac5Planets.KALIDON),
-    Rac5SkyboardChallenges.KALIDON_MASTER:           RACLocationData(BASE_ID + 1405, Rac5Planets.KALIDON),
-    Rac5SkyboardChallenges.OUTPOST_OMEGA_VERTIGO:    RACLocationData(BASE_ID + 1800, Rac5Planets.OUTPOST_OMEGA),
-    Rac5SkyboardChallenges.OUTPOST_OMEGA_INTERIOR:   RACLocationData(BASE_ID + 1801, Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.KALIDON_LEARNER:          RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.KALIDON_MASTER:           RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VERTIGO:    RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_INTERIOR:   RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
 }
 
 EXTRA_SKYBOARD_LOCATIONS: dict[str, RACLocationData] = {
-    Rac5SkyboardChallenges.KALIDON_TICKET:           RACLocationData(BASE_ID + 1403, Rac5Planets.KALIDON),
-    Rac5SkyboardChallenges.KALIDON_TRICKY:           RACLocationData(BASE_ID + 1404, Rac5Planets.KALIDON),
-    Rac5SkyboardChallenges.OUTPOST_OMEGA_DANGER:     RACLocationData(BASE_ID + 1802, Rac5Planets.OUTPOST_OMEGA),
-    Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:     RACLocationData(BASE_ID + 1803, Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.KALIDON_TICKET:           RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.KALIDON_TRICKY:           RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_DANGER:     RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
+    Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:     RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
 }
 
 # One location per tracked Shrink Ray puzzle-gate bit (see
@@ -351,19 +400,19 @@ EXTRA_SKYBOARD_LOCATIONS: dict[str, RACLocationData] = {
 # that's where Shrink Ray first becomes usable; access is gated on owning it
 # regardless of which planet the puzzle is actually on (rules/shrink_ray.py).
 SHRINK_RAY_SKIP_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(BASE_ID + 1900 + idx, Rac5Planets.KALIDON)
-    for idx, name in enumerate(SHRINK_RAY_SKIP_LOCATION_NAMES, start=1)
+    name: RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON)
+    for name in SHRINK_RAY_SKIP_LOCATION_NAMES
 }
 
 CHALLENGE_LOCATIONS: dict[str, RACLocationData] = {
-    cp.name: RACLocationData(BASE_ID + 1600 + idx, cp.planet)
-    for idx, cp in enumerate(CHALLENGE_PICKUPS, start=1)
+    cp.name: RACLocationData(_planet_id(cp.planet), cp.planet)
+    for cp in CHALLENGE_PICKUPS
 }
 
 _ALL_CLANK_PICKUPS = DERBY_CLANK_PICKUPS + GADGETBOT_TOSS_CLANK_PICKUPS + GADGETBOT_CLANK_PICKUPS
 ALL_CLANK_LOCATIONS: dict[str, RACLocationData] = {
-    cp.name: RACLocationData(BASE_ID + 1700 + idx, cp.planet)
-    for idx, cp in enumerate(_ALL_CLANK_PICKUPS, start=1)
+    cp.name: RACLocationData(_planet_id(cp.planet), cp.planet)
+    for cp in _ALL_CLANK_PICKUPS
     if cp.name not in CHALLENGE_LOCATIONS  # combined reward-challenge names live in CHALLENGE_LOCATIONS
 }
 
@@ -392,8 +441,8 @@ def enabled_clank_challenge_names(group_weights: dict[str, int]) -> frozenset[st
     )
 
 # Each entry: (name, region, is_cutscene).
-# Enumeration order is fixed to keep location IDs stable across option changes.
-# Enter Planet entries are appended at the end to avoid shifting existing IDs.
+# Enter Planet entries are appended at the end for readability, but IDs are
+# freely assigned now (no stability constraint across a renumbering pass).
 _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.POKITARU_FIGHT,           Rac5Planets.POKITARU,      False),
     (Rac5CutsceneLocations.RYLLUS_BUZZING,           Rac5Planets.RYLLUS,        True),
@@ -419,7 +468,7 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.QUODRONA_CHASE,           Rac5Planets.QUODRONA,      True),
     (Rac5CutsceneLocations.QUODRONA_MECHA,           Rac5Planets.QUODRONA,      True),
     (Rac5CutsceneLocations.QUODRONA_FIND,            Rac5Planets.QUODRONA,      False),
-    # Enter Planet (appended last so IDs above stay stable)
+    # Enter Planet
     (Rac5CutsceneLocations.POKITARU_ENTER,           Rac5Planets.POKITARU,      True),
     (Rac5CutsceneLocations.RYLLUS_ENTER,             Rac5Planets.RYLLUS,        True),
     (Rac5CutsceneLocations.KALIDON_ENTER,            Rac5Planets.KALIDON,       True),
@@ -431,7 +480,6 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.INSIDE_CLANK_ENTER,       Rac5Planets.INSIDE_CLANK,  True),
     (Rac5CutsceneLocations.QUODRONA_ENTER,           Rac5Planets.QUODRONA,      True),
 
-    # New locations appended here (same ID-stability reasoning as Enter Planet above).
     (Rac5CutsceneLocations.DREAMTIME_SLEEPING_RATCHET, Rac5Planets.DREAMTIME,   True),
     # Both fired by PlanetInventory.check_giant_clank() (see core/planets.py's
     # GIANT_CLANK_CONFIGS), not the mission-bit table in mission_locations.py.
@@ -444,16 +492,17 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.CHALLAX_EXPLORE,          Rac5Planets.CHALLAX,       False),
 ]
 
+_mission_data: dict[str, tuple[RACLocationData, bool]] = {
+    name: (RACLocationData(_planet_id(region), region), is_cutscene)
+    for name, region, is_cutscene in _MISSION_ENTRIES
+}
+
 STORY_MISSION_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(BASE_ID + 3000 + idx, region)
-    for idx, (name, region, is_cutscene) in enumerate(_MISSION_ENTRIES, start=1)
-    if not is_cutscene
+    name: data for name, (data, is_cutscene) in _mission_data.items() if not is_cutscene
 }
 
 CUTSCENE_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(BASE_ID + 3000 + idx, region)
-    for idx, (name, region, is_cutscene) in enumerate(_MISSION_ENTRIES, start=1)
-    if is_cutscene
+    name: data for name, (data, is_cutscene) in _mission_data.items() if is_cutscene
 }
 
 # Union kept for ALL_LOCATIONS (full location pool) and any code still referencing this name.
@@ -482,10 +531,20 @@ ALL_LOCATIONS: dict[str, RACLocationData] = {
 
 LOCATION_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_LOCATIONS.items()}
 
+
+def for_planet(planet: str, *sources: dict[str, RACLocationData]) -> dict[str, RACLocationData]:
+    """Subset of one or more location dicts whose region is `planet`. Used by the
+    per-planet modules (locations/<planet>.py) to slice the shared registry above
+    without redefining or retyping any location."""
+    return {
+        name: data
+        for source in sources
+        for name, data in source.items()
+        if data.region == planet
+    }
+
 # Vendor location ↔ internal-name lookup tables
 # Derived here so both the game-state layer and the client can share one source.
-
-from .items import GADGET_DISPLAY_TO_INTERNAL, WEAPON_DISPLAY_TO_INTERNAL
 
 # Map from vendor location name → internal weapon/gadget name
 VENDOR_WEAPON_LOC: dict[str, str] = {

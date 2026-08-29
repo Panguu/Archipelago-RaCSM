@@ -32,11 +32,8 @@ class EventsHandlerMixin:
         await self.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_PLAYING}])
 
     def _on_planet_ready(self) -> None:
-        """Fired on every planet-load transition (Core's on_planet_ready
-        hook). Re-applies received items and (re)attempts the starting-bolts
-        grant — writing PLAYER_BOLT_COUNT before a planet has loaded doesn't
-        reliably stick, so gating on every transition gives it a free retry
-        without separate retry/backoff logic."""
+        """Re-applies received items and retries the starting-bolts grant on every planet transition,
+        since writing PLAYER_BOLT_COUNT before a planet has loaded doesn't reliably stick."""
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
         # Retry here too in case context.py's "Retrieved"/"SetReply" handler
@@ -46,10 +43,8 @@ class EventsHandlerMixin:
     async def _grant_starting_items(self) -> None:
         if self._starting_items_sent or not self.pine_connected:
             return
-        # Claim the grant synchronously before any await — this can be
-        # scheduled from both _on_planet_ready and the "Retrieved"/"SetReply"
-        # handler, which can both reach the check above before either sets
-        # this flag. Reset on failure so a later retry can still attempt it.
+        # Claim the grant synchronously before any await, since this can be scheduled from two
+        # handlers that could both reach the check above first. Reset on failure to allow a retry.
         self._starting_items_sent = True
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))
         if starting_bolts <= 0:
@@ -71,9 +66,8 @@ class EventsHandlerMixin:
         asyncio.create_task(self._persist_starting_items_sent())
 
     def _on_vendor_close(self) -> None:
-        """Fired when a weapons/mod vendor menu closes. While open, memory
-        only reflects that vendor's restricted view, so re-apply the full AP
-        inventory to restore true ownership of anything it didn't grant."""
+        """While a vendor menu is open, memory only reflects its restricted view, so re-apply
+        the full AP inventory on close to restore true ownership."""
         self._on_menu_close_for_armour_sets()
         asyncio.create_task(self._apply_received_items())
 
@@ -86,7 +80,7 @@ class EventsHandlerMixin:
     def _on_menu_close_for_armour_sets(self) -> None:
         if not self._armour_set_checks_enabled:
             return
-        equipped = self._wiring.armour.EquipedArmour
+        equipped = self._wiring.armour.read()
         for name, check in ARMOUR_SET_CHECKS.items():
             if check.matches(equipped):
                 self._append_location_by_name(name)

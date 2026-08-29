@@ -41,9 +41,8 @@ class ChallengeModeState:
         self.tier = value
 
     def setup(self) -> None:
-        """Re-write the current tier — called on every planet load, same
-        defensive reasoning as SkinInventory.setup() (in case this byte
-        gets reset on a planet transition; harmless if it doesn't)."""
+        """Re-write the current tier on every planet load, in case this byte
+        gets reset on a planet transition; harmless if it doesn't."""
         self.tier = self._tier
 
     def __repr__(self) -> str:

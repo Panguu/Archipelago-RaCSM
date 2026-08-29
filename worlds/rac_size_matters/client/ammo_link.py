@@ -5,25 +5,14 @@ import time
 
 from CommonClient import logger
 
-# Throttle for both detecting local ammo changes and pushing them to AP data
-# storage — ammo can tick down every shot, so pushing every poll tick would
-# spam the server for no benefit.
+# Throttle ammo change detection/push — ammo can tick down every shot,
+# so pushing every poll tick would spam the server for no benefit.
 _AMMO_LINK_PUSH_INTERVAL: float = 0.5
 
 
 class AmmoLinkMixin:
-    """Mirrors weapon ammo counts across every connected player who also has
-    AmmoLink enabled: whenever any linked player's ammo for a weapon
-    changes, every other linked player's ammo for that same weapon is
-    overwritten to match. Not a shared/depleting pool — a straight mirror,
-    same model as DeathLink's Bounce, but built on data storage (a single
-    absolute value) instead of an event.
-
-    Players don't need matching weapon inventories: only the weapons a
-    given player currently owns are ever read from or written to on their
-    side, keyed by internal weapon name so weapons neither player owns are
-    simply absent from the diff.
-    """
+    """Mirrors weapon ammo counts across every linked player as a straight overwrite (not a shared pool).
+    Only weapons a player currently owns are read/written, keyed by weapon name."""
 
     def _ammo_link_key(self) -> str:
         return f"rsm_ammo_link_{self.team}"
@@ -40,6 +29,9 @@ class AmmoLinkMixin:
         if not self._ammo_link_enabled or self.slot is None or not self.pine_connected:
             return
         if not self._wiring.planet.is_ready:
+            return
+        if self._wiring.vendor.ammo_link_paused:
+            # Vendor's buy-new view shows a fake ammo count; don't push that out to other players.
             return
         now = time.monotonic()
         if now - self._last_ammo_link_push < _AMMO_LINK_PUSH_INTERVAL:
@@ -60,11 +52,8 @@ class AmmoLinkMixin:
             "key": self._ammo_link_key(),
             "default": {},
             "want_reply": False,
-            # "update" (dict.update, server-side) merges just our own
-            # weapon entries into the shared key — NOT "replace", which
-            # would blow away every other linked player's entries whenever
-            # we push, since players routinely own different weapon sets
-            # and each push here only ever carries our own subset.
+            # "update" merges just our own entries into the shared key; "replace" would blow away
+            # other linked players' entries since each push only carries our own subset.
             "operations": [{"operation": "update", "value": data}],
         }])
 
@@ -72,6 +61,9 @@ class AmmoLinkMixin:
         """Runs under _pine_lock (see context.py's Retrieved/SetReply
         handler) — writes memory directly, so never call this loose."""
         if not self._ammo_link_enabled or not self._wiring.planet.is_ready:
+            return
+        if self._wiring.vendor.ammo_link_paused:
+            # Don't let an incoming update clobber the fake vendor-view ammo count mid-display.
             return
         data = self.stored_data.get(self._ammo_link_key())
         if not isinstance(data, dict) or data == self._applied_ammo_link:
@@ -83,10 +75,8 @@ class AmmoLinkMixin:
                 continue
             if weapons.get_ammo(name) != value:
                 weapons.set_ammo(name, value)
-        # Rebaseline the push-side cache too, to whatever our own weapons
-        # actually read now — otherwise _maybe_sync_ammo_link would see a
-        # "change" (the value we just wrote in from a peer) it never
-        # pushed itself, and immediately echo it straight back out.
+        # Rebaseline the push-side cache too, otherwise the peer's own write would look like
+        # a local change and get echoed straight back out.
         self._pushed_ammo_link = {
             name: weapons.get_ammo(name) for name, owned in weapons.weapons.items() if owned
         }

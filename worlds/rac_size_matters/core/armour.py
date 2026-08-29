@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from dataclasses import dataclass, replace
 from enum import IntEnum, IntFlag
 from typing import NamedTuple
 
@@ -11,8 +11,8 @@ from ..constants import (
     Rac5SkyboardChallenges,
 )
 from ..pypine import Pine
+from .address_maps import ARMOUR_BASE
 from .states.base_state import BaseState
-from .structs.pickups import ArmourStruct
 
 # Armour address resolvers
 _BOOTS_MASK = 0xF0  # module-level, not inside the enum body
@@ -31,13 +31,8 @@ class ArmourSet(IntEnum):
 
 
 class ArmourPiece(IntFlag):
-    """
-    Armour pieces are represented as bits in a byte, with the following mapping:
-    - Bit 0 (0x01): Chestplate
-    - Bit 1 (0x02): Helmet
-    - Bit 2 (0x04): Gloves
-    - Bit 4 (0x10): Boots (any value with bit 4 set is considered to have boots equipped)
-    """
+    """Armour pieces are bits in a byte: chestplate 0x01, helmet 0x02, gloves 0x04,
+    boots 0x10 (any value with bit 4 set counts as boots equipped)."""
 
     NONE = 0
     CHESTPLATE = 0x01
@@ -57,138 +52,93 @@ class ArmourPiece(IntFlag):
         return cls(normalized)
 
 
-class ArmourSlot:
-    """Descriptor for equiped armour slot"""
+@dataclass
+class ArmourSnapshot:
+    """Snapshot of the player's armour state at a given point in time. Any field left as
+    None is treated as unset — ArmourStruct.write() skips it and leaves memory untouched."""
 
-    def __init__(self, slot_name: str) -> None:
-        self.slot_name = slot_name
-
-    def _address(self, instance) -> int:
-        return instance.base + instance._OFFSETS[self.slot_name]
-
-    def __get__(self, instance, owner) -> ArmourSet | None:
-        if instance is None:
-            return None
-        value = instance.pine.read_int8(self._address(instance))
-        if value == 0:
-            return None
-        return ArmourSet(value)
-
-    def __set__(self, instance, value) -> None:
-        if instance is None:
-            return
-        instance.pine.write_int8(self._address(instance), value)
-
-    def __delete__(self, instance) -> None:
-        if instance is None:
-            return
-        instance.pine.write_int8(self._address(instance), 0)
-
-
-class ArmourUnlockSlot:
-    """Descriptor for unlocked armour slots"""
-
-    def __init__(self, slot_name: str) -> None:
-        self.slot_name = slot_name
-
-    def _address(self, instance) -> int:
-        return instance.base + instance._OFFSETS[self.slot_name]
-
-    def __get__(self, instance, owner) -> ArmourPiece | None:
-        if instance is None:
-            return None
-        value = instance.pine.read_int8(self._address(instance))
-        return ArmourPiece.from_raw(value)
-
-    def __set__(self, instance, value) -> None:
-        if instance is None:
-            return
-        instance.pine.write_int8(self._address(instance), value)
-
-    def __delete__(self, instance) -> None:
-        if instance is None:
-            return
-        instance.pine.write_int8(self._address(instance), 0)
-
-
-class EquippedArmour:
-    _OFFSETS: dict[str, int] = {
-        "chestplate": 0x00,
-        "helmet": 0x01,
-        "gloves_left": 0x02,
-        "gloves_right": 0x03,
-        "boots_left": 0x04,
-        "boots_right": 0x05,
-    }
-
-    chestplate = ArmourSlot("chestplate")
-    helmet = ArmourSlot("helmet")
-    gloves_left = ArmourSlot("gloves_left")
-    gloves_right = ArmourSlot("gloves_right")
-    boots_left = ArmourSlot("boots_left")
-    boots_right = ArmourSlot("boots_right")
-
-    def __init__(self, base: int, pine: Pine) -> None:
-        self.base = base
-        self.pine = pine
-
-    def to_dict(self) -> dict[str, int]:
-        return {name: int(getattr(self, name) or 0) for name in EquippedArmour._OFFSETS}
-
-    @classmethod
-    def from_ap_data(cls, base: int, pine: Pine, data: dict[str, int]) -> EquippedArmour:
-        """Build an EquippedArmour bound to (base, pine) and write an Archipelago data-storage dict into it."""
-        equipped = cls(base, pine)
-        for name in EquippedArmour._OFFSETS:
-            if name in data:
-                setattr(equipped, name, int(data[name]))
-        return equipped
-
-    def __repr__(self) -> str:
-        return f"EquippedArmour({self.to_dict()})"
-
-
-class ArmourUnlocks:
-    _OFFSETS: dict[str, int] = {
-        "wildfire": 0x06,
-        "sludge": 0x07,
-        "crystallix": 0x08,
-        "electroshock": 0x09,
-        "mega_bomb": 0x0A,
-        "hyperborean": 0x0B,
-        "chameleon": 0x0C,
-    }
-
-    wildfire = ArmourUnlockSlot("wildfire")
-    sludge = ArmourUnlockSlot("sludge")
-    crystallix = ArmourUnlockSlot("crystallix")
-    electroshock = ArmourUnlockSlot("electroshock")
-    mega_bomb = ArmourUnlockSlot("mega_bomb")
-    hyperborean = ArmourUnlockSlot("hyperborean")
-    chameleon = ArmourUnlockSlot("chameleon")
-
-    def __init__(self, base: int, pine: Pine) -> None:
-        self.base = base
-        self.pine = pine
+    chestplate: ArmourSet | None = None
+    helmet: ArmourSet | None = None
+    gloves_left: ArmourSet | None = None
+    gloves_right: ArmourSet | None = None
+    boots_left: ArmourSet | None = None
+    boots_right: ArmourSet | None = None
+    wildfire: ArmourPiece | None = None
+    sludge: ArmourPiece | None = None
+    crystallix: ArmourPiece | None = None
+    electroshock: ArmourPiece | None = None
+    mega_bomb: ArmourPiece | None = None
+    hyperborean: ArmourPiece | None = None
+    chameleon: ArmourPiece | None = None
 
     def owned_mask(self) -> int:
-        """Bitmask with one bit per armour set (bit i = ArmourUnlocks._OFFSETS order) that has any piece owned."""
-        return sum(1 << i for i, name in enumerate(ArmourUnlocks._OFFSETS) if getattr(self, name))
+        """Bitmask with one bit per armour set (bit i = ArmourStruct.SET_FIELDS order)
+        that has any piece owned. None/NONE fields count as not-owned."""
+        return sum(1 << i for i, name in enumerate(ArmourStruct.SET_FIELDS) if getattr(self, name))
 
-    def to_dict(self) -> dict[str, int]:
-        return {name: int(getattr(self, name)) for name in ArmourUnlocks._OFFSETS}
+
+class ArmourStruct:
+    """Batched pine read/write over the full armour block. BASE_ADDRESS is fixed —
+    it doesn't move between planets/levels, so this lives alongside the rest of the
+    armour logic instead of the per-planet memory structs."""
+
+    BASE_ADDRESS = ARMOUR_BASE
+    pine: Pine | None = None
+    GameState: ArmourSnapshot | None = None
+
+    _fields_ = [
+        ("chestplate",   Pine.DataSize.INT8),
+        ("helmet",       Pine.DataSize.INT8),
+        ("gloves_left",  Pine.DataSize.INT8),
+        ("gloves_right", Pine.DataSize.INT8),
+        ("boots_left",   Pine.DataSize.INT8),
+        ("boots_right",  Pine.DataSize.INT8),
+        ("wildfire",     Pine.DataSize.INT8),
+        ("sludge",       Pine.DataSize.INT8),
+        ("crystallix",   Pine.DataSize.INT8),
+        ("electroshock", Pine.DataSize.INT8),
+        ("mega_bomb",    Pine.DataSize.INT8),
+        ("hyperborean",  Pine.DataSize.INT8),
+        ("chameleon",    Pine.DataSize.INT8),
+    ]
+
+    SLOT_FIELDS: tuple[str, ...] = (
+        "chestplate", "helmet", "gloves_left", "gloves_right", "boots_left", "boots_right",
+    )
+    SET_FIELDS: tuple[str, ...] = (
+        "wildfire", "sludge", "crystallix", "electroshock", "mega_bomb", "hyperborean", "chameleon",
+    )
 
     @classmethod
-    def from_ap_data(cls, base: int, pine: Pine, data: dict[str, int]) -> ArmourUnlocks:
-        """Build an ArmourUnlocks bound to (base, pine) and write an Archipelago data-storage dict into it."""
-        unlocks = cls(base, pine)
-        for name in ArmourUnlocks._OFFSETS:
-            if name in data:
-                setattr(unlocks, name, ArmourPiece.from_raw(int(data[name])))
-        return unlocks
+    def _iter_fields(cls):
+        """Yield (name, size, address) for each field, laid out back-to-back from BASE_ADDRESS."""
+        offset = 0
+        for name, size in cls._fields_:
+            yield name, size, cls.BASE_ADDRESS + offset
+            offset += size
 
-    def __repr__(self) -> str:
-        return f"ArmourUnlocks({self.to_dict()})"
+    def read(self) -> None:
+        """Batched read of every field, decoded the same way the old per-field
+        descriptors did: a slot is None when unequipped (raw 0) or the matching
+        ArmourSet otherwise; a set is always an ArmourPiece, boots-bit normalized."""
+        fields = list(self._iter_fields())
+        values = self.pine.batch_read([(size, address) for _, size, address in fields])
+        decoded = {}
+        for (name, _, _), raw in zip(fields, values):
+            if name in self.SLOT_FIELDS:
+                decoded[name] = ArmourSet(raw) if raw else None
+            else:
+                decoded[name] = ArmourPiece.from_raw(raw)
+        self.GameState = ArmourSnapshot(**decoded)
+
+    def write(self, snapshot: ArmourSnapshot) -> None:
+        """Write only the fields set on `snapshot` — unset (None) fields are left untouched in memory."""
+        writes = [
+            (size, address, self.pine.to_bytes(int(value), size))
+            for name, size, address in self._iter_fields()
+            if (value := getattr(snapshot, name)) is not None
+        ]
+        self.pine.batch_write(writes)
 
 
 class ArmourPickup(NamedTuple):
@@ -197,16 +147,6 @@ class ArmourPickup(NamedTuple):
     name: str
     planet: str
 
-
-ARMOUR_SET_TO_KEY: dict[ArmourSet, str] = {
-    ArmourSet.Wildfire: "wildfire",
-    ArmourSet.Sludge: "sludge",
-    ArmourSet.Crystallix: "crystallix",
-    ArmourSet.Electroshock: "electroshock",
-    ArmourSet.MegaBomb: "mega_bomb",
-    ArmourSet.Hyperborean: "hyperborean",
-    ArmourSet.Chameleon: "chameleon",
-}
 
 EQUIPPED_SLOT_TO_PIECE: dict[str, ArmourPiece] = {
     "chestplate": ArmourPiece.CHESTPLATE,
@@ -270,54 +210,66 @@ CHALLENGE_LOCATION_TO_ARMOUR_FLAG: dict[str, tuple[str, ArmourPiece]] = {
 
 
 class ArmourInventory(BaseState):
-    """Minimal replacement for ArmourState: holds EquipedArmour/UnlockedArmour
-    (both pine-backed) and pushes both to Archipelago data storage. Change
-    detection is external now (PlanetInventory.check_collected_armour() reads
-    these live) — no accessor, no registered handlers.
-    """
+    """Owns a single ArmourStruct plus two logical states: ap_armour (what AP has
+    granted) and game_armour (what's been physically picked up), kept separate so a
+    death/reload can restore their union instead of re-hiding an in-flight AP grant."""
 
-    def __init__(
-        self,
-        pine: Pine,
-        base: int = ArmourStruct.BASE_ADDRESS,
-    ) -> None:
+    def __init__(self, pine: Pine) -> None:
         super().__init__()
-        self.base = base
         self.pine = pine
-        self.UnlockedArmour = ArmourUnlocks(base, pine)
-        self.EquipedArmour = EquippedArmour(base, pine)
-        self.on_equipped_save: Callable[[dict[str, int]], None] = lambda _: None
-        self.on_unlocked_save: Callable[[dict[str, int]], None] = lambda _: None
+        self.struct = ArmourStruct()
+        self.struct.pine = pine
+        self.ap_armour: ArmourSnapshot = ArmourSnapshot()
+        self.game_armour: ArmourSnapshot = ArmourSnapshot()
 
-    def set_unlocked_armour(self, state: ArmourUnlocks) -> None:
-        """Save the current unlocked-sets values into UnlockedArmour."""
-        self.UnlockedArmour = state
-
-    def set_equipped_armour(self, state: EquippedArmour) -> None:
-        """Save the current equipped-slot values into EquipedArmour."""
-        self.EquipedArmour = state
+    def read(self) -> ArmourSnapshot:
+        """Batched read of the full armour block."""
+        self.struct.read()
+        return self.struct.GameState
 
     def sync_equipped(self, data: dict[str, int]) -> None:
-        """Convert an Archipelago data-storage dict and write it into game memory as equipped slots."""
-        self.set_equipped_armour(EquippedArmour.from_ap_data(self.base, self.pine, data))
+        """Write an Archipelago data-storage dict into the equipped slots."""
+        fields = {name: int(value) for name, value in data.items() if name in ArmourStruct.SLOT_FIELDS}
+        self.struct.write(ArmourSnapshot(**fields))
 
-    def sync_unlocked(self, data: dict[str, int]) -> None:
-        """Convert an Archipelago data-storage dict and write it into game memory as unlocked sets."""
-        self.set_unlocked_armour(ArmourUnlocks.from_ap_data(self.base, self.pine, data))
+    def set_ap_armour(self, data: dict[str, int]) -> None:
+        """Replace ap_armour wholesale (not a merge) from an AP data-storage dict.
+        Pure bookkeeping; call apply_full()/apply_collected_only() to write."""
+        fields = {
+            name: ArmourPiece.from_raw(int(value))
+            for name, value in data.items() if name in ArmourStruct.SET_FIELDS
+        }
+        self.ap_armour = ArmourSnapshot(**fields)
 
-    def sync(self, equipped_data: dict[str, int], unlocked_data: dict[str, int]) -> None:
-        """Convert Archipelago data-storage dicts and write both equipped slots and unlocked sets into game memory."""
-        self.sync_equipped(equipped_data)
-        self.sync_unlocked(unlocked_data)
+    def record_pickup(self, pieces: dict[str, ArmourPiece]) -> None:
+        """OR-merge newly detected in-game pickups into game_armour, so a later
+        death/planet-load never re-hides them. Pure bookkeeping, no memory write."""
+        merged = {
+            name: (getattr(self.game_armour, name) or ArmourPiece.NONE) | piece
+            for name, piece in pieces.items()
+        }
+        self.game_armour = replace(self.game_armour, **merged)
 
-    def push_equipped_armour(self) -> None:
-        """Push the current equipped-slot values to Archipelago data storage."""
-        self.on_equipped_save(self.EquipedArmour.to_dict())
+    def apply_full(self) -> None:
+        """Write OR(ap_armour, game_armour) to memory — every AP-granted piece
+        plus everything physically found."""
+        merged = {
+            name: (getattr(self.ap_armour, name) or ArmourPiece.NONE) | (getattr(self.game_armour, name) or ArmourPiece.NONE)
+            for name in ArmourStruct.SET_FIELDS
+        }
+        self.struct.write(ArmourSnapshot(**merged))
 
-    def push_unlocked_armour(self) -> None:
-        """Push the current unlocked-sets values to Archipelago data storage."""
-        self.on_unlocked_save(self.UnlockedArmour.to_dict())
+    def apply_collected_only(self) -> None:
+        """Write only game_armour (death-sequence state), hiding any AP-granted piece
+        not yet physically found. Every field is written explicitly to avoid stale values."""
+        fields = {name: (getattr(self.game_armour, name) or ArmourPiece.NONE) for name in ArmourStruct.SET_FIELDS}
+        self.struct.write(ArmourSnapshot(**fields))
+
+    def clear_unlocked(self) -> None:
+        """Zero every unlocked-set byte in memory to open a clean 0->1 pickup-detection
+        window; never touches ap_armour/game_armour."""
+        self.struct.write(ArmourSnapshot(**dict.fromkeys(ArmourStruct.SET_FIELDS, ArmourPiece.NONE)))
 
     def __repr__(self) -> str:
-        return f"ArmourInventory(equipped={self.EquipedArmour}, unlocked={self.UnlockedArmour})"
+        return f"ArmourInventory(ap={self.ap_armour!r}, game={self.game_armour!r})"
 

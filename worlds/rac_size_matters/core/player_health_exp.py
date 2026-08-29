@@ -14,9 +14,8 @@ _MAX_NANOTECH_LEVEL = 75
 
 
 def _level_from_max_health(max_health: float) -> int | None:
-    """max_health read as the Nanotech level directly, or None if the
-    rounded reading falls outside the valid 1-75 range (unbound/garbage
-    read, e.g. during a load)."""
+    """max_health read as the Nanotech level directly, or None if the rounded
+    reading falls outside the valid 1-75 range (unbound/garbage read)."""
     level = round(max_health)
     if _MIN_NANOTECH_LEVEL <= level <= _MAX_NANOTECH_LEVEL:
         return level
@@ -24,14 +23,9 @@ def _level_from_max_health(max_health: float) -> int | None:
 
 
 class PlayerHealthExpInventory:
-    """Pine-backed accessor + gain-multiplier tracking for the player's
-    Nanotech (health) EXP counter (global fixed address, no per-planet
-    base). Mirrors PlayerBoltInventory.
-
-    Also tracks Nanotech Level location checks, but those are driven by
-    PlayerInventory.max_health (see check_level()) rather than by this
-    class's own EXP counter — the EXP counter is only what the multiplier
-    boosts to speed up the game's own leveling."""
+    """Pine-backed accessor + gain-multiplier tracking for the player's Nanotech
+    EXP counter. Nanotech Level checks are driven by PlayerInventory.max_health
+    (see check_level()), not by this class's own EXP counter."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
@@ -39,13 +33,8 @@ class PlayerHealthExpInventory:
         self.multiplier: int = 1
         # Last-seen raw value, used to diff this tick's gain — see apply_boost().
         self._prev: int | None = None
-        # Last-seen Nanotech level derived from max_health, used to detect
-        # newly-reached levels — see check_level(). Starts at 5 (the
-        # player's default starting level, never itself a location) so the
-        # very first call after connecting reports every level already
-        # reached (6 up to current) same as WeaponInventory.check()'s
-        # "levels" list does for weapons on first observation — safe because
-        # send_location() no-ops for anything already in checked_locations.
+        # Last-seen Nanotech level derived from max_health, used to detect newly-reached
+        # levels — see check_level(). Starts at 5 (default starting level, never a location).
         self._last_level: int = 5
 
     def get(self) -> int:
@@ -55,10 +44,8 @@ class PlayerHealthExpInventory:
         self.pine.write_int32(PLAYER_HEALTH_EXP, value)
 
     def rebaseline(self, value: int | None = None) -> None:
-        """Re-sync the baseline apply_boost() diffs against, without
-        boosting anything. Callers that write PLAYER_HEALTH_EXP directly
-        must call this right after, or apply_boost()'s next tick would
-        multiply that grant too."""
+        """Re-sync the baseline apply_boost() diffs against, without boosting anything.
+        Callers writing PLAYER_HEALTH_EXP directly must call this right after."""
         self._prev = value if value is not None else self.get()
 
     def apply_boost(self) -> None:
@@ -80,15 +67,9 @@ class PlayerHealthExpInventory:
             self._prev = current
 
     def check_level(self, max_health: float | None) -> list[str]:
-        """Given the current planet's PlayerInventory.max_health, return the
-        Nanotech Level location names newly reached since the last call (in
-        ascending order, so a multi-level jump — including the very first
-        call after connecting, if the player is already above level 5 —
-        doesn't skip any of their locations; same convention as
-        WeaponInventory.check()'s "levels" list).
-
-        No-op (returns []) while max_health is None (unbound, e.g. no planet
-        loaded) or its rounded value falls outside the valid 1-75 range."""
+        """Return the Nanotech Level location names newly reached since the last call, in
+        ascending order so a multi-level jump doesn't skip any locations. No-op if
+        max_health is None or its rounded value falls outside the valid 1-75 range."""
         if max_health is None:
             return []
         current_level = _level_from_max_health(max_health)

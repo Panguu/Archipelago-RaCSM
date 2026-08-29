@@ -183,15 +183,8 @@ class RACContext(
         }
 
     def _dyanmic_pine_port(self) -> None:
-        """Resolve the PCSX2 port Dynamic Pine assigned this instance. RACSM
-        never launches PCSX2 itself — the hub's Launch button already did.
-
-        Gated on launched_via_hub(), not just self.auth being set — self.auth
-        is set on every launch (including a plain Archipelago client launch),
-        so without this a slot name that was ever used through the hub would
-        keep resolving to that stale instance's port even when the player
-        later launches normally against a manually-started PCSX2. A normal
-        launch should just use Pine's own default port (28011)."""
+        """Resolve the PCSX2 port Dynamic Pine assigned this instance. Gated on launched_via_hub(),
+        not just self.auth, so a stale hub-launched port never leaks into a manual launch."""
         if not self.auth or not dynamicpine_loaded:
             return
         if not launched_via_hub():
@@ -201,14 +194,8 @@ class RACContext(
             self.pine.set_slot(port)
 
     def _dynamic_pine_auth(self) -> None:
-        """Pre-fills auth from whatever slot name the hub's /launch command
-        was given (see DynamicPine's mark_pending_auth/get_pending_auth), so
-        the player isn't asked to retype the same slot name they already
-        gave the hub — and so it can't drift from what _dyanmic_pine_port()
-        later looks the PCSX2 instance's port up under.
-
-        Gated on launched_via_hub() and only applied when auth isn't
-        already set, same reasoning as _dyanmic_pine_port()."""
+        """Pre-fills auth from the slot name the hub's /launch command was given, so it matches
+        what _dyanmic_pine_port() later looks the PCSX2 instance's port up under."""
         if self.auth or not dynamicpine_loaded:
             return
         if not launched_via_hub():
@@ -218,8 +205,7 @@ class RACContext(
             self.auth = pending
 
     async def _update_link_tag(self, tag: str, enabled: bool) -> None:
-        """Generic counterpart to CommonContext.update_death_link (which is
-        hardcoded to the "DeathLink" tag) — sets/clears an arbitrary
+        """Generic counterpart to CommonContext.update_death_link — sets/clears an arbitrary
         connection tag and pushes ConnectUpdate if already connected."""
         old_tags = self.tags.copy()
         if enabled:

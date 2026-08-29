@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import ctypes
 
+from ..address_maps import (
+    CHALLENGE_MODE_BASE,
+    LOADING_PLANET_ADDRESS,
+    PLANET_PROGRESS_BASE,
+    QUICK_SELECT_BASE,
+    SKIN_BASE,
+    TRANSITION_GATE_ADDRESS,
+)
 from .base import MemoryStruct
 
-PLANET_PROGRESS_BASE = 0x21F4C661
 
 class PlanetProgressStruct(MemoryStruct):
 
@@ -31,7 +38,7 @@ class PlanetProgressStruct(MemoryStruct):
 
 
 class QuickSelectStruct(MemoryStruct):
-    BASE_ADDRESS = 0x21F4B364
+    BASE_ADDRESS = QUICK_SELECT_BASE
     _pack_ = 1
     _fields_ = [
         ("right",         ctypes.c_uint32),
@@ -53,7 +60,7 @@ class QuickSelectStruct(MemoryStruct):
 class SkinStruct(MemoryStruct):
     # +0x00 unlocked — bitmask; bit N = skin N is available.
     # +0x01 equipped — ID of the skin Ratchet is currently wearing.
-    BASE_ADDRESS = 0x21F4B45A
+    BASE_ADDRESS = SKIN_BASE
     _pack_ = 1
     _fields_ = [
         ("unlocked", ctypes.c_uint8),
@@ -62,10 +69,9 @@ class SkinStruct(MemoryStruct):
 
 
 class ChallengeModeStruct(MemoryStruct):
-    # Written once on connect from slot_data's challenge_mode (options.py's
-    # ChallengeMode Range 0-2) — mirrors the AP option into the game's own
-    # Challenge Mode (New Game Plus) tier.
-    BASE_ADDRESS = 0x21F4C778
+    # Written once on connect from slot_data's challenge_mode — mirrors the AP
+    # option into the game's own Challenge Mode (New Game Plus) tier.
+    BASE_ADDRESS = CHALLENGE_MODE_BASE
     _pack_ = 1
     _fields_ = [("tier", ctypes.c_uint8)]
 
@@ -76,30 +82,21 @@ class VendorVisibilityStruct(MemoryStruct):
     _pack_ = 1
     _fields_ = [("visibility", ctypes.c_int16)]
 
-# Rests at TRANSITION_GATE_IDLE (0x000000FF). Any change away from idle means a
-# level transition has started — writes must stop immediately. It passes through
-# TRANSITION_GATE_ARRIVED (0x00000100) once the new planet is known (safe to swap
-# the address map then — that's a local bookkeeping change, not a memory write).
-# Returning to idle means the transition is fully settled and writes may resume.
-_TRANSITION_GATE_ADDR: int = 0x1EDDAD4
-
+# Rests at TRANSITION_GATE_IDLE; any change away from idle means a transition has
+# started and writes must stop until it returns to idle (fully settled).
 TRANSITION_GATE_IDLE:    int = 0x000000FF
 TRANSITION_GATE_ARRIVED: int = 0x00000100
 
 
 class TransitionGateStruct(MemoryStruct):
-    BASE_ADDRESS = _TRANSITION_GATE_ADDR
+    BASE_ADDRESS = TRANSITION_GATE_ADDRESS
     _pack_ = 1
     _fields_ = [("value", ctypes.c_uint32)]
 
 
-# Sits right beside the gate (+0x10) and holds the planet ID being loaded —
-# read this once the gate reaches TRANSITION_GATE_ARRIVED, instead of
-# CURRENT_PLANET_ADDRESS, which isn't reliable yet during the load itself.
-_LOADING_PLANET_ADDR: int = 0x1EDDAE4
-
-
+# Sits right beside the gate (+0x10) and holds the planet ID being loaded — read
+# this once the gate reaches TRANSITION_GATE_ARRIVED; CURRENT_PLANET_ADDRESS isn't reliable yet.
 class LoadingPlanetStruct(MemoryStruct):
-    BASE_ADDRESS = _LOADING_PLANET_ADDR
+    BASE_ADDRESS = LOADING_PLANET_ADDRESS
     _pack_ = 1
     _fields_ = [("value", ctypes.c_uint32)]

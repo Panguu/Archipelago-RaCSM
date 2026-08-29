@@ -31,7 +31,7 @@ def set_challax_rules(world: "RACSizeMatterWorld") -> None:
         world.set_rule(mw.get_location(Rac5SkillPoints.CHALLAX_MASTER, player), _sprout)
 
     if world.options.all_missions:
-        world.set_rule(mw.get_location(Rac5CutsceneLocations.CHALLAX_EXPLORE, player), _base)
+        world.set_rule(mw.get_location(Rac5CutsceneLocations.CHALLAX_EXPLORE, player), _sprout)
 
     # Giant Clank Challax: locked out entirely by the Giant Clank option (see
     # regions.py/GIANT_CLANK_LOCATIONS and PlanetInventory.giant_clank_allowed)
@@ -77,7 +77,7 @@ def set_challax_rules(world: "RACSizeMatterWorld") -> None:
     # existence (see regions.py, which both tables must agree with on
     # which of these locations actually exist).
     if world.options.challenge_mode.value >= 1:
-        world.set_rule(mw.get_location(Rac5Locations.CHALLAX_HYPERBOREAN_HELMET, player), _base)
+        world.set_rule(mw.get_location(Rac5Locations.CHALLAX_HYPERBOREAN_HELMET, player), _sprout)
         # Titan variant available once the base weapon is purchasable at
         # its own vendor — buying it there is what actually unlocks the
         # Titan re-purchase in-game now (see core/vendor.py), matching

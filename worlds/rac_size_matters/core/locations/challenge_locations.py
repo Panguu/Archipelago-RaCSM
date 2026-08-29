@@ -11,14 +11,8 @@ from ...constants import (
 )
 from ..address_maps import PLANET_ADDRESSES
 
-# Per-planet clank challenge base addresses
-# Base layout (offsets from base):
-#   +0  Derby unlock byte
-#   +1  Gadgetbot Toss unlock byte
-#   +2  Gadgetbot unlock byte
-#   +3..+7   Derby challenge completions       (5 each)
-#   +8..+12  Gadgetbot Toss completions        (5 each)
-#   +13..+17 Gadgetbot challenge completions   (5 each)
+# Per-planet clank challenge base addresses: +0/+1/+2 are section unlock bytes,
+# +3..+17 are 5-per-section completion bytes (Derby, Gadgetbot Toss, Gadgetbot).
 _METALIS_BASE:    int = PLANET_ADDRESSES[0x04].clank_challenge_base  # type: ignore[assignment]
 _DAYNI_BASE:      int = PLANET_ADDRESSES[0x08].clank_challenge_base  # type: ignore[assignment]
 _KALIDON_SKY:     int = PLANET_ADDRESSES[0x03].skyboard_base          # type: ignore[assignment]
@@ -184,9 +178,8 @@ ALL_CLANK_ADDRESS_MAP: dict[int, str] = {
     if cp.address != 0
 }
 
-# Every individual challenge name per planet (Derby + Gadgetbot Toss + Gadgetbot).
-# Used as a failsafe: if every one of these is completed, the "Ultimate Gladiator"
-# skill point is sent even if its own in-game detection never fired.
+# Every challenge name per planet; used as a failsafe to award the "Ultimate
+# Gladiator" skill point if all are done but its own in-game detection never fired.
 METALIS_CHALLENGE_NAMES: frozenset[str] = frozenset(
     {*_METALIS_DERBY, *_METALIS_GADGETBOT_TOSS, *_METALIS_GADGETBOT}
 )
@@ -199,13 +192,8 @@ GLADIATOR_FAILSAFE: dict[str, str] = {
     Rac5Planets.DAYNI_MOON: Rac5SkillPoints.DAYNI_MOON_GLADIATOR,
 }
 
-# ClankChallengeGroups option: display names for the three independently
-# selectable challenge groups (see ChallengeSection), and the per-location
-# name -> group mapping used to filter both location creation (regions.py)
-# and rule assignment (rules/metalis.py, rules/dayni_moon.py) by group
-# weight. Covers every name in DERBY_/GADGETBOT_TOSS_/GADGETBOT_CLANK_PICKUPS
-# — including the reward locations in CHALLENGE_PICKUPS, which are each
-# already one of that group's individual completions too.
+# ClankChallengeGroups option: group name per location, used to filter location
+# creation (regions.py) and rule assignment (rules/*.py) by group weight.
 CHALLENGE_GROUP_DERBY:          str = "Demolition Derby"
 CHALLENGE_GROUP_GADGETBOT_TOSS: str = "Gadgetbot Toss"
 CHALLENGE_GROUP_GADGETBOT:      str = "Gadgetbot"

@@ -7,10 +7,9 @@ from .address_maps import PLAYER_BOLT_COUNT
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# Bolt balance never exceeds this regardless of source — also imported
-# directly by client/handlers.py and client/vendor.py for starting/filler
-# bolt grants written outside this class.
-MAX_PLAYER_BOLTS = 9_999_000
+# Bolt balance never exceeds this regardless of source — also imported directly
+# by client/handlers.py and client/vendor.py for grants written outside this class.
+MAX_PLAYER_BOLTS = 20_000_000
 
 
 class PlayerBoltInventory:
@@ -31,10 +30,8 @@ class PlayerBoltInventory:
         self.pine.write_int32(PLAYER_BOLT_COUNT, min(value, MAX_PLAYER_BOLTS))
 
     def rebaseline(self, value: int | None = None) -> None:
-        """Re-sync the baseline apply_boost() diffs against, without
-        boosting anything. Callers that write PLAYER_BOLT_COUNT directly
-        (starting/filler bolt grants) must call this right after, or
-        apply_boost()'s next tick would multiply that grant too."""
+        """Re-sync the baseline apply_boost() diffs against, without boosting anything.
+        Callers writing PLAYER_BOLT_COUNT directly must call this right after."""
         self._prev = value if value is not None else self.get()
 
     def apply_boost(self) -> None:

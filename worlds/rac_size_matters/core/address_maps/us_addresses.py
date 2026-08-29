@@ -6,9 +6,7 @@ from ...constants.shrink_ray import Rac5ShrinkRayGrindrail
 
 ARMOUR_BASE                = 0x21F4B354
 ARMOUR_SET_COLLECTED_ADDR  = 0x21F4B442  # byte 0: pure sets (bit N = ArmourSets(N+1) complete)
-                                          # byte 1 (0x21F4B443): hybrid sets equipped —
-                                          #   0x01=Shock Crystal  0x02=Wildburst  0x04=Triple Wave
-                                          #   0x08=Ice II         0x10=Stalker
+                                          # byte 1 (0x21F4B443): hybrid sets equipped (bitmask)
 TITANIUM_BOLT_BASE         = 0x21F4B444
 SKILL_POINTS_BASE          = 0x21F4B437
 CLANK_CHALLENGE_BASE       = 0x1F4B3DB  # starts at Metalis unlock addr; Dayni Moon unlock at +0x18
@@ -20,14 +18,23 @@ PLAYER_BOLT_COUNT          = 0x21F4C768
 BOLT_PICKUP_MASK           = 0x000000FFFFFFFFFF
 PLANET_LOAD_ADDRESS        = 0x21F4C770
 NEW_PLANET_START_LOAD_ADDR = 0x21F4A744
-# Idle/sentinel value of NEW_PLANET_START_LOAD_ADDR when no forced load is
-# pending. A forced load is encoded as plain planet_id written via
-# write_int32 (pypine's write_int32 is little-endian, so this puts the id in
-# the first byte and zeroes the rest) — e.g. Pokitaru (0x01) is written as
-# raw bytes 01 00 00 00.
+# Idle/sentinel value of NEW_PLANET_START_LOAD_ADDR when no forced load is pending.
+# A forced load is encoded as plain planet_id written via little-endian write_int32.
 PLANET_LOAD_IDLE_VALUE     = 0xFFFFFFFF
 CONTROLLER_PAUSE_SELECT_ADDRESS = 0x20F7F414
 CONTROLLER_BUTTONS_ADDRESS      = 0x20F7F415
+
+QUICK_SELECT_BASE          = 0x21F4B364
+SKIN_BASE                  = 0x21F4B45A
+CHALLENGE_MODE_BASE        = 0x21F4C778  # single byte: New Game Plus tier, mirrored from slot_data on connect
+
+# Rests at TRANSITION_GATE_IDLE (0x000000FF) — see structs/game.py's
+# TransitionGateStruct/TRANSITION_GATE_IDLE/TRANSITION_GATE_ARRIVED for the
+# state machine built on top of this address.
+TRANSITION_GATE_ADDRESS    = 0x1EDDAD4
+# Sits right beside the gate (+0x10) and holds the planet ID being loaded —
+# see structs/game.py's LoadingPlanetStruct.
+LOADING_PLANET_ADDRESS     = 0x1EDDAE4
 
 CURRENT_WEAPON_IN_VENDOR   = 0x21F4AB8C
 WEAPON_VENDOR_SLOTS        = 0x21F4ABE4
@@ -40,26 +47,15 @@ PLAYER_HEALTH = 0x20F80E2C
 
 @dataclass(frozen=True)
 class GhostRatchetPlanetAddresses:
-    """Per-planet addresses for the Ghost Ratchet feature (see
-    core/ghost_ratchet.py).
-
-    player_position: Ratchet's own live world-space X/Y/Z (3 consecutive
-    floats) — read-only source for the one-shot spawn snapshot. Y only
-    visibly updates while actually moving.
-    ghost_base: the ghost entity's own struct base (see
-    core/ghost_ratchet.py's GhostRatchetAddresses for its field layout).
-    trigger: arms the spawn — a separate address from ghost_base, not an
-    offset within it.
-    """
+    """Per-planet addresses for the Ghost Ratchet feature (see core/ghost_ratchet.py).
+    trigger arms the spawn and is a separate address from ghost_base, not an offset within it."""
     player_position: int
     ghost_base: int
     trigger: int
 
 
-# Filled in as each planet is confirmed in-game — GhostRatchetInventory
-# only works on planets present here. Kalidon Race (0x16) and both Giant
-# Clank sub-modes (0x0F/0x15) have no clone struct at all and are
-# deliberately absent.
+# Filled in as each planet is confirmed in-game. Kalidon Race (0x16) and both Giant
+# Clank sub-modes (0x0F/0x15) have no clone struct at all and are deliberately absent.
 GHOST_RATCHET_ADDRESSES: dict[int, GhostRatchetPlanetAddresses] = {
     0x01: GhostRatchetPlanetAddresses(  # Pokitaru
         player_position=0x202E62E0,
@@ -135,46 +131,22 @@ PLANET_UNLOCK_ADDRESSES: dict[str, int] = {
     "INSIDE_CLANK":  0x21F4C669,
     "QUODRONA":      0x21F4C66A,
 }
+# Same 10-byte block as PLANET_UNLOCK_ADDRESSES, read/written as one contiguous
+# struct by PlanetProgressStruct (see structs/game.py) instead of ten separate addresses.
+PLANET_PROGRESS_BASE = PLANET_UNLOCK_ADDRESSES["POKITARU"]
 BRIGHTNESS_ADDRESS = 0x21EF1056
 DREAMTIME_EFFECT = 0x21EF1058
 
-# Shrink Ray puzzle-gate bitmask (2 bytes) at a single global address — one
-# bit per puzzle, OR'd together. Used both to detect puzzle completion as AP
-# location checks (a bit going 0->1) for the Shrink Ray Locations option —
-# see core/shrink_ray.py's ShrinkRaySkipInventory.check() — and, for the
-# Shrink Ray Skips option, force-written to every tracked bit solved every
-# tick (skip_all()). For at least Kalidon Enter Factory that bitmask write
-# alone isn't enough to actually unlock/bypass the puzzle in-game — see
-# SHRINK_RAY_SKIP_ADDRESSES below for the extra per-puzzle write skip_all()
-# also does.
+# Shrink Ray puzzle-gate bitmask (2 bytes), one bit per puzzle, OR'd together.
+# For at least Kalidon Enter Factory the bitmask write alone doesn't unlock/bypass
+# the puzzle in-game — see SHRINK_RAY_SKIP_ADDRESSES for the extra per-puzzle write.
 SHRINK_RAY_GATE_ADDRESS: int = 0x21F4B40E
 
-# Per-puzzle bypass addresses for the Shrink Ray Skips option — a single
-# byte, written 1 every tick IN ADDITION TO the SHRINK_RAY_GATE_ADDRESS
-# bitmask write above (see ShrinkRaySkipInventory.skip_all()), for puzzles
-# where the bitmask bit alone doesn't actually unlock/bypass it in-game.
-# Filled in as each is confirmed; puzzles not listed here rely on the
-# bitmask write alone until confirmed otherwise.
+# Per-puzzle bypass addresses written 1 every tick IN ADDITION TO the
+# SHRINK_RAY_GATE_ADDRESS bitmask write, for puzzles where the bitmask bit alone
+# doesn't unlock/bypass it in-game. Puzzles not listed here rely on the bitmask alone.
 SHRINK_RAY_SKIP_ADDRESSES: dict[str, int] = {
     Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY: 0x21F4B3EF,
-}
-
-# Outpost Omega's grindrail bit isn't a puzzle a player solves or skips —
-# it's forced solved unconditionally, every tick the client is connected,
-# regardless of the Shrink Ray Skips/Locations options (see
-# core/shrink_ray.py's ShrinkRaySkipInventory.force_outpost_omega_open()).
-# Not in SHRINK_RAY_PUZZLE_BITS: it isn't a meaningful AP location and isn't
-# part of skip_all()'s option-gated bulk write.
-OUTPOST_OMEGA_GRINDRAIL_BIT: int = 0x0400
-
-SHRINK_RAY_PUZZLE_BITS: dict[str, int] = {
-    Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY: 0x0100,
-    Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY: 0x0200,
-    Rac5ShrinkRayGrindrail.CHALLAX_GRINDRAIL: 0x1000,
-    Rac5ShrinkRayGrindrail.DAYNI_MOON_TITANIUM_BOLT_ENTRANCE: 0x4000,
-    Rac5ShrinkRayGrindrail.INSIDE_CLANK_GRINDRAIL: 0x8000,
-    Rac5ShrinkRayGrindrail.QUODRONA_ENTRANCE: 0x0002,
-    Rac5ShrinkRayGrindrail.QUODRONA_CLONE_TRAINING_ROOM: 0x0004,
 }
 
 # Static RAM buffer where custom notification-text strings are written before
@@ -208,17 +180,11 @@ class PlanetAddresses:
     weapon_cycler_state:   int | None = None   # WeaponCycleState — 0x0C while a pickup animation plays
     weapon_cycler_current: int | None = None   # currently-equipped weapon id
     weapon_cycler_stored:  int | None = None   # weapon id waiting to be cycled in
-        # Fixed offsets from player_health, confirmed on Pokitaru and Ryllus
-        # (current/stored/apply all landed exactly on prediction; cycle_state
-        # is the same +0x04 past apply on both, unconfirmed but high
-        # confidence): current = health+0x34, stored = health+0x40,
-        # apply = health+0x54, cycle_state = health+0x58. Every other
-        # planet below is derived from that same offset, not independently
-        # verified yet (see worlds/rac_size_matters/core/weapon_cycler.py).
+        # Fixed offsets from player_health, confirmed on Pokitaru and Ryllus; every other
+        # planet is derived from that same offset, not independently verified yet.
     max_health: int | None = None   # float; max HP, rises with Nanotech level.
-        # Fixed offset from player_health, confirmed on Pokitaru
-        # (health+0x04); every other planet below is derived from that same
-        # offset, not independently verified yet.
+        # Fixed offset from player_health, confirmed on Pokitaru; every other planet
+        # below is derived from that same offset, not independently verified yet.
 
 
 PLANET_ADDRESSES: dict[int, PlanetAddresses] = {
@@ -233,44 +199,4 @@ PLANET_ADDRESSES: dict[int, PlanetAddresses] = {
     0x09: PlanetAddresses("Inside Clank",    0x20F82540, 0x20F82DAC, menu=0x1075D40, preload_menu=0xF50EC0, weapon_array=0x20F43017, mission=0x21F4B3D4, vendor_prompt_id=0x3F68, small_text_box=0xF4BFE8, multi_line_text_box=0xF4C128, controller_pause_select=0xF82514, controller_pause_select_v2=0xF88642, weapon_cycler_apply=0xF82E00, weapon_cycler_state=0xF82E04, weapon_cycler_current=0xF82DE0, weapon_cycler_stored=0xF82DEC, max_health=0x20F82DB0),
     0x0A: PlanetAddresses("Quodrona",        0x20F809C0, 0x20F8122C, menu=0x10741C0, preload_menu=0xF4C8C0, weapon_array=0x20F3EA17, mission=0x21F4B3D6, vendor_prompt_id=0xBF4C, small_text_box=0xF479E8, multi_line_text_box=0xF47B28, controller_pause_select=0xF80994, controller_pause_select_v2=0xF86AC2, weapon_cycler_apply=0xF81280, weapon_cycler_state=0xF81284, weapon_cycler_current=0xF81260, weapon_cycler_stored=0xF8126C, max_health=0x20F81230),
     0x17: PlanetAddresses("Outpost Omega 2", 0x20F82A40, 0x20F823AC, menu=0x107A200, preload_menu=0xF54CC0, weapon_array=0x20F46E17,                      vendor_prompt_id=0x3F37, small_text_box=0xF4FDE8, multi_line_text_box=0xF4FF28, controller_pause_select=0xF82A14, controller_pause_select_v2=0xF8CB42, max_health=0x20F823B0),
-}
-
-
-# Legacy dict views (derived from PLANET_ADDRESSES)
-
-PLAYER_ADDRS: dict[int, tuple[int, int]] = {
-    pid: (p.player_state, p.player_health) for pid, p in PLANET_ADDRESSES.items()
-}
-
-MENU_ADDR_BY_PLANET_ID: dict[int, int] = {
-    pid: p.menu for pid, p in PLANET_ADDRESSES.items() if p.menu is not None
-}
-
-MAX_HEALTH_ADDR_BY_PLANET_ID: dict[int, int] = {
-    pid: p.max_health for pid, p in PLANET_ADDRESSES.items() if p.max_health is not None
-}
-
-WEAPON_ARRAY_BASE_BY_PLANET: dict[int, int] = {
-    pid: p.weapon_array for pid, p in PLANET_ADDRESSES.items() if p.weapon_array is not None
-}
-
-PLANET_MISSION_ADDRESSES: dict[str, int] = {
-    p.name: p.mission for p in PLANET_ADDRESSES.values() if p.mission is not None
-}
-
-SMALL_TEXT_BOX_BY_PLANET: dict[int, int] = {
-    pid: p.small_text_box for pid, p in PLANET_ADDRESSES.items() if p.small_text_box is not None
-}
-
-MULTI_LINE_TEXT_BOX_BY_PLANET: dict[int, int] = {
-    pid: p.multi_line_text_box for pid, p in PLANET_ADDRESSES.items() if p.multi_line_text_box is not None
-}
-
-# (apply, cycle_state, current_weapon, stored_weapon) — only present for a
-# planet once all four addresses are known (Pokitaru only, for now).
-WEAPON_CYCLER_ADDRS_BY_PLANET: dict[int, tuple[int, int, int, int]] = {
-    pid: (p.weapon_cycler_apply, p.weapon_cycler_state, p.weapon_cycler_current, p.weapon_cycler_stored)
-    for pid, p in PLANET_ADDRESSES.items()
-    if p.weapon_cycler_apply is not None and p.weapon_cycler_state is not None
-    and p.weapon_cycler_current is not None and p.weapon_cycler_stored is not None
 }

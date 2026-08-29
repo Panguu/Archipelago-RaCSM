@@ -31,14 +31,8 @@ class WeaponData(NamedTuple):
     classification: ItemClassification
     max_level: int
     mod_count: int
-    # Fixed experience value required to reach each level, 1-indexed
-    # (exp_thresholds[0] is the experience needed to reach level 2, etc).
-    # Normally length max_level - 1, but for every weapon except RYNO
-    # max_level is 8 (Challenge Mode Titan levels 5-8) while only the
-    # first 3 thresholds (levels 2-4) are known so far — levels 5-8 have no
-    # threshold yet (exp_threshold_for_level returns None for them), which
-    # just means PROGRESSIVE_MANUAL imposes no XP ceiling past level 4 until
-    # real values are added here.
+    # 1-indexed experience thresholds (exp_thresholds[0] = XP for level 2).
+    # Levels 5-8 have no threshold yet, so PROGRESSIVE_MANUAL imposes no ceiling past level 4.
     exp_thresholds: tuple[int, ...] = ()
 
 
@@ -106,6 +100,30 @@ TITAN_ELIGIBLE_WEAPONS: frozenset[str] = frozenset(
     key for key in WEAPON_DATA if key != Rac5WeaponKeys.RYNO
 )
 
+
+class VendorDisplayAmmo(NamedTuple):
+    """Ammo count shown while the weapons vendor's buy-new view displays this weapon;
+    `titan` is shown once Titan-pending, None for RYNO (no Titan variant)."""
+    base: int
+    titan: int | None = None
+
+
+WEAPON_VENDOR_DISPLAY_AMMO: dict[str, VendorDisplayAmmo] = {
+    Rac5WeaponKeys.LACERATOR:       VendorDisplayAmmo(base=60, titan=120),
+    Rac5WeaponKeys.CONCUSSION_GUN:  VendorDisplayAmmo(base=25, titan=30),
+    Rac5WeaponKeys.ACID_BOMB_GLOVE: VendorDisplayAmmo(base=5, titan=10),
+    Rac5WeaponKeys.AGENTS_OF_DOOM:  VendorDisplayAmmo(base=6, titan=10),
+    Rac5WeaponKeys.BEE_MINE_GLOVE:  VendorDisplayAmmo(base=8, titan=8),
+    Rac5WeaponKeys.STATIC_BARRIER:  VendorDisplayAmmo(base=5, titan=5),
+    Rac5WeaponKeys.SHOCK_ROCKET:    VendorDisplayAmmo(base=20, titan=22),
+    Rac5WeaponKeys.SNIPER_MINE:     VendorDisplayAmmo(base=8, titan=10),
+    Rac5WeaponKeys.SCORCHER:        VendorDisplayAmmo(base=60, titan=90),
+    Rac5WeaponKeys.LASER_TRACER:    VendorDisplayAmmo(base=200, titan=300),
+    Rac5WeaponKeys.SUCK_CANNON:     VendorDisplayAmmo(base=8, titan=16),
+    Rac5WeaponKeys.MOOTATOR:        VendorDisplayAmmo(base=0, titan=0),
+    Rac5WeaponKeys.RYNO:            VendorDisplayAmmo(base=30),
+}
+
 WEAPON_MOD_COUNTS: dict[str, int] = {key: data.mod_count for key, data in WEAPON_DATA.items()}
 
 WEAPON_MAX_LEVELS: dict[str, int] = {key: data.max_level for key, data in WEAPON_DATA.items()}
@@ -118,9 +136,8 @@ WEAPON_EXP_THRESHOLDS: dict[str, tuple[int, ...]] = {
 
 
 def exp_threshold_for_level(weapon: str, level: int) -> int | None:
-    """Fixed experience value required to reach `level` (1-indexed) for
-    `weapon`, or None if there's no threshold for that level (level 1, or
-    out of range)."""
+    """Fixed experience value required to reach `level` (1-indexed) for `weapon`,
+    or None if there's no threshold for that level."""
     thresholds = WEAPON_EXP_THRESHOLDS.get(weapon, ())
     idx = level - 2
     if idx < 0 or idx >= len(thresholds):
@@ -236,10 +253,8 @@ class WeaponAddresses:
         "mod_unlock_two":   0x41,
         "mod_unlock_three": 0x42,
         "unlocked":         0x45,
-        # Already read (as a raw struct.unpack_from) by is_weapon_candidate/
-        # is_ps2_weapon_candidate above purely to sanity-check a struct
-        # guess (ammo > 9999 => reject) — this is the first live accessor
-        # for it. Used by AmmoLink to mirror ammo counts across players.
+        # First live accessor for this offset (already sanity-checked in
+        # is_weapon_candidate); used by AmmoLink to mirror ammo across players.
         "ammo":             0x31,
     }
 
@@ -352,14 +367,8 @@ _MOD_SLOTS = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
 
 class WeaponInventory:
-    """Pine-backed live accessor + ownership/vendor tracking for weapons,
-    gadgets and mods.
-
-    Planet-dependent: the weapon/gadget array lives at a per-planet base
-    address, so call set_base(array_base) whenever the loaded planet changes.
-    check() reports what changed since the last call, same shape as
-    ChallengeInventory.check().
-    """
+    """Pine-backed live accessor + ownership/vendor tracking for weapons, gadgets and
+    mods. Planet-dependent: call set_base(array_base) whenever the loaded planet changes."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
@@ -367,12 +376,9 @@ class WeaponInventory:
         self.weapons: dict[str, bool]         = {}
         self.gadgets: dict[str, bool]         = {}
         self.mods: dict[str, dict[str, bool]] = {}
-        # Raw-memory baselines for check()'s "did this just flip 0->1"
-        # detection — kept separate from weapons/gadgets/mods above, which
-        # never regress True->False. Without this split, a weapon already
-        # owned via AP before its vendor location was bought would never be
-        # detectable as "just purchased" once apply_vendor_locations() zeroes
-        # the memory bit for display and a real purchase flips it back to 1.
+        # Raw-memory baselines for check()'s 0->1 flip detection, kept separate from
+        # weapons/gadgets/mods (which never regress True->False) so a display
+        # zero/restore cycle doesn't hide a real repurchase.
         self._raw_weapons: dict[str, bool]         = {}
         self._raw_gadgets: dict[str, bool]         = {}
         self._raw_mods: dict[str, dict[str, bool]] = {}
@@ -400,33 +406,22 @@ class WeaponInventory:
         # ProgressiveWeapons option (options.py): 0=off, 1=manual, 2=automatic.
         # Set directly by the client from slot_data.
         self.progressive_mode: int = PROGRESSIVE_OFF
-        # Per-weapon max allowed level (0-indexed, same scale as addr.level),
-        # derived from how many Progressive Weapon copies AP has granted —
-        # kept current by Core.apply_inventory(). Absent = zero copies
-        # received (fully locked).
+        # Per-weapon max allowed level (0-indexed); kept current by Core.apply_inventory().
+        # Absent = zero copies received (fully locked).
         self.level_caps: dict[str, int] = {}
-        # Manual mode only, weapons with cap < 0: the experience value kept
-        # rewritten so a fully-locked weapon's experience never moves.
-        # Captured on first observation, cleared once a first copy arrives.
-        # See apply_progressive_leveling().
+        # Manual mode, cap < 0: pins experience so a fully-locked weapon's XP
+        # never moves; captured on first observation, cleared once a copy arrives.
         self._pinned_experience: dict[str, int] = {}
 
-        # Challenge Mode option (options.py's ChallengeMode Range 0-2): 0 =
-        # off. Set directly by the client from slot_data. Gates the Titan
-        # purchase mechanism below.
+        # Gates the Titan purchase mechanism below; 0 = off.
         self.challenge_mode: int = 0
-        # Whether this weapon's Titan variant has been bought (see
-        # VendorInventory's Titan purchase flow) — floors its level at 5
-        # (0-indexed 4) once true, and caps it at 4 (0-indexed 3) while
-        # false, applied every tick in apply_progressive_leveling(). Rebuilt
-        # from AP's own checked_locations on reconnect (sync_from_ap()),
-        # same as vendor_locations — never persisted separately.
+        # Floors level at 5 (0-indexed 4) once a Titan variant is bought, caps
+        # at 4 while not; rebuilt from AP's checked_locations on reconnect.
         self.titan_purchased: dict[str, bool] = dict.fromkeys(TITAN_ELIGIBLE_WEAPONS, False)
 
     def set_base(self, array_base: int | None) -> None:
-        """Rebind every weapon/gadget address to the given planet's array
-        base, or unbind entirely (check()/sync() become no-ops) when
-        array_base is None (unrecognized planet, no known array location)."""
+        """Rebind every weapon/gadget address to the planet's array base, or unbind
+        entirely (check()/sync() become no-ops) when array_base is None."""
         self._weapon_addrs, self._gadget_addrs = build_weapons(array_base, self.pine)
 
     def get(self, name: str) -> bool:
@@ -475,11 +470,8 @@ class WeaponInventory:
         return addr.ammo
 
     def set_ammo(self, weapon: str, value: int) -> None:
-        """Write a weapon's ammo directly — used by AmmoLink to mirror an
-        incoming shared value onto this player's own weapon; doesn't
-        distinguish that from organic in-game gain/spend, since ammo has
-        no location-check/level-up bookkeeping tied to it the way
-        set_level()/experience do."""
+        """Write a weapon's ammo directly, for AmmoLink to mirror a shared value in;
+        doesn't distinguish that from organic gain/spend, unlike set_level()/experience."""
         addr = self._weapon_addrs.get(weapon)
         if addr is not None:
             addr.ammo = value
@@ -491,36 +483,17 @@ class WeaponInventory:
         return addr.level
 
     def set_level(self, weapon: str, level: int) -> None:
-        """Write a weapon's level directly — a synthetic write, not an
-        organic in-game level-up (e.g. VendorInventory forcing a
-        Titan-eligible weapon to the level-4 floor right after its base
-        purchase). Also rebaselines _raw_level so check()'s next call
-        doesn't mistake this for a real level-up and fire "Weapon Level: N"
-        checks for levels the player never actually earned."""
+        """Write a weapon's level directly (a synthetic write, not an organic level-up).
+        Also rebaselines _raw_level so check() doesn't fire spurious level checks."""
         addr = self._weapon_addrs.get(weapon)
         if addr is not None:
             addr.level = level
         self._raw_level[weapon] = level
 
     def zero_levels_for_vendor(self, purchasable: frozenset[str] | None = None) -> dict[str, int]:
-        """Snapshot every weapon's current level, then zero out only the
-        ones in `purchasable` (every weapon, if not given).
-
-        The weapons vendor's displayed price derives from the weapon's level
-        field, so a leveled-but-not-yet-AP-owned weapon would show a
-        different price than the base one; `purchasable` should be the set
-        of weapons AP does NOT yet own (see VendorInventory's callers).
-        Caller passes the returned snapshot to restore_levels() once the
-        vendor closes — this method never restores on its own.
-
-        Also rebaselines check()'s own _raw_level tracking to 0 for every
-        weapon actually zeroed here, not just the raw memory — otherwise
-        the later restore_levels() write back up to the real level reads to
-        check() as a brand new in-game level-up (0 -> real level), firing
-        every "Weapon Level: X" location in between purely from this display
-        zero/restore cycle, misattributed to whatever purchase happens to be
-        in progress on the *next* check() call after the restore.
-        """
+        """Snapshot every weapon's level, then zero out the ones in `purchasable` so the
+        vendor's level-derived price doesn't leak a leveled-but-unowned weapon's real
+        price; caller must pass the snapshot to restore_levels() once the vendor closes."""
         snapshot = {name: addr.level for name, addr in self._weapon_addrs.items()}
         for name, addr in self._weapon_addrs.items():
             if purchasable is None or name in purchasable:
@@ -529,19 +502,29 @@ class WeaponInventory:
         return snapshot
 
     def restore_levels(self, snapshot: dict[str, int]) -> None:
-        """Write back a snapshot taken by zero_levels_for_vendor().
-
-        Also rebaselines _raw_level to match — see zero_levels_for_vendor()
-        for why leaving it stale would misreport this restore itself as a
-        fresh level-up (or, for a weapon that genuinely did level up while
-        zeroed for display — e.g. buying its Titan variant — mask that real
-        transition instead, since _raw_level would already be sitting at 0
-        rather than the pre-zero baseline check() needs to diff against)."""
+        """Write back a snapshot taken by zero_levels_for_vendor(), also rebaselining
+        _raw_level so check() doesn't misread the restore as a fresh level-up."""
         for name, level in snapshot.items():
             addr = self._weapon_addrs.get(name)
             if addr is not None:
                 addr.level = level
             self._raw_level[name] = level
+
+    def snapshot_ammo(self, names: frozenset[str] | None = None) -> dict[str, int]:
+        """Read live ammo for `names` (or every weapon) — the counterpart to
+        restore_ammo(), for VendorInventory's display override."""
+        if names is None:
+            return {name: addr.ammo for name, addr in self._weapon_addrs.items()}
+        return {
+            name: addr.ammo for name, addr in self._weapon_addrs.items() if name in names
+        }
+
+    def restore_ammo(self, snapshot: dict[str, int]) -> None:
+        """Write back a snapshot taken by snapshot_ammo()."""
+        for name, ammo in snapshot.items():
+            addr = self._weapon_addrs.get(name)
+            if addr is not None:
+                addr.ammo = ammo
 
     def get_mod_unlock(self, weapon: str, attr: str) -> bool:
         addr = self._weapon_addrs.get(weapon)
@@ -550,45 +533,50 @@ class WeaponInventory:
         return bool(getattr(addr, attr))
 
     def set_mod_unlock(self, weapon: str, attr: str, value: bool) -> None:
-        """Write the mod_unlock_N "purchasable" byte — separate from set_mod
-        (does the player *own* the mod): this just controls whether the mod
-        vendor shows that slot as buyable."""
+        """Write the mod_unlock_N "purchasable" byte — separate from set_mod (ownership),
+        this just controls whether the mod vendor shows that slot as buyable."""
         addr = self._weapon_addrs.get(weapon)
         if addr is not None:
             setattr(addr, attr, value)
 
     def check(self) -> dict[str, list]:
-        """Read every weapon/gadget/mod byte for the current planet's array,
-        update ownership state, and return what newly changed this call:
-        {"weapons": [...], "gadgets": [...], "mods": [(weapon, slot), ...],
-        "levels": [(weapon, level), ...], "titans": [...]}.
-
-        "Newly changed" is decided from the raw memory bit's previous
-        reading (_raw_weapons/_raw_gadgets/_raw_mods), not from
-        weapons/gadgets/mods, since those never regress True->False (see
-        apply_vendor_locations()) and diffing against them directly would
-        miss a genuine repurchase of something already marked owned.
-
-        "levels" reports every 1-indexed level >= 2 newly reached since the
-        last call for unlocked weapons — if level jumped by more than one
-        step at once, every level in between is reported too, so none of
-        their locations get silently skipped. Level 1 is never reported
-        (synonymous with owning the weapon, not its own location).
-
-        "titans" is derived from that same level jump, not a separate
-        signal: reaching level 5 for a TITAN_ELIGIBLE_WEAPONS member is what
-        buying its Titan variant looks like in-game (confirmed), so it's
-        reported whenever level 5 falls within the newly-reached range.
-        """
+        """Batch-read every weapon/gadget/mod byte, update ownership state, and return
+        what newly changed since the raw memory's last reading (not weapons/gadgets/mods,
+        which never regress, so a repurchase of an already-owned item wouldn't show)."""
         newly_weapons: list[str] = []
         newly_gadgets: list[str] = []
         newly_mods: list[tuple[str, str]] = []
         newly_levels: list[tuple[str, int]] = []
         newly_titans: list[str] = []
 
-        for name, addr in self._weapon_addrs.items():
+        weapon_names = list(self._weapon_addrs)
+        gadget_names = list(self._gadget_addrs)
+
+        byte_addrs: list[int] = []
+        byte_spec: list[tuple[str, str]] = []
+        for name in weapon_names:
+            addr = self._weapon_addrs[name]
+            for field in ("unlocked", *_MOD_SLOTS):
+                byte_addrs.append(addr.base + addr._OFFSETS[field])
+                byte_spec.append((name, field))
+        for name in gadget_names:
+            addr = self._gadget_addrs[name]
+            byte_addrs.append(addr.base + addr._OFFSETS["unlocked"])
+            byte_spec.append((name, "unlocked"))
+
+        level_addrs = [
+            self._weapon_addrs[name].base + self._weapon_addrs[name]._OFFSETS["level"]
+            for name in weapon_names
+        ]
+
+        byte_values  = self.pine.batch_read_int8(byte_addrs) if byte_addrs else []
+        level_values = self.pine.batch_read_int32(level_addrs) if level_addrs else []
+        bytes_by_key: dict[tuple[str, str], int] = dict(zip(byte_spec, byte_values, strict=True))
+        levels_by_name: dict[str, int] = dict(zip(weapon_names, level_values, strict=True))
+
+        for name in weapon_names:
             was_unlocked = self._raw_weapons.get(name, False)
-            is_unlocked  = bool(addr.unlocked)
+            is_unlocked  = bool(bytes_by_key[(name, "unlocked")])
             self._raw_weapons[name] = is_unlocked
             if is_unlocked:
                 self.weapons[name] = True
@@ -599,7 +587,7 @@ class WeaponInventory:
             raw_mods  = self._raw_mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
             mods      = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
             for slot in _MOD_SLOTS:
-                slot_unlocked = bool(getattr(addr, slot))
+                slot_unlocked = bool(bytes_by_key[(name, slot)])
                 raw_mods[slot] = slot_unlocked
                 if slot_unlocked:
                     mods[slot] = True
@@ -608,26 +596,21 @@ class WeaponInventory:
 
             if is_unlocked:
                 prev_level = self._raw_level.get(name, -1)
-                current_level = addr.level
+                current_level = levels_by_name[name]
                 if current_level > prev_level:
-                    # Level 1 is deliberately excluded here — it isn't a
-                    # location (synonymous with owning the weapon), so only
-                    # levels 2+ are ever reported.
+                    # Level 1 is deliberately excluded — synonymous with owning the weapon.
                     for idx in range(prev_level + 1, current_level + 1):
                         level = idx + 1
                         if level >= 2:
                             newly_levels.append((name, level))
-                        # Buying a weapon's Titan variant is what takes it
-                        # from level 4 to 5 (confirmed in-game) — that
-                        # transition is the purchase signal, no separate
-                        # trigger bit needed.
+                        # Reaching level 5 is what buying a Titan variant looks like in-game.
                         if level == 5 and name in TITAN_ELIGIBLE_WEAPONS:
                             newly_titans.append(name)
                 self._raw_level[name] = current_level
 
-        for name, addr in self._gadget_addrs.items():
+        for name in gadget_names:
             was_unlocked = self._raw_gadgets.get(name, False)
-            is_unlocked  = bool(addr.unlocked)
+            is_unlocked  = bool(bytes_by_key[(name, "unlocked")])
             self._raw_gadgets[name] = is_unlocked
             if is_unlocked:
                 self.gadgets[name] = True
@@ -640,15 +623,9 @@ class WeaponInventory:
         }
 
     def apply_experience_boost(self) -> None:
-        """Inflate each weapon's experience gain by experience_multiplier
-        every tick, so leveling happens faster without touching the game's
-        own level-up thresholds.
-
-        Diffed against the raw value last seen here (_prev_experience) so
-        only genuine in-game gain since the last tick gets amplified, never
-        our own previous write. Stops once a weapon reaches its max level
-        (index max_level - 1; Mootator/Ryno don't use this curve at all).
-        """
+        """Inflate each weapon's experience gain by experience_multiplier every tick.
+        Diffed against _prev_experience so only genuine in-game gain gets amplified,
+        never our own previous write; stops once a weapon reaches its max level."""
         multiplier = self.experience_multiplier
         for name, addr in self._weapon_addrs.items():
             current  = addr.experience
@@ -669,11 +646,8 @@ class WeaponInventory:
                 self._prev_experience[name] = current
 
     def _titan_bound(self, name: str) -> tuple[int | None, int | None]:
-        """(ceiling, floor) Challenge Mode Titan bounds for `name`, 0-indexed
-        same scale as addr.level — (3, None) while its Titan variant hasn't
-        been bought yet (can't level past 4), (None, 4) once it has (can
-        never drop below 5). (None, None) if Challenge Mode is off or this
-        weapon has no Titan variant (RYNO)."""
+        """(ceiling, floor) Challenge Mode Titan bounds for `name`: (3, None) before its
+        Titan variant is bought, (None, 4) after, (None, None) if not applicable."""
         if self.challenge_mode < 1 or name not in TITAN_ELIGIBLE_WEAPONS:
             return None, None
         if self.titan_purchased.get(name, False):
@@ -681,43 +655,9 @@ class WeaponInventory:
         return 3, None
 
     def apply_progressive_leveling(self) -> None:
-        """Gate weapon leveling behind Progressive Weapon items received,
-        every tick, and/or behind the Challenge Mode Titan purchase (see
-        _titan_bound()). No-op only when both are inactive.
-
-        automatic: level is pinned straight to level_caps (Titan-adjusted),
-        experience zeroed continuously, so organic play can never push a
-        level past what's been received/bought.
-
-        manual: the player levels up by playing normally, but only within
-        the window AP/Titan has opened. A weapon with no cap yet is fully
-        locked (experience captured on first observation and rewritten every
-        tick). Once unlocked and below cap, experience is clamped every tick
-        — not just once it reaches cap — to the WEAPON_EXP_THRESHOLDS
-        ceiling for the next not-yet-permitted level, because
-        apply_experience_boost() runs first each tick and can inflate a
-        single tick's gain past that ceiling in one jump under a high
-        multiplier; clamping only after the fact would let the game's own
-        leveling logic skip past a level it wasn't supposed to reach yet.
-
-        Once level reaches cap the game resets experience to 0 on its own;
-        it's locked there until another Progressive copy/Titan purchase
-        raises cap.
-
-        off + Challenge Mode: with no Progressive Weapon item gating at all,
-        the Titan ceiling/floor is enforced directly against the game's own
-        free-running level instead of via level_caps — buying Titan is the
-        only way past level 4 here, same as vanilla.
-
-        manual/automatic + Challenge Mode, before Titan is bought: 5+
-        Progressive copies (cap > the level-4 ceiling) unlock levels 5+ on
-        their own, without needing a Titan purchase at all — but only once
-        the weapon has actually reached level 4 first (addr.level >= the
-        ceiling); until then the ceiling still holds for one more tick so
-        the jump from below 4 can't skip past it in one step. Buying Titan
-        for real (titan_floor) always takes priority and is unaffected by
-        any of this.
-        """
+        """Gate weapon leveling behind Progressive Weapon items and/or Challenge Mode
+        Titan purchase every tick. automatic pins level to cap and zeroes experience;
+        manual clamps experience to the next threshold so a boosted tick's gain can't skip a level."""
         mode = self.progressive_mode
         titan_active = self.challenge_mode >= 1
         if mode == PROGRESSIVE_OFF and not titan_active:
@@ -739,9 +679,7 @@ class WeaponInventory:
             if titan_floor is not None:
                 cap = max(cap, titan_floor)
             elif titan_ceiling is not None and cap > titan_ceiling:
-                # Enough Progressive copies to earn past level 4 on their
-                # own -- but only once level 4 has actually been reached;
-                # otherwise hold the ceiling this tick same as usual.
+                # Enough copies to earn past level 4, but only once level 4 is actually reached.
                 if addr.level < titan_ceiling:
                     cap = titan_ceiling
             elif titan_ceiling is not None:
@@ -774,57 +712,30 @@ class WeaponInventory:
                 continue
 
             if addr.level == cap:
-                # Already at the max permitted level — the game's own
-                # level-up already reset experience to 0, so keep it there
-                # rather than letting it climb back toward the ceiling
-                # again with nothing to show for it (no level to reach
-                # until another Progressive copy/Titan purchase raises cap).
+                # Already at the max permitted level; keep experience at 0
+                # rather than let it climb with no level to show for it.
                 if addr.experience != 0:
                     addr.experience = 0
                 continue
 
-            # addr.level < cap: room to grow naturally. Check the threshold
-            # for the level directly after the CURRENT one, not cap's own
-            # level — cap can sit several levels above addr.level if
-            # several Progressive copies arrived in one batch (or all at
-            # once, e.g. a debug grant), and checking cap's own threshold
-            # would miss a gap sitting in between the two.
+            # Check the threshold for the level after the CURRENT one, not
+            # cap's own level, since cap can sit several levels ahead.
             next_threshold = exp_threshold_for_level(name, addr.level + 2)
             if next_threshold is None:
-                # No fixed threshold exists to advance from the current
-                # level to the next one (level 5 — the Titan tier has no
-                # organic in-game XP path at all, only levels 2-4 and 6-8
-                # do — see WeaponData.exp_thresholds). The game itself can
-                # never advance addr.level through this gap on its own, so
-                # bump it across manually, one level at a time — cap
-                # already guarantees the player has enough Progressive
-                # copies to go this high (addr.level < cap, checked above),
-                # and addr.level only reaches this branch once it's
-                # actually sitting at the level right below the gap, so a
-                # player who received a bunch of copies at once without
-                # ever playing still can't skip past levels 2-4 first.
+                # No fixed threshold for this gap (e.g. level 5, the Titan tier),
+                # so bump the level across manually since the game can't do it on its own.
                 addr.level += 1
                 addr.experience = 0
             else:
-                # Never let a single boosted tick's gain carry past the
-                # ceiling for the next not-yet-permitted displayed level
-                # (cap is 0-indexed same as addr.level, so that's cap + 1)
-                # in one jump.
+                # Never let a single boosted tick's gain carry past the ceiling in one jump.
                 ceiling = exp_threshold_for_level(name, cap + 1)
                 if ceiling is not None and addr.experience > ceiling:
                     addr.experience = ceiling
 
     def wipe(self) -> None:
-        """Zero every weapon/gadget/mod unlock bit, level and experience in
-        memory for the current planet's array, and rebaseline every
-        tracking dict to match.
-
-        Called once, the very first time a planet becomes ready after a
-        fresh connect/reconnect (see Core.tick()) — otherwise whatever's
-        sitting in the save (vanilla progress, a stale prior session) would
-        be misread as a batch of brand-new pickups the instant check() first
-        runs, since every raw baseline starts blank/-1.
-        """
+        """Zero every weapon/gadget/mod unlock bit, level and experience, and rebaseline
+        every tracking dict. Called once on first planet-ready after connect, or
+        stale save progress would look like a batch of brand-new pickups."""
         for addr in self._weapon_addrs.values():
             addr.unlocked = False
             for slot in _MOD_SLOTS:
@@ -842,7 +753,9 @@ class WeaponInventory:
         self._raw_mods = {name: dict(mods) for name, mods in self.mods.items()}
         self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
         self._prev_experience = dict.fromkeys(self._weapon_addrs, 0)
-        self.titan_purchased = dict.fromkeys(TITAN_ELIGIBLE_WEAPONS, False)
+        # Deliberately NOT resetting titan_purchased — wipe() can run after
+        # sync_from_ap() has already restored it, and resetting would re-open
+        # every already-bought Titan variant for purchase.
 
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
@@ -855,10 +768,8 @@ class WeaponInventory:
             addr.unlocked = self.gadgets.get(name, False)
 
     def sync_slots(self) -> None:
-        """Read the current planet's array into the ownership dicts (does not
-        report changes). Also re-baselines the raw-memory dicts check() diffs
-        against, so the next check() call doesn't see this resync's own
-        writes as a fresh change."""
+        """Read the current planet's array into the ownership dicts (no change report).
+        Also re-baselines check()'s raw-memory dicts so it doesn't see this resync as a change."""
         for name, addr in self._weapon_addrs.items():
             unlocked = bool(addr.unlocked)
             self.weapons[name]     = unlocked
@@ -869,27 +780,19 @@ class WeaponInventory:
                 slot_unlocked  = bool(getattr(addr, slot))
                 mods[slot]     = slot_unlocked
                 raw_mods[slot] = slot_unlocked
-            # A fresh planet's array is a separate working copy — rebaseline
-            # so apply_experience_boost() doesn't mistake its current value
-            # for a same-tick gain relative to the previous planet's array.
+            # Rebaseline so apply_experience_boost() doesn't mistake a fresh
+            # planet's array value for a same-tick gain.
             self._prev_experience[name] = addr.experience
-            # _raw_level is deliberately NOT rebaselined here — check() only
-            # fires on an *increase* over the last-seen value, so leaving the
-            # old baseline lets a precollected weapon still correctly fire
-            # every level up to its current one the first time it's observed.
+            # _raw_level deliberately NOT rebaselined, so a precollected weapon
+            # still fires every level up to its current one on first observation.
         for name, addr in self._gadget_addrs.items():
             unlocked = bool(addr.unlocked)
             self.gadgets[name]      = unlocked
             self._raw_gadgets[name] = unlocked
 
     def apply_vendor_locations(self, allowed_extra: frozenset[str] = frozenset()) -> None:
-        """Zero all weapon/gadget/mod memory then restore what the player may keep.
-
-        Weapons/gadgets restored if purchased from vendor (and still owned) OR
-        if name is in allowed_extra (owned weapon whose vendor planet is
-        unlocked). Mods restored only if purchased from this vendor — owning
-        the mod via an AP item received elsewhere does not restore it here.
-        """
+        """Zero all weapon/gadget/mod memory then restore what the player may keep:
+        purchased-and-owned or in allowed_extra for weapons/gadgets; purchased-only for mods."""
         weapon_unlocked = dict.fromkeys(self._weapon_addrs, False)
         weapon_mods: dict[str, dict[str, bool]] = {
             name: dict.fromkeys(_MOD_SLOTS, False) for name in self._weapon_addrs
@@ -928,11 +831,8 @@ class WeaponInventory:
             addr.unlocked = gadget_unlocked[name]
 
     def zero_unpurchased_mod_slots(self, names: frozenset[str]) -> None:
-        """Re-zero mod_slot_N for the given weapons unless that specific slot
-        was actually bought from this vendor. A Progressive-item grant can
-        race back in after apply_vendor_locations()'s own zero/restore pass;
-        this dedicated second pass guarantees the mod vendor shows it as
-        purchasable rather than already-owned."""
+        """Re-zero mod_slot_N unless bought from this vendor, since a Progressive-item
+        grant can race back in after apply_vendor_locations()'s own zero/restore pass."""
         purchased_slots = {
             _weapon_locations._MOD_LOC[loc] for loc, bought in self.vendor_locations.items()
             if bought and loc in _weapon_locations._MOD_LOC
@@ -944,9 +844,7 @@ class WeaponInventory:
             for slot in _MOD_SLOTS:
                 if (name, slot) in purchased_slots:
                     continue
-                # Read first — this runs every poll tick while the mod vendor
-                # is open, so skip the write unless something actually set it
-                # back to 1 since our last pass.
+                # Read first to skip the write unless it flipped back since our last pass.
                 if getattr(addr, slot):
                     setattr(addr, slot, False)
 
@@ -966,21 +864,13 @@ class WeaponInventory:
                 self.titan_purchased[_weapon_locations._TITAN_LOC[loc]] = True
 
     def level_experience_snapshot(self) -> dict[str, list[int]]:
-        """Current [level, experience] per weapon on whichever planet's array
-        is currently bound — for persisting to AP data storage so real
-        leveling progress survives a reconnect (wipe() zeroes this same data
-        on the session's first planet-ready, so without a persisted copy to
-        restore from, that wipe would erase real progress).
-
-        Lists, not tuples — JSON (AP data storage) has no tuple type.
-        """
+        """Current [level, experience] per weapon, for persisting to AP data storage so
+        real leveling progress survives wipe() on reconnect. Lists, not tuples — JSON has no tuple type."""
         return {name: [addr.level, addr.experience] for name, addr in self._weapon_addrs.items()}
 
     def restore_level_experience(self, data: dict) -> None:
-        """Write back a level_experience_snapshot() previously persisted to
-        AP data storage — the counterpart to wipe(). Also rebaselines
-        _raw_level/_prev_experience so check()'s next call doesn't misread
-        this restore as a fresh level-up/experience gain."""
+        """Write back a level_experience_snapshot(), also rebaselining _raw_level/
+        _prev_experience so check() doesn't misread the restore as a fresh gain."""
         for name, pair in data.items():
             addr = self._weapon_addrs.get(name)
             if addr is None or not isinstance(pair, (list, tuple)) or len(pair) != 2:
@@ -992,14 +882,9 @@ class WeaponInventory:
             self._prev_experience[name] = experience
 
     def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
-        """Zero unlocked + every mod slot (memory and tracking dicts alike)
-        for every weapon is_ap_owned says no to.
-
-        Used by the mod vendor to clean up its own temporary "show as
-        unlocked so it renders in the selection list" display hack once that
-        menu closes — apply_inventory()'s resync is additive-only, so
-        nothing else would undo that hack on its own.
-        """
+        """Zero unlocked + every mod slot for every weapon is_ap_owned says no to.
+        Cleans up the mod vendor's temporary display hack, since apply_inventory()'s
+        resync is additive-only and wouldn't undo it on its own."""
         for weapon, addr in self._weapon_addrs.items():
             if is_ap_owned(weapon):
                 continue

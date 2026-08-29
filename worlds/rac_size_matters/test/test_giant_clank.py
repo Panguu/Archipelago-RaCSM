@@ -8,9 +8,8 @@ from ..locations import (
 )
 from .bases import RACSizeMatterTestBase
 
-# Challenge Mode is off by default in both classes below, so its 8 armour
-# pieces (4 Hyperborean, 4 Chameleon) are always excluded regardless of
-# Giant Clank — same reasoning as GIANT_CLANK_LOCATIONS itself.
+# Challenge Mode armour is off by default in both classes below, so it's always
+# excluded regardless of Giant Clank.
 _CHALLENGE_MODE_ARMOUR_LOCATIONS = CHALLENGE_MODE_1_ARMOUR_LOCATIONS | CHALLENGE_MODE_2_ARMOUR_LOCATIONS
 
 

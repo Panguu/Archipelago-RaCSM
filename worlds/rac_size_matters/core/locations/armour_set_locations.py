@@ -7,7 +7,7 @@ from ...constants import Rac5ArmourSet
 from ..armour import ArmourSet
 
 if TYPE_CHECKING:
-    from ..armour import ArmourUnlocks, EquippedArmour
+    from ..armour import ArmourSnapshot
 
 
 @dataclass(frozen=True)
@@ -23,12 +23,12 @@ class ArmourSetCheck:
             mask |= 1 << (val - 1)
         return mask
 
-    def is_unlocked(self, unlocks: ArmourUnlocks) -> bool:
+    def is_unlocked(self, unlocks: ArmourSnapshot) -> bool:
         """True if every base armour set this cosmetic combo requires is fully owned."""
         required = self.required_mask()
         return (required & unlocks.owned_mask()) == required
 
-    def matches(self, equipped: EquippedArmour) -> bool:
+    def matches(self, equipped: ArmourSnapshot) -> bool:
         """True if the currently equipped pieces match this combo exactly."""
         if self.chestplate is not None and equipped.chestplate != self.chestplate:
             return False

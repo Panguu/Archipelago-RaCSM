@@ -33,19 +33,16 @@ _CHEAT_BITS: dict[str, int] = {
     Rac5Traps.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
 }
 
-# Default seconds each trap stays active before auto-reverting; also the
-# TrapDuration option's default. Never mutated — _trap_durations below is
-# the live copy activate_trap() reads from.
+# Default seconds each trap stays active before auto-reverting. Never mutated —
+# _trap_durations below is the live copy activate_trap() reads from.
 TRAP_DURATIONS: dict[str, float] = {
     Rac5Traps.TRAP_FEVERDREAMTIME:   20,
     Rac5Traps.TRAP_BRIGHTNESS:       20,
     Rac5Traps.TRAP_MIRROR_LEVEL:     20,
     Rac5Traps.TRAP_REVERSE_CONTROLS: 20,
     Rac5Traps.TRAP_WEAPON_SWITCHING: 20,
-    # Reset Level is instantaneous (see activate_trap()) — this entry exists
-    # only so it gets an item id (items.py's TRAP_ITEM_TABLE enumerates this
-    # dict) and shows up in the TrapWeight/TrapDuration options. Appended
-    # last so existing traps' enumerated item ids don't shift.
+    # Reset Level is instantaneous (see activate_trap()) — this entry exists only so
+    # it gets an item id and shows up in the options. Appended last so ids don't shift.
     Rac5Traps.TRAP_RESET_LEVEL:      1,
 }
 
@@ -57,9 +54,8 @@ _trap_durations: dict[str, float] = dict(TRAP_DURATIONS)
 
 
 def set_trap_durations(overrides: dict[str, float]) -> None:
-    """Apply the TrapDuration option's per-trap seconds, called once by the
-    client right after connecting. Only overwrites known trap names —
-    anything absent/unrecognized keeps its existing (default) duration."""
+    """Apply the TrapDuration option's per-trap seconds, called once on connect.
+    Only overwrites known trap names — anything unrecognized keeps its default."""
     for trap_name, seconds in overrides.items():
         if trap_name in _trap_durations:
             _trap_durations[trap_name] = seconds
@@ -71,17 +67,11 @@ _revert_handles: dict[str, asyncio.TimerHandle] = {}
 
 
 def activate_trap(pine: Pine, trap_name: str) -> None:
-    """Activate a trap by name and schedule it to automatically revert.
-
-    Re-activating a still-active trap extends its revert deadline by another
-    full duration (stacking) rather than reverting at the first deadline.
-    Unknown/unimplemented traps are silently ignored.
-    """
+    """Activate a trap by name and schedule it to automatically revert. Re-activating
+    a still-active trap extends (stacks) its deadline rather than reverting at the first."""
     if trap_name == Rac5Traps.TRAP_RESET_LEVEL:
-        # One-shot, no revert: force-reload whatever planet the player is
-        # currently on by writing its own id back into the same forced-load
-        # address the Giant Clank redirect and menu travel use (see
-        # planets.py's check_giant_clank() and NEW_PLANET_START_LOAD_ADDR).
+        # One-shot, no revert: force-reload the current planet by writing its own id
+        # back into the same forced-load address Giant Clank redirect/menu travel use.
         planet_id = pine.read_int8(CURRENT_PLANET_ADDRESS)
         pine.write_int32(NEW_PLANET_START_LOAD_ADDR, planet_id)
         return
@@ -127,15 +117,8 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
 
 
 def reconcile_traps(pine: Pine) -> None:
-    """Clear any trap effect active in game memory that this process has no
-    bookkeeping for (i.e. not in _active_deadlines) — called whenever PINE
-    (re)connects.
-
-    _active_deadlines is in-memory only, so a client restart (or a PINE
-    drop racing a revert write) can leave a bit stuck in-game with no timer
-    left to ever clear it; this catches that case. Traps that still have a
-    live deadline are left alone — their own revert timer will fire normally.
-    """
+    """Clear any trap effect in game memory with no bookkeeping in _active_deadlines,
+    called on PINE (re)connect — catches a bit left stuck by a client restart or dropped revert."""
     for trap_name, address in _DIRECT_ADDRESSES.items():
         if trap_name in _active_deadlines:
             continue

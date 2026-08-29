@@ -16,20 +16,8 @@ class SkillPoint:
         return 1 << self.bit
 
 
-# Confirmed bit layout (groups of 2-3, 4-bit spacing between planets):
-#
-#  Planet        Count  Bits
-#
-#  Pokitaru        3     0,  1,  2
-#  Ryllus          3     4,  5,  6
-#  Kalidon         3     8,  9, 10
-#  Metalis         3    12, 13, 14
-#  Dreamtime       2    16, 17
-#  Outpost Omega   1    20
-#  Challax         3    24, 25, 26
-#  Dayni Moon      3    28, 29, 30
-#  Inside Clank    2    32, 33
-#  Quodrona        2    36, 37
+# Bit layout: skill points are grouped in 2-3 per planet, spaced 4 bits apart
+# (see each SkillPoint's bit value below for the exact per-planet assignment).
 
 SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.POKITARU_TRAIN:          SkillPoint(0x01,  0, Rac5Planets.POKITARU),
@@ -56,11 +44,8 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.INSIDE_CLANK_RATCHET:    SkillPoint(0x09, 33, Rac5Planets.INSIDE_CLANK),
     Rac5SkillPoints.QUODRONA_ELITE:          SkillPoint(0x0A, 36, Rac5Planets.QUODRONA),
     Rac5SkillPoints.QUODRONA_STORM:          SkillPoint(0x0A, 37, Rac5Planets.QUODRONA),
-    # Both appended last (rather than restored to their original spots
-    # above) so every other skill point's positionally-derived id in
-    # SKILL_POINT_LOCATIONS (locations.py) stays stable. Earned during their
-    # respective Giant Clank sequences — see core/planets.py's
-    # GIANT_CLANK_CONFIGS/Core.tick() for how those are now reachable.
+    # Appended last (not restored to original spots) so other skill points' positional
+    # ids stay stable. Earned during Giant Clank sequences (see planets.py).
     Rac5SkillPoints.METALIS_TERROR:          SkillPoint(0x04, 13, Rac5Planets.METALIS),
     Rac5SkillPoints.CHALLAX_VARMINTS:        SkillPoint(0x07, 26, Rac5Planets.CHALLAX),
 }

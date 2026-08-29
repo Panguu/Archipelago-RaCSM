@@ -56,9 +56,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_vendor_refresh(self) -> bool:
-        """Force-rewrite the vendor item list right now (debug: rebuilds and
-        writes WEAPON_VENDOR_ITEMS/WEAPON_VENDOR_SLOTS immediately, without
-        waiting for the next tick or a menu open/close edge)."""
+        """Debug: force-rewrite the vendor item list immediately, without waiting for the next tick."""
         w = self.ctx._wiring
         w.vendor.force_refresh()
         logger.info(f"[RAC] {w.vendor!r}")
@@ -122,11 +120,8 @@ class RACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_ghost_link_interval(self, seconds: str = "") -> bool:
-        """Override how often (in seconds) your position is broadcast to
-        other Ghost Link players, without regenerating — overrides
-        whatever the ghost_link_update_interval YAML option set for this
-        session. 0 stops broadcasting your own position (you can still see
-        others). Run with no argument to see the current value."""
+        """Override the ghost_link_update_interval YAML option for this session without regenerating.
+        0 stops broadcasting your own position; no argument shows the current value."""
         if not seconds:
             logger.info(f"[RAC] GhostLink update interval: {self.ctx._ghost_link_interval}s")
             return True

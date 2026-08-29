@@ -9,9 +9,8 @@ if TYPE_CHECKING:
 
 
 class GhostRatchetInt32Field:
-    """Pine-backed accessor for a raw int32 ghost-struct field — either a
-    pre-encoded float bit pattern (rotation/scale/base) or a plain flag
-    (visibility), written verbatim rather than through float encode/decode."""
+    """Pine-backed accessor for a raw int32 ghost-struct field — a pre-encoded
+    float bit pattern or plain flag, written verbatim, not float-encoded."""
 
     def __init__(self, field_name: str) -> None:
         self.field_name = field_name
@@ -29,9 +28,8 @@ class GhostRatchetInt32Field:
 
 
 class GhostRatchetFloatField:
-    """Pine-backed accessor for a genuine float ghost-struct field (X/Y/Z
-    position, timer). Pine has no read_float, so reads go through
-    read_bytes + struct.unpack, same as PlayerMaxHealthSlot in player.py."""
+    """Pine-backed accessor for a genuine float ghost-struct field (X/Y/Z,
+    timer). Pine has no read_float, so reads go through read_bytes + struct.unpack."""
 
     def __init__(self, field_name: str) -> None:
         self.field_name = field_name
@@ -49,15 +47,9 @@ class GhostRatchetFloatField:
 
 
 class GhostRatchetAddresses:
-    """Pine-backed live accessor for one Ghost Ratchet entity struct
-    instance — every field reads/writes memory directly via its
-    descriptor, same shape as WeaponAddresses/EquippedArmour.
-
-    rotation_scale_1/rotation_1/base_field/rotation_2/rotation_scale_2/
-    visibility are raw int32 bit patterns confirmed in-game — fixed, the
-    same for every spawn regardless of position. x/y/z/timer are genuine
-    floats.
-    """
+    """Pine-backed live accessor for one Ghost Ratchet entity struct instance.
+    The rotation/scale/base/visibility fields are fixed int32 bit patterns, the
+    same for every spawn regardless of position; x/y/z/timer are genuine floats."""
 
     _OFFSETS: dict[str, int] = {
         "rotation_scale_1": -0x14,
@@ -106,35 +98,9 @@ _DESPAWN_AFTER_SECONDS: float = 1.0
 
 
 class GhostRatchetInventory:
-    """Pine-backed accessor for the Ghost Ratchet feature: spawns a static
-    clone of Ratchet at his own current position.
-
-    Only works on planets present in GHOST_RATCHET_ADDRESSES — spawn()
-    returns False (no-op) on any other planet. The caller
-    (Core.spawn_ghost_ratchet(), triggered by the /spawn_ghost client
-    command) passes the current planet id in; Core.tick() passes it into
-    keep_alive() every tick too, so a planet change after spawning is
-    detected and the (now-stale, wrong-planet) ghost struct address is
-    never written to again.
-
-    spawn() reads Ratchet's current X/Y/Z once and writes it into the
-    ghost entity's own struct — a one-shot position snapshot, not a
-    live-following clone; calling spawn() again re-snapshots to wherever
-    Ratchet is at that later moment, but the ghost itself never moves on
-    its own once placed. Position is written LAST, after the trigger and
-    the other fixed fields (matching the reference tool this was adapted
-    from) — writing it first, before the entity is otherwise armed,
-    reproducibly froze the game.
-
-    The rotation/scale/visibility/timer fields are a different story: the
-    timer counts down in-game, and the reference tool avoided ever letting
-    it run out by re-writing everything every single frame in a tight
-    loop. keep_alive() is that same continuous re-arm, called every tick
-    from Core.tick() for as long as a ghost is `active` — until
-    _DESPAWN_AFTER_SECONDS elapses, at which point it stops re-arming and
-    explicitly clears visibility instead, so the ghost disappears on a
-    clean, controlled schedule.
-    """
+    """Pine-backed accessor for the Ghost Ratchet feature: spawns a static clone of
+    Ratchet at his own current position. Position must be written LAST, after the
+    trigger and other fixed fields — writing it first reproducibly froze the game."""
 
     def __init__(self, pine: "Pine") -> None:
         self.pine = pine
@@ -144,14 +110,8 @@ class GhostRatchetInventory:
         self._addr: GhostRatchetAddresses | None = None
         self._trigger_address: int | None = None
 
-        # Separate state for GhostLink's "follow another player" mode (see
-        # follow()/stop_following() below) — kept apart from the
-        # spawn()/keep_alive()/_despawn() fields above so the two features
-        # never fight over the same despawn timer: the single-player
-        # /spawn_ghost debug command always despawns after
-        # _DESPAWN_AFTER_SECONDS, while a followed peer has no timer of its
-        # own and stays rendered for as long as the caller keeps calling
-        # follow() with fresh data.
+        # Separate state for GhostLink's "follow another player" mode, kept apart from
+        # spawn()/keep_alive() so the two features never fight over the same despawn timer.
         self._follow_active = False
         self._follow_planet_id: int | None = None
         self._follow_addr: GhostRatchetAddresses | None = None
@@ -180,17 +140,9 @@ class GhostRatchetInventory:
         return True
 
     def keep_alive(self, planet_id: int) -> None:
-        """Re-arm the trigger/rotation/scale/visibility/timer fields —
-        called every tick while `active` (see class docstring for why).
-        No-op if no ghost has been spawned yet. Never touches X/Y/Z.
-
-        If `planet_id` no longer matches the planet the ghost was spawned
-        on, the struct address is stale (it belongs to whatever planet is
-        actually loaded now) — deactivate without writing anything further
-        rather than risk corrupting unrelated memory. Once
-        _DESPAWN_AFTER_SECONDS has elapsed since spawn(), despawns
-        (clears visibility) instead of re-arming.
-        """
+        """Re-arm the trigger/rotation/scale/visibility/timer fields every tick while
+        `active`. If `planet_id` no longer matches, the struct address is stale — deactivate
+        without writing further rather than risk corrupting unrelated memory."""
         if not self.active or self._addr is None or self._trigger_address is None:
             return
         if planet_id != self._planet_id:
@@ -218,29 +170,17 @@ class GhostRatchetInventory:
         self._spawned_at = None
 
     def read_own_position(self, planet_id: int) -> tuple[float, float, float] | None:
-        """Read this client's own live X/Y/Z on `planet_id` — used by
-        GhostLink to broadcast a position for other linked players to
-        render. None if `planet_id` isn't in GHOST_RATCHET_ADDRESSES."""
+        """Read this client's own live X/Y/Z on `planet_id`, for GhostLink to broadcast
+        to other linked players. None if `planet_id` isn't in GHOST_RATCHET_ADDRESSES."""
         planet_addrs = GHOST_RATCHET_ADDRESSES.get(planet_id)
         if planet_addrs is None:
             return None
         return struct.unpack_from("<3f", self.pine.read_bytes(planet_addrs.player_position, 12))
 
     def follow(self, planet_id: int, x: float, y: float, z: float) -> bool:
-        """Render another GhostLink player at (x, y, z) on `planet_id`.
-
-        Called every tick with that peer's latest broadcast position for as
-        long as they're the one currently being followed (see
-        RACContext._maybe_sync_ghost_link) — unlike spawn()'s one-shot
-        snapshot, this rewrites X/Y/Z on every call, so the ghost tracks the
-        peer's movement rather than freezing at wherever they were when
-        following started. Returns False (no-op) if `planet_id` isn't in
-        GHOST_RATCHET_ADDRESSES.
-
-        No despawn timer of its own — the caller decides when to stop by
-        calling stop_following() once that peer's data goes stale or they
-        leave the planet.
-        """
+        """Render another GhostLink player at (x, y, z) on `planet_id`, rewriting X/Y/Z
+        every call so the ghost tracks movement. No despawn timer — caller must call
+        stop_following() once that peer's data goes stale or they leave the planet."""
         planet_addrs = GHOST_RATCHET_ADDRESSES.get(planet_id)
         if planet_addrs is None:
             return False
@@ -250,10 +190,8 @@ class GhostRatchetInventory:
             self._follow_planet_id = planet_id
         self._follow_active = True
 
-        # Fixed fields re-armed before position, same order as
-        # spawn()/keep_alive() — writing position first, before the entity
-        # is otherwise armed, reproducibly froze the game (see class
-        # docstring).
+        # Fixed fields re-armed before position, same order as spawn()/keep_alive() —
+        # writing position first reproducibly froze the game (see class docstring).
         self.pine.write_int32(self._follow_trigger, 1)
         addr = self._follow_addr
         addr.rotation_scale_1 = _ROTATION_SCALE_1

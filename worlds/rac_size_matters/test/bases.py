@@ -5,12 +5,8 @@ class RACSizeMatterTestBase(WorldTestBase):
     game = "Ratchet & Clank: Size Matters"
 
 
-# Shared item sets used across test files.
-# Pokitaru and Ryllus are both gated on "Infobot: Pokitaru and Ryllus", same
-# as every other planet's own infobot (see rules/entrances.py) -- but with
-# random_starting_planet off (the default in these tests), that infobot is
-# always precollected as the fixed start, so RYLLUS_ITEMS only needs to list
-# the gadgets actually required past that point, not the infobot itself.
+# Shared item sets used across test files. RYLLUS_ITEMS omits the Pokitaru/Ryllus
+# infobot since it's always precollected as the fixed start in these tests.
 ANY_PROJECTILE  = "Lacerator"
 RYLLUS_ITEMS    = [ANY_PROJECTILE, "Hypershot", "Sprout-O-Matic"]
 KALIDON_ITEMS   = [*RYLLUS_ITEMS, "Infobot: Kalidon"]

@@ -5,10 +5,8 @@ import time
 
 from CommonClient import logger
 
-# A peer's broadcast position is treated as gone once this long has passed
-# since we last heard from them, regardless of their own configured
-# interval (we have no way to know it) — generous enough to tolerate a
-# couple of missed heartbeats without flickering the ghost on/off.
+# A peer's position is treated as gone once this long has passed since we last heard from
+# them — generous enough to tolerate a couple of missed heartbeats without flickering.
 _GHOST_LINK_STALE_AFTER: float = 20.0
 
 # Floor applied to a configured push interval below 1s, so a low (but
@@ -17,19 +15,8 @@ _GHOST_LINK_MIN_PUSH_INTERVAL: float = 1.0
 
 
 class GhostLinkMixin:
-    """Shares live player position with every other connected player who
-    also has Ghost Link enabled: each linked client periodically broadcasts
-    its own X/Y/Z (see options.py's GhostLinkUpdateInterval) to a per-slot
-    data storage key, and renders whichever other linked player is
-    currently on the same planet as a static ghost clone — same underlying
-    GhostRatchetInventory struct as the single-player /spawn_ghost debug
-    command, but driven by follow()/stop_following() instead of
-    spawn()/keep_alive() (see core/ghost_ratchet.py).
-
-    Only one ghost struct exists per planet, so only one peer can ever be
-    rendered at a time — if more than one linked player shares your planet,
-    the lowest slot number among them wins, for a deterministic pick.
-    """
+    """Shares live player position via per-slot data storage, rendering the nearest linked peer on
+    the same planet as a static ghost clone. Only one ghost struct exists, so the lowest slot wins."""
 
     def _ghost_link_key(self, slot: int) -> str:
         return f"rsm_ghost_link_{self.team}_{slot}"
@@ -52,28 +39,19 @@ class GhostLinkMixin:
         logger.info(f"[RAC] GhostLink {'enabled' if enabled else 'disabled'}.")
 
     def _refresh_ghost_link_slots(self) -> None:
-        """Every other slot in this multiworld playing the same game — we
-        can't tell ahead of time which of them have Ghost Link toggled on
-        client-side (that's a runtime choice, not visible slot data), so
-        this just watches all of them; a slot that never enables it simply
-        never pushes anything to its key."""
+        """Watches every other slot playing this game, since which have Ghost Link toggled on
+        is a runtime choice we can't see — a slot that never enables it just never pushes."""
         self._ghost_link_slots = [
             slot for slot, info in self.slot_info.items()
             if slot != self.slot and info.game == self.game
         ]
-        # Unconditional (not gated behind /debug) — this only fires once per
-        # enable, and an empty list here explains total silence downstream
-        # far better than anything a later per-tick debug line could.
+        # Unconditional (not gated behind /debug) since an empty list here explains downstream silence.
         logger.info(f"[RAC] GhostLink watching slots: {self._ghost_link_slots} "
                     f"(update interval: {self._ghost_link_interval}s)")
 
     def _maybe_sync_ghost_link(self) -> None:
-        """Called every poll tick from PineMixin._poll_game(), which isn't
-        wrapped in a try/except of its own here (unlike Core.tick()) — an
-        uncaught exception escaping this method propagates up into
-        game_watcher()'s broad except, which treats it as a dead PINE
-        socket and stops polling entirely. Every raw pine read/write below
-        is therefore guarded locally instead of trusted to behave."""
+        """Called every poll tick; an uncaught exception here would propagate into game_watcher()'s
+        broad except and be treated as a dead PINE socket, so every call below is guarded locally."""
         if not self._ghost_link_enabled or self.slot is None or not self.pine_connected:
             return
         if not self._wiring.planet.is_ready:
@@ -86,9 +64,7 @@ class GhostLinkMixin:
             logger.warning(f"[RAC] GhostLink tick failed: {exc}")
 
     def _maybe_push_ghost_link_position(self) -> None:
-        # 0 means "as fast as possible" (every poll tick, no throttle) —
-        # not "off". GhostLink only runs this at all while enabled, so
-        # there's no separate "off" state to represent here.
+        # 0 means "as fast as possible" (no throttle), not "off" — there's no separate off state here.
         push_interval = self._ghost_link_interval
         if push_interval > 0:
             now = time.monotonic()
@@ -118,8 +94,7 @@ class GhostLinkMixin:
         }])
 
     def _refresh_ghost_link_peers(self) -> None:
-        """Pull the latest broadcast position for every watched slot out of
-        stored_data — called from context.py's Retrieved/SetReply handler.
+        """Pull the latest broadcast position for every watched slot out of stored_data.
         Just updates a plain dict (no memory access), so needs no lock."""
         now = time.monotonic()
         for slot in self._ghost_link_slots:
@@ -134,10 +109,8 @@ class GhostLinkMixin:
             self._ghost_link_peers[slot] = (planet_id, float(x), float(y), float(z), now)
 
     def _follow_ghost_link_peer(self) -> None:
-        """Runs every poll tick while GhostLink is enabled — picks the
-        lowest-slot fresh peer on the current planet and keeps the ghost
-        struct pinned to their latest position, or stops following once
-        nobody qualifies anymore."""
+        """Picks the lowest-slot fresh peer on the current planet and keeps the ghost struct
+        pinned to their position, or stops following once nobody qualifies."""
         planet_id = self._wiring.planet.planet_id
         if planet_id is None:
             self._wiring.ghost_ratchet.stop_following()

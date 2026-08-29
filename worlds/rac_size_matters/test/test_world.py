@@ -53,11 +53,8 @@ class TestDefaultGeneration(RACSizeMatterTestBase):
             self.assertIn(name, names)
 
     def test_all_armour_pickups_present(self) -> None:
-        # Giant Clank is off by default, so its two armour pieces (Metalis
-        # Gloves/Challax Chestplate) are excluded from generation — see
-        # TestGiantClankEnabled in test_giant_clank.py for the on case.
-        # Challenge Mode is also off by default, so its 8 armour pieces
-        # (4 Hyperborean, 4 Chameleon) are excluded too.
+        # Giant Clank and Challenge Mode are off by default, so their armour
+        # pieces are excluded from generation (see test_giant_clank.py).
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in ARMOUR_PICKUP_LOCATIONS:
             if name in GIANT_CLANK_LOCATIONS:

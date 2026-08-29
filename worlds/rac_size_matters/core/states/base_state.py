@@ -2,9 +2,8 @@ from __future__ import annotations
 
 
 class BaseState:
-    """Lightweight lifecycle marker for the handful of state classes that
-    still want enter()/exit() semantics. No longer carries an accessor/
-    address-map/storage — everything reads/writes pine directly now."""
+    """Lightweight lifecycle marker for state classes wanting enter()/exit()
+    semantics. Everything reads/writes pine directly now."""
 
     _active: bool = False
 

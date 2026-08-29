@@ -5,18 +5,12 @@ import time
 
 from CommonClient import logger
 
-# Same rationale as AmmoLink's push throttle — bolts can change every tick
-# in combat/crate-heavy areas, so this bounds how often we bother AP data
-# storage about it.
+# Same rationale as AmmoLink's push throttle — bounds how often we bother AP data storage.
 _BOLT_LINK_PUSH_INTERVAL: float = 0.5
 
 
 class BoltLinkMixin:
-    """Mirrors the player's bolt count across every connected player who
-    also has Bolt Link enabled — same absolute-value mirror model as
-    AmmoLink/DeathLink, single team-shared key since it's one plain number
-    (no per-weapon/per-slot split needed).
-    """
+    """Mirrors the player's bolt count across every linked player, same absolute-value model as AmmoLink/DeathLink."""
 
     def _bolt_link_key(self) -> str:
         return f"rsm_bolt_link_{self.team}"
@@ -66,8 +60,7 @@ class BoltLinkMixin:
         bolts = self._wiring.player_bolts
         if bolts.get() != value:
             bolts.set(value)
-            # Rebaseline apply_boost()'s own diff tracking, otherwise its
-            # next tick reads this externally-mirrored change as organic
-            # gain and multiplies it by the bolt multiplier option.
+            # Rebaseline apply_boost()'s diff tracking, otherwise it reads this mirrored
+            # change as organic gain and multiplies it by the bolt multiplier option.
             bolts.rebaseline(value)
         self._pushed_bolt_link = value

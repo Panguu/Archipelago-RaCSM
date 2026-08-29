@@ -16,11 +16,11 @@ from .address_maps import (
     PLANET_UNLOCK_ADDRESSES,
     WEAPON_ARRAY_BASE_BY_PLANET,
 )
-from .armour import ARMOUR_SET_TO_KEY, EQUIPPED_SLOT_TO_PIECE, ArmourPiece, ArmourUnlocks, EquippedArmour
+from .armour import EQUIPPED_SLOT_TO_PIECE, ArmourPiece, ArmourStruct
 from .controller import GlobalButtonState
 from .display_text import multi_line_text_box_inventory, small_text_box_inventory
 from .menu import MenuInventory, MenuStateValue
-from .player import PlayerInventory
+from .player import PlayerInventory, PlayerMovementState
 from .states.base_state import BaseState
 from .structs.game import (
     TRANSITION_GATE_ARRIVED,
@@ -57,14 +57,11 @@ class Planets:
     DAYNI_MOON      = Planet("Dayni Moon",            0x08, menu_addr=MENU_ADDR_BY_PLANET_ID[0x08])
     INSIDE_CLANK    = Planet("Inside Clank",          0x09)
     QUODRONA        = Planet("Quodrona",              0x0A, menu_addr=MENU_ADDR_BY_PLANET_ID[0x0A])
-    # Special vanilla sub-modes entered from Metalis/Challax, not normal AP
-    # regions — see PlanetInventory.giant_clank_active / check_giant_clank().
+    # Special vanilla sub-modes entered from Metalis/Challax, not normal AP regions.
     GIANT_CLANK_METALIS = Planet("Giant Clank (Metalis)", 0x0F)
     GIANT_CLANK_CHALLAX = Planet("Giant Clank (Challax)", 0x15)
-    # Kalidon's skyboard race sub-level: no known per-planet addresses of its
-    # own (not in PLANET_ADDRESSES) — only the fixed/global skyboard
-    # completion bits are safe to read while it's loaded, see
-    # Core.tick()'s _KALIDON_RACE_ID branch.
+    # Kalidon's skyboard race sub-level has no addresses of its own; only the
+    # fixed/global skyboard completion bits are safe to read while it's loaded.
     KALIDON_RACE    = Planet("Kalidon Race Track",    0x16)
     OUTPOST_OMEGA_2 = Planet("Outpost Omega 2",       0x17, menu_addr=MENU_ADDR_BY_PLANET_ID[0x17])
 
@@ -98,19 +95,13 @@ PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
 
 
 # Infobots / planet state
-# Infobots are AP items given to the player.  When received they set the
-# corresponding planet's unlock-status address to INFOBOT_UNLOCK_VALUE (3),
-# which allows Ratchet to travel to (or enter) that planet.
-#
-# Planets that are auto-unlocked from the start (no infobot item):
-#   Dreamtime    -- unlocked through Outpost Omega automatically
-#   Inside Clank -- entrance only accessible from Dayni Moon; requires Shrink Ray
+# Infobots are AP items; receiving one sets the planet's unlock-status address
+# to INFOBOT_UNLOCK_VALUE (3). Dreamtime/Inside Clank are auto-unlocked instead.
 
 INFOBOT_UNLOCK_VALUE = 3  # value written to the planet status address
 
-# Display name -> planet key(s) used in PLANET_STATE_ADDRESSES. Most infobots
-# unlock a single planet; Pokitaru's also unlocks Ryllus since the two share
-# one merged item.
+# Display name -> planet key(s). Pokitaru's infobot also unlocks Ryllus since
+# the two share one merged item.
 INFOBOT_ITEM_TO_PLANET: dict[str, tuple[str, ...]] = {
     Rac5Infobots.POKITARU:     ("pokitaru", "ryllus"),
     Rac5Infobots.KALIDON:      ("kalidon",),
@@ -135,9 +126,7 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
 }
 
 # Planet unlock addresses always forced to INFOBOT_UNLOCK_VALUE because
-# these planets have no collectible infobot in the AP item pool. Pokitaru has
-# a real infobot item (Rac5Infobots.POKITARU) and is gated by it like every
-# other infobot planet -- see PlanetUnlockState/_AUTO_UNLOCK_NAMES.
+# these planets have no collectible infobot in the AP item pool.
 AUTO_UNLOCK_ADDRESSES: list[int] = [
     0x21F4C665,  # Dreamtime -- auto-unlocked via Outpost Omega
 ]
@@ -150,27 +139,19 @@ logger = logging.getLogger("CommonClient")
 _METALIS_ID: int = 0x04
 _CHALLAX_ID: int = 0x07
 
-# Giant Clank Metalis/Challax (planet ids 0x0F/0x15) are self-contained
-# vanilla sequences, not normal AP regions — see
-# PlanetInventory.giant_clank_active below. NOTE: the game shares one
-# trigger bit between the two sequences (Challax mission address, mask
-# 0x0010) for *starting* Giant Clank; neither sequence here relies on that
-# bit at all — both are detected purely by planet id and completed by
-# watching an armour-piece pickup (see GIANT_CLANK_CONFIGS).
+# Giant Clank Metalis/Challax are self-contained vanilla sequences, not normal AP
+# regions — detected purely by planet id, completed via an armour-piece pickup.
 _GIANT_CLANK_METALIS_ID:  int = 0x0F
 _GIANT_CLANK_CHALLAX_ID:  int = 0x15
 
 
 class GiantClankConfig(NamedTuple):
     origin_id:        int            # planet the sequence is entered from
-    armour_set:       str            # ArmourUnlocks slot name (e.g. "electroshock")
+    armour_set:       str            # ArmourStruct.SET_FIELDS name (e.g. "electroshock")
     piece:            ArmourPiece    # piece bit that signals completion when it appears
     pickup_locations: tuple[str, ...]  # AP location(s) fired the moment that bit appears
-    # Some sequences (Metalis) end with the game scripting a transition to a
-    # different planet than the one the player started on — redirect_to
-    # forces NEW_PLANET_START_LOAD_ADDR back to origin_id instead of
-    # following it, firing escape_location once. None/None for sequences
-    # (Challax) the player naturally returns from on their own.
+    # redirect_to forces NEW_PLANET_START_LOAD_ADDR back to origin_id when the game
+    # scripts an exit to a different planet (Metalis); None/None if it returns on its own.
     redirect_to:      int | None = None
     escape_location:  str | None = None
 
@@ -191,13 +172,8 @@ GIANT_CLANK_CONFIGS: dict[int, GiantClankConfig] = {
 
 
 class PlanetInventory:
-    """Single home for planet-specific runtime logic.
-
-    Owns every planet-dependent Inventory (player, menu, weapons, text boxes)
-    and rebinds them via set_base()/set_planet() on planet_enter(). Only ever
-    calls the get/set/delete/check methods already implemented on each
-    Inventory — never pokes memory directly itself.
-    """
+    """Single home for planet-specific runtime logic. Owns every planet-dependent
+    Inventory and rebinds them via set_planet(); never pokes memory directly itself."""
 
     def __init__(
         self,
@@ -218,88 +194,58 @@ class PlanetInventory:
         self.multi_line_text  = multi_line_text_box_inventory(pine)
 
         self.planet_id: int | None = None
-        # True once the current planet has fully loaded and every
-        # planet-dependent Inventory has its base address rebound. False
-        # while a planet transition is in flight — every read/write below
-        # is gated on this, since addresses are stale/unbound until then.
+        # True once every planet-dependent Inventory has its address rebound;
+        # False mid-transition, gating every read/write below.
         self.is_ready: bool = False
         self._pending_planet_id: int | None = None
         self._prev_gate: int = TRANSITION_GATE_IDLE
 
-        # Random Starting Planet: the game always boots a fresh save into
-        # Pokitaru regardless of which planets are AP-unlocked, so the very
-        # first Pokitaru arrival must be redirected once. Set from slot_data
-        # (see set_starting_planet()) — None (option off) leaves vanilla
-        # behavior untouched.
+        # Random Starting Planet: the game always boots a fresh save into Pokitaru,
+        # so the first arrival must be redirected once. None (option off) is vanilla.
         self.starting_planet_id: int | None = None
         self._start_redirect_pending: bool = False
-        # Quick select starts frozen; the first time a planet becomes ready
-        # it's zeroed (fresh boot), every time after that it's restored from
-        # the in-memory snapshot — same start/restore split QuickSelectState
-        # itself already exposes.
+        # Quick select starts frozen; zeroed on the first ready planet, restored after.
         self._quick_select_primed: bool = False
 
-        # Giant Clank Metalis/Challax: self-contained vanilla sequences played
-        # start-to-finish with no AP items/notifications (see
-        # Core.tick()/apply_inventory()). check_giant_clank() tracks each
-        # sequence's completion pickup (see GIANT_CLANK_CONFIGS) and, where
-        # configured, redirects the game's own scripted exit transition back
-        # to the origin planet instead of following it onward.
-        # Set directly by the client from slot_data (GiantClank option) —
-        # see _ready_on_planet(). Defaults True so standalone/test usage
-        # without slot_data wiring doesn't get silently locked out.
+        # Giant Clank Metalis/Challax: self-contained vanilla sequences with no AP
+        # items/notifications. Defaults True so standalone/test usage isn't locked out.
         self.giant_clank_allowed: bool = True
         self.giant_clank_active: bool = False
         self._giant_clank_config: GiantClankConfig | None = None
         self._giant_clank_had_piece: bool = False
         self._giant_clank_escape_sent: bool = False
 
-        # Armour tracking: collected_armour is what's been picked up in-game
-        # this session, unlock_armour is what Archipelago has granted — kept
-        # separate the same way ArmourState used to split world/ap armour.
-        # equipped_armour only ever updates when the pause menu closes (see
-        # check_equipped_armour()) — never on any other tick.
-        self.collected_armour: dict[str, int] = dict.fromkeys(ArmourUnlocks._OFFSETS, 0)
-        self.unlock_armour:    dict[str, int] = dict.fromkeys(ArmourUnlocks._OFFSETS, 0)
-        self.equipped_armour:  dict[str, int] = dict.fromkeys(EquippedArmour._OFFSETS, 0)
-        # Armour-pickup detection is gated to the player's pickup-animation
-        # window (see check_collected_armour()) so an AP inventory resync
-        # (which writes the same UnlockedArmour bytes outside any pickup
-        # animation) is never misread as a genuine in-game pickup.
+        # equipped_armour only ever updates on pause-menu-close (check_equipped_armour()).
+        self.equipped_armour:  dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
+        # Gated to the pickup-animation window so an AP inventory resync (which writes
+        # the same bytes outside any animation) is never misread as a genuine pickup.
         self._was_picking_up:    bool = False
-        # Picking up a new armour piece can auto-equip it for the pickup
-        # animation — snapshot the equipped slots at pickup-start and
-        # restore them at pickup-end so a mere pickup never silently changes
-        # what the player has equipped; equipping stays a deliberate action
-        # (quick select / pause menu).
+        # Snapshot equipped slots at pickup-start and restore at pickup-end, since a
+        # pickup can auto-equip a piece and must not silently change the loadout.
         self._equipped_pickup_baseline: dict[str, int] | None = None
 
         self.on_death:                 Callable[[], None]              = lambda: None
         self.on_respawn:               Callable[[], None]              = lambda: None
         self.on_equipped_armour_saved: Callable[[dict[str, int]], None] = lambda _: None
-        # Fires whenever the pause menu closes — alongside the equipped-armour
-        # save above, so anything else that should only persist on pause-close
-        # (e.g. quick select) can hook the same edge without its own tracking.
+        # Fires on pause-menu-close alongside the equipped-armour save, so other
+        # pause-close-only state (e.g. quick select) can hook the same edge.
         self.on_pause_close:           Callable[[], None]              = lambda: None
 
         self._prev_dead: bool = False
         self._prev_menu: MenuStateValue | None = None
+        # Set by check_death() and reused by check_collected_armour() the same tick,
+        # so the two don't each take their own movement read.
+        self._cached_movement: PlayerMovementState | None = None
 
     def set_starting_planet(self, planet_id: int | None) -> None:
-        """Set once from slot_data (Random Starting Planet option): the planet
-        id the very first Pokitaru arrival should be redirected to instead of
-        the vanilla boot-in. None (option off, or the chosen planet already
-        is Pokitaru) leaves the first arrival untouched."""
+        """Set once from slot_data: the planet id the first Pokitaru arrival should be
+        redirected to. None (option off, or already Pokitaru) leaves it untouched."""
         self.starting_planet_id = planet_id
         self._start_redirect_pending = planet_id is not None and planet_id != Planets.POKITARU.planet_id
 
     def set_planet(self, planet_id: int) -> None:
-        """Rebind every planet-dependent Inventory to the newly loaded planet
-        — including unbinding them (base/array None, read/write becomes a
-        no-op) for a planet_id not in PLANET_ADDRESSES. Every sub-inventory
-        must always be explicitly rebound here, or an unrecognized planet
-        would keep the previous planet's addresses and read/write the wrong
-        planet's memory."""
+        """Rebind every planet-dependent Inventory to the newly loaded planet, including
+        unbinding for an unrecognized planet_id — otherwise it'd keep stale addresses."""
         self.planet_id = planet_id
         self.player.set_base(planet_id)
         self.menu.set_base(planet_id)
@@ -309,24 +255,9 @@ class PlanetInventory:
         self.weapon_cycler.set_base(planet_id)
 
     def check_transition(self) -> bool:
-        """Pull-based transition detector — call every tick.
-
-        Primary signal is the transition gate (0x1EDDAD4): any change away
-        from idle blocks writes immediately (is_ready False),
-        TRANSITION_GATE_ARRIVED latches the destination planet id from
-        LoadingPlanetStruct, and settling back to idle is the only moment
-        set_planet() rebinds every planet-dependent Inventory and is_ready
-        goes back to True.
-
-        Falls back to a raw CURRENT_PLANET_ADDRESS comparison for the rare
-        planet swap that never touches the gate (e.g. the scripted Outpost
-        Omega 1 -> 2 area change).
-
-        Quick select is frozen the moment writes are blocked, and restored
-        (or zeroed, the first time) the moment the new planet is ready.
-
-        Returns True exactly once, the tick the new planet becomes ready.
-        """
+        """Pull-based transition detector — call every tick. Primary signal is the
+        transition gate; falls back to a raw CURRENT_PLANET_ADDRESS comparison for a
+        planet swap that never touches the gate. Returns True once, when ready."""
         gate = self.pine.read_int32(TransitionGateStruct.BASE_ADDRESS)
         if gate != self._prev_gate:
             prev = self._prev_gate
@@ -360,22 +291,16 @@ class PlanetInventory:
 
     def _ready_on_planet(self, planet_id: int) -> None:
         if self._start_redirect_pending and planet_id == Planets.POKITARU.planet_id:
-            # Random Starting Planet: redirect the game's hardcoded first
-            # Pokitaru boot-in to the AP-chosen starting planet instead.
-            # One-shot — cleared immediately so a later, legitimate visit to
-            # Pokitaru is never redirected again.
+            # Redirect the hardcoded first Pokitaru boot-in; one-shot so a later
+            # legitimate visit is never redirected again.
             self._start_redirect_pending = False
             self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, self.starting_planet_id)
             return
 
         config = GIANT_CLANK_CONFIGS.get(planet_id)
         if config is not None and not self.giant_clank_allowed:
-            # Giant Clank option is off: block entry entirely by forcing an
-            # immediate load back to whatever planet this sequence is
-            # entered from — is_ready is deliberately left as-is (still
-            # False from the transition that got us here) so nothing else
-            # runs against this half-loaded state; the redirect's own
-            # arrival calls _ready_on_planet() again for real.
+            # Option off: force an immediate load back to origin_id. is_ready is
+            # left False so nothing runs against this half-loaded state.
             self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.origin_id)
             return
 
@@ -386,10 +311,8 @@ class PlanetInventory:
             self.quick_select.zero()
         else:
             self.quick_select.unfreeze()
-        # Called unconditionally so both branches converge: on the very
-        # first ready it applies whatever loadout was already loaded via
-        # QuickSelectState.load() (or harmlessly re-applies zero()'s
-        # all-zero default), and on every later one it's the normal restore.
+        # Called unconditionally so both branches converge: applies the loaded
+        # loadout (or zero()'s default) on first ready, the normal restore after.
         self.quick_select.restore()
 
         if config is not None:
@@ -405,38 +328,27 @@ class PlanetInventory:
         self._giant_clank_config = config
         self._giant_clank_had_piece = False
         self._giant_clank_escape_sent = False
-        self.armour.sync_unlocked(dict.fromkeys(ArmourUnlocks._OFFSETS, 0))
+        self.armour.clear_unlocked()
 
     def _exit_giant_clank(self) -> None:
         """Restore true AP armour ownership once back on a regular planet."""
         self.giant_clank_active = False
         self._giant_clank_config = None
-        self.armour.sync_unlocked(self.unlock_armour)
+        self.armour.apply_full()
 
     def check_giant_clank(self) -> list[str]:
-        """Poll-based: call every tick regardless of is_ready/transition
-        state, so a redirect (where configured) lands as soon as possible.
-        No-ops unless giant_clank_active.
-
-        Returns the AP location name(s) to send this tick:
-          - config.pickup_locations, the moment config.piece's unlocked bit
-            appears (armour was stripped on entry, so any appearance here is
-            a genuine pickup) — for Challax this is both the armour pickup
-            and the "Giant Clank" mission location at once.
-          - config.escape_location, once, when the game starts its own
-            scripted exit transition (NEW_PLANET_START_LOAD_ADDR leaves the
-            idle value) — immediately overwritten with config.redirect_to so
-            the player is forced back to the origin planet instead of
-            following it onward. Only set for sequences that need it
-            (Metalis); Challax's is left to return on its own.
-        """
+        """Poll-based: call every tick regardless of is_ready/transition state so a
+        redirect lands ASAP. No-ops unless giant_clank_active. Returns
+        pickup_locations on a genuine armour pickup, and escape_location once
+        when redirecting the game's own scripted exit back to origin_id."""
         config = self._giant_clank_config
         if not self.giant_clank_active or config is None:
             return []
 
         to_send: list[str] = []
 
-        has_piece = bool(getattr(self.armour.UnlockedArmour, config.armour_set) & config.piece)
+        unlocked = self.armour.read()
+        has_piece = bool(getattr(unlocked, config.armour_set) & config.piece)
         if has_piece and not self._giant_clank_had_piece:
             to_send.extend(config.pickup_locations)
         self._giant_clank_had_piece = has_piece
@@ -462,9 +374,13 @@ class PlanetInventory:
 
     # Death — pull-based, call whenever you want to check for a transition.
     def check_death(self) -> bool:
+        """Also refreshes self._cached_movement, the single PlayerInventory read this
+        and check_collected_armour() both need this tick, avoiding a second read."""
         if not self.is_ready:
             return False
-        is_dead = self.player.is_dead
+        movement = self.player.movement_state
+        self._cached_movement = movement
+        is_dead = movement is not None and PlayerMovementState.is_dead(int(movement))
         newly_dead    = is_dead and not self._prev_dead
         newly_revived = self._prev_dead and not is_dead
         self._prev_dead = is_dead
@@ -490,65 +406,46 @@ class PlanetInventory:
 
     # Armour
     def check_collected_armour(self) -> None:
-        """Detect a genuine in-game armour pickup by watching the player's
-        pickup-animation window (player.is_picking_up), not by polling
-        UnlockedArmour continuously — apply_inventory() writes those same
-        bytes any time AP-owned armour gets re-synced (e.g. on every planet
-        load), and treating every appeared bit as "new" would misreport that
-        resync as a real pickup.
-
-        A snapshot-and-diff wouldn't be enough either: an already-AP-granted
-        piece would sit in the baseline too, so the game re-writing the
-        identical bit during a pickup would never look like a change. There's
-        no separate per-pickup "collected" flag, so instead entering the
-        animation zeroes every set's bytes outright — whatever's back to 1 on
-        exit is fresh from this pickup, except bits for a piece already
-        equipped going in (the game re-asserts those regardless), which are
-        masked out using the pre-pickup equipped-slot baseline. Memory is
-        then immediately rewritten back to only what AP has actually granted
-        (unlock_armour) — a local pickup only proves the location was
-        visited, it doesn't grant ownership. Never touches unlock_armour
-        itself, which is only ever set by sync_unlock_armour().
-
-        Also snapshots/restores the equipped-slot bytes across the same
-        window, since picking up a piece can auto-equip it for the animation
-        and that must not silently change the player's actual loadout."""
+        """Detect a genuine pickup via the pickup-animation window, not by polling
+        continuously (apply_inventory()'s AP resync writes the same bytes and would
+        look like a pickup). Zeroes every set on entry so whatever's back to 1 on exit
+        is fresh, masking out bits for pieces already equipped going in."""
         if not self.is_ready:
             return
-        is_picking_up = self.player.is_picking_up
+        is_picking_up = self._cached_movement == PlayerMovementState.Pickup
         if is_picking_up and not self._was_picking_up:
+            equipped = self.armour.read()
             self._equipped_pickup_baseline = {
-                name: int(getattr(self.armour.EquipedArmour, name) or 0)
-                for name in EquippedArmour._OFFSETS
+                name: int(getattr(equipped, name) or 0)
+                for name in ArmourStruct.SLOT_FIELDS
             }
-            self.armour.sync_unlocked(dict.fromkeys(ArmourUnlocks._OFFSETS, 0))
+            self.armour.clear_unlocked()
         elif not is_picking_up and self._was_picking_up:
             equipped_mask_by_set: dict[str, int] = {}
             if self._equipped_pickup_baseline:
                 for slot_name, piece in EQUIPPED_SLOT_TO_PIECE.items():
-                    set_key = ARMOUR_SET_TO_KEY.get(self._equipped_pickup_baseline.get(slot_name, 0))
-                    if set_key:
+                    raw_set = self._equipped_pickup_baseline.get(slot_name, 0)
+                    if raw_set:
+                        set_key = ArmourStruct.SET_FIELDS[raw_set - 1]
                         equipped_mask_by_set[set_key] = equipped_mask_by_set.get(set_key, 0) | int(piece)
 
-            changed: dict[str, int] = {}
-            for name in ArmourUnlocks._OFFSETS:
-                raw = int(getattr(self.armour.UnlockedArmour, name))
+            unlocked = self.armour.read()
+            new_pieces: dict[str, ArmourPiece] = {}
+            for name in ArmourStruct.SET_FIELDS:
+                raw = int(getattr(unlocked, name))
                 raw &= ~equipped_mask_by_set.get(name, 0)
-                new_bits = raw & ~self.collected_armour[name]
+                already = int(getattr(self.armour.game_armour, name) or 0)
+                new_bits = raw & ~already
                 if new_bits:
-                    self.collected_armour[name] |= new_bits
-                changed[name] = self.unlock_armour.get(name, 0)
-            self.armour.sync_unlocked(changed)
+                    new_pieces[name] = ArmourPiece(new_bits)
+            if new_pieces:
+                self.armour.record_pickup(new_pieces)
+            self.armour.apply_full()
 
             if self._equipped_pickup_baseline is not None:
                 self.armour.sync_equipped(self._equipped_pickup_baseline)
                 self._equipped_pickup_baseline = None
         self._was_picking_up = is_picking_up
-
-    def sync_unlock_armour(self, ap_armour: dict[str, int]) -> None:
-        """Record what Archipelago has granted, separate from collected_armour.
-        Not gated on is_ready — this only touches the in-memory dict, not the game."""
-        self.unlock_armour.update(ap_armour)
 
     def check_equipped_armour(self) -> bool:
         """Pull-based: call whenever you want to check for a pause-menu-close
@@ -559,8 +456,9 @@ class PlanetInventory:
         left_pause_menu = self._prev_menu == MenuStateValue.PAUSE_MENU and current != MenuStateValue.PAUSE_MENU
         self._prev_menu = current
         if left_pause_menu:
-            for name in EquippedArmour._OFFSETS:
-                self.equipped_armour[name] = int(getattr(self.armour.EquipedArmour, name) or 0)
+            equipped = self.armour.read()
+            for name in ArmourStruct.SLOT_FIELDS:
+                self.equipped_armour[name] = int(getattr(equipped, name) or 0)
             self.on_equipped_armour_saved(dict(self.equipped_armour))
             self.on_pause_close()
         return left_pause_menu
@@ -599,15 +497,11 @@ _AUTO_UNLOCK_NAMES: frozenset[str] = frozenset({
     "DREAMTIME",
 })
 
-# Planets whose unlock byte the game manages entirely on its own — never
-# read, written, or forced by AP. Inside Clank's entrance naturally opens
-# once Dayni Moon's own in-game progress (Shrink Ray) allows it; forcing it
-# here used to fight that, either locking it back before it should open or
-# needlessly rewriting a byte the game already set correctly.
+# Planets whose unlock byte the game manages entirely on its own — never read,
+# written, or forced by AP (Inside Clank opens naturally via Dayni Moon progress).
 _NATURAL_UNLOCK_NAMES: frozenset[str] = frozenset({"INSIDE_CLANK"})
 
-# Planets auto-unlocked in memory but gated behind different AP progress.
-# Maps auto-unlock planet → the planet whose AP status we check for vendor access.
+# Maps an auto-unlocked planet -> the planet whose AP status gates its vendor access.
 _VENDOR_PLANET_GATE: dict[str, str] = {
     "DREAMTIME":    "OUTPOST_OMEGA",  # reachable only once Outpost Omega infobot received
     "INSIDE_CLANK": "DAYNI_MOON",    # reachable only once Dayni Moon infobot received
@@ -626,13 +520,8 @@ class PlanetUnlockState(BaseState):
         self._enforce_active: bool     = True
         self._ryllus_released: bool    = False
         self._infobot_planets: set[str] = set()
-        # Random Starting Planet: set from slot_data (see set_random_start()).
-        # False (option off) keeps Ryllus force-opened until its intro
-        # cutscene ends, matching the game's own vanilla behavior (it force-
-        # unlocks Ryllus via Pokitaru's intro before AP gating can apply).
-        # True skips that entirely -- the player may not even start on
-        # Pokitaru, so Ryllus is gated purely by infobot ownership from tick
-        # one, like every other planet.
+        # False (option off) keeps Ryllus force-opened until its intro cutscene ends,
+        # matching vanilla. True gates it purely by infobot ownership from tick one.
         self._random_start: bool = False
 
     def _read_struct(self) -> PlanetProgressStruct:
@@ -640,9 +529,8 @@ class PlanetUnlockState(BaseState):
         return PlanetProgressStruct.from_bytes(raw)
 
     def check(self) -> None:
-        """Pull-based: call whenever you want to re-check + enforce planet
-        unlock state, firing on_planet_unlocked/on_planet_locked for whatever
-        changed since the last call."""
+        """Pull-based: re-check + enforce planet unlock state, firing
+        on_planet_unlocked/on_planet_locked for whatever changed."""
         instance = self._read_struct()
         prev = dict(self.unlocked)
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
@@ -663,16 +551,8 @@ class PlanetUnlockState(BaseState):
         self._enforce_desired()
 
     def _enforce_desired(self) -> None:
-        """Unconditionally re-assert every non-natural planet's lock state
-        every call, rather than only when out of sync with _desired.
-
-        _write_desired() also writes a second, independent byte per planet
-        (PLANET_UNLOCKS[name].state_addr, the one that gates ship
-        travel/selection) that can drift from the PlanetProgressStruct byte
-        this class reads back without ever showing as a mismatch (e.g. a
-        stale save leaves state_addr unlocked while the struct reads
-        locked). Writing every tick regardless closes that gap.
-        """
+        """Unconditionally re-assert every non-natural planet's lock state every call,
+        since _write_desired()'s second state_addr byte can silently drift out of sync."""
         if not self._enforce_active:
             return
         names = [n for n in PLANET_UNLOCK_ORDER if n not in _NATURAL_UNLOCK_NAMES]
@@ -681,10 +561,8 @@ class PlanetUnlockState(BaseState):
             self.unlocked[name] = self._desired[name]
 
     def _write_desired(self, names: list[str]) -> None:
-        # Per-field writes rather than one packed write, so planets in
-        # _NATURAL_UNLOCK_NAMES (e.g. Inside Clank) are never touched at all
-        # — a bulk write would clobber their live game-managed byte with
-        # whatever this instance's default/desired value happened to be.
+        # Per-field writes, not one packed write, so _NATURAL_UNLOCK_NAMES planets are
+        # never touched — a bulk write would clobber their live game-managed byte.
         for field, name in zip(PlanetProgressStruct.PLANET_ORDER, PLANET_UNLOCK_ORDER, strict=False):
             if name not in names:
                 continue

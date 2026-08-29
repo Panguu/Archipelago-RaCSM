@@ -13,73 +13,48 @@ from .locations.challenge_locations import (
     METALIS_CHALLENGE_NAMES,
     SKYBOARD_ADDRESS_MASK_MAP,
     ChallengeSection,
-    SkyboardBit,
 )
 
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-
-class ChallengeSlot:
-    """Pine-backed accessor for a single challenge-completion byte at a fixed
-    absolute address (addresses are scattered per-planet, not a common
-    base+offset struct, so this binds directly to an address)."""
-
-    def __init__(self, address: int) -> None:
-        self.address = address
-
-    def __get__(self, instance, owner) -> int | None:
-        if instance is None:
-            return None
-        return instance.pine.read_int8(self.address)
-
-    def __set__(self, instance, value) -> None:
-        if instance is None:
-            return
-        instance.pine.write_int8(self.address, value)
-
-    def __delete__(self, instance) -> None:
-        if instance is None:
-            return
-        instance.pine.write_int8(self.address, 0)
+# Distinct addresses for every tracked clank-challenge byte, batch-read together
+# once per check()/sync() call instead of one pine.read_int8 per location.
+_CLANK_ADDRESSES: tuple[int, ...] = tuple(ALL_CLANK_ADDRESS_MAP)
 
 
 class ChallengeInventory:
     """Pine-backed live accessor for every clank-challenge completion byte.
-
-    One ChallengeSlot per AP location name, built dynamically from
-    ALL_CLANK_ADDRESS_MAP. Also owns completion tracking: check() is a pull —
-    call it whenever the caller decides to poll — and reports newly-completed
-    AP location names, including the Ultimate Gladiator failsafe.
-    """
+    check() is a pull-based poll reporting newly-completed AP location names,
+    including the Ultimate Gladiator failsafe."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
-        self._slots: dict[str, ChallengeSlot] = {
-            name: ChallengeSlot(address) for address, name in ALL_CLANK_ADDRESS_MAP.items()
-        }
-        self._counts: dict[str, int] = dict.fromkeys(self._slots, 0)
+        self._name_to_address: dict[str, int] = {n: addr for addr, n in ALL_CLANK_ADDRESS_MAP.items()}
+        self._counts: dict[str, int] = dict.fromkeys(ALL_CLANK_ADDRESS_MAP.values(), 0)
         self.completed: set[str] = set()
         self.gladiator_sent: set[str] = set()
 
+    def _read_all(self) -> dict[int, int]:
+        values = self.pine.batch_read_int8(list(_CLANK_ADDRESSES))
+        return dict(zip(_CLANK_ADDRESSES, values, strict=True))
+
     def get(self, name: str) -> int:
-        return self._slots[name].__get__(self, type(self))
+        return self.pine.read_int8(self._name_to_address[name])
 
     def set(self, name: str, value: int) -> None:
-        self._slots[name].__set__(self, value)
+        self.pine.write_int8(self._name_to_address[name], value)
 
     def delete(self, name: str) -> None:
-        self._slots[name].__delete__(self)
+        self.set(name, 0)
 
     def unlock_section(self, planet: str, section: ChallengeSection, value: int = 0x0F) -> None:
         """Unlock a single challenge section (Derby / Gadgetbot Toss / Gadgetbot) on a planet."""
         self.pine.write_int8(CLANK_SECTION_UNLOCK_ADDRESSES[planet][section], value)
 
     def setup(self, all_challenges: bool = False) -> None:
-        """Unlock every section on every tracked planet. Deliberately never
-        writes into any individual challenge-completion byte — those are
-        the game's own save data, and completion is read from whatever's
-        actually there rather than preset/forced by this client."""
+        """Unlock every section on every tracked planet. Never writes individual
+        challenge-completion bytes — those are the game's own save data."""
         del all_challenges
         for planet, sections in CLANK_SECTION_UNLOCK_ADDRESSES.items():
             for section in sections:
@@ -88,12 +63,13 @@ class ChallengeInventory:
     def check(self, all_challenges: bool = False) -> list[str]:
         """Read every tracked byte and return newly completed AP location
         names for this call, including any gladiator failsafe locations."""
+        raw_by_address = self._read_all()
         newly: list[str] = []
         addr_map = ALL_CLANK_ADDRESS_MAP if all_challenges else CHALLENGE_ADDRESS_MAP
         for address, name in addr_map.items():
             if name in self.completed:
                 continue
-            count = self._slots[name].__get__(self, type(self))
+            count = raw_by_address[address]
             if address in COUNT_BASED_CHALLENGE_ADDRS:
                 done = count > self._counts.get(name, 0)
                 self._counts[name] = count
@@ -106,9 +82,8 @@ class ChallengeInventory:
         return newly
 
     def _check_gladiator_failsafe(self) -> list[str]:
-        """Report a planet's Ultimate Gladiator skill point once every
-        individual challenge on it is complete, even if its own in-game
-        detection never fired."""
+        """Report a planet's Ultimate Gladiator skill point once every individual
+        challenge on it is complete, even if its own in-game detection never fired."""
         newly: list[str] = []
         if Rac5Planets.METALIS not in self.gladiator_sent and METALIS_CHALLENGE_NAMES <= self.completed:
             self.gladiator_sent.add(Rac5Planets.METALIS)
@@ -120,8 +95,9 @@ class ChallengeInventory:
 
     def sync(self) -> None:
         """Baseline read: populate completed/_counts without reporting anything as newly completed."""
+        raw_by_address = self._read_all()
         for address, name in ALL_CLANK_ADDRESS_MAP.items():
-            count = self._slots[name].__get__(self, type(self))
+            count = raw_by_address[address]
             if address in COUNT_BASED_CHALLENGE_ADDRS:
                 self._counts[name] = count
                 if count > 0:
@@ -136,75 +112,56 @@ class ChallengeInventory:
         return f"ChallengeInventory(completed={len(self.completed)}/{len(ALL_CLANK_ADDRESS_MAP)})"
 
 
-class SkyboardSlot:
-    """Pine-backed accessor for a single skyboard race's completion bit.
-
-    Unlike ChallengeSlot, all four races on a planet share one completion
-    byte, each owning one SkyboardBit — reads/writes mask/preserve the
-    other three races' bits.
-    """
-
-    def __init__(self, address: int, mask: SkyboardBit) -> None:
-        self.address = address
-        self.mask = mask
-
-    def __get__(self, instance, owner) -> bool | None:
-        if instance is None:
-            return None
-        raw = instance.pine.read_int8(self.address)
-        return bool(raw & self.mask)
-
-    def __set__(self, instance, value: bool) -> None:
-        if instance is None:
-            return
-        raw = instance.pine.read_int8(self.address)
-        raw = (raw | self.mask) if value else (raw & ~self.mask)
-        instance.pine.write_int8(self.address, raw)
-
-    def __delete__(self, instance) -> None:
-        if instance is None:
-            return
-        raw = instance.pine.read_int8(self.address)
-        instance.pine.write_int8(self.address, raw & ~self.mask)
+# Distinct addresses for every tracked skyboard-race byte, batch-read together once
+# per check()/sync() call — several races on the same planet share one byte.
+_SKYBOARD_ADDRESSES: tuple[int, ...] = tuple({address for address, _mask in SKYBOARD_ADDRESS_MASK_MAP})
 
 
 class SkyboardInventory:
     """Pine-backed live accessor + completion tracking for every skyboard
-    race's completion bit. One SkyboardSlot per AP location name, built
-    dynamically from SKYBOARD_ADDRESS_MASK_MAP."""
+    race's completion bit, keyed by (address, mask)."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
-        self._slots: dict[str, SkyboardSlot] = {
-            name: SkyboardSlot(address, SkyboardBit(mask))
-            for (address, mask), name in SKYBOARD_ADDRESS_MASK_MAP.items()
+        self._name_to_addr_mask: dict[str, tuple[int, int]] = {
+            n: k for k, n in SKYBOARD_ADDRESS_MASK_MAP.items()
         }
         self.completed: set[str] = set()
 
+    def _read_all(self) -> dict[int, int]:
+        values = self.pine.batch_read_int8(list(_SKYBOARD_ADDRESSES))
+        return dict(zip(_SKYBOARD_ADDRESSES, values, strict=True))
+
     def get(self, name: str) -> bool:
-        return bool(self._slots[name].__get__(self, type(self)))
+        address, mask = self._name_to_addr_mask[name]
+        return bool(self.pine.read_int8(address) & mask)
 
     def set(self, name: str, value: bool) -> None:
-        self._slots[name].__set__(self, value)
+        address, mask = self._name_to_addr_mask[name]
+        raw = self.pine.read_int8(address)
+        raw = (raw | mask) if value else (raw & ~mask)
+        self.pine.write_int8(address, raw)
 
     def delete(self, name: str) -> None:
-        self._slots[name].__delete__(self)
+        self.set(name, False)
 
     def check(self) -> list[str]:
         """Read every tracked bit and return newly completed AP location names for this call."""
+        raw_by_address = self._read_all()
         newly: list[str] = []
-        for name, slot in self._slots.items():
+        for (address, mask), name in SKYBOARD_ADDRESS_MASK_MAP.items():
             if name in self.completed:
                 continue
-            if slot.__get__(self, type(self)):
+            if raw_by_address[address] & mask:
                 self.completed.add(name)
                 newly.append(name)
         return newly
 
     def sync(self) -> None:
         """Baseline read: populate completed without reporting anything as newly completed."""
-        for name, slot in self._slots.items():
-            if slot.__get__(self, type(self)):
+        raw_by_address = self._read_all()
+        for (address, mask), name in SKYBOARD_ADDRESS_MASK_MAP.items():
+            if raw_by_address[address] & mask:
                 self.completed.add(name)
 
     def sync_from_ap(self, checked_locations: set[str]) -> None:

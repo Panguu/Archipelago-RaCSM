@@ -39,13 +39,8 @@ _SLOT_ATTR: dict[int, str] = {1: "mod_slot_one", 2: "mod_slot_two", 3: "mod_slot
 
 class VendorHandlerMixin:
     async def _send_vendor_hints(self) -> None:
-        """Send AP location hints for all currently purchasable vendor items.
-
-        Called each time the vendor menu opens; skips locations already
-        hinted or checked this session. Whichever vendor menu is active
-        decides which item list to hint — if neither is active, this fired
-        from an unrelated event and there's nothing to hint.
-        """
+        """Send AP location hints for all currently purchasable vendor items, skipping locations
+        already hinted or checked. Whichever vendor menu is active decides which list to hint."""
         if self.slot is None or not self.pine_connected:
             return
         vendor = self._wiring.vendor
@@ -75,12 +70,8 @@ class VendorHandlerMixin:
         self._already_hinted.update(new_ids)
 
 
-# Inventory application
-#
-# Parses items_received into internal-name structures and hands them to
-# Core.apply_inventory() to write into game memory. Bolt/trap filler grants
-# below are the exception — they poke pine directly since they aren't tied
-# to any Inventory class.
+# Inventory application: parses items_received into internal-name structures for Core.apply_inventory().
+# Bolt/trap filler grants below are the exception — they poke pine directly.
 
 class InventoryMixin:
     def _parse_inventory(self) -> dict:
@@ -154,9 +145,8 @@ class InventoryMixin:
             slots = {_SLOT_ATTR[i] for i in range(1, count + 1) if i in _SLOT_ATTR}
             weapon_mod_slots.setdefault(internal, set()).update(slots)
 
-        # Outpost Omega 1's facility puzzle requires the Shrink Ray regardless
-        # of AP ownership — force it on here (not recorded as owned) so every
-        # re-apply on this planet keeps it unlocked without granting the item.
+        # Outpost Omega 1's facility puzzle requires the Shrink Ray regardless of AP ownership —
+        # force it on here (not recorded as owned) so it stays unlocked without granting the item.
         if self._wiring.planet.planet_id == _OUTPOST_OMEGA_1_PLANET_ID:
             gadget_unlocked["shrink_ray"] = True
 
@@ -170,15 +160,8 @@ class InventoryMixin:
         }
 
     async def force_sync(self) -> None:
-        """Force the player's in-game state to match what was received from AP,
-        regardless of what's already been applied.
-
-        Wipes the current planet's weapon/gadget/mod array first so leftover
-        non-AP state (vanilla progress, a stale prior session) is fully
-        replaced rather than topped up. Skipped if the planet isn't ready or
-        a vendor menu is open, since both cases already have their own
-        zero/restore cycle that would just clobber a wipe here.
-        """
+        """Force the player's in-game state to match AP, wiping the current planet's weapon/gadget/mod
+        array first. Skipped if the planet isn't ready or a vendor is open, which already zero/restore."""
         if not self.pine_connected:
             return
         inventory = self._parse_inventory()
@@ -211,12 +194,8 @@ class InventoryMixin:
         self._pending_item_apply = False
 
     async def _persist_filler_checkpoint(self) -> None:
-        """Persist how far into items_received bolts/traps have been granted,
-        so a restart can resume instead of re-granting everything.
-
-        Uses "max" rather than "replace" to guard against racing a
-        stale read of this client's own previous checkpoint.
-        """
+        """Persist how far into items_received bolts/traps have been granted, so a restart can resume.
+        Uses "max" rather than "replace" to guard against racing a stale read of the checkpoint."""
         checkpoint = max(self._processed_item_count, self._processed_trap_count)
         await self.send_msgs([{
             "cmd": "Set",
@@ -239,15 +218,9 @@ class InventoryMixin:
     # Bonus weapon pickup / intro-scripted vendor locations
 
     def _grant_random_bonus_item(self, trigger_name: str) -> None:
-        """Called whenever lacerator/acid_bomb_glove/concussion_gun's unlocked
-        bit transitions 0->1 — either from the player picking one at
-        Pokitaru's intro kiosk, or from our own re-apply write for an
-        already-AP-owned weapon flipping the same bit.
-
-        Guards on whether the *location* was already checked rather than
-        "is trigger_name AP-owned", since a precollected weapon's resync
-        write flips the bit before the real pickup ever happens.
-        """
+        """Called when lacerator/acid_bomb_glove/concussion_gun's unlocked bit transitions 0->1, from
+        either a real pickup or our own re-apply. Guards on the *location* since a precollected
+        weapon's resync write flips the bit before the real pickup happens."""
         if not self.pine_connected or not self._wiring.planet.is_ready:
             return
         wi = self._wiring.planet.weapons
@@ -265,10 +238,8 @@ class InventoryMixin:
         wi.set(random.choice(candidates), True)
 
     def _handle_scripted_gadget_pickup(self, trigger_name: str) -> None:
-        """Called whenever hypershot's unlocked bit transitions 0->1 — handed
-        to the player during Pokitaru's tutorial as a scripted event rather
-        than a vendor purchase. Same already-checked-location guard as
-        _grant_random_bonus_item, for the same reason."""
+        """Called when hypershot's unlocked bit transitions 0->1 during Pokitaru's scripted tutorial.
+        Same already-checked-location guard as _grant_random_bonus_item, for the same reason."""
         if not self.pine_connected or not self._wiring.planet.is_ready:
             return
         loc = GADGET_INTERNAL_TO_LOCATION.get(trigger_name)
@@ -298,12 +269,8 @@ class InventoryMixin:
         self._write_notification_text(msg)
 
     def _grant_new_bolt_items(self) -> None:
-        # PLAYER_BOLT_COUNT is a global address, safe to write mid-transition.
-        # Starting bolts are granted separately by _grant_starting_items()
-        # once a planet is ready; this scan just needs to avoid double-
-        # counting that precollected item as generic filler. Precollected
-        # items are always the earliest entries in items_received, so they
-        # only ever appear in a scan starting from checkpoint 0.
+        # Starting bolts are granted separately by _grant_starting_items(); this scan just needs
+        # to avoid double-counting that precollected item, which is always the earliest entry.
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))
         skipped_precollected = self._processed_item_count != 0
         new_items = self.items_received[self._processed_item_count:]

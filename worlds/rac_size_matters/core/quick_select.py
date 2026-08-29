@@ -12,10 +12,8 @@ if TYPE_CHECKING:
 
 _ZERO_BYTES = bytes(4 * len(QuickSelectStruct.SLOT_ORDER))
 
-# After writing the snapshot, ignore incoming changes for this long.  This
-# prevents the game from overwriting specific slots (e.g. gadget defaults at
-# the left / bottom-left positions) from polluting the snapshot immediately
-# after our write.
+# After writing the snapshot, ignore incoming changes for this long — prevents the
+# game's own default-gadget slot writes from polluting the snapshot right after ours.
 _WRITE_COOLDOWN_S: float = 0.3
 
 
@@ -28,8 +26,7 @@ class QuickSelectState(BaseState):
         self._polling = False
         self._write_time: float = 0.0
         self.on_save: Callable[[dict[str, int]], None] = lambda _: None
-        # Weapon-cycler-id (WEAPON_VENDOR_IDS scheme) -> AP ownership check,
-        # wired by Core (see Core._is_weapon_id_ap_owned). Defaults to
+        # Weapon-cycler-id -> AP ownership check, wired by Core. Defaults to
         # permissive so nothing filters before it's wired up.
         self.is_ap_owned: Callable[[int], bool] = lambda _weapon_id: True
 
@@ -40,9 +37,8 @@ class QuickSelectState(BaseState):
                 self._snapshot[name] = int(data[name])
 
     def push_save(self) -> None:
-        """Push the current snapshot to AP data storage. Called explicitly
-        (e.g. on pause-menu close) rather than on every poll-detected change,
-        since that would echo back via set_notify and re-trigger restores."""
+        """Push the current snapshot to AP data storage. Called explicitly rather than on
+        every poll-detected change, since that would echo back and re-trigger restores."""
         self.on_save(dict(self._snapshot))
 
     def freeze(self) -> None:
@@ -54,10 +50,8 @@ class QuickSelectState(BaseState):
         self._polling = True
 
     def check(self) -> None:
-        """Pull-based: call every tick while not frozen — re-reads the wheel
-        and updates the snapshot, unless still inside the cooldown window
-        after our own write (the game briefly reassigns default gadgets to
-        specific wheel positions right after a restore)."""
+        """Pull-based: call every tick while not frozen — re-reads the wheel and updates
+        the snapshot, unless still inside the cooldown window after our own write."""
         if not self._polling:
             return
         if time.monotonic() - self._write_time < _WRITE_COOLDOWN_S:
@@ -73,12 +67,9 @@ class QuickSelectState(BaseState):
             self._snapshot[name] = getattr(instance, name)
 
     def _filter_unowned_slots(self) -> bool:
-        """Zero any snapshot slot referencing a weapon/gadget id the player
-        doesn't currently AP-own — the game can assign a slot on its own
-        (forced starter item, stale default), and since this snapshot is
-        also what restore() writes back on every transition, an unowned
-        entry would otherwise keep resurfacing. Returns whether anything
-        changed, so callers only write memory when needed."""
+        """Zero any snapshot slot referencing a weapon/gadget id the player doesn't
+        currently AP-own, since restore() would otherwise keep resurfacing it.
+        Returns whether anything changed, so callers only write memory when needed."""
         changed = False
         for name in QuickSelectStruct.SLOT_ORDER:
             weapon_id = self._snapshot[name]
@@ -88,21 +79,15 @@ class QuickSelectState(BaseState):
         return changed
 
     def zero(self) -> None:
-        """Zero all slots in memory, then start polling.
-
-        The in-memory snapshot is preserved so that a previously saved loadout
-        (restored via on_enter) can be written back by the following restore().
-        """
+        """Zero all slots in memory, then start polling. The in-memory snapshot is
+        preserved so a previously saved loadout can be written back by restore()."""
         self._write_time = time.monotonic()
         self.pine.write_bytes(QuickSelectStruct.BASE_ADDRESS, _ZERO_BYTES)
         self._polling = True
 
     def restore(self) -> None:
-        """Write the current snapshot to memory without checking polling state.
-
-        Call this BEFORE unfreeze() when resuming after a planet transition so
-        the next check() sees our values, not game-default values.
-        """
+        """Write the current snapshot to memory without checking polling state. Call
+        this BEFORE unfreeze() so the next check() sees our values, not game defaults."""
         self._filter_unowned_slots()
         self._write_time = time.monotonic()
         instance = QuickSelectStruct()

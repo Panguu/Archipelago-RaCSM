@@ -20,11 +20,7 @@ class TextColour:
 
 
 def colored_text(*parts: bytes | str) -> bytes:
-    """Build a null-terminated byte string from text and TextColour constants.
-
-    Example:
-        colored_text("Received ", TextColour.PURPLE, "X", TextColour.WHITE, " from Y")
-    """
+    """Build a null-terminated byte string from text and TextColour constants."""
     buf = bytearray()
     for part in parts:
         buf.extend(part if isinstance(part, (bytes, bytearray)) else part.encode("ascii"))
@@ -38,10 +34,8 @@ from .address_maps import (
     STATIC_TEXT_BUFFER as _STATIC_TEXT_BUFFER,
 )
 
-# Both box types share the same in-memory layout relative to their base address:
-#   base + 0x00  countdown_timer      (float, seconds remaining)
-#   base + 0x20  is_visible           (u16, message-ID when visible)
-#   base + 0x28  message_str_pointer  (u16, current message ID)
+# Both box types share the same in-memory layout relative to their base address
+# (countdown_timer at +0x00, is_visible at +0x20, message_str_pointer at +0x28).
 
 @dataclass(frozen=True)
 class SmallTextBox:
@@ -107,13 +101,7 @@ MultiLineTextBoxAddrs: list[MultiLineTextBox] = [
 
 class TextBoxInventory:
     """Pine-backed accessor for a planet's text box (small or multi-line).
-
-    set(text) writes into the static text buffer and displays it instantly.
-    get() reads back the currently-showing string, or None if nothing is
-    displayed. delete() clears immediately, skipping the normal 7s/5s
-    auto-hide delay. Planet-dependent: call set_base(planet_id) whenever the
-    loaded planet changes.
-    """
+    Planet-dependent: call set_base(planet_id) whenever the loaded planet changes."""
 
     def __init__(self, pine: Pine, boxes: list[TextBoxConfig]) -> None:
         self.pine = pine

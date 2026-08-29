@@ -16,12 +16,8 @@ from .titanium_bolts import TITANIUM_BOLTS
 from .traps import ALL_TRAPS, activate_trap, reconcile_traps, set_trap_durations
 from .weapons import WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
 
-# NOTE: Core/WeaponVendorMenu/ModVendorMenu are deliberately NOT re-exported
-# here. core.vendor imports from ..items, and items.py imports several core
-# submodules — eagerly loading core.vendor (or core.core, which imports it)
-# from this package __init__ creates a circular import whenever items.py/
-# world.py import anything from core first. Import those directly from their
-# submodules (core.core / core.vendor) instead.
+# NOTE: Core/WeaponVendorMenu/ModVendorMenu are deliberately NOT re-exported here —
+# eagerly loading core.vendor here would create a circular import via items.py.
 
 __all__ = [
     "ARMOUR_FLAG_TO_LOCATION",

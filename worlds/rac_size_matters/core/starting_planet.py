@@ -12,12 +12,9 @@ from .planets import Planets
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
 
-# Planets a random start can land on: each is reachable with nothing but its
-# own infobot (see rules/entrances.py), so precollecting it is always enough
-# on its own. Dreamtime and Inside Clank need extra gadgets beyond their own
-# infobot to enter, and Quodrona is the goal planet, so none of them are ever
-# candidates. Ryllus isn't its own candidate either -- it shares Pokitaru's
-# merged infobot, so it can't be independently rolled as one of the two picks.
+# Planets a random start can land on: each is reachable with nothing but its own
+# infobot. Dreamtime/Inside Clank need extra gadgets, Quodrona is the goal, and
+# Ryllus shares Pokitaru's merged infobot -- none of them are candidates.
 STARTING_PLANET_CANDIDATES: tuple[str, ...] = (
     Rac5Planets.POKITARU,
     Rac5Planets.KALIDON,
@@ -36,11 +33,8 @@ PLANET_TO_INFOBOT: dict[str, str] = {
     Rac5Planets.DAYNI_MOON:    Rac5Infobots.DAYNI_MOON,
 }
 
-# The runtime planet id (see core/planets.py's Planets/NEW_PLANET_START_LOAD_ADDR)
-# to force-load into on the very first boot-in, when that planet was chosen as
-# a random start (see world.py's fill_slot_data()/generate_basic()). Outpost
-# Omega 1 (0x06) isn't a real ship-selectable destination -- Outpost Omega 2
-# is what a normal infobot-gated arrival lands on.
+# The runtime planet id to force-load into on the very first boot-in, when that planet
+# was chosen as a random start. Outpost Omega 1 isn't ship-selectable -- Outpost Omega 2 is.
 PLANET_TO_ID: dict[str, int] = {
     Rac5Planets.POKITARU:      Planets.POKITARU.planet_id,
     Rac5Planets.RYLLUS:        Planets.RYLLUS.planet_id,
@@ -56,12 +50,9 @@ _GADGET_LOCATION_NAMES = frozenset(GADGET_PICKUP_LOCATIONS) | frozenset(GADGET_V
 
 
 def _planet_location_weight(world: "RACSizeMatterWorld", planet: str) -> int:
-    """Locations available on `planet` under the current options. Always counts
-    everything except weapon/gadget vendor (and gadget pickup) locations; those
-    only count towards the weight when the player is also starting with random
-    weapons/gadgets (Starting Weapons/Starting Gadgets > 0). Weapon level checks
-    are excluded entirely -- they're all anchored to Pokitaru regardless of
-    which weapon they belong to, so they say nothing about a given planet."""
+    """Locations available on `planet` under the current options. Weapon/gadget vendor
+    locations only count when starting with random weapons/gadgets; weapon level checks
+    are excluded entirely since they're all anchored to Pokitaru."""
     region = world.multiworld.get_region(planet, world.player)
     count_weapons = world.options.starting_weapons.value > 0
     count_gadgets = world.options.starting_gadgets.value > 0
@@ -77,10 +68,8 @@ def _planet_location_weight(world: "RACSizeMatterWorld", planet: str) -> int:
 
 
 def choose_starting_planets(world: "RACSizeMatterWorld", weighted: bool, count: int = 2) -> list[str]:
-    """Pick `count` distinct planets from STARTING_PLANET_CANDIDATES.
-    weighted=True (Logic): sampled without replacement, weighted by
-    _planet_location_weight, so denser planets are more likely to be picked.
-    weighted=False (No Logic): sampled uniformly at random."""
+    """Pick `count` distinct planets from STARTING_PLANET_CANDIDATES. weighted=True
+    samples by _planet_location_weight; weighted=False samples uniformly at random."""
     candidates = list(STARTING_PLANET_CANDIDATES)
     count = min(count, len(candidates))
     if not weighted:

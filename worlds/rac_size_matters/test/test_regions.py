@@ -19,10 +19,8 @@ class TestRegionAccess(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_region("Pokitaru"))
 
     def test_ryllus_always_reachable_even_without_weapon(self) -> None:
-        # Ryllus is gated on "Infobot: Pokitaru and Ryllus" like any other
-        # planet (see rules/entrances.py), but with random_starting_planet
-        # off that infobot is always precollected as the fixed start, so
-        # it's reachable from the start regardless of gadgets.
+        # Ryllus's infobot is always precollected as the fixed start, so it's
+        # reachable from the start regardless of gadgets.
         self.assertTrue(self.can_reach_region("Ryllus"))
 
     def test_ryllus_reachable_with_projectile(self) -> None:
@@ -30,13 +28,8 @@ class TestRegionAccess(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_region("Ryllus"))
 
     def test_pokitaru_and_ryllus_gated_on_infobot(self) -> None:
-        # With random_starting_planet off, the merged infobot is precollected
-        # as the fixed start (and so isn't in the itempool for remove_by_name
-        # to find), but the entrance itself is still gated on it (see
-        # rules/entrances.py) -- this matters once random_starting_planet can
-        # leave Pokitaru un-precollected. Removing a transient copy directly
-        # from state simulates that case without depending on random planet
-        # selection.
+        # The merged infobot is precollected and not in the itempool, so remove
+        # a transient copy directly from state to simulate not having it.
         infobot = self.world.create_item("Infobot: Pokitaru and Ryllus")
         self.remove([infobot])
         self.assertFalse(self.can_reach_region("Pokitaru"))

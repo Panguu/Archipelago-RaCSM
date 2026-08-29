@@ -66,9 +66,8 @@ class TestLocationRules(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_location("Challax: T-Bolt: Hidden Room"))
 
     def test_challax_mimic_plant_lob_needs_sprout(self) -> None:
-        # Reaching Challax doesn't require Sprout-O-Matic, only the Mimic Plant
-        # Lob bolt itself does — so build the item set explicitly instead of
-        # using CHALLAX_ITEMS, which bundles Sprout-O-Matic in as a baseline.
+        # Only the Mimic Plant Lob bolt needs Sprout-O-Matic, not Challax access,
+        # so build the item set explicitly instead of using CHALLAX_ITEMS.
         self.collect_by_name([
             ANY_PROJECTILE, "Hypershot", "Infobot: Kalidon",
             "Shrink Ray", "Infobot: Metalis", "Polarizer", "Infobot: Challax",

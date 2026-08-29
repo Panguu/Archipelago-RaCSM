@@ -3,11 +3,8 @@ from enum import IntFlag
 from ..pypine import Pine
 from .address_maps import PLANET_ADDRESSES
 
-"""
-Controller Logic
-Holding L1 + L2 + R1 + R2 + START is the hotkey to force-open the Planet Menu
-(see PLANET_MENU_HOTKEY / GlobalButtonState.opens_planet_menu).
-"""
+"""Controller Logic. Holding L1 + L2 + R1 + R2 + START force-opens the Planet
+Menu (see PLANET_MENU_HOTKEY / GlobalButtonState.opens_planet_menu)."""
 class PauseSelectButtons(IntFlag):
     SELECT = 0x01
     START  = 0x08
@@ -39,12 +36,8 @@ PLANET_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
 
 
 class GlobalButtonState:
-    """Snapshot of both controller bytes, read each tick.
-
-    Reads PlanetAddresses.controller_pause_select_v2 (buttons byte at +1).
-    These bytes start at 0xFF and are decremented while a button is held, so
-    a bit reads 0 when pressed — hence the ``~x & 0xFF`` inversion below.
-    """
+    """Snapshot of both controller bytes, read each tick. These bytes start at 0xFF and
+    are decremented while held, so a bit reads 0 when pressed — hence the inversion below."""
 
     def __init__(self, pause_sel: int, buttons: int) -> None:
         self.pause_sel = PauseSelectButtons(~pause_sel & 0xFF)
@@ -52,9 +45,8 @@ class GlobalButtonState:
 
     @classmethod
     def read(cls, ipc: Pine, planet_id: int) -> "GlobalButtonState | None":
-        """None for a planet id with no known controller address — e.g. the
-        Kalidon skyboard race sub-level (0x16), which isn't in
-        PLANET_ADDRESSES at all. Callers must treat None as "nothing held"."""
+        """None for a planet id with no known controller address (e.g. the Kalidon
+        skyboard sub-level). Callers must treat None as "nothing held"."""
         addrs = PLANET_ADDRESSES.get(planet_id)
         pause_select_addr = addrs.controller_pause_select_v2 if addrs is not None else None
         if pause_select_addr is None:
@@ -84,7 +76,5 @@ class GlobalButtonState:
         return self.pressed(*PLANET_MENU_HOTKEY)
 
     def __repr__(self) -> str:
-        # !r forces repr() (which still includes flag names) — since Python 3.11,
-        # IntFlag's __str__/__format__ behave like a plain int for backward compat,
-        # so neither f"{x}" nor f"{x!s}" show the names anymore.
+        # !r forces repr() — since Python 3.11, IntFlag's __str__ no longer shows flag names.
         return f"GlobalButtonState(pause_sel={self.pause_sel!r}, buttons={self.buttons!r})"

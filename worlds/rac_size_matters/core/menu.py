@@ -8,9 +8,8 @@ from .address_maps import MENU_ADDR_BY_PLANET_ID
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-# +0x00 state  — current menu value, set by the game itself
-# +0x04 update — write a MenuStateValue here to request a menu change;
-#                same offset on every planet's menu address
+# +0x00 state (set by the game), +0x04 update (write a MenuStateValue to request
+# a change) — same offsets on every planet's menu address.
 _STATE_OFFSET  = 0x00
 _UPDATE_OFFSET = 0x04
 
@@ -67,11 +66,8 @@ class MenuUpdateSlot:
 
 
 class MenuInventory:
-    """Pine-backed live accessor for the current menu state.
-
-    Planet-dependent: the menu struct lives at a per-planet address, so call
-    set_base(planet_id) whenever the loaded planet changes.
-    """
+    """Pine-backed live accessor for the current menu state. Planet-dependent:
+    call set_base(planet_id) whenever the loaded planet changes."""
 
     current = MenuStateSlot()
     update  = MenuUpdateSlot()

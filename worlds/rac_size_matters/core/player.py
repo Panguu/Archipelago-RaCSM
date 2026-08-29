@@ -82,12 +82,8 @@ class PlayerMaxHealthSlot:
 
 
 class PlayerInventory:
-    """Pine-backed live accessor for player movement/health, replacing PlayerState.
-
-    Planet-dependent: all addresses live on a per-planet struct, so call
-    set_base(planet_id) whenever the loaded planet changes, same as the other
-    planet-dependent inventories (weapons/vendor/menu).
-    """
+    """Pine-backed live accessor for player movement/health. Planet-dependent:
+    call set_base(planet_id) whenever the loaded planet changes."""
 
     movement_state = PlayerMovementSlot()
     health         = PlayerHealthSlot()

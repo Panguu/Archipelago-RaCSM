@@ -1,11 +1,7 @@
 from typing import TYPE_CHECKING
 
-from .address_maps import (
-    OUTPOST_OMEGA_GRINDRAIL_BIT,
-    SHRINK_RAY_GATE_ADDRESS,
-    SHRINK_RAY_PUZZLE_BITS,
-    SHRINK_RAY_SKIP_ADDRESSES,
-)
+from ..constants.shrink_ray import OUTPOST_OMEGA_GRINDRAIL_BIT, SHRINK_RAY_PUZZLE_BITS
+from .address_maps import SHRINK_RAY_GATE_ADDRESS, SHRINK_RAY_SKIP_ADDRESSES
 
 if TYPE_CHECKING:
     from ..pypine import Pine
@@ -58,7 +54,13 @@ class ShrinkRaySkipInventory:
         for name, bit in SHRINK_RAY_PUZZLE_BITS.items():
             if name in self.completed:
                 continue
-            if raw & bit:
+            # Kalidon Enter Factory (and any other puzzle in
+            # SHRINK_RAY_SKIP_ADDRESSES) doesn't reliably flip its shared
+            # gate bit when solved naturally — its own bypass address reads
+            # 1 once truly solved, confirmed live in-game, so check that too.
+            skip_address = SHRINK_RAY_SKIP_ADDRESSES.get(name)
+            solved_via_skip_address = skip_address is not None and self.pine.read_int8(skip_address) != 0
+            if (raw & bit) or solved_via_skip_address:
                 self.completed.add(name)
                 newly.append(name)
         return newly

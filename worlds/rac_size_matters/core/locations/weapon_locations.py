@@ -18,10 +18,8 @@ _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
     "mod_slot_three": "mod_unlock_three",
 }
 
-# (internal_weapon, mod_unlock_attr) -> planet the vendor selling that mod
-# lives on. Drives the mod_unlock_N "purchasable" byte, which should only
-# read 1 once the player owns the weapon (and, on Challax, the extra
-# gadgets below — mirrors rules/challax.py's Polarizer gate).
+# (internal_weapon, mod_unlock_attr) -> vendor planet. Drives mod_unlock_N's
+# "purchasable" byte, gated by weapon ownership (and extra gadgets on Challax).
 MOD_UNLOCK_PLANET: dict[tuple[str, str], str] = {}
 
 # Planets whose mod vendor requires extra gadgets beyond owning the weapon
