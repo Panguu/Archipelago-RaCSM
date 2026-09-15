@@ -74,15 +74,15 @@ SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_C
 class SACSpecialChallengeLocations:
     """One named constant per Special Challenge location -- each value is the exact full display name SPECIAL_CHALLENGES above builds via CaseStructure.__str__, spelled out here so rules/<case>.py can reference an individual location directly -- same one-name-per-location layout as constants/weapons.py's SACRatchetWeapons."""
 
-    VENANTONIO_CANALS_VEHICLE_GREAT_ESCAPE = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Great Escape"
-    VENANTONIO_CANALS_VEHICLE_SPEEDBOATING = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Speedboating"
-    VENANTONIO_CANALS_VEHICLE_THREADING_THE_NEEDLE = "Special Missions: Venantonio Canals: Special Challenge: Vehicle: Threading the Needle"
-    DAMS_EDGE_HYDRANO_VEHICLE_CHASING_A_LEAD = "Special Missions: Dam's Edge, Hydrano: Special Challenge: Vehicle: Chasing a Lead"
-    DAMS_EDGE_HYDRANO_VEHICLE_RUSH_HOUR = "Special Missions: Dam's Edge, Hydrano: Special Challenge: Vehicle: Rush Hour"
-    DAMS_EDGE_HYDRANO_VEHICLE_DRIVING_TEST = "Special Missions: Dam's Edge, Hydrano: Special Challenge: Vehicle: Driving Test"
-    GLACIARA_SKI_SLOPES_VEHICLE_VILLA_ESCAPE = "Special Missions: Glaciara, Ski Slopes: Special Challenge: Vehicle: Villa Escape"
-    GLACIARA_SKI_SLOPES_VEHICLE_BLACK_DIAMOND = "Special Missions: Glaciara, Ski Slopes: Special Challenge: Vehicle: Black Diamond"
-    GLACIARA_SKI_SLOPES_VEHICLE_GO_FOR_THE_GOLD = "Special Missions: Glaciara, Ski Slopes: Special Challenge: Vehicle: Go for the Gold"
+    VENANTONIO_CANALS_VEHICLE_GREAT_ESCAPE = "Venantonio (Special Missions) - Venantonio Canals: Great Escape"
+    VENANTONIO_CANALS_VEHICLE_SPEEDBOATING = "Venantonio (Special Missions) - Venantonio Canals: Speedboating"
+    VENANTONIO_CANALS_VEHICLE_THREADING_THE_NEEDLE = "Venantonio (Special Missions) - Venantonio Canals: Threading the Needle"
+    DAMS_EDGE_HYDRANO_VEHICLE_CHASING_A_LEAD = "Hydrano (Special Missions) - Dam's Edge, Hydrano: Chasing a Lead"
+    DAMS_EDGE_HYDRANO_VEHICLE_RUSH_HOUR = "Hydrano (Special Missions) - Dam's Edge, Hydrano: Rush Hour"
+    DAMS_EDGE_HYDRANO_VEHICLE_DRIVING_TEST = "Hydrano (Special Missions) - Dam's Edge, Hydrano: Driving Test"
+    GLACIARA_SKI_SLOPES_VEHICLE_VILLA_ESCAPE = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Villa Escape"
+    GLACIARA_SKI_SLOPES_VEHICLE_BLACK_DIAMOND = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Black Diamond"
+    GLACIARA_SKI_SLOPES_VEHICLE_GO_FOR_THE_GOLD = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Go for the Gold"
 
 assert {v for k, v in vars(SACSpecialChallengeLocations).items() if not k.startswith("_")} == set(
     str(entry) for entry in SPECIAL_CHALLENGES
