@@ -45,6 +45,9 @@ class RACLocationData(NamedTuple):
     region: str
 
 
+MENU_REGION = "Menu"
+
+
 PLANET_ORDER: tuple[str, ...] = (
     Rac5Planets.POKITARU,
     Rac5Planets.RYLLUS,
@@ -190,7 +193,7 @@ NANOTECH_LEVEL_LOOKUP: dict[int, str] = {
 }
 
 NANOTECH_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
-    loc_name: RACLocationData(_shared_id(), Rac5Planets.POKITARU)
+    loc_name: RACLocationData(_shared_id(), MENU_REGION)
     for loc_name in NANOTECH_LEVEL_LOOKUP.values()
 }
 

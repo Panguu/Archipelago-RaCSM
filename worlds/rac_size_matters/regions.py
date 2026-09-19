@@ -27,6 +27,7 @@ from .locations import (
     GADGET_VENDOR_LOCATIONS,
     GIANT_CLANK_LOCATIONS,
     HARD_SKILL_POINT_LOCATIONS,
+    MENU_REGION,
     NG_PLUS_ARMOUR_SET_LOCATIONS,
     NG_PLUS_WEAPON_LEVEL_LOCATIONS,
     SHRINK_RAY_SKIP_LOCATIONS,
@@ -235,9 +236,10 @@ def create_regions(world: RACSizeMatterWorld) -> None:
     if nanotech_locations:
         location_tables.append(nanotech_locations)
 
+    region_lookup: dict[str, Region] = {**planet_regions, MENU_REGION: menu_region}
     for table in location_tables:
         for loc_name, loc_data in table.items():
-            region = planet_regions[loc_data.region]
+            region = region_lookup[loc_data.region]
             location = RACLocation(player, loc_name, loc_data.code, region)
             region.locations.append(location)
 

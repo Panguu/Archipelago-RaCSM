@@ -12,7 +12,7 @@ from ..constants import (
     Rac5Weapons,
 )
 from ..items import GLITCHES_ITEM_NAME
-from ._helpers import HasChallengeMode, HasProjectileWeapon, HasWeapon, weapon_enabled
+from ._helpers import HasChallengeMode, HasProjectileWeapon, weapon_enabled
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld

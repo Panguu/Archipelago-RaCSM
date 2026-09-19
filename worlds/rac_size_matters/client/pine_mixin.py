@@ -82,6 +82,7 @@ class PineMixin:
             )
             self.pine_connected = True
             try:
+                self._wiring.sync_from_ap(self._checked_location_names())
                 self._read_initial_state_sync()
                 if not self._wiring.at_main_menu:
                     reconcile_traps(self.pine)

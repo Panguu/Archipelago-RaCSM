@@ -123,6 +123,14 @@ _MOD_VENDOR_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {
     "CHALLAX": (Rac5GadgetKeys.SHRINK_RAY, Rac5GadgetKeys.POLARIZER),
 }
 
+_WEAPON_VENDOR_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {
+    "DREAMTIME":    (Rac5GadgetKeys.HYPERSHOT, Rac5GadgetKeys.SPROUT_O_MATIC),
+    "INSIDE_CLANK": (
+        Rac5GadgetKeys.HYPERSHOT, Rac5GadgetKeys.SPROUT_O_MATIC,
+        Rac5GadgetKeys.SHRINK_RAY, Rac5GadgetKeys.POLARIZER,
+    ),
+}
+
 _SLOT_TO_UNLOCK_ATTR: dict[str, str] = {
     "mod_slot_one":   "mod_unlock_one",
     "mod_slot_two":   "mod_unlock_two",
@@ -225,6 +233,14 @@ class VendorInventory:
         loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
         return bool(loc and self.weapons.vendor_locations.get(loc, False))
 
+    def _is_weapon_vendor_accessible(self, planet_key: str) -> bool:
+        if not self.planet_unlock.is_vendor_accessible(planet_key):
+            return False
+        return all(
+            self.weapons.gadgets.get(gadget, False)
+            for gadget in _WEAPON_VENDOR_EXTRA_GADGETS.get(planet_key, ())
+        )
+
     def _is_titan_eligible(self, name: str) -> bool:
         """Whether `name` still has an unbought Titan variant to offer:
         Challenge Mode 1+, one of TITAN_ELIGIBLE_WEAPONS, not yet bought."""
@@ -255,16 +271,16 @@ class VendorInventory:
         for name, planet_key in _WEAPON_TO_PLANET_KEY.items():
             if name in _CHALLENGE_MODE_ONLY_WEAPONS and self.challenge_mode < 1:
                 continue
-            if not self.planet_unlock.is_vendor_accessible(planet_key):
+            if not self._is_weapon_vendor_accessible(planet_key):
                 continue
             if self._is_titan_eligible(name) or not self._is_purchased(name):
                 names.append(name)
         if self._is_titan_eligible("mootator") and self.weapons.get_level("mootator") >= 3:
             mootator_planet_key = _TITAN_TO_PLANET_KEY["mootator"]
-            if self.planet_unlock.is_vendor_accessible(mootator_planet_key):
+            if self._is_weapon_vendor_accessible(mootator_planet_key):
                 names.append("mootator")
         for name, planet_key in _GADGET_TO_PLANET_KEY.items():
-            if self.planet_unlock.is_vendor_accessible(planet_key) and not self._is_purchased(name):
+            if self._is_weapon_vendor_accessible(planet_key) and not self._is_purchased(name):
                 names.append(name)
         return names
 

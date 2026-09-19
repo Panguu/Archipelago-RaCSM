@@ -12,7 +12,7 @@ from ..core import (
 )
 from ..core.address_maps import PLAYER_BOLT_COUNT
 from ..core.player_bolts import MAX_PLAYER_BOLTS
-from ..core.notifications import receipt_text
+from ..core.notifications import receipt_text, sent_text
 from ..items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_PIECE_BITMASKS,
@@ -289,6 +289,16 @@ class InventoryMixin:
             item_name = self.item_names[self.game].get(net_item.item, "???")
             player_name = self.player_names.get(net_item.player, f"Player {net_item.player}")
             self._write_notification_text(receipt_text(item_name, player_name, bool(net_item.flags & 4)))
+
+    def _show_item_send_notification(self, net_item, receiving: int) -> None:
+        """Called from on_print_json for a live ItemSend where this slot is the sender --
+        mirrors _show_new_item_notifications' receipt toast, but for the outgoing side."""
+        if not self.pine_connected or receiving == self.slot:
+            return
+        receiver_game = self.slot_info[receiving].game if receiving in self.slot_info else self.game
+        item_name = self.item_names[receiver_game].get(net_item.item, "???")
+        player_name = self.player_names.get(receiving, f"Player {receiving}")
+        self._write_notification_text(sent_text(item_name, player_name))
 
     def _grant_new_bolt_items(self) -> None:
         starting_bolts = int(self.slot_data.get("starting_bolts", 0))

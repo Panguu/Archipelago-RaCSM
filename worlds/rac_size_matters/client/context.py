@@ -444,6 +444,11 @@ class RACContext(
             "Disconnected from ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
         ))
 
+    def on_print_json(self, args: dict) -> None:
+        super().on_print_json(args)
+        if args.get("type") == "ItemSend" and args["item"].player == self.slot:
+            self._show_item_send_notification(args["item"], args["receiving"])
+
     def make_gui(self):
         ui = super().make_gui()
         version = RACSizeMatterWorld.world_version.as_simple_string()
