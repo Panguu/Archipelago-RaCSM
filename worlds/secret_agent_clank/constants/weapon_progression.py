@@ -1,9 +1,11 @@
 """Only native multi-level weapons participate; tools stay single unlocks."""
-from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons
+from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons, SACProtoWeapons
+from .vendor import vendor_location_name
 from .weapons import (
     EQUIPMENT_DISPLAY_TO_INTERNAL,
     SACProgressiveRatchetWeapons,
     SACRatchetWeapons,
+    SACTitanWeapons,
 )
 
 LEVELLED_INTERNALS = ("blaster", "shardgun", "beemineglove", "shockrocket",
@@ -34,6 +36,17 @@ PROGRESSIVE_TO_INTERNAL = {
 def max_level(internal, ng_plus):
     return 4 if internal == "ryno" or not ng_plus else 8
 
-TITAN_LOCATIONS = {internal: f"Titan Vendor: {internal}"
-                   for internal in LEVELLED_INTERNALS if internal != "ryno"}
-TITAN_ITEMS = {f"Titan Upgrade: {internal}": internal for internal in TITAN_LOCATIONS}
+# Unlock display name -> Titan/Proto display name, matched by shared class
+# attribute name (same pattern as UNLOCK_TO_PROGRESSIVE above).
+_TITAN_ATTRS = {**_attrs(SACTitanWeapons), **_attrs(SACProtoWeapons)}
+_UNLOCK_TO_TITAN = {
+    _UNLOCK_ATTRS[attr]: _TITAN_ATTRS[attr]
+    for attr in _TITAN_ATTRS if attr in _UNLOCK_ATTRS
+}
+
+TITAN_LOCATIONS = {
+    EQUIPMENT_DISPLAY_TO_INTERNAL[unlock]: vendor_location_name(titan)
+    for unlock, titan in _UNLOCK_TO_TITAN.items()
+}
+TITAN_ITEMS = {f"Titan Upgrade: {titan}": EQUIPMENT_DISPLAY_TO_INTERNAL[unlock]
+               for unlock, titan in _UNLOCK_TO_TITAN.items()}

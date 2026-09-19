@@ -58,7 +58,7 @@ class TitanTests(unittest.TestCase):
         self.fail("Routine did not return")
 
     def test_offer_and_record_are_independent_of_gameplay_level(self):
-        for flag in (0, 2, 3):
+        for flag in (0, 2, 3, 4):
             p, h = self.plan()
             table = h.tables["titan"]
             p.batch_write_int8([(table + 2, flag)])

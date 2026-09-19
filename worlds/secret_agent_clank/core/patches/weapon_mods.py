@@ -1,6 +1,7 @@
 """Vendor transaction flags are independent of AP mod ownership."""
 from ...constants.native_functions import NativeFunctions
 from ...constants.weapon_mods import WEAPON_MODS, enabled_mods
+from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..inventories.weapons import WEAPON_ORDER
 from ..symbols import require
 from .asm import Patch, jump, packed
@@ -91,7 +92,7 @@ class WeaponMods(PatchSet):
             return
         if not self.validated:
             for mod in WEAPON_MODS:
-                base = self.base + WEAPON_ORDER.index(mod.weapon) * 0x74
+                base = self.base + WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon]) * 0x74
                 definition = p.read_int32(self.mod_list + mod.mod_id * 4)
                 if not 0x100000 <= definition < 0x2000000 or p.read_int32(base + 0x30 + mod.slot * 4) != definition:
                     raise RuntimeError(f"Native mod catalog changed: {mod.name}")
@@ -99,7 +100,7 @@ class WeaponMods(PatchSet):
         writes = []
         active = {mod.name for mod in self.catalog}
         for mod in WEAPON_MODS:
-            address = self.base + WEAPON_ORDER.index(mod.weapon) * 0x74 + 0x68 + mod.slot
+            address = self.base + WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon]) * 0x74 + 0x68 + mod.slot
             desired = int(mod.name in active and mod.name in self.received)
             if p.read_int8(address) != desired:
                 writes.append((address, desired))

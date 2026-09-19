@@ -73,8 +73,7 @@ def set_vendor_rules(world):
     for mod in world.weapon_mod_catalog:
         # Native mod offers require their weapon. Receiving the mod itself
         # must never be a requirement for buying its randomized location.
-        unlock = next(name for name, internal in display_to_internal.items() if internal == mod.weapon)
-        world.set_rule(locations[mod.location], available_vendor & Has(unlock))
+        world.set_rule(locations[mod.location], available_vendor & Has(mod.weapon))
     # Apply last, ANDing with the user's per-location rules rather than replacing them.
     for name, location in locations.items():
         if display_to_internal.get(name, name) in native_vendor_items:

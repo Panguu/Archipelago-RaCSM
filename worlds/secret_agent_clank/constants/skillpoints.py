@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case
+from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 
 @dataclass(frozen=True)
@@ -81,7 +81,7 @@ class SACSkillPoints:
 # order in constants/planets.py, which cross-confirms that flat list's
 # ordering (does NOT confirm the planet groupings, still best-guess).
 # address/flag walk 0x206BF8-0x206C00 one bit at a time, in this same order.
-SKILL_POINTS: tuple[CaseStructure, ...] = (
+_RAW_SKILL_POINTS: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACSkillPoints.FURIOUS_FISTS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206BF8),
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACSkillPoints.SILENT_NIGHT, SACTags.SKILL_POINT, event_flag=0b00000010, event_address=0x206BF8),
     CaseStructure(SACCases.BOLTAIRE_GEM_WING, SACSkillPoints.PYRRHIC_VICTORY, SACTags.SKILL_POINT, event_flag=0b00000100, event_address=0x206BF8),
@@ -151,11 +151,6 @@ SKILL_POINTS: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.KLUNKS_LAIR, SACSkillPoints.PRETTY_GOOD_LIKENESS, SACTags.SKILL_POINT, event_flag=0b00000001, event_address=0x206C00),
 )
 
-# Case.name -> its skill points' full display names, derived from
-# SKILL_POINTS above. Order matches case_id (1-30) order, same caveat as
-# the tuple itself.
-SKILL_POINTS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SKILL_POINTS)
-
 
 @dataclass(frozen=True)
 class SACSkillPointLocations:
@@ -224,3 +219,11 @@ class SACSkillPointLocations:
     UNDERWATER_BUNKER_IM_NOT_THERE = "Hydrano (Clank) - Underwater Bunker: Skill Point: I'm not There"
     KLUNKS_LAIR_TURN_THE_TABLES = "Hydrano (Clank) - Klunk's Lair: Skill Point: Turn The Tables"
     KLUNKS_LAIR_PRETTY_GOOD_LIKENESS = "Hydrano (Clank) - Klunk's Lair: Skill Point: A Pretty Good Likeness"
+
+
+SKILL_POINTS: tuple[CaseStructure, ...] = with_display_names(_RAW_SKILL_POINTS, SACSkillPointLocations)
+
+# Case.name -> its skill points' full display names, derived from
+# SKILL_POINTS above. Order matches case_id (1-30) order, same caveat as
+# the tuple itself.
+SKILL_POINTS_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SKILL_POINTS)

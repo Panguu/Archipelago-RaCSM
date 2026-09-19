@@ -275,6 +275,7 @@ class SecretAgentClankWorld(World):
             "skill_points": bool(self.options.skill_points.value),
             "all_keycards": bool(self.options.all_keycards.value),
             "all_alien_codes": bool(self.options.all_alien_codes.value),
+            "send_scouted_locations": bool(self.options.send_scouted_locations.value),
             "goal": self.options.goal.value,
             "progressive_wrench": bool(self.options.progressive_wrench.value),
             "progressive_weapons": bool(self.options.progressive_weapons.value),

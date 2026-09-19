@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 from ..constants.alien_codes import ALIEN_CODE_MODULES
 from ..constants.clank_gadgets import SACClankGadgets
+from ..constants.missions import MISSION_COMPLETE_NAME
 from ..core.case_menu import CASE_LABELS
 from ..core.core import Core
 from ..core.inventories.alien_codes import AlienCodeInventory
@@ -152,7 +153,7 @@ class MissionLabelTests(unittest.TestCase):
             struct.pack_into("<I", p.data, 0x120000 + i * 96 + 12, 3)
             struct.pack_into("<I", p.data, 0x120000 + i * 96 + 60, label)
         found = inv.check_all()
-        self.assertEqual(set(found), {f"Mission: {CASE_LABELS[x]} Complete" for x in (5614, 5622)})
+        self.assertEqual(set(found), {MISSION_COMPLETE_NAME[CASE_LABELS[x]] for x in (5614, 5622)})
         for name in found:
             inv.confirm(name)
         self.assertEqual(inv.check_all(), [])
@@ -168,7 +169,7 @@ class MissionLabelTests(unittest.TestCase):
             struct.pack_into("<I", p.data, 0x120000 + i * 96, kind)
             struct.pack_into("<I", p.data, 0x120000 + i * 96 + 12, 3 if i == 1 else 0)
             struct.pack_into("<I", p.data, 0x120000 + i * 96 + 60, 5626)
-        self.assertEqual(inv.check_all(), [f"Mission: {CASE_LABELS[5626]} Complete"])
+        self.assertEqual(inv.check_all(), [MISSION_COMPLETE_NAME[CASE_LABELS[5626]]])
 
 
 class AlienFlagTests(unittest.TestCase):

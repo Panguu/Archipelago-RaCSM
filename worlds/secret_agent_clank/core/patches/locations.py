@@ -1,13 +1,12 @@
 from ...constants.clank_gadgets import SACClankGadgets
+from ...constants.vendor import VENDOR_WEAPONS
+from ...constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..inventories.weapons import WEAPON_ORDER, WeaponSlot
 
-_VENDOR_SLOTS = (
-    WeaponSlot.SHOCKROCKET, WeaponSlot.PLASMAWHIP, WeaponSlot.PORKBOMB, WeaponSlot.RYNO,
-    WeaponSlot.HOLOKNUCKLES, WeaponSlot.LIGHTNINGUMBRELLA, WeaponSlot.HYPNOWATCH,
-    WeaponSlot.CLANKPDA, WeaponSlot.BOLTGRABBER, WeaponSlot.SUPERKICK,
-    WeaponSlot.KICKBLAST, WeaponSlot.KICKSPLOSION,
-)
-VENDOR_LOCATIONS = {slot: WEAPON_ORDER[slot] for slot in _VENDOR_SLOTS}
+VENDOR_LOCATIONS = {
+    WeaponSlot(WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[name])): EQUIPMENT_DISPLAY_TO_INTERNAL[name]
+    for name in VENDOR_WEAPONS
+}
 
 _PICKUP_SLOTS = (
     WeaponSlot.BLASTER, WeaponSlot.SHARDGUN, WeaponSlot.BEEMINEGLOVE, WeaponSlot.WALLOPER,

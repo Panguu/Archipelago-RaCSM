@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case
+from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 
 @dataclass(frozen=True)
@@ -22,7 +22,7 @@ class SACGadgetbotChallenges:
     MISSION_POSSIBLE = "Mission: Possible"
 
 
-GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = (
+_RAW_GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = (
     CaseStructure(
         SACCases.ROOFTOP_DEATHTRAP, SACGadgetbotChallenges.RESCUE_CLANK, SACTags.GADGETBOT_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C7A,
@@ -57,12 +57,6 @@ GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = (
     ),
 )
 
-# Case.name -> its known Gadgetbot Challenges' full display names, derived
-# from GADGETBOT_CHALLENGES above. Order is declaration order
-# (display/iteration convenience) -- it does NOT imply anything about
-# address layout.
-GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETBOT_CHALLENGES)
-
 
 @dataclass(frozen=True)
 class SACGadgetbotChallengeLocations:
@@ -74,3 +68,13 @@ class SACGadgetbotChallengeLocations:
     INSIDE_THE_A_EYE_GO_LONG = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Go Long"
     BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR = "Underwater Base (Gadgetbots) - Bulkhead Lock: Knockin' on Klunk's Door"
     BULKHEAD_LOCK_MISSION_POSSIBLE = "Underwater Base (Gadgetbots) - Bulkhead Lock: Mission: Possible"
+
+
+GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
+    _RAW_GADGETBOT_CHALLENGES, SACGadgetbotChallengeLocations)
+
+# Case.name -> its known Gadgetbot Challenges' full display names, derived
+# from GADGETBOT_CHALLENGES above. Order is declaration order
+# (display/iteration convenience) -- it does NOT imply anything about
+# address layout.
+GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETBOT_CHALLENGES)

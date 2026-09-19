@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case
+from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class SACSpecialChallenges:
     VEHICLE_GO_FOR_THE_GOLD = "Vehicle: Go for the Gold"
 
 
-SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = (
+_RAW_SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = (
     CaseStructure(
         SACCases.VENANTONIO_CANALS, SACSpecialChallenges.VEHICLE_GREAT_ESCAPE, SACTags.SPECIAL_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C9E,
@@ -62,11 +62,6 @@ SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = (
     ),
 )
 
-# Case.name -> its known Special Challenges' full display names, derived
-# from SPECIAL_CHALLENGES above. Order is declaration order (display/
-# iteration convenience) -- it does NOT imply anything about address layout.
-SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_CHALLENGES)
-
 
 @dataclass(frozen=True)
 class SACSpecialChallengeLocations:
@@ -79,3 +74,12 @@ class SACSpecialChallengeLocations:
     GLACIARA_SKI_SLOPES_VEHICLE_VILLA_ESCAPE = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Villa Escape"
     GLACIARA_SKI_SLOPES_VEHICLE_BLACK_DIAMOND = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Black Diamond"
     GLACIARA_SKI_SLOPES_VEHICLE_GO_FOR_THE_GOLD = "Glaciara (Special Missions) - Glaciara, Ski Slopes: Go for the Gold"
+
+
+SPECIAL_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
+    _RAW_SPECIAL_CHALLENGES, SACSpecialChallengeLocations)
+
+# Case.name -> its known Special Challenges' full display names, derived
+# from SPECIAL_CHALLENGES above. Order is declaration order (display/
+# iteration convenience) -- it does NOT imply anything about address layout.
+SPECIAL_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(SPECIAL_CHALLENGES)

@@ -1,5 +1,8 @@
 """Runtime-facing API for native location interception on SCUS-97623 -- picks the applicable patch plan (patches/weapon_pickup.py's common case, or patches/vendor_only.py for modules like Treehouse with a vendor but no WeaponPickup code) and owns install/poll/sync/restore against a live PINE connection."""
 from ...constants.native_functions import NativeFunctions
+from ...constants.weapon_mods import WEAPON_MODS
+from ...constants.weapons import CASE_BY_WEAPON_NAME, EQUIPMENT_INTERNAL_TO_DISPLAY
+from ..inventories.weapons import WEAPON_ORDER
 from .asm import MARKER
 from .vendor_only import VendorOnly
 from .weapon_pickup import WeaponPickup
@@ -138,6 +141,36 @@ class LocationHooks:
             flags[slot] = 2 if value else 1
         if self.pine.read_bytes(self.entitlement_table, 40) != flags:
             self.pine.write_bytes(self.entitlement_table, bytes(flags))
+
+    def sync_vendor_cases(self, owned_cases, *, loader_gate=None):
+        """Hide a locked offer with flag 4, distinct from purchased flag 2 -- base/mod
+        readers return flag - 1 (nonzero hides the offer), Titan readers only ever
+        offer flag 3, and polling only ever reports flag 2 as purchased."""
+        if not self.installed:
+            return
+        if loader_gate is not None:
+            # The current-module global still names the outgoing level while
+            # the incoming module is held before startup.
+            if loader_gate.pine is not self.pine or loader_gate.held_module() != self.module:
+                raise RuntimeError("Vendor case flags require the held module")
+        elif not self.is_current():
+            return
+        mod_weapons = {mod.mod_id: mod.weapon for mod in WEAPON_MODS}
+        writes = []
+        for kind in ("vendor", "mods", "titan"):
+            for slot in self.locations.get(kind, {}):
+                weapon = (mod_weapons.get(slot) if kind == "mods" else
+                          EQUIPMENT_INTERNAL_TO_DISPLAY.get(WEAPON_ORDER[slot]))
+                case = CASE_BY_WEAPON_NAME.get(weapon)
+                address = self.tables[kind] + slot
+                flag = self.pine.read_int8(address)
+                if flag == 2:
+                    continue
+                desired = 4 if case is not None and case not in owned_cases else (3 if kind == "titan" else 1)
+                if flag != desired:
+                    writes.append((address, desired))
+        if writes:
+            self.pine.batch_write_int8(writes)
 
     def restore(self):
         if not self.installed:

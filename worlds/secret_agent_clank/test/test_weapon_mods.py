@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 
 from ..constants.weapon_mods import WEAPON_MODS, enabled_mods
+from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
 from ..core.inventories.weapons import WEAPON_ORDER
 from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
 from ..core.patches.weapon_mods import WeaponMods
@@ -59,7 +60,7 @@ class WeaponModTests(unittest.TestCase):
         hooks.patches.extend(mods.prepare(symbols, hooks, 22, set(), True))
         hooks._install_plan()
         mod = WEAPON_MODS[0]
-        gadget = mods.base + WEAPON_ORDER.index(mod.weapon) * 0x74
+        gadget = mods.base + WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon]) * 0x74
         p.batch_write_int32([(gadget + 0x70, 0)])
         mods.received = {mod.name}
         mods.sync()

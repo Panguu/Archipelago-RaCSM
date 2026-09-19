@@ -56,6 +56,13 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
 
         self._location_name_to_id = {name: data.code for name, data in ALL_LOCATIONS.items()}
         self.vendor_scouts = VendorScouts(self._location_name_to_id)
+        # Location ids already sent in a LocationScouts request this
+        # connection -- see _maybe_scout_vendor() (pine_mixin.py's poll
+        # loop): scouting is withheld until the native vendor screen is
+        # actually open, and even then only for cases already unlocked, so
+        # this tracks what's gone out so far rather than re-sending the same
+        # ids every tick while the vendor stays open.
+        self._scouted_location_ids: set[int] = set()
         self._locally_checked_locations: set[int] = set()
         # Names already warned about via _append_location_by_name (pine_mixin.py)
         # -- native detectors retry a rejected name every tick (see
@@ -200,6 +207,29 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             if lid in id_to_name
         }
 
+    def _maybe_scout_vendor(self) -> None:
+        """Send a LocationScouts request for whatever vendor rows are newly eligible --
+        only once the native vendor screen is actually open (Core.vendor.active), and
+        even then only for rows whose owning case is already unlocked (Core.owned_cases)
+        -- so opening the vendor never reveals/hints a case's contents before the player
+        has actually reached that case. Cheap and idempotent to call every poll tick
+        while the vendor is open: _scouted_location_ids means already-sent ids are
+        never re-requested, and a newly-unlocked case's rows go out the next tick."""
+        if self.slot is None or not self._wiring.vendor.active:
+            return
+        server_locations = getattr(self, "server_locations", None)
+        if server_locations is None:
+            return
+        request = self.vendor_scouts.request(
+            server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
+            owned_cases=self._wiring.owned_cases,
+        )
+        new_ids = [lid for lid in request["locations"] if lid not in self._scouted_location_ids]
+        if not new_ids:
+            return
+        self._scouted_location_ids.update(new_ids)
+        asyncio.create_task(self.send_msgs([{**request, "locations": new_ids}]))
+
     def _dynamic_pine_auth(self) -> None:
         """Pre-fills auth from whatever slot name the hub's /launch command was given, so the player isn't asked to retype it -- and so it can't drift from what _dynamic_pine_port() later looks the PCSX2 instance's port up under."""
         if self.auth or not dynamicpine_loaded:
@@ -240,11 +270,9 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
                 self._notification_slot = identity
                 self._notification_count = None
                 self._wiring.notifications.queue.clear()
-            self.vendor_scouts.rewards.clear()
-            scout_request = self.vendor_scouts.request(self.server_locations)
-            if scout_request["locations"]:
-                asyncio.create_task(self.send_msgs([scout_request]))
             self.slot_data = args.get("slot_data", {})
+            self.vendor_scouts.rewards.clear()
+            self._scouted_location_ids.clear()
             self._wiring.native_runtime.starting_case.configure(self.slot_data)
             asyncio.create_task(self._load_bolt_state())
             asyncio.create_task(self._load_trap_state())

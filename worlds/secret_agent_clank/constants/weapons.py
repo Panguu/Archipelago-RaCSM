@@ -38,6 +38,21 @@ class SACProgressiveRatchetWeapons:
 
 
 @dataclass(frozen=True)
+class SACTitanWeapons:
+    """Fully-upgraded (NG+ Titan Vendor) counterpart to SACRatchetWeapons -- only the
+    weapons with a Titan tier get a member here, matched by shared attribute name to
+    the SACRatchetWeapons entry it upgrades (see constants/weapon_progression.py)."""
+    SHOCKROCKET  = "Titan Shock Rocket (Ratchet)"
+    PLASMAWHIP   = "Titan Plasma Whip (Ratchet)"
+    PORKBOMB     = "Titan Pork Bomb Gun (Ratchet)"
+    BLASTER      = "Titan Dual Lacerators (Ratchet)"
+    SHARDGUN     = "Titan Shard Gun (Ratchet)"
+    BEEMINEGLOVE = "Titan Bee Mine Mk. II (Ratchet)"
+    WALLOPER     = "Titan Walloper (Ratchet)"
+    MINELAUNCHER = "Titan Mine Launcher (Ratchet)"
+
+
+@dataclass(frozen=True)
 class SACQwarkWeapons:
     """We are not including Qwarks weapons in AP tool just for noting"""
     QWARKBLASTER      = "Blaster (Qwark)"

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case
+from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 
 @dataclass(frozen=True)
@@ -41,7 +41,7 @@ class SACRatchetChallenges:
     MEGA_CHALLENGE_CELLBLOCK = "Mega Challenge: Cellblock"
 
 
-RATCHET_CHALLENGES: tuple[CaseStructure, ...] = (
+_RAW_RATCHET_CHALLENGES: tuple[CaseStructure, ...] = (
     CaseStructure(
         SACCases.PRISON_BREAKOUT, SACRatchetChallenges.CATCH_AS_CATCH_CAN, SACTags.RATCHET_CHALLENGE,
         event_flag=0b00000001, event_address=0x206C54,
@@ -133,11 +133,6 @@ RATCHET_CHALLENGES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.MAX_SECURITY_CELLS, SACRatchetChallenges.MEGA_CHALLENGE_CELLBLOCK, SACTags.RATCHET_CHALLENGE),
 )
 
-# Case.name -> its known Ratchet Challenges' full display names, derived
-# from RATCHET_CHALLENGES above. Order is declaration order (display/
-# iteration order) and matches native challenge indices within each case.
-RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(RATCHET_CHALLENGES)
-
 
 @dataclass(frozen=True)
 class SACRatchetChallengeLocations:
@@ -166,3 +161,12 @@ class SACRatchetChallengeLocations:
     MAX_SECURITY_CELLS_PAST_DUE = "Prison Planet (Ratchet) - Max-Security Cells: Past Due"
     MAX_SECURITY_CELLS_SPEAK_SOFTLY_AND = "Prison Planet (Ratchet) - Max-Security Cells: Speak Softly And..."
     MAX_SECURITY_CELLS_MEGA_CHALLENGE_CELLBLOCK = "Prison Planet (Ratchet) - Max-Security Cells: Mega Challenge: Cellblock"
+
+
+RATCHET_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
+    _RAW_RATCHET_CHALLENGES, SACRatchetChallengeLocations)
+
+# Case.name -> its known Ratchet Challenges' full display names, derived
+# from RATCHET_CHALLENGES above. Order is declaration order (display/
+# iteration order) and matches native challenge indices within each case.
+RATCHET_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(RATCHET_CHALLENGES)

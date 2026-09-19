@@ -166,6 +166,7 @@ class Core:
         # same as _ap_owned above.
         self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
                                                 progressive_planets=self.progressive_planets)
+        self.native_runtime.owned_cases = frozenset(self._owned_cases)
 
     def _invalidate_level(self) -> None:
         self.traps.last_tick = None
@@ -273,6 +274,14 @@ class Core:
         if not self.case.is_ready or not self._inventory_initialized:
             return False
         return self.traps.activate(trap_name, self.case.symbols)
+
+    @property
+    def owned_cases(self) -> frozenset[str]:
+        """Case names currently unlocked via AP, as of the last apply_inventory() call
+        (see _owned_cases' own docstring) -- client/context.py uses this to withhold
+        vendor scouting, and native_runtime/hooks.sync_vendor_cases() to hide a
+        locked case's vendor offers in-game, until that case is actually unlocked."""
+        return frozenset(self._owned_cases)
 
     # -- Bolts / NG+ (plain global values, CONFIRMED live addresses) -------
 

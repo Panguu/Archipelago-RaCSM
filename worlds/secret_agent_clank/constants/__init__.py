@@ -7,11 +7,12 @@ from .clank_gadgets import (
     SACClankWeapons,
     SACGadgetPickupLocations,
     SACProgressiveClankWeapons,
+    SACProtoWeapons,
 )
 from .cutscenes import CUTSCENE_TO_CASE, SACCutsceneLocations, SACCutscenes
 from .gadgetbot_challenges import GADGETBOT_CHALLENGES_BY_CASE, SACGadgetbotChallengeLocations, SACGadgetbotChallenges
 from .keycards import KEYCARDS, KEYCARDS_BY_CASE, SACKeycardLocations, SACKeycards
-from .missions import MISSION_TO_CASE, SACMissionLocations, SACMissions
+from .missions import MISSION_COMPLETE_NAME, MISSION_TO_CASE, SACMissionLocations, SACMissions
 from .operatives import (
     ALL_OPERATIVES,
     CHARACTER_ITEM_NAME,
@@ -38,6 +39,7 @@ from .ratchet_challenges import RATCHET_CHALLENGES_BY_CASE, SACRatchetChallengeL
 from .skillpoints import SKILL_POINTS_BY_CASE, SACSkillPointLocations, SACSkillPoints
 from .special_challenges import SPECIAL_CHALLENGES_BY_CASE, SACSpecialChallengeLocations, SACSpecialChallenges
 from .titanium_bolts import TITANIUM_BOLT_CASES, TITANIUM_BOLT_ENTRIES, SACTitaniumBoltLocations
+from .vendor import VENDOR_LOCATION_PREFIX, VENDOR_WEAPONS, SACVendorWeapons, vendor_location_name
 from .weapons import (
     GADGET_DISPLAY_TO_INTERNAL,
     GADGET_INTERNAL_TO_DISPLAY,
@@ -50,6 +52,7 @@ from .weapons import (
     SACProgressiveRatchetWeapons,
     SACQwarkWeapons,
     SACRatchetWeapons,
+    SACTitanWeapons,
 )
 
 __all__ = [
@@ -76,6 +79,7 @@ __all__ = [
     "GADGET_INTERNAL_TO_DISPLAY",
     "KEYCARDS",
     "KEYCARDS_BY_CASE",
+    "MISSION_COMPLETE_NAME",
     "MISSION_TO_CASE",
     "OPERATIVE_NAMES",
     "PLANET_ACCESS_ITEM_NAME",
@@ -90,6 +94,8 @@ __all__ = [
     "THERM_OPTIC_SHADES",
     "TITANIUM_BOLT_CASES",
     "TITANIUM_BOLT_ENTRIES",
+    "VENDOR_LOCATION_PREFIX",
+    "VENDOR_WEAPONS",
     "WEAPONS_BY_CASE",
     "Case",
     "SACAlienCodeLocations",
@@ -111,6 +117,7 @@ __all__ = [
     "SACPlanets",
     "SACProgressiveClankWeapons",
     "SACProgressiveRatchetWeapons",
+    "SACProtoWeapons",
     "SACQwarkWeapons",
     "SACRatchetChallengeLocations",
     "SACRatchetChallenges",
@@ -119,6 +126,9 @@ __all__ = [
     "SACSkillPoints",
     "SACSpecialChallengeLocations",
     "SACSpecialChallenges",
+    "SACTitanWeapons",
     "SACTitaniumBoltLocations",
     "SACTraps",
+    "SACVendorWeapons",
+    "vendor_location_name",
 ]

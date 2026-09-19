@@ -140,5 +140,5 @@ PLANET_ACCESS_ITEM_NAME: dict[str, str] = {
 # File unconditionally rather than special-casing it as "always true" in
 # the rules, so it's a real starting-inventory item like any other.
 CASE_NAME_TO_INFOBOT: dict[str, str] = {
-    case.name: f"Case File: {case.name}" for case in ALL_CASES
+    case.name: case.name for case in ALL_CASES
 }

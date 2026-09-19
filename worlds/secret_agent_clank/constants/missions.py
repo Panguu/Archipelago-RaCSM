@@ -76,6 +76,10 @@ class SACMissionEntry:
     address: int
     flag: MissionFlag = MissionFlag.DISABLED
     title_id: int = 0
+    # The real AP location name (a SACMissionLocations constant) -- set below
+    # once SACMissionLocations exists (same declaration-order pattern as
+    # CaseStructure.display_name/with_display_names()).
+    display_name: "str | None" = None
 
     def __post_init__(self) -> None:
         # A property/setter pair here (instead of this) would collide with
@@ -307,3 +311,40 @@ class SACMissionLocations:
     UNDERWATER_BUNKER_COMPLETE = "Hydrano (Clank) - Underwater Bunker: Underwater Bunker Complete"
     KLUNKS_LAIR_COMPLETE = "Hydrano (Clank) - Klunk's Lair: Klunk's Lair Complete"
     HIGH_TREEHOUSE_COMPLETE = "High Impact Treehouse (Special Missions) - High Impact Treehouse: High Impact Treehouse Complete"
+
+
+# Case.name -> its SACMissionLocations "{case} Complete" constant, matched by
+# shared attribute name (SACCases.BOLTAIRE_MUSEUM <-> SACMissionLocations.
+# BOLTAIRE_MUSEUM_COMPLETE) -- the single source every locations/<case>.py
+# file's *_MISSION_LOCATIONS dict looks this up from, instead of each one
+# hand-building "Mission: {case.name} Complete" itself.
+MISSION_COMPLETE_NAME: dict[str, str] = {
+    case_name: getattr(SACMissionLocations, f"{attr}_COMPLETE")
+    for attr, case_name in vars(SACCases).items() if not attr.startswith("_")
+}
+
+# Attach each mission's real AP location name to its SACMissionEntry, matched
+# by declaration order against SACMissionLocations' non-"_COMPLETE" attributes
+# (both hand-authored separately in the same case_id/mission order). Mutates
+# in place -- SACMissionEntry isn't frozen -- so CHAPTER_ENTRIES/
+# ALL_CHAPTER_ENTRIES see it too without rebuilding.
+_MISSION_DISPLAY_NAMES = [
+    value for name, value in vars(SACMissionLocations).items()
+    if not name.startswith("_") and not name.endswith("_COMPLETE")
+]
+if len(_MISSION_DISPLAY_NAMES) != len(ALL_CHAPTER_ENTRIES):
+    raise ValueError(
+        f"SACMissionLocations has {len(_MISSION_DISPLAY_NAMES)} non-Complete entries, "
+        f"but {len(ALL_CHAPTER_ENTRIES)} CHAPTER_ENTRIES exist")
+for (_, _entry), _name in zip(ALL_CHAPTER_ENTRIES, _MISSION_DISPLAY_NAMES):
+    _entry.display_name = _name
+
+# Reverse lookups for core/inventories/missions.py's AP boundary (check()'s
+# return value, confirm()'s input) -- internal bookkeeping there stays keyed
+# by the raw case name / entry.name (matches core/core.py's own raw
+# entry.name lookups); only the string actually sent to/received from AP
+# needs translating, via these two maps.
+COMPLETE_NAME_TO_CASE: dict[str, str] = {name: case for case, name in MISSION_COMPLETE_NAME.items()}
+DISPLAY_NAME_TO_CHAPTER_ENTRY: dict[str, SACMissionEntry] = {
+    entry.display_name: entry for _, entry in ALL_CHAPTER_ENTRIES
+}

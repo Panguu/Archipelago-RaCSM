@@ -2,7 +2,7 @@
 identity plus every category's locations/items for it) in one place. CaseStructure:
 a single per-case, bit-flag-tracked location -- pairs a short event title with its
 Case, memory address and completion bit."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -118,6 +118,10 @@ class CaseStructure:
     category: str = ""      # e.g. "Gadgetbot Challenge", "Skill Point" -- "" for missions/cutscenes
     event_flag: int = 0      # bitmask within event_address's byte; 0 = not confirmed live yet
     event_address: int = 0   # 0 = not confirmed live yet
+    # The real AP location name -- a category's SACXLocations constant (e.g.
+    # SACSkillPointLocations), applied by with_display_names() below once the
+    # whole tuple/dict is built. None falls back to __str__'s generic form.
+    display_name: "str | None" = None
 
     @property
     def operative(self) -> str:
@@ -129,8 +133,25 @@ class CaseStructure:
         return bool(flag_value & self.event_flag)
 
     def __str__(self) -> str:
+        if self.display_name is not None:
+            return self.display_name
         middle = f"{self.category}: " if self.category else ""
         return f"{self.operative}: {self.case_name}: {middle}{self.event_name}"
+
+
+def with_display_names(
+    entries: tuple[CaseStructure, ...], names_cls: type,
+) -> tuple[CaseStructure, ...]:
+    """Attach each entry's real AP location name from names_cls (a SACXLocations-style
+    class of hand-typed display strings), matched purely by declaration order -- both
+    the entries tuple and names_cls's attributes must already correspond 1:1, in the
+    same order (verified live via a length check, since the two are hand-authored
+    separately and can drift)."""
+    names = [value for name, value in vars(names_cls).items() if not name.startswith("_")]
+    if len(names) != len(entries):
+        raise ValueError(
+            f"{names_cls.__name__} has {len(names)} entries, but {len(entries)} CaseStructure entries exist")
+    return tuple(replace(entry, display_name=name) for entry, name in zip(entries, names))
 
 
 def group_by_case(entries: tuple[CaseStructure, ...]) -> dict[str, tuple[str, ...]]:

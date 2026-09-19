@@ -27,6 +27,19 @@ class SACProgressiveClankWeapons:
 
 
 @dataclass(frozen=True)
+class SACProtoWeapons:
+    """Fully-upgraded (NG+ Titan Vendor) counterpart to SACClankWeapons -- only the
+    weapons with a Proto tier get a member here, matched by shared attribute name to
+    the SACClankWeapons entry it upgrades (see constants/weapon_progression.py)."""
+    THROWTIE          = "Proto Tie-A-Rang (Clank)"
+    CUFFLINK          = "Proto Cufflink Bomb (Clank)"
+    TANGLEVINE        = "Proto Tanglevine Carnation (Clank)"
+    FLAMETHROWERPEN   = "Proto Blowtorch Briefcase (Clank)"
+    HOLOKNUCKLES      = "Proto Holo-Knuckles (Clank)"
+    LIGHTNINGUMBRELLA = "Proto Thunderstorm Umbrella (Clank)"
+
+
+@dataclass(frozen=True)
 class SACClankGadgets:
     """Lock/unlock-only Clank items (no progression) -- see module docstring for why the two mechanically-separate tracking systems (case_id-keyed CLANK_GADGET_BY_CASE_ID vs the shared WEAPON_ORDER struct) share one naming class."""
 
@@ -56,7 +69,14 @@ CLANK_GADGETS: tuple[str, ...] = tuple(
 )
 
 
+def gadget_pickup_name(display_name: str) -> str:
+    return f"{display_name} (Pickup)"
+
+
 @dataclass(frozen=True)
 class SACGadgetPickupLocations:
-    BOLTAIRE_MUSEUM = "Boltaire (Clank) - Boltaire Museum: Blackout Pen Pickup"
-    ROOFTOP_DEATHTRAP = "Boltaire (Clank) - Boltaire Museum: Therm-Optic Shades Pickup"
+    """Both gadgets are picked up in Boltaire Museum (case_id 1) -- see
+    CLANK_GADGET_BY_CASE_ID above -- so both attribute names share that case
+    prefix even though there's no second, Rooftop-Deathtrap-only pickup."""
+    BOLTAIRE_MUSEUM_BLACK_OUT_PEN = gadget_pickup_name(SACClankGadgets.BLACK_OUT_PEN)
+    BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES = gadget_pickup_name(SACClankGadgets.THERM_OPTIC_SHADES)

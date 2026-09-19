@@ -78,7 +78,7 @@ this system; single-level tools keep their individual unlocks. Combat weapon
 XP is disabled while AP controls levels. With the option off, combat leveling
 works normally.
 
-NG+ seeds add 14 shared `Titan Vendor: <weapon>` purchase locations, excluding
+NG+ seeds add 14 shared `Vendor: <weapon>` purchase locations, excluding
 RYNO. They are recorded independently of base-weapon purchases and ownership.
 NG+ 0 generates no Titan locations and explicitly skips both native Titan
 offer lists at the loader gate. NG+ 1 and 2 enable Titan purchase checks.

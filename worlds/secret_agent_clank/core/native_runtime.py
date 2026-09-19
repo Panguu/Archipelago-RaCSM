@@ -21,6 +21,7 @@ class NativeRuntime:
         self.weapon_mods = None
         self.vendor_modules = None
         self.presentation = None
+        self.owned_cases = frozenset()
         self.starting_case = StartingCase(pine, log)
 
     def configure_vendors(self, case_names):
@@ -79,6 +80,7 @@ class NativeRuntime:
                 if self.presentation is not None and vendor_enabled:
                     self.hooks.patches.extend(self.presentation.prepare(symbols, self.hooks))
                 self.hooks.install_at_loader_gate(self.gate)
+                self.hooks.sync_vendor_cases(self.owned_cases, loader_gate=self.gate)
                 self.generation += 1
                 self.gate.release()
                 self.awaiting_start = True
@@ -97,6 +99,7 @@ class NativeRuntime:
                 if self.hooks.entitlement_table is not None and not p.read_int8(self.hooks.entitlement_table + 40):
                     return False
                 self.hooks.sync_checked(checked)
+                self.hooks.sync_vendor_cases(self.owned_cases)
                 self.hooks.sync_entitlements(entitlements)
                 return True
             if not self.reset_notice:

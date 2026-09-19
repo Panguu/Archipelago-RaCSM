@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags, group_by_case
+from .types import CaseStructure, SACTags, group_by_case, with_display_names
 
 
 @dataclass(frozen=True)
@@ -38,7 +38,7 @@ class SACAlienCodes:
     JEFFS_SECRET = "Jeff's secret"
 
 
-ALIEN_CODES: tuple[CaseStructure, ...] = (
+_RAW_ALIEN_CODES: tuple[CaseStructure, ...] = (
     # Boltaire Museum -- confirmed case (exact name match).
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.THE_LEGENDS, SACTags.ALIEN_CODE),
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACAlienCodes.RONNS_SECRET, SACTags.ALIEN_CODE),
@@ -93,13 +93,6 @@ ALIEN_CODES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.UNDERWATER_BUNKER, SACAlienCodes.JEFFS_SECRET, SACTags.ALIEN_CODE),
 )
 
-# Every Alien Code confirmed to a real case, grouped by case name -- feeds
-# locations.py's ALIEN_CODE_LOCATIONS. Excludes the still-TODO entries
-# above (see module docstring).
-ALIEN_CODES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
-    tuple(entry for entry in ALIEN_CODES if entry.case_name != "TODO")
-)
-
 
 # Native module IDs from GLOBALVARS_GetTotalAlienCodeCount, not catalog IDs.
 ALIEN_CODE_MODULES = {
@@ -140,3 +133,13 @@ class SACAlienCodeLocations:
     UNDERWATER_BUNKER_VESSUPS_SECRET = "Hydrano (Clank) - Underwater Bunker: Alien Code: Vessup's secret"
     UNDERWATER_BUNKER_ADAMS_SECRET = "Hydrano (Clank) - Underwater Bunker: Alien Code: Adam's secret"
     UNDERWATER_BUNKER_JEFFS_SECRET = "Hydrano (Clank) - Underwater Bunker: Alien Code: Jeff's secret"
+
+
+ALIEN_CODES: tuple[CaseStructure, ...] = with_display_names(_RAW_ALIEN_CODES, SACAlienCodeLocations)
+
+# Every Alien Code confirmed to a real case, grouped by case name -- feeds
+# locations.py's ALIEN_CODE_LOCATIONS. Excludes the still-TODO entries
+# above (see module docstring).
+ALIEN_CODES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(
+    tuple(entry for entry in ALIEN_CODES if entry.case_name != "TODO")
+)

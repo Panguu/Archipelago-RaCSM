@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING, NamedTuple
 from ...constants.missions import (
     ALL_CHAPTER_ENTRIES,
     CHAPTER_ENTRIES,
+    COMPLETE_NAME_TO_CASE,
+    DISPLAY_NAME_TO_CHAPTER_ENTRY,
+    MISSION_COMPLETE_NAME,
     MISSION_NAME_TO_CHAPTER_ENTRY,
     MISSION_TO_CASE,
     MissionFlag,
@@ -25,13 +28,12 @@ _CHAPTER_TABLE_OFFSET = 0
 _CHAPTER_TABLE_SLOTS = 33
 _TASK_ENTRY_SIZE = 0x60        # bytes per task entry within a chapter's task array
 
-# Every mission AP location (both granularities) is prefixed "Mission: "
-# (see constants/missions.py's SACMissions/STORY_MISSION_MAP) -- internal bookkeeping
-# below (self.completed/self._reported) stays keyed by the RAW native name
-# throughout (matches core/core.py's own raw entry.name lookups), and this
-# prefix is applied/stripped only at the two boundaries that actually talk
-# to AP: check()'s return value and confirm()/sync_from_ap()'s input.
-_AP_LOCATION_PREFIX = "Mission: "
+# Internal bookkeeping below (self.completed/self._reported) stays keyed by
+# the RAW native name throughout (matches core/core.py's own raw entry.name
+# lookups) -- translated to/from the real AP location name (constants/
+# missions.py's MISSION_COMPLETE_NAME / SACMissionEntry.display_name) only
+# at the two boundaries that actually talk to AP: check()'s return value and
+# confirm()/sync_from_ap()'s input.
 _TASK_STATE_OFFSET = 0xC       # state field within a task entry (same field CHAPTER_ENTRIES
                                 # addresses point at; 1 byte, MissionFlag-valued)
 
@@ -140,12 +142,12 @@ class MissionInventory:
         self._resolved_title_ids = {}
 
     def sync_from_ap(self, checked_location_names: set[str]) -> None:
-        self._reported.update(
-            name.removeprefix(_AP_LOCATION_PREFIX) for name in checked_location_names
-            if name.startswith(_AP_LOCATION_PREFIX)
-        )
+        for case_name, complete_name in MISSION_COMPLETE_NAME.items():
+            if complete_name in checked_location_names:
+                self._reported.add(f"{case_name} Complete")
         for _, entry in ALL_CHAPTER_ENTRIES:
-            if _AP_LOCATION_PREFIX + entry.name in checked_location_names:
+            if entry.display_name in checked_location_names:
+                self._reported.add(entry.name)
                 self.completed[entry.name] = True
 
     def invalidate_resolved_addresses(self) -> None:
@@ -206,9 +208,9 @@ class MissionInventory:
         self._resolve_labels()
         if not all_missions:
             story = self._story_addresses.get(current_case.name, ())
-            name = f"{current_case.name} Complete"
-            if story and name not in self._reported and self.pine.read_int32(story[-1]) == 3:
-                return [_AP_LOCATION_PREFIX + name]
+            internal_key = f"{current_case.name} Complete"
+            if story and internal_key not in self._reported and self.pine.read_int32(story[-1]) == 3:
+                return [MISSION_COMPLETE_NAME[current_case.name]]
             return []
         entries = CHAPTER_ENTRIES.get(current_case.name)
         if not entries:
@@ -223,12 +225,18 @@ class MissionInventory:
             self.completed[entry.name] = now or self.completed.get(entry.name, False)
             if not flipped:
                 continue
-            newly.append(_AP_LOCATION_PREFIX + entry.name)
+            newly.append(entry.display_name)
         return newly
 
     def confirm(self, name: str) -> None:
         """Mark a name check()/check_all() returned as successfully delivered to AP -- see core/case_events.py's CaseEventInventory.confirm() for why this must wait for Core.send_location(name) to return True rather than happening unconditionally inside check()."""
-        self._reported.add(name.removeprefix(_AP_LOCATION_PREFIX))
+        case_name = COMPLETE_NAME_TO_CASE.get(name)
+        if case_name is not None:
+            self._reported.add(f"{case_name} Complete")
+            return
+        entry = DISPLAY_NAME_TO_CHAPTER_ENTRY.get(name)
+        if entry is not None:
+            self._reported.add(entry.name)
 
     def enforce_owned_first_missions(self, owned_cases: "set[str]") -> int:
         """Continuously self-heals every AP-owned case's first CHAPTER_ENTRIES mission back to UNLOCKED (2) if it's currently DISABLED, making each owned case reachable/playable without marking it complete (see module docstring for why nothing else unlocks a case's first mission)."""

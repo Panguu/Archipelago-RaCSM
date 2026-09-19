@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure
+from .types import CaseStructure, with_display_names
 
 
 @dataclass(frozen=True)
@@ -29,7 +29,7 @@ class SACCutscenes:
 # One CaseStructure per cutscene -- pairs each short SACCutscenes title
 # with its case and its confirmed address/flag in the shared
 # 0x206BE0-0x206BF4 bitmask region.
-CUTSCENES: tuple[CaseStructure, ...] = (
+_RAW_CUTSCENES: tuple[CaseStructure, ...] = (
     CaseStructure(SACCases.BOLTAIRE_MUSEUM, SACCutscenes.ENTER_CUTSCENE, event_flag=0b00000001, event_address=0x206BE0),
     CaseStructure(
         SACCases.BOLTAIRE_GEM_WING, SACCutscenes.COMPLETE_CASE_CUTSCENE, event_flag=0b00000100, event_address=0x206BE0,
@@ -115,11 +115,6 @@ CUTSCENES: tuple[CaseStructure, ...] = (
 )
 
 
-# Cutscene full display name -> the case it belongs to, derived from
-# CUTSCENES above -- kept for callers that want a flat name->case lookup
-# instead of iterating CUTSCENES (locations.py, notably).
-CUTSCENE_TO_CASE: dict[str, str] = {str(entry): entry.case_name for entry in CUTSCENES}
-
 @dataclass(frozen=True)
 class SACCutsceneLocations:
     BOLTAIRE_MUSEUM_ENTER_CUTSCENE = "Boltaire (Clank) - Boltaire Museum: Enter Cutscene"
@@ -141,7 +136,6 @@ class SACCutsceneLocations:
     HIGH_ROLLERS_CASINO_ENTER_CUTSCENE = "The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino: Enter Cutscene"
     HIGH_ROLLERS_CASINO_COMPLETE_CUTSCENE = "The Paradis Des Tricheurs Casino (Clank) - High-Rollers Casino: Complete Cutscene"
     THE_EXERCISE_YARD_COMPLETE_CUTSCENE = "Prison Planet (Ratchet) - The Exercise Yard: Complete Cutscene"
-    HIGH_STAKES_ROOM_COMPLETE_CUTSCENE = "The Paradis Des Tricheurs Casino (Special Missions) - High Stakes Room: Complete Cutscene"
     VENANTONIO_LABS_ENTER_CUTSCENE = "Venantonio (Clank) - Venantonio Labs: Enter Cutscene"
     VENANTONIO_LABS_OPEN_GREEN_DOOR_CUTSCENE = "Venantonio (Clank) - Venantonio Labs: Open Green Door Cutscene"
     VENANTONIO_LABS_COMPLETE_CUTSCENE = "Venantonio (Clank) - Venantonio Labs: Complete Cutscene"
@@ -165,3 +159,11 @@ class SACCutsceneLocations:
     KLUNKS_LAIR_MID_FIGHT_CUTSCENE_FOR_ROBO_RATCHET = "Hydrano (Clank) - Klunk's Lair: Mid Fight Cutscene for Robo Ratchet"
     KLUNKS_LAIR_COMPLETE_CUTSCENE = "Hydrano (Clank) - Klunk's Lair: Complete Cutscene"
     KLUNKS_LAIR_HIGH_IMPACT_GAMES_CUTSCENE_WITH_GIANT_CLANK = "Hydrano (Clank) - Klunk's Lair: High Impact Games Cutscene with Giant Clank"
+
+
+CUTSCENES: tuple[CaseStructure, ...] = with_display_names(_RAW_CUTSCENES, SACCutsceneLocations)
+
+# Cutscene full display name -> the case it belongs to, derived from
+# CUTSCENES above -- kept for callers that want a flat name->case lookup
+# instead of iterating CUTSCENES (locations.py, notably).
+CUTSCENE_TO_CASE: dict[str, str] = {str(entry): entry.case_name for entry in CUTSCENES}

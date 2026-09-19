@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from Options import (
     Choice,
     DeathLink,
+    DefaultOnToggle,
     ItemDict,
     OptionCounter,
     OptionGroup,
@@ -42,6 +43,13 @@ class AllKeycards(Toggle):
 class AllAlienCodes(Toggle):
     """Include the 27 Alien Codes as optional AP location checks."""
     display_name = "All Alien Codes"
+
+
+class SendScoutedLocations(DefaultOnToggle):
+    """Send vendor-scouted locations out as real AP hints (visible to trackers/other
+    players), not just shown locally in the vendor menu. Off keeps scouting local-only,
+    same as before this option existed."""
+    display_name = "Send Scouted Locations"
 
 
 class Infobots(Choice):
@@ -193,6 +201,7 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     skill_points: SkillPoints
     all_keycards: AllKeycards
     all_alien_codes: AllAlienCodes
+    send_scouted_locations: SendScoutedLocations
     goal: Goal
     infobots: Infobots
     operatives: Operatives
@@ -230,6 +239,7 @@ sac_option_groups = [
         SkillPoints,
         AllKeycards,
         AllAlienCodes,
+        SendScoutedLocations,
         Goal,
         NgPlus,
     ]),

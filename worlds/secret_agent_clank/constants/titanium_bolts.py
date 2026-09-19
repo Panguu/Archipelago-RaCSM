@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from .planets import SACCases
-from .types import CaseStructure, SACTags
+from .types import CaseStructure, SACTags, with_display_names
 
 TITANIUM_BOLT_CASES = {
     1: (SACCases.BOLTAIRE_MUSEUM, 2),
@@ -30,7 +30,7 @@ TITANIUM_BOLT_DESCRIPTIONS: dict[tuple[int, int], str] = {
     (4, 1): "1 - Inside The Air Duct",
 }
 
-TITANIUM_BOLT_ENTRIES = {
+_RAW_TITANIUM_BOLT_ENTRIES = {
     (module, index): CaseStructure(case, TITANIUM_BOLT_DESCRIPTIONS.get((module, index), str(index)), SACTags.TITANIUM_BOLT)
     for module, (case, count) in TITANIUM_BOLT_CASES.items()
     for index in range(1, count + 1)
@@ -62,3 +62,9 @@ class SACTitaniumBoltLocations:
     SPACESHIP_GRAVEYARD_4 = "Spaceship Graveyard (Clank) - Spaceship Graveyard: T-Bolt: Gap on The Right in The Last Static Spores Platforming"
     PRISON_BREAKOUT_1 = "Prison Planet (Ratchet) -  Prison Breakout!: T-Bolt: Complete Mega Challenge: Battle Royale"
     UNDERWATER_BUNKER_1 = "Hydrano (Clank) - Underwater Bunker: T-Bolt: Omni-Key Room Before End of Level"
+
+
+TITANIUM_BOLT_ENTRIES: dict[tuple[int, int], CaseStructure] = dict(zip(
+    _RAW_TITANIUM_BOLT_ENTRIES.keys(),
+    with_display_names(tuple(_RAW_TITANIUM_BOLT_ENTRIES.values()), SACTitaniumBoltLocations),
+))

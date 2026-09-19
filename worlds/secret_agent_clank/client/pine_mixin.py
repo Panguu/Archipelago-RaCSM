@@ -75,6 +75,7 @@ class PineMixin:
                 await self._teardown_pine_connection()
                 return
 
+        self._maybe_scout_vendor()
         try:
             await self._apply_received_items()
         except Exception as exc:
@@ -104,6 +105,7 @@ class PineMixin:
         async with self._pine_lock:
             self._wiring.tick()
 
+        self._maybe_scout_vendor()
         await self._apply_received_items()
 
     def _append_location_by_name(self, name: str) -> bool:
