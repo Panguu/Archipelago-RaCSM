@@ -8,40 +8,40 @@ from .weapon_order import WEAPON_ORDER, WeaponSlot
 
 @dataclass(frozen=True)
 class SACRatchetWeapons:
-    SHOCKROCKET       = "Weapon: Ratchet: Shock Rocket"
-    PLASMAWHIP        = "Weapon: Ratchet: Plasma Whip"
-    PORKBOMB          = "Weapon: Ratchet: Porkbomb"
-    KICKBLAST         = "Weapon: Ratchet: Kickblast"
-    BLASTER           = "Weapon: Ratchet: Lacerator"
-    SHARDGUN          = "Weapon: Ratchet: Shardgun"
-    BEEMINEGLOVE      = "Weapon: Ratchet: Beemineglove"
-    WALLOPER          = "Weapon: Ratchet: Walloper"
-    MINELAUNCHER      = "Weapon: Ratchet: Minelauncher"
-    RATCHETPDA        = "Weapon: Ratchet: Ratchet PDA"
-    BOLTTRANSFER      = "Weapon: Ratchet: Bolttransfer"
-    RYNO              = "Weapon: Ratchet: Ryno"
+    SHOCKROCKET       = "Shock Rocket (Ratchet)"
+    PLASMAWHIP        = "Plasma Whip (Ratchet)"
+    PORKBOMB          = "Pork Bomb Gun (Ratchet)"
+    KICKBLAST         = "Kick Blast (Ratchet)"
+    BLASTER           = "Dual Lacerators (Ratchet)"
+    SHARDGUN          = "Shard Gun (Ratchet)"
+    BEEMINEGLOVE      = "Bee Mine Mk. II (Ratchet)"
+    WALLOPER          = "Walloper (Ratchet)"
+    MINELAUNCHER      = "Mine Launcher (Ratchet)"
+    RATCHETPDA        = "Agency PDA (Ratchet)"
+    BOLTTRANSFER      = "Bolt Transfer (Ratchet)"
+    RYNO              = "RYNO (Ratchet)"
 
 
 @dataclass(frozen=True)
 class SACProgressiveRatchetWeapons:
-    SHOCKROCKET       = "Progressive: Ratchet: Shockrocket"
-    PLASMAWHIP        = "Progressive: Ratchet: Plasmawhip"
-    PORKBOMB          = "Progressive: Ratchet: Porkbomb"
-    BLASTER           = "Progressive: Ratchet: Lacerator"
-    SHARDGUN          = "Progressive: Ratchet: Shardgun"
-    BEEMINEGLOVE      = "Progressive: Ratchet: Beemineglove"
-    WALLOPER          = "Progressive: Ratchet: Walloper"
-    MINELAUNCHER      = "Progressive: Ratchet: Minelauncher"
-    RATCHETPDA        = "Progressive: Ratchet: Ratchetpda"
-    BOLTTRANSFER      = "Progressive: Ratchet: Bolttransfer"
-    RYNO              = "Progressive: Ratchet: Ryno"
+    SHOCKROCKET       = "Progressive Shock Rocket (Ratchet)"
+    PLASMAWHIP        = "Progressive Plasma Whip (Ratchet)"
+    PORKBOMB          = "Progressive Pork Bomb Gun (Ratchet)"
+    BLASTER           = "Progressive Dual Lacerators (Ratchet)"
+    SHARDGUN          = "Progressive Shard Gun (Ratchet)"
+    BEEMINEGLOVE      = "Progressive Bee Mine Mk. II (Ratchet)"
+    WALLOPER          = "Progressive Walloper (Ratchet)"
+    MINELAUNCHER      = "Progressive Mine Launcher (Ratchet)"
+    RATCHETPDA        = "Progressive Agency PDA (Ratchet)"
+    BOLTTRANSFER      = "Progressive Bolt Transfer (Ratchet)"
+    RYNO              = "Progressive RYNO (Ratchet)"
 
 
 @dataclass(frozen=True)
 class SACQwarkWeapons:
     """We are not including Qwarks weapons in AP tool just for noting"""
-    QWARKBLASTER      = "QwarkBlaster"
-    GIANTQWARKBLASTER = "GiantQwarkBlaster"
+    QWARKBLASTER      = "Blaster (Qwark)"
+    GIANTQWARKBLASTER = "Giant Blaster (Qwark)"
 
 
 # Display name -> WEAPON_ORDER internal name (core/weapons.py) -- used by

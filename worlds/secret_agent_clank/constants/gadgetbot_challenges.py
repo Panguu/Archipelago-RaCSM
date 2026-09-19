@@ -66,11 +66,11 @@ GADGETBOT_CHALLENGES_BY_CASE: dict[str, tuple[str, ...]] = group_by_case(GADGETB
 
 @dataclass(frozen=True)
 class SACGadgetbotChallengeLocations:
-    ROOFTOP_DEATHTRAP_RESCUE_CLANK = 'Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Rescue Clank'
-    ROOFTOP_DEATHTRAP_WORKING_DOWN = 'Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Working Down'
-    ROOFTOP_DEATHTRAP_GREAT_DIVIDE = 'Gadgetbots: Rooftop Deathtrap: Gadgetbot Challenge: Great Divide'
-    INSIDE_THE_A_EYE_VAULTBREAKERS = 'Gadgetbots: Inside the A-Eye: Gadgetbot Challenge: Vaultbreakers'
-    INSIDE_THE_A_EYE_DARK_HELMET = 'Gadgetbots: Inside the A-Eye: Gadgetbot Challenge: Dark Helmet'
-    INSIDE_THE_A_EYE_GO_LONG = 'Gadgetbots: Inside the A-Eye: Gadgetbot Challenge: Go Long'
-    BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR = "Gadgetbots: Bulkhead Lock: Gadgetbot Challenge: Knockin' on Klunk's Door"
-    BULKHEAD_LOCK_MISSION_POSSIBLE = 'Gadgetbots: Bulkhead Lock: Gadgetbot Challenge: Mission: Possible'
+    ROOFTOP_DEATHTRAP_RESCUE_CLANK = "Asyanica (Gadgetbots) - Rooftop Deathtrap: Rescue Clank"
+    ROOFTOP_DEATHTRAP_WORKING_DOWN = "Asyanica (Gadgetbots) - Rooftop Deathtrap: Working Down"
+    ROOFTOP_DEATHTRAP_GREAT_DIVIDE = "Asyanica (Gadgetbots) - Rooftop Deathtrap: Great Divide"
+    INSIDE_THE_A_EYE_VAULTBREAKERS = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Vaultbreakers"
+    INSIDE_THE_A_EYE_DARK_HELMET = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Dark Helmet"
+    INSIDE_THE_A_EYE_GO_LONG = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Go Long"
+    BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR = "Underwater Base (Gadgetbots) - Bulkhead Lock: Knockin' on Klunk's Door"
+    BULKHEAD_LOCK_MISSION_POSSIBLE = "Underwater Base (Gadgetbots) - Bulkhead Lock: Mission: Possible"

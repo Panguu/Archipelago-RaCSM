@@ -5,39 +5,39 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class SACClankWeapons:
     """WEAPON_ORDER-struct Clank items that have a progressive counterpart (see SACProgressiveClankWeapons) -- see module docstring for the split from SACClankGadgets' lock/unlock-only items."""
-    THROWTIE          = "Weapon: Clank: Bowtie"
-    CUFFLINK          = "Weapon: Clank: Cufflink"
-    TANGLEVINE        = "Weapon: Clank: Tanglevine"
-    FLAMETHROWERPEN   = "Weapon: Clank: Flamethrower Briefcase"
-    HOLOKNUCKLES      = "Weapon: Clank: HoloKnuckles"
-    SUPERKICK         = "Weapon: Clank: Superkick"
-    LIGHTNINGUMBRELLA = "Weapon: Clank: Umbrella"
-    KICKSPLOSION      = "Weapon: Clank: Kicksplosion"
+    THROWTIE          = "Tie-A-Rang (Clank)"
+    CUFFLINK          = "Cufflink Bomb (Clank)"
+    TANGLEVINE        = "Tanglevine Carnation (Clank)"
+    FLAMETHROWERPEN   = "Blowtorch Briefcase (Clank)"
+    HOLOKNUCKLES      = "Holo-Knuckles (Clank)"
+    SUPERKICK         = "Clank Fu Kick (Clank)"
+    LIGHTNINGUMBRELLA = "Thunderstorm Umbrella (Clank)"
+    KICKSPLOSION      = "Clank Fu Hot Foot (Clank)"
 
 
 @dataclass(frozen=True)
 class SACProgressiveClankWeapons:
     """Progressive-item counterpart to SACClankWeapons."""
-    THROWTIE          = "Progressive: Clank: Bowtie"
-    CUFFLINK          = "Progressive: Clank: Cufflink"
-    TANGLEVINE        = "Progressive: Clank: Tanglevine"
-    FLAMETHROWERPEN   = "Progressive: Clank: Flamethrower Briefcase"
-    HOLOKNUCKLES      = "Progressive: Clank: HoloKnuckles"
-    LIGHTNINGUMBRELLA = "Progressive: Clank: Umbrella"
+    THROWTIE          = "Progressive Tie-A-Rang (Clank)"
+    CUFFLINK          = "Progressive Cufflink Bomb (Clank)"
+    TANGLEVINE        = "Progressive Tanglevine Carnation (Clank)"
+    FLAMETHROWERPEN   = "Progressive Blowtorch Briefcase (Clank)"
+    HOLOKNUCKLES      = "Progressive Holo-Knuckles (Clank)"
+    LIGHTNINGUMBRELLA = "Progressive Thunderstorm Umbrella (Clank)"
 
 
 @dataclass(frozen=True)
 class SACClankGadgets:
     """Lock/unlock-only Clank items (no progression) -- see module docstring for why the two mechanically-separate tracking systems (case_id-keyed CLANK_GADGET_BY_CASE_ID vs the shared WEAPON_ORDER struct) share one naming class."""
 
-    BLACK_OUT_PEN      = "Gadget: Clank: Black Out Pen"
-    THERM_OPTIC_SHADES = "Gadget: Clank: Therm-Optic Shades"
-    CLANKPDA           = "Gadget: Clank: PDA"
-    JETBOOTS           = "Gadget: Clank: Jet Boots"
-    OMNIKEY            = "Gadget: Clank: Omnikey"
-    HYPNOWATCH         = "Gadget: Clank: Hypnowatch"
-    HOLOMONOCLE        = "Gadget: Clank: Holomonocle"
-    BOLTGRABBER        = "Gadget: Clank: Boltgrabber"
+    BLACK_OUT_PEN      = "Blackout Pen (Clank)"
+    THERM_OPTIC_SHADES = "Therm-Optic Shades (Clank)"
+    CLANKPDA           = "Agency PDA (Clank)"
+    JETBOOTS           = "Jet Boots (Clank)"
+    OMNIKEY            = "Omni-Key 5000 (Clank)"
+    HYPNOWATCH         = "Hypno-Watch (Clank)"
+    HOLOMONOCLE        = "Holo-Monocle (Clank)"
+    BOLTGRABBER        = "Bolt Grabber (Clank)"
 
 
 # Case_id -> gadget names for the positional (non-WEAPON_ORDER) Clank gadget
@@ -58,5 +58,5 @@ CLANK_GADGETS: tuple[str, ...] = tuple(
 
 @dataclass(frozen=True)
 class SACGadgetPickupLocations:
-    BOLTAIRE_MUSEUM_BLACK_OUT_PEN = "Gadget: Clank: Black Out Pen (Pickup)"
-    BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES = "Gadget: Clank: Therm-Optic Shades (Pickup)"
+    BOLTAIRE_MUSEUM = "Boltaire (Clank) - Boltaire Museum: Blackout Pen Pickup"
+    ROOFTOP_DEATHTRAP = "Boltaire (Clank) - Boltaire Museum: Therm-Optic Shades Pickup"
