@@ -27,7 +27,7 @@ def prepare(pine, *, code_start, code, locations, checked=(), bypass_tier_gate=T
             raise RuntimeError(f"Armour pickup signature changed at {address:#x}")
 
     def target(address):
-        word, = struct.unpack('<I', read(address, 4))
+        word, = struct.unpack("<I", read(address, 4))
         if word >> 26 != 3:
             raise RuntimeError("Armour pickup call changed")
         return (word & 0x3FFFFFF) << 2
@@ -62,9 +62,9 @@ def prepare(pine, *, code_start, code, locations, checked=(), bypass_tier_gate=T
                                   m.jr(m.RA), m.addiu(m.V0, m.V0, -1))
     arena += packed(*prefix, m.addiu(m.V1, m.ZERO, 2), m.jr(m.RA),
                     m.sb(m.V1, table & 0xFFFF, m.V0))
-    arena += b'SMARMOURCHECKS!!'
+    arena += b"SMARMOURCHECKS!!"
     assert len(arena) <= 0x58
-    arena = arena.ljust(0x58, b'\0')
+    arena = arena.ljust(0x58, b"\0")
     edits = [(getter_site, packed(jump(get))),
              (give + 0x44, packed(jump(record))),
              (give + 0x4C, packed(branch(give + 0x4C, give + 0xAC), 0)),

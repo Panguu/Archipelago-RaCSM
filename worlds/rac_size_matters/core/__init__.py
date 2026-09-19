@@ -1,8 +1,8 @@
 from .address_maps import CURRENT_PLANET_ADDRESS, PLAYER_ADDRS, PLAYER_HEALTH, PLAYER_STATE
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourPiece
-from .locations.armour_set_locations import ARMOUR_SET_CHECKS
 from .controller import GlobalButtonState
 from .display_text import SmallTextBoxAddrs, TextColour, colored_text
+from .locations.armour_set_locations import ARMOUR_SET_CHECKS
 from .planets import (
     AUTO_UNLOCK_ADDRESSES,
     BY_ID as PLANETS_BY_ID,

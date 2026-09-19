@@ -1,8 +1,12 @@
 """Reversible vendor cosmetics; native row identities and prices stay intact."""
 import struct
-from pathlib import Path
+from importlib.resources import files
 
 from .patches.asm import packed
+
+_ICON_ROOT = files(__package__.rsplit(".", 1)[0]).joinpath("images", "icons")
+_ICON_INDICES = _ICON_ROOT.joinpath("archipelago-icon.indices").read_bytes()
+_ICON_CLUT = _ICON_ROOT.joinpath("archipelago-icon.clut").read_bytes()
 
 RENDER_SIGNATURE = packed(0x27BDFC80, 0x3C04FFFF, 0xFFB00320, 0x3484FFFF, 0xFFB10328)
 
@@ -161,13 +165,10 @@ class VendorPresentation:
                 continue
             pixels = self._pointer(struct.unpack_from('<I', ih, 48)[0], 1024)
             colors = self._pointer(struct.unpack_from('<I', ph, 48)[0], 1024)
-            root = Path(__file__).resolve().parents[1] / 'images' / 'icons'
-            indices = (root / 'archipelago-icon.indices').read_bytes()
-            clut = (root / 'archipelago-icon.clut').read_bytes()
-            if len(indices) != 1024 or len(clut) != 1024:
+            if len(_ICON_INDICES) != 1024 or len(_ICON_CLUT) != 1024:
                 raise RuntimeError("AP icon requires 32x32 indices and 256 RGBA palette entries")
-            self._change(self.icon_changes, pixels, indices)
-            self._change(self.icon_changes, colors, clut)
+            self._change(self.icon_changes, pixels, _ICON_INDICES)
+            self._change(self.icon_changes, colors, _ICON_CLUT)
             self.icon_id = icon
             return
         raise RuntimeError("No compatible unused vendor icon texture")

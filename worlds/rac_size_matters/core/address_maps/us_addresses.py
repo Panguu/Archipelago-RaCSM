@@ -2,8 +2,6 @@
 
 from dataclasses import dataclass
 
-from ...constants.shrink_ray import Rac5ShrinkRayGrindrail
-
 ARMOUR_BASE                = 0x1F4B354
 ARMOUR_SET_COLLECTED_ADDR  = 0x1F4B442
 TITANIUM_BOLT_BASE         = 0x1F4B444

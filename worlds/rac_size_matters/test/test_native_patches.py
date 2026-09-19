@@ -11,37 +11,36 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from ..core.notifications import receipt_text
-from ..core.native_runtime import NativeRuntime
-from ..core.patches import armour_pickup, item_toast, pokitaru_ship, sprout_pickup, vendor
-from ..core.patches.asm import Patch, packed
-from ..core.patches.plan import Plan
 from ..core.armour_spawn_gate import _scan
+from ..core.native_runtime import NativeRuntime
+from ..core.notifications import receipt_text
+from ..core.patches import armour_pickup, item_toast, pokitaru_ship, sprout_pickup, vendor
+from ..core.patches.asm import packed
 
-FIXTURES = json.loads((Path(__file__).parent / 'fixtures/native_us.json').read_text())
+FIXTURES = json.loads((Path(__file__).parent / "fixtures/native_us.json").read_text())
 
 
 class Memory:
-    def __init__(self, fixture='pokitaru'):
+    def __init__(self, fixture="pokitaru"):
         self.data = bytearray(0x2000000)
         self.fixture = FIXTURES[fixture]
         self.writes = []
         self.fail_once = None
-        for address, data in self.fixture['segments']:
+        for address, data in self.fixture["segments"]:
             self.data[address:address + len(data) // 2] = bytes.fromhex(data)
-        self.write_int32(0x1F4C76C, self.fixture['planet'])
+        self.write_int32(0x1F4C76C, self.fixture["planet"])
         self.writes.clear()
 
-    def get_game_id(self): return 'SCUS-97615'
+    def get_game_id(self): return "SCUS-97615"
     def read_bytes(self, address, size): return bytes(self.data[address:address + size])
     def read_int8(self, address): return self.data[address]
-    def read_int32(self, address): return struct.unpack_from('<I', self.data, address)[0]
+    def read_int32(self, address): return struct.unpack_from("<I", self.data, address)[0]
 
     def write_bytes(self, address, data):
         self.writes.append((address, bytes(data)))
         if self.fail_once == address:
             self.fail_once = None
-            raise OSError('injected IPC failure')
+            raise OSError("injected IPC failure")
         self.data[address:address + len(data)] = data
 
     def write_int8(self, address, value): self.write_bytes(address, bytes([value]))
@@ -97,22 +96,22 @@ class CPU:
             elif op == 36: self.r[rt] = self.memory.read_int8(addr)
             elif op == 40: self.memory.write_int8(addr, self.r[rt] & 255)
             elif op == 43: self.memory.write_int32(addr, self.r[rt])
-            elif op == 55: self.r[rt] = int.from_bytes(self.memory.read_bytes(addr, 8), 'little')
-            elif op == 63: self.memory.write_bytes(addr, self.r[rt].to_bytes(8, 'little'))
+            elif op == 55: self.r[rt] = int.from_bytes(self.memory.read_bytes(addr, 8), "little")
+            elif op == 63: self.memory.write_bytes(addr, self.r[rt].to_bytes(8, "little"))
             else: raise AssertionError(hex(instruction))
             self.r = [x & 0xFFFFFFFF for x in self.r]
             self.r[0] = 0
             pc = destination if destination is not None else pc + 4
-        raise AssertionError('Native code did not return')
+        raise AssertionError("Native code did not return")
 
 
 def plans(memory):
     code = memory.read_bytes(0xD00000, 0x400000)
     v = vendor.prepare(memory, code_start=0xD00000, code=code,
-                       base_locations={2: 'weapon'}, titan_locations={2: 'titan'})
+                       base_locations={2: "weapon"}, titan_locations={2: "titan"})
     t = item_toast.prepare(memory, code_start=0xD00000, code=code,
-                          small_box=memory.fixture['small_box'], starter=v.starter)
-    a = armour_pickup.prepare(memory, code_start=0xD00000, code=code, locations={0: 'armour'})
+                          small_box=memory.fixture["small_box"], starter=v.starter)
+    a = armour_pickup.prepare(memory, code_start=0xD00000, code=code, locations={0: "armour"})
     return v, t, a
 
 
@@ -127,7 +126,7 @@ class NativePatchTests(unittest.TestCase):
         runtime.enabled = True
         runtime.vendor_scouts = object()
         display = Mock()
-        with patch('worlds.rac_size_matters.core.native_runtime.vendor_presentation.prepare',
+        with patch("worlds.rac_size_matters.core.native_runtime.vendor_presentation.prepare",
                    return_value=display):
             runtime.gate.held_module = lambda: (1, 0xD4B380)
             runtime._prepare(1, 0xD4B380)
@@ -154,7 +153,7 @@ class NativePatchTests(unittest.TestCase):
                 original = bytes(p.data)
                 patches = plans(p)
                 for patch in patches: patch.install()
-                item_toast.show(patches[1], receipt_text('Lacerator', 'Sender'))
+                item_toast.show(patches[1], receipt_text("Lacerator", "Sender"))
                 for patch in reversed(patches): patch.restore()
                 self.assertEqual(p.data, original)
 
@@ -169,9 +168,9 @@ class NativePatchTests(unittest.TestCase):
         cpu.r[17] = selection
         base = v.edits[0].address
         cpu.run(base, stop=base + 76)
-        self.assertEqual(p.read_int8(v.tables['base'] + 2), 2)
+        self.assertEqual(p.read_int8(v.tables["base"] + 2), 2)
         self.assertEqual(p.read_int32(ownership), 1)
-        self.assertEqual(p.read_int8(v.tables['titan'] + 2), 3)
+        self.assertEqual(p.read_int8(v.tables["titan"] + 2), 3)
 
     def test_armour_gate_uses_physical_journal(self):
         p = Memory()
@@ -193,7 +192,7 @@ class NativePatchTests(unittest.TestCase):
         self.assertEqual(cpu.r[2], 1)
 
     def test_sprout_records_without_granting_or_equipping(self):
-        p = Memory('ryllus')
+        p = Memory("ryllus")
         s = sprout_pickup.prepare(p)
         s.install()
         cpu = CPU(p)
@@ -211,8 +210,8 @@ class NativePatchTests(unittest.TestCase):
         p = Memory()
         v, t, _ = plans(p)
         v.install(); t.install()
-        before = p.read_bytes(p.fixture['small_box'], 0x40)
-        text = receipt_text('Lacerator', 'Sender')
+        before = p.read_bytes(p.fixture["small_box"], 0x40)
+        text = receipt_text("Lacerator", "Sender")
         item_toast.show(t, text)
         self.assertEqual(p.read_bytes(t.message, len(text)), text)
         entry = t.edits[0].address
@@ -223,17 +222,17 @@ class NativePatchTests(unittest.TestCase):
         self.assertEqual(p.read_int32(t.timer), 0)
         cpu = CPU(p); cpu.run(entry, stubs=stubs)
         self.assertEqual(cpu.calls, stubs[:1])
-        self.assertEqual(p.read_bytes(p.fixture['small_box'], 0x40), before)
+        self.assertEqual(p.read_bytes(p.fixture["small_box"], 0x40), before)
 
     def test_receipt_colours_and_control_byte_sanitization(self):
-        normal = receipt_text('Lacerator', 'Player\x90\nTwo')
-        self.assertIn(b'\x90\x0dLacerator', normal)
-        self.assertIn(b'\x90\x0bPlayer??Two', normal)
-        self.assertIn(b'\x90\x03Trap', receipt_text('Trap', 'Sender', True))
-        formatted = item_toast.format_text(receipt_text('X' * 200, 'Y' * 200))
+        normal = receipt_text("Lacerator", "Player\x90\nTwo")
+        self.assertIn(b"\x90\x0dLacerator", normal)
+        self.assertIn(b"\x90\x0bPlayer??Two", normal)
+        self.assertIn(b"\x90\x03Trap", receipt_text("Trap", "Sender", True))
+        formatted = item_toast.format_text(receipt_text("X" * 200, "Y" * 200))
         self.assertLessEqual(len(formatted), 96)
         self.assertEqual(formatted[-1], 0)
-        self.assertEqual(formatted.count(b'\n'), 1)
+        self.assertEqual(formatted.count(b"\n"), 1)
 
     def test_bad_signature_causes_no_writes(self):
         p = Memory()
@@ -252,7 +251,7 @@ class NativePatchTests(unittest.TestCase):
 
     def test_scan_terminates_at_short_final_chunk(self):
         p = Memory()
-        self.assertIsNone(_scan(p, b'abcdefghijk', start=0, end=101, chunk=32))
+        self.assertIsNone(_scan(p, b"abcdefghijk", start=0, end=101, chunk=32))
 
     def test_runtime_installs_before_rebinding_same_planet(self):
         p = Memory()

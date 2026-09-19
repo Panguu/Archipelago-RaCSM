@@ -1,16 +1,16 @@
 """Install native checks before level startup and consume their journals."""
-from collections import deque
 import logging
+from collections import deque
 
 from ..constants import Rac5Locations
-from ..locations import GADGET_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION, TITAN_INTERNAL_TO_LOCATION
-from .address_maps import PLANET_ADDRESSES, CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR
-from .armour import ARMOUR_PICKUPS, ArmourStruct, ArmourPiece
+from ..locations import GADGET_INTERNAL_TO_LOCATION, TITAN_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION
+from . import vendor_presentation
+from .address_maps import CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR, PLANET_ADDRESSES
+from .armour import ARMOUR_PICKUPS, ArmourPiece, ArmourStruct
 from .menu import MenuStateValue
 from .patches import armour_pickup, item_toast, pokitaru_ship, sprout_pickup, vendor as vendor_patch
 from .patches.loader_gate import LoaderGate
 from .vendor import WEAPON_VENDOR_IDS
-from . import vendor_presentation
 
 logger = logging.getLogger("CommonClient")
 

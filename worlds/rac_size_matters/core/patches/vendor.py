@@ -123,7 +123,7 @@ def prepare(pine, *, code_start, code, base_locations, titan_locations, checked=
         a, b = _word(read(upper, 4), 0), _word(read(lower, 4), 0)
         if a & 0xFFFF0000 != hi or b & 0xFFFF0000 != lo:
             raise RuntimeError("Vendor row-storage signature changed")
-        return ((a & 65535) << 16) + struct.unpack('<h', packed(b)[:2])[0]
+        return ((a & 65535) << 16) + struct.unpack("<h", packed(b)[:2])[0]
     rows = address_pair(rebuild + 0xC, rebuild + 0x1C, 0x3C050000, 0x24A50000)
     end = address_pair(base - 0xF4, base - 0xEC, 0x3C020000, 0xAC400000)
     if not 0x100000 <= rows < end <= 0x2000000 or end - rows != 0x1000:
@@ -144,7 +144,7 @@ def prepare(pine, *, code_start, code, base_locations, titan_locations, checked=
     payload = (view_gate(native_getter, 1, True)
                + view_gate(native_titan_getter, 0, True)
                + view_gate(getter, 0, False)
-               + packed(m.jr(m.RA), m.lw(m.V0, 0x1C, m.S0))).ljust(0xA0, b'\0')
+               + packed(m.jr(m.RA), m.lw(m.V0, 0x1C, m.S0))).ljust(0xA0, b"\0")
     payload += packed(m.addiu(m.SP, m.SP, -16), m.sd(m.RA, 0, m.SP),
                       jump(runtime_getter), m.NOP, m.lw(m.V0, 0x10, m.V0),
                       m.ld(m.RA, 0, m.SP), m.jr(m.RA), m.addiu(m.SP, m.SP, 16))
