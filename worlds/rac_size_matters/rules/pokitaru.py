@@ -12,7 +12,7 @@ from ..constants import (
     Rac5Weapons,
 )
 from ..items import GLITCHES_ITEM_NAME
-from ._helpers import HasChallengeMode, HasProjectileWeapon, weapon_enabled
+from ._helpers import HasChallengeMode, HasProjectileWeapon, HasWeapon, weapon_enabled
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
@@ -28,7 +28,7 @@ def set_pokitaru_rules(world: "RACSizeMatterWorld") -> None:
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_TRAIN, player), HasProjectileWeapon() | _GLITCH)
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_BOAT, player), HasProjectileWeapon() | _GLITCH)
     if world.options.skill_points.value >= 2:
-        world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_COWS, player), Has(Rac5Weapons.MOOTATOR))
+        world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_COWS, player), HasWeapon(Rac5Weapons.MOOTATOR))
 
     if world.options.all_missions:
         world.set_rule(mw.get_location(Rac5CutsceneLocations.POKITARU_RESCUE, player), HasProjectileWeapon() | _GLITCH)

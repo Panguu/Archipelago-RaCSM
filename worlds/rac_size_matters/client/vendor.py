@@ -6,13 +6,11 @@ from ..core import (
     ALL_TRAPS,
     INFOBOT_ITEM_TO_PLANET,
     WEAPON_MAX_LEVELS,
-    TextColour,
     activate_trap,
-    colored_text,
 )
 from ..core.address_maps import PLAYER_BOLT_COUNT
-from ..core.player_bolts import MAX_PLAYER_BOLTS
 from ..core.notifications import receipt_text, sent_text
+from ..core.player_bolts import MAX_PLAYER_BOLTS
 from ..items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_PIECE_BITMASKS,

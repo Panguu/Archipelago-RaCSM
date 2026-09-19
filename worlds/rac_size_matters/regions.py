@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from BaseClasses import Region
 
 from .constants import Rac5CutsceneLocations, Rac5Planets
+from .items import enabled_weapon_names
 from .locations import (
     ALL_CLANK_LOCATIONS,
     ARMOUR_PICKUP_LOCATIONS,
@@ -44,7 +45,6 @@ from .locations import (
     enabled_clank_challenge_names,
     nanotech_level_locations_for,
 )
-from .items import enabled_weapon_names
 from .options import ShrinkRayOptions, WeaponLevelChecks
 
 if TYPE_CHECKING:

@@ -14,6 +14,7 @@ from ..constants import (
     Rac5WeaponKeys,
 )
 from ..core.armour import ARMOUR_PICKUPS
+from ..core.locations.armour_set_locations import ARMOUR_SET_CHECKS
 from ..core.locations.challenge_locations import (
     CHALLENGE_GROUP_DERBY,
     CHALLENGE_GROUP_GADGETBOT,
@@ -34,7 +35,6 @@ from ..core.skill_points import (
 )
 from ..core.titanium_bolts import TITANIUM_BOLTS
 from ..core.weapons import WEAPON_DATA as _WEAPON_DATA
-from ..core.locations.armour_set_locations import ARMOUR_SET_CHECKS
 from ..items import GADGET_DISPLAY_TO_INTERNAL, WEAPON_DISPLAY_TO_INTERNAL
 
 BASE_ID = 77_700_000
