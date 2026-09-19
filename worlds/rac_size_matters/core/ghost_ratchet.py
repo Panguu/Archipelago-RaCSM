@@ -83,7 +83,7 @@ class GhostRatchetAddresses:
         return f"GhostRatchetAddresses(base=0x{self.base:08X}, visibility={self.visibility})"
 
 
-# Fixed values for the non-position fields — confirmed in-game, always the
+# Fixed values for the non-position fields, confirmed in-game.
 _ROTATION_SCALE_1 = 0x3F76EAAC
 _ROTATION_1       = 0x3E872D1A
 _BASE_FIELD       = 0x3F7FFFFE

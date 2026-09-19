@@ -1,5 +1,6 @@
 """Install native checks before level startup and consume their journals."""
 from collections import deque
+import logging
 
 from ..constants import Rac5Locations
 from ..locations import GADGET_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION, TITAN_INTERNAL_TO_LOCATION
@@ -11,6 +12,8 @@ from .patches.loader_gate import LoaderGate
 from .vendor import WEAPON_VENDOR_IDS
 from . import vendor_presentation
 
+logger = logging.getLogger("CommonClient")
+
 
 class NativeRuntime:
     def __init__(self, pine, vendor, send_location, log, shrink_ray=None):
@@ -20,6 +23,7 @@ class NativeRuntime:
         self.shrink_ray = shrink_ray
         self.vendor_scouts = None
         self.presentation = None
+        self._presentation_pending = None
         self.enabled = False
         self.checked = set()
         self.allowed_locations = None
@@ -53,6 +57,7 @@ class NativeRuntime:
         planet._pending_planet_id = target
         planet._prev_gate = -1
         self.presentation = None
+        self._presentation_pending = None
         self.plans = []
         self.pickup = None
         self.toast = None
@@ -65,8 +70,8 @@ class NativeRuntime:
                         for offset in range(0, 0x240000, 0x10000))
         if self.shrink_ray is not None:
             self.shrink_ray.bind(target, base, code)
-        if self.vendor_scouts is not None:
-            self.presentation = vendor_presentation.prepare(p, base, code)
+        presentation = (vendor_presentation.prepare(p, base, code)
+                        if self.vendor_scouts is not None else None)
         base_locations = {
             WEAPON_VENDOR_IDS[name]: loc
             for name, loc in (WEAPON_INTERNAL_TO_LOCATION | GADGET_INTERNAL_TO_LOCATION).items()
@@ -112,6 +117,9 @@ class NativeRuntime:
             self.pickup = None
             raise
         self.vendor.native_plan = plan
+        # Stage 5 follows the held relocation stage. Keep the new display
+        # pending until gameplay is ready so loading cleanup cannot discard it.
+        self._presentation_pending = presentation
         self.module = target
         self._attach_reload_requested = False
         self.log(f"[RAC] Native vendor checks active for planet {target}.")
@@ -131,16 +139,19 @@ class NativeRuntime:
             self.checked.add(name)
 
     def _poll(self):
+        if self.vendor.planet.is_ready and self._presentation_pending is not None:
+            self.presentation = self._presentation_pending
+            self._presentation_pending = None
         if self.presentation is not None and self.vendor.planet.is_ready:
             try:
                 self.presentation.tick(
                     self.vendor.planet.menu.get() == MenuStateValue.WEAPONS_VENDOR, self.vendor_scouts)
             except RuntimeError as exc:
-                self.log(f"[RAC] Vendor display disabled for this level: {exc}")
+                logger.warning("[RAC] Vendor display disabled for this level: %s", exc)
                 try:
                     self.presentation.close()
                 except RuntimeError as cleanup:
-                    self.log(f"[RAC] Vendor display cleanup needs a level reload: {cleanup}")
+                    logger.warning("[RAC] Vendor display cleanup needs a level reload: %s", cleanup)
                 self.presentation = None
         plan = self.vendor.native_plan
         if plan is None:

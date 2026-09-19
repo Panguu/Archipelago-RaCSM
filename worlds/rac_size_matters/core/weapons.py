@@ -229,7 +229,6 @@ class WeaponAddresses:
 
     _OFFSETS: dict[str, int] = {
         "level":            0x2D,
-        # Confirmed in-game for Lacerator on Pokitaru (0xF3EA4C, base
         "experience":       0x35,
         "mod_slot_one":     0x3D,
         "mod_slot_two":     0x3E,

@@ -1,10 +1,7 @@
 """Native base/Titan purchase interception, independent of item ownership.
 
-The two purchase-grant
-blocks are replaced with journal writes. Their now-unreachable bytes hold
-the journals and base-offer getter: no unallocated RAM or ISO edits.
-Ammo purchases retain their native code. The separate mod vendor is not
-covered by this plan. Callers must supply eligibility and consume checks.
+Grant blocks are replaced with journal writes reusing their now-unreachable
+bytes; no unallocated RAM or ISO edits. Ammo and the mod vendor are untouched.
 """
 import struct
 
@@ -32,10 +29,7 @@ def _record(address, table, rebuild):
 def prepare(pine, *, code_start, code, base_locations, titan_locations, checked=(), eligible_titans=()):
     """Prepare against one settled module snapshot; never writes RAM.
 
-    base_locations/titan_locations map native item ids to AP location names.
-    Pass only eligible Titan offers (the client owns progression eligibility).
-    Unmanaged base slots are suppressed. Getter call sites are exclusively
-    native base-offer gates, whose item ids are validated by the vendor.
+    Maps native item ids to AP location names; pass only eligible Titan offers.
     """
     if pine.get_game_id() != "SCUS-97615":
         raise RuntimeError("Vendor patch requires SCUS-97615")
@@ -105,10 +99,8 @@ def prepare(pine, *, code_start, code, base_locations, titan_locations, checked=
         m.jr(m.RA), m.addiu(m.V0, m.V0, -1),   # return flag - 1
         m.NOP, m.NOP,
     )
-    # The vanilla starter routine unconditionally grants Lacerator, Acid
-    # Bomb Glove, Hypershot and (on later planets) Sprout. AP owns those
-    # grants. Return successfully at its entry and reuse 24 unreachable
-    # bytes for the Titan journal query. The original level-3 test stays.
+    # The vanilla starter routine force-grants starting gear that AP owns
+    # instead; redirect its entry and reuse the freed bytes for the Titan journal.
     starter_anchor = packed(0x27BDFFF0, 0x24040002, 0xFFBF0000, jump(getter),
                              0x2405FFFF, 0x38420001, 0x2406FFFF, 0x304700FF)
     starters = [i for i in range(0, len(code) - len(starter_anchor), 4)
@@ -125,9 +117,8 @@ def prepare(pine, *, code_start, code, base_locations, titan_locations, checked=
         m.xori(m.V0, m.V0, 1),
         m.jr(m.RA), m.sltiu(m.V0, m.V0, 1),   # return flag == 1
     )
-    # The native row array ends at the following vendor-state global. Its
-    # builder has at most 25 base + 13 Titan + 25 ammo + 1 buy-all rows.
-    # Reserve the upper half of its 4096 bytes, beyond all 64 possible rows.
+    # The native row array ends at the following vendor-state global; reserve
+    # the upper half of its 4096 bytes, beyond all 64 possible rows.
     def address_pair(upper, lower, hi, lo):
         a, b = _word(read(upper, 4), 0), _word(read(lower, 4), 0)
         if a & 0xFFFF0000 != hi or b & 0xFFFF0000 != lo:

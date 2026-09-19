@@ -46,7 +46,6 @@ class GhostRatchetPlanetAddresses:
     trigger: int
 
 
-# Filled in as each planet is confirmed in-game. Kalidon Race (0x16) and both Giant
 GHOST_RATCHET_ADDRESSES: dict[int, GhostRatchetPlanetAddresses] = {
     0x01: GhostRatchetPlanetAddresses(
         player_position=0x2E62E0,
@@ -152,9 +151,7 @@ class PlanetAddresses:
     weapon_cycler_state:   int | None = None
     weapon_cycler_current: int | None = None
     weapon_cycler_stored:  int | None = None
-        # Fixed offsets from player_health, confirmed on Pokitaru and Ryllus; every other
     max_health: int | None = None
-        # Fixed offset from player_health, confirmed on Pokitaru; every other planet
 
 
 PLANET_ADDRESSES: dict[int, PlanetAddresses] = {

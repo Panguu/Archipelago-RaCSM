@@ -16,7 +16,7 @@ from .titanium_bolts import TITANIUM_BOLTS
 from .traps import ALL_TRAPS, activate_trap, reconcile_traps, set_trap_durations
 from .weapons import WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
 
-# NOTE: Core/WeaponVendorMenu/ModVendorMenu are deliberately NOT re-exported here —
+# Core/WeaponVendorMenu/ModVendorMenu are deliberately not re-exported here.
 
 __all__ = [
     "ARMOUR_FLAG_TO_LOCATION",

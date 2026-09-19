@@ -72,8 +72,7 @@ _shared_counter = 0
 
 
 def _planet_id(region: str) -> int:
-    """Next id in `region`'s block. Raises KeyError for a region not in PLANET_ORDER —
-    every planet-scoped location's region must be a real planet."""
+    """Next id in `region`'s block; KeyError if `region` isn't in PLANET_ORDER."""
     _planet_counters[region] += 1
     return _PLANET_BLOCK_BASE[region] + _planet_counters[region]
 
@@ -199,11 +198,8 @@ NANOTECH_LEVEL_LOCATIONS: dict[str, RACLocationData] = {
 
 
 def nanotech_level_locations_for(interval: int, max_level: int) -> dict[str, RACLocationData]:
-    """Subset of NANOTECH_LEVEL_LOCATIONS for the NanotechLevelInterval +
-    NanotechLevelMax options: every level in NANOTECH_LEVEL_LOOKUP (6-75)
-    that's both a multiple of `interval` and no higher than `max_level`.
-    Empty (feature off) when interval <= 0. Shared by regions.py (creation)
-    and rules/nanotech_levels.py (rule assignment) — both must agree."""
+    """Levels in NANOTECH_LEVEL_LOOKUP that are a multiple of `interval` and
+    no higher than `max_level`; empty when interval <= 0."""
     if interval <= 0:
         return {}
     return {
@@ -245,11 +241,8 @@ NG_PLUS_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
     Rac5ArmourSet.STALKER,
 })
 
-# Same Challenge Mode tiers as CHALLENGE_MODE_1_ARMOUR_LOCATIONS/
-# CHALLENGE_MODE_2_ARMOUR_LOCATIONS below, but for the "Equip X Armor Set"
-# combo checks (core/locations/armour_set_locations.py's ARMOUR_SET_CHECKS)
-# that require Hyperborean/Chameleon pieces -- ICE_II needs 3 Hyperborean
-# pieces, STALKER needs 2 Chameleon pieces, same as the pure sets.
+# Same Challenge Mode tiers as CHALLENGE_MODE_1/2_ARMOUR_LOCATIONS below,
+# but for the "Equip X Armor Set" combo checks.
 CHALLENGE_MODE_1_ARMOUR_SET_LOCATIONS: frozenset[str] = frozenset({
     Rac5ArmourSet.HYPERBOREAN,
     Rac5ArmourSet.ICE_II,
@@ -367,17 +360,8 @@ DEFAULT_CLANK_CHALLENGE_GROUPS: dict[str, int] = dict.fromkeys(
 
 
 def enabled_clank_challenge_names(group_weights: dict[str, int]) -> frozenset[str]:
-    """Names of individual Clank Challenge completions (including the
-    reward ones in CHALLENGE_LOCATIONS) whose group has a nonzero weight in
-    the ClankChallengeGroups option — shared by regions.py (location
-    creation) and rules/metalis.py + rules/dayni_moon.py (rule assignment),
-    which must agree on the same exclusion.
-
-    Presence in `group_weights`, not `.get(group, 1) > 0` — ItemDict (see
-    options.py's ClankChallengeGroups) culls zero-valued entries on its own
-    __init__, so a group the player explicitly zeroed out is simply absent
-    here, not present with value 0. Defaulting a missing key to "included"
-    would silently re-enable exactly the group the player turned off."""
+    """Clank Challenge completion names whose group is present in `group_weights`
+    (a missing key means the player zeroed that group out, not "included")."""
     return frozenset(
         name for name, group in CHALLENGE_NAME_TO_GROUP.items()
         if group in group_weights
@@ -395,7 +379,6 @@ _MISSION_ENTRIES: list[tuple[str, str, bool]] = [
     (Rac5CutsceneLocations.OUTPOST_OMEGA,            Rac5Planets.OUTPOST_OMEGA, True),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,     Rac5Planets.OUTPOST_OMEGA, False),
     (Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,    Rac5Planets.OUTPOST_OMEGA, False),
-    # planets.py's GIANT_CLANK_CONFIGS note) — still not tracked/used.
     (Rac5CutsceneLocations.DAYNI_MOON,               Rac5Planets.DAYNI_MOON,    False),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,        Rac5Planets.DAYNI_MOON,    True),
     (Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,        Rac5Planets.DAYNI_MOON,    True),
@@ -465,9 +448,7 @@ LOCATION_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_LOC
 
 
 def for_planet(planet: str, *sources: dict[str, RACLocationData]) -> dict[str, RACLocationData]:
-    """Subset of one or more location dicts whose region is `planet`. Used by the
-    per-planet modules (locations/<planet>.py) to slice the shared registry above
-    without redefining or retyping any location."""
+    """Subset of one or more location dicts whose region is `planet`."""
     return {
         name: data
         for source in sources
@@ -560,12 +541,8 @@ MOD_INTERNAL_TO_VENDOR_SLOT_LOCATION: dict[tuple[str, str], str] = {
 
 
 def disabled_weapon_location_names(enabled_weapons: frozenset[str]) -> frozenset[str]:
-    """AP location names that belong to a weapon the EnabledWeapons option (see
-    options.py) has excluded: that weapon's own vendor/collectible location, its
-    Titan variant purchase, every one of its mod-slot purchases, and every one of
-    its weapon-level checks. Shared by regions.py (location creation) and every
-    rules/<planet>.py file (rule assignment) — both must agree on the same
-    exclusion, or set_rule() would target a Location that was never created."""
+    """All location names tied to a weapon excluded by the EnabledWeapons option:
+    its vendor/collectible, Titan, mod-slot, and weapon-level locations."""
     disabled_internal = frozenset(
         WEAPON_DISPLAY_TO_INTERNAL[display] for display in WEAPON_DISPLAY_TO_INTERNAL
         if display not in enabled_weapons

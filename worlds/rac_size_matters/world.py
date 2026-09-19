@@ -146,11 +146,8 @@ class RACSizeMatterWorld(World):
         set_rules(self)
 
     def _choose_preplaced_items(self) -> list[str]:
-        """Decide every item precollected ahead of the pool, standard-AP style:
-        the fixed (or randomly rolled) starting-planet infobot(s), plus any
-        Starting Weapons/Starting Gadgets rolls. create_items() removes each
-        name returned here from the pool exactly once and push_precollects it,
-        instead of building the full pool first and mutating it after the fact."""
+        """Items precollected ahead of the pool: starting-planet infobot(s) plus
+        any Starting Weapons/Starting Gadgets rolls."""
         preplaced: list[str] = []
 
         random_start = self.options.random_starting_planet.value
@@ -226,13 +223,8 @@ class RACSizeMatterWorld(World):
         if self.options.progressive_challenge_mode:
             pool += [PROGRESSIVE_CHALLENGE_MODE_NAME] * self.options.challenge_mode.value
 
-        # Hyperborean/Chameleon are also gated behind Challenge Mode tiers 1/2
-        # (see locations/shared.py's CHALLENGE_MODE_1_ARMOUR_LOCATIONS/
-        # CHALLENGE_MODE_2_ARMOUR_LOCATIONS, which regions.py excludes below
-        # that tier) -- independent of the NG+ Items toggle above, so both
-        # must be satisfied or the item pool ends up with Chameleon/Hyperborean
-        # pieces that have no matching location, landing on an unrelated check
-        # and letting that armour appear in-game below its intended tier.
+        # Hyperborean/Chameleon are also gated behind Challenge Mode tiers 1/2,
+        # independent of the NG+ Items toggle above; both gates must agree.
         challenge_mode = self.options.challenge_mode.value
 
         def _armour_set_enabled(internal: str) -> bool:

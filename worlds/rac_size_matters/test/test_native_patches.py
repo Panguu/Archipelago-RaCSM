@@ -9,6 +9,7 @@ import struct
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from ..core.notifications import receipt_text
 from ..core.native_runtime import NativeRuntime
@@ -116,6 +117,36 @@ def plans(memory):
 
 
 class NativePatchTests(unittest.TestCase):
+    def test_vendor_display_survives_post_relocation_loading(self):
+        p = Memory()
+        planet = SimpleNamespace(is_ready=False, planet_id=1,
+                                 menu=SimpleNamespace(get=lambda: 9))
+        v = SimpleNamespace(planet=planet, native_plan=None,
+                            _is_titan_pending=lambda name: False)
+        runtime = NativeRuntime(p, v, lambda _: None, lambda _: None)
+        runtime.enabled = True
+        runtime.vendor_scouts = object()
+        display = Mock()
+        with patch('worlds.rac_size_matters.core.native_runtime.vendor_presentation.prepare',
+                   return_value=display):
+            runtime.gate.held_module = lambda: (1, 0xD4B380)
+            runtime._prepare(1, 0xD4B380)
+        runtime.gate.arm = lambda: None
+        runtime.gate.held_module = lambda: None
+        runtime._released = True
+        p.write_int32(runtime.gate.STATE, 5)
+        self.assertTrue(runtime.tick())
+        display.close.assert_not_called()
+        display.tick.assert_not_called()
+        p.write_int32(runtime.gate.STATE, 6)
+        runtime.tick()
+        display.tick.assert_not_called()
+        planet.is_ready = True
+        runtime.tick()
+        display.tick.assert_called_once_with(True, runtime.vendor_scouts)
+        self.assertIs(runtime.presentation, display)
+        self.assertIsNone(runtime._presentation_pending)
+
     def test_all_supported_layout_variants_install_and_restore(self):
         for fixture in FIXTURES:
             with self.subTest(fixture=fixture):
