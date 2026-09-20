@@ -66,8 +66,8 @@ class SACGadgetbotChallengeLocations:
     INSIDE_THE_A_EYE_VAULTBREAKERS = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Vaultbreakers"
     INSIDE_THE_A_EYE_DARK_HELMET = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Dark Helmet"
     INSIDE_THE_A_EYE_GO_LONG = "Fort Sprocket (Gadgetbots) - Inside the A-Eye: Go Long"
-    BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR = "Underwater Base (Gadgetbots) - Bulkhead Lock: Knockin' on Klunk's Door"
-    BULKHEAD_LOCK_MISSION_POSSIBLE = "Underwater Base (Gadgetbots) - Bulkhead Lock: Mission: Possible"
+    BULKHEAD_LOCK_KNOCKIN_ON_KLUNKS_DOOR = "Hydrano (Gadgetbots) - Bulkhead Lock: Knockin' on Klunk's Door"
+    BULKHEAD_LOCK_MISSION_POSSIBLE = "Hydrano (Gadgetbots) - Bulkhead Lock: Mission: Possible"
 
 
 GADGETBOT_CHALLENGES: tuple[CaseStructure, ...] = with_display_names(
