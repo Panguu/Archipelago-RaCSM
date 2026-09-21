@@ -257,6 +257,10 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         await self.get_username()
         await self.send_connect(game=self.game)
 
+    async def connection_closed(self) -> None:
+        self._wiring.native_runtime.ap_connected = False
+        await super().connection_closed()
+
     def on_package(self, cmd: str, args: dict[str, Any]) -> None:
         super().on_package(cmd, args)
 
@@ -265,6 +269,7 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             return
 
         if cmd == "Connected":
+            self._wiring.native_runtime.ap_connected = True
             identity = (self.seed_name, self.team, self.slot)
             if identity != self._notification_slot:
                 self._notification_slot = identity

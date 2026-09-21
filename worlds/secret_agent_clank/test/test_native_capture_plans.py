@@ -7,6 +7,7 @@ from ..core.patches.gain_storage import GainStorage
 from ..core.patches.mission_travel import MissionTravel
 from ..core.patches.progression import Progression
 from ..core.patches.vendor_presentation import VendorPresentation
+from ..core.patches.connection_warning import ConnectionWarning
 from ..core.patches.titan_vendor import TitanOffers, TitanVendor
 from ..core.patches.weapon_mods import WeaponMods
 from ..core.patches.wrench import WrenchProgression
@@ -80,9 +81,14 @@ class NativeCapturePlansTests(unittest.TestCase):
                                                                  vendor_enabled=vendor))
                         if vendor:
                             hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
+                        hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
                         spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
                         self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
                         hooks._install_plan()
+                        if vendor:
+                            flags = p.read_bytes(hooks.tables["vendor"], 40)
+                            for slot in range(40):
+                                self.assertEqual(flags[slot], 1 if slot in VENDOR_LOCATIONS else 4)
                         for change in reversed(hooks.patches):
                             p.write_bytes(change.address, change.original)
                         self.assertEqual(p.data, raw)

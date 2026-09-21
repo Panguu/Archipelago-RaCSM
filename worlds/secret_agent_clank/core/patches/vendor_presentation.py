@@ -10,6 +10,21 @@ from .patch import PatchSet
 from .vendor_text_preview import VendorTextPreview
 
 
+def triangle_storage(pine, symbols):
+    # Retail DrawTriangle only transforms local stack vertices and sets a
+    # local color; it never submits geometry. Guard its complete body,
+    # including every instruction except relocated JAL destinations.
+    storage = require(symbols, "DEBUGDRAW_DrawTriangle__FPC4VEC3N20UiPC7MATRIX4")
+    storage_original = pine.read_bytes(storage, 352)
+    words = struct.unpack("<88I", storage_original)
+    normalized = packed([0x0C000000 if word >> 26 == 3 else word for word in words])
+    if hashlib.sha256(normalized).hexdigest() != "572b00ad8dd163d5fb2c33d751223e56928bf4186bf2960640ae82a88e1bc37f":
+        raise RuntimeError("Vendor debug storage layout changed")
+    if not (words[14] == words[18] == words[22] and words[49] == words[78]):
+        raise RuntimeError("Vendor debug storage calls changed")
+    return storage, storage_original
+
+
 class VendorPresentation(PatchSet):
     def __init__(self, pine):
         super().__init__(pine)
@@ -51,17 +66,7 @@ class VendorPresentation(PatchSet):
             raise RuntimeError("Vendor encoded color switch changed")
         low = w[2] & 65535
         encoded = ((w[0] & 65535) << 16) + (low - 65536 if low & 32768 else low)
-        # Retail DrawTriangle only transforms local stack vertices and sets a
-        # local color; it never submits geometry. Guard its complete body,
-        # including every instruction except relocated JAL destinations.
-        storage = require(symbols, "DEBUGDRAW_DrawTriangle__FPC4VEC3N20UiPC7MATRIX4")
-        storage_original = self.pine.read_bytes(storage, 352)
-        words = struct.unpack("<88I", storage_original)
-        normalized = packed([0x0C000000 if word >> 26 == 3 else word for word in words])
-        if hashlib.sha256(normalized).hexdigest() != "572b00ad8dd163d5fb2c33d751223e56928bf4186bf2960640ae82a88e1bc37f":
-            raise RuntimeError("Vendor debug storage layout changed")
-        if not (words[14] == words[18] == words[22] and words[49] == words[78]):
-            raise RuntimeError("Vendor debug storage calls changed")
+        storage, storage_original = triangle_storage(self.pine, symbols)
         if any(storage < patch.address + len(patch.replacement) and patch.address < storage + 352
                for patch in hooks.patches):
             raise RuntimeError("Vendor debug storage is already occupied")
@@ -82,7 +87,7 @@ class VendorPresentation(PatchSet):
                 self.patches.append(Patch(render + site, original, packed([jump(address, True)])))
         if len(body) > 352:
             raise RuntimeError("Vendor text exceeds verified storage")
-        self.patches.insert(0, Patch(storage, storage_original, bytes(body).ljust(352, b"\0")))
+        self.patches.insert(0, Patch(storage, storage_original[:len(body)], bytes(body)))
         self.mailbox, self.timer = mailbox, timer
         return self.patches
 

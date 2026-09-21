@@ -35,7 +35,8 @@ class VendorOnly(PatchSet):
         plan_locations = {"vendor": dict(locations)} if locations else {}
         arena = buy + 0x1FC
         tables = {"vendor": arena + 16} if locations else {}
-        flags = bytearray(40)
+        # Hide weapons without a vendor check, regardless of AP ownership.
+        flags = bytearray([4] * 40)
         for slot, name in locations.items():
             if not 0 <= slot < 40:
                 raise ValueError("Invalid gadget id")

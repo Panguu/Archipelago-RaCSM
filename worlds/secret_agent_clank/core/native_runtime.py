@@ -5,6 +5,7 @@ from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
 from .patches.loader_gate import LoaderGate
 from .patches.mission_travel import MissionTravel
 from .patches.starting_case import StartingCase
+from .patches.connection_warning import ConnectionWarning
 from .patches.titan_vendor import TitanOffers, TitanVendor
 from .symbols import RuntimeSymbols
 
@@ -21,6 +22,8 @@ class NativeRuntime:
         self.weapon_mods = None
         self.vendor_modules = None
         self.presentation = None
+        self.connection_warning = ConnectionWarning(pine)
+        self.ap_connected = False
         self.owned_cases = frozenset()
         self.starting_case = StartingCase(pine, log)
 
@@ -79,7 +82,9 @@ class NativeRuntime:
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
                 if self.presentation is not None and vendor_enabled:
                     self.hooks.patches.extend(self.presentation.prepare(symbols, self.hooks))
+                self.hooks.patches.extend(self.connection_warning.prepare(symbols, self.hooks))
                 self.hooks.install_at_loader_gate(self.gate)
+                self.connection_warning.refresh(self.ap_connected)
                 self.hooks.sync_vendor_cases(self.owned_cases, loader_gate=self.gate)
                 self.generation += 1
                 self.gate.release()
@@ -94,6 +99,7 @@ class NativeRuntime:
             if p.read_int32(self.gate.STATE) == 4 or p.read_int32(0x206324) != 0xFFFFFFFF:
                 return False
             if self.hooks.installed and self.hooks.is_current():
+                self.connection_warning.refresh(self.ap_connected)
                 if p.read_int32(0x206338) != 3:
                     return False
                 if self.hooks.entitlement_table is not None and not p.read_int8(self.hooks.entitlement_table + 40):
@@ -111,6 +117,12 @@ class NativeRuntime:
             raise
 
     def close(self):
-        self.gate.release()
-        self.starting_case.close()
-        self.awaiting_start = False
+        try:
+            if (self.hooks.installed and self.pine.get_game_id() == "SCUS-97623"
+                    and self.hooks.is_current()
+                    and self.pine.read_int32(0x206324) == 0xFFFFFFFF):
+                self.connection_warning.refresh(False)
+        finally:
+            self.gate.release()
+            self.starting_case.close()
+            self.awaiting_start = False

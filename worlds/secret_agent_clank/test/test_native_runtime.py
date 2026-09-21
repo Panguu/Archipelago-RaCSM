@@ -14,6 +14,29 @@ from .test_runtime import Memory
 
 
 class NativeRuntimeTests(unittest.TestCase):
+    def test_watchdog_refreshes_current_module_with_server_status(self):
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        for connected in (True, False):
+            self.runtime.ap_connected = connected
+            self.assertTrue(self.runtime.service(set(), {}))
+            self.runtime.connection_warning.refresh.assert_called_with(connected)
+        self.runtime.connection_warning.refresh.reset_mock()
+        self.hooks.is_current.return_value = False
+        self.assertFalse(self.runtime.service(set(), {}))
+        self.runtime.connection_warning.refresh.assert_not_called()
+
+    def test_close_expires_watchdog_only_in_current_game_module(self):
+        self.p.get_game_id = lambda: "SCUS-97623"
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        self.runtime.close()
+        self.runtime.connection_warning.refresh.assert_called_once_with(False)
+        self.runtime.connection_warning.refresh.reset_mock()
+        self.hooks.is_current.return_value = False
+        self.runtime.close()
+        self.runtime.connection_warning.refresh.assert_not_called()
+
     def test_title_module_releases_loader_without_gameplay_hooks(self):
         self.runtime.gate.held_module.return_value = 0
         self.assertFalse(self.runtime.service(set(), {}))
@@ -54,6 +77,8 @@ class NativeRuntimeTests(unittest.TestCase):
         self.p = Memory()
         self.hooks = Mock(installed=False, entitlement_table=None, module=16)
         self.runtime = NativeRuntime(self.p, self.hooks, Mock())
+        self.runtime.connection_warning = Mock()
+        self.runtime.connection_warning.prepare.return_value = []
         self.runtime.gate = Mock(armed=False, STATE=0x100)
         self.runtime.gate.held_module.return_value = None
         self.p.batch_write_int32([(0x206324, 0xFFFFFFFF), (0x206328, 16),

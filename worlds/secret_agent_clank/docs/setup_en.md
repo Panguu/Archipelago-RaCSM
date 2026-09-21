@@ -141,3 +141,12 @@ including before connecting to AP. It suppresses the in-level reset prompt there
 The detector uses the settled resident loader target; the previous level ID can
 remain in memory at the title screen. New Game loading still arms the mandatory
 gameplay hooks when the AP inventory is available.
+
+Once gameplay hooks are installed, a native heartbeat watchdog shows
+"Disconnected from Archipelago / Reconnect the AP client" when the server
+disconnects or the client stops responding. Client loss is detected after 180
+HUD frames (about six seconds at 30 FPS). Reconnecting stops the warning refresh;
+the last message then expires normally. This requires the patched level to be
+running: it cannot warn before the client first installs hooks or while the game
+is stopped on a loading screen. Restart the client and reset the level in-game
+to install this update. Live HUD verification of this patch is pending.

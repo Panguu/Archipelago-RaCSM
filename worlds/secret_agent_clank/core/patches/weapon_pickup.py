@@ -69,7 +69,9 @@ class WeaponPickup(PatchSet):
         data = bytearray(MARKER)
         assert len(data) == 16
         for kind in ("pickup", "vendor"):
-            flags = bytearray(40)
+            # AP ownership can leave pickup-only weapons unowned. Do not let
+            # those become native, zero-cost offers with no vendor check.
+            flags = bytearray([4] * 40) if kind == "vendor" and vendor_locations else bytearray(40)
             for slot, name in locations[kind].items():
                 flags[slot] = 2 if name in reported else 1
             data.extend(flags)
