@@ -71,8 +71,12 @@ class RACContext(
         self._armour_set_checks_enabled = False
 
         self._last_weapon_state_push: float = 0.0
-        self._pushed_weapon_state: dict[str, list[int]] = {}
+        self._pushed_weapon_state: dict[str, int] = {}
+        self._local_weapon_state: dict[str, int] = {}
         self._weapon_state_restored = False
+        self._save_data_received = False
+        self._items_received_ready = False
+        self._connection_sync_pending = True
         self._starting_skin_option = 0
 
         self._death_link_enabled = False
@@ -118,15 +122,15 @@ class RACContext(
         return RAC5SaveData.from_dict(self.stored_data.get(self._save_data_key()))
 
     def _try_restore_weapon_state(self, *, force: bool = False) -> None:
-        """Write the AP-stored weapon level/experience snapshot back into game memory.
-        `force` re-applies it even if already restored once this connection — needed on
-        every planet transition, since Core.tick()'s wipe() zeroes level/experience for
-        the newly-loaded planet's weapon array every time, not just on first load."""
-        if (not force and self._weapon_state_restored) or not self._wiring.planet.is_ready:
+        """Restore levels only, after this connection's storage reply has arrived."""
+        if (not self._save_data_received or not self.pine_connected
+                or (not force and self._weapon_state_restored)
+                or not self._wiring.planet.is_ready or self._wiring.at_main_menu
+                or self._wiring.vendor_active):
             return
-        data = self._stored_save_data().weapon_state
-        if data:
-            self._wiring.planet.weapons.restore_level_experience(data)
+        data = self._local_weapon_state or self._stored_save_data().weapon_state
+        self._wiring.planet.weapons.restore_levels(data)
+        self._local_weapon_state = dict(data)
         self._weapon_state_restored = True
 
     def _starting_items_key(self) -> str:
@@ -245,6 +249,13 @@ class RACContext(
                 asyncio.create_task(self.send_msgs([scout_request]))
             self._ap_loadout_restored = False
             self._weapon_state_restored = False
+            self._local_weapon_state = {}
+            self._pushed_weapon_state = {}
+            self._last_weapon_state_push = 0.0
+            self._save_data_received = False
+            self._items_received_ready = False
+            self._connection_sync_pending = True
+            self._wiring._ap_inventory_ready = False
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
             self._ammo_link_enabled = bool(self.slot_data.get("ammo_link", False))
             self._bolt_link_enabled = bool(self.slot_data.get("bolt_link", False))
@@ -375,7 +386,11 @@ class RACContext(
             return
 
         if cmd in ("Retrieved", "SetReply") and self.slot is not None:
-            if not self._ap_loadout_restored:
+            save_reply = (self._save_data_key() in args.get("keys", {}) if cmd == "Retrieved"
+                          else args.get("key") == self._save_data_key())
+            if save_reply:
+                self._save_data_received = True
+            if self._save_data_received and not self._ap_loadout_restored:
                 save_data = self._stored_save_data()
                 if save_data.quick_select:
                     self._wiring.quick_select.load(save_data.quick_select)
@@ -409,6 +424,7 @@ class RACContext(
 
         if cmd == "ReceivedItems":
             if args.get("index", 0) == 0:
+                self._items_received_ready = True
                 self._notification_item_index = len(self.items_received)
             checked = self._checked_location_names()
             asyncio.create_task(self._guarded_wiring_call(

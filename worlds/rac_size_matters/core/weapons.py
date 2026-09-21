@@ -679,7 +679,7 @@ class WeaponInventory:
                     addr.experience = ceiling
 
     def wipe(self) -> None:
-        """Zero every weapon/gadget/mod unlock bit, level and experience, and rebaseline
+        """Zero every weapon/gadget/mod unlock bit and level, and rebaseline
         every tracking dict. Called once on first planet-ready after connect, or
         stale save progress would look like a batch of brand-new pickups."""
         for addr in self._weapon_addrs.values():
@@ -687,7 +687,6 @@ class WeaponInventory:
             for slot in _MOD_SLOTS:
                 setattr(addr, slot, False)
             addr.level = 0
-            addr.experience = 0
         for addr in self._gadget_addrs.values():
             addr.unlocked = False
 
@@ -698,7 +697,7 @@ class WeaponInventory:
         self._raw_gadgets = dict(self.gadgets)
         self._raw_mods = {name: dict(mods) for name, mods in self.mods.items()}
         self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
-        self._prev_experience = dict.fromkeys(self._weapon_addrs, 0)
+        self._prev_experience = {name: addr.experience for name, addr in self._weapon_addrs.items()}
 
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
@@ -799,23 +798,9 @@ class WeaponInventory:
             elif loc in _weapon_locations._TITAN_LOC:
                 self.titan_purchased[_weapon_locations._TITAN_LOC[loc]] = True
 
-    def level_experience_snapshot(self) -> dict[str, list[int]]:
-        """Current [level, experience] per weapon, for persisting to AP data storage so
-        real leveling progress survives wipe() on reconnect. Lists, not tuples — JSON has no tuple type."""
-        return {name: [addr.level, addr.experience] for name, addr in self._weapon_addrs.items()}
-
-    def restore_level_experience(self, data: dict) -> None:
-        """Write back a level_experience_snapshot(), also rebaselining _raw_level/
-        _prev_experience so check() doesn't misread the restore as a fresh gain."""
-        for name, pair in data.items():
-            addr = self._weapon_addrs.get(name)
-            if addr is None or not isinstance(pair, (list, tuple)) or len(pair) != 2:
-                continue
-            level, experience = int(pair[0]), int(pair[1])
-            addr.level = level
-            addr.experience = experience
-            self._raw_level[name] = level
-            self._prev_experience[name] = experience
+    def level_snapshot(self) -> dict[str, int]:
+        """Levels only; experience remains managed by the game."""
+        return {name: addr.level for name, addr in self._weapon_addrs.items()}
 
     def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
         """Zero unlocked + every mod slot for every weapon is_ap_owned says no to.

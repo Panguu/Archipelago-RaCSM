@@ -17,7 +17,7 @@ from ..constants import (
 )
 from ..items import GLITCHES_ITEM_NAME
 from ..options import ShrinkRayOptions
-from ._helpers import HasShrinkRayDoorAccess, HasChallengeMode, weapon_enabled
+from ._helpers import HasChallengeMode, HasShrinkRayDoorAccess, weapon_enabled
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld

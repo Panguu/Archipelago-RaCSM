@@ -83,6 +83,8 @@ class PineMixin:
             self.pine_connected = True
             try:
                 self._wiring.sync_from_ap(self._checked_location_names())
+                self._connection_sync_pending = True
+                self._wiring._ap_inventory_ready = False
                 self._read_initial_state_sync()
                 if not self._wiring.at_main_menu:
                     reconcile_traps(self.pine)
@@ -116,7 +118,8 @@ class PineMixin:
             self._log(f"[RAC] Initial state read failed: {exc}", "warning")
 
     def _read_initial_state_sync(self) -> None:
-        self._wiring.tick()
+        if self._items_received_ready and self._save_data_received:
+            self._wiring.tick()
         planet_id = self._wiring.planet.planet_id
         self.current_planet = PLANET_ID_TO_REGION.get(planet_id, "Galaxy")
 
@@ -148,12 +151,18 @@ class PineMixin:
             await self._reject_wrong_game(game_id, is_disconnect=True)
             return
 
+        if self._connection_sync_pending:
+            await self.force_sync()
         prev_planet = self.current_planet
         async with self._pine_lock:
             self._wiring.native.ap_connected = bool(
                 self.slot is not None and self.server and self.server.socket
                 and not self.server.socket.closed)
-            self._wiring.tick()
+            if self._items_received_ready and self._save_data_received:
+                self._try_restore_weapon_state()
+                self._wiring.tick()
+            else:
+                self._wiring.native.tick()
         self.current_planet = PLANET_ID_TO_REGION.get(self._wiring.planet.planet_id, "Galaxy")
         if self.current_planet != prev_planet:
             await self._send_map_page(self.current_planet)
@@ -164,15 +173,18 @@ class PineMixin:
         self._maybe_sync_bolt_link()
         self._maybe_sync_ghost_link()
 
-    def _maybe_persist_weapon_state(self) -> None:
-        """Push the weapon level/experience snapshot to AP data storage, throttled and skipped
-        if unchanged, since no AP item records this progress and a reconnect's wipe() would lose it."""
-        if self.slot is None or not self.pine_connected or not self._wiring.planet.is_ready:
+    def _maybe_persist_weapon_state(self, *, force: bool = False) -> None:
+        """Cache live levels and publish changes, never temporary vendor values."""
+        if (self.slot is None or not self.pine_connected or not self._weapon_state_restored
+                or not self._save_data_received or not self._items_received_ready
+                or not self._wiring.planet.is_ready or self._wiring.at_main_menu
+                or self._wiring.vendor_active or self._wiring.native.waiting):
             return
+        snapshot = self._wiring.planet.weapons.level_snapshot()
+        self._local_weapon_state = snapshot
         now = time.monotonic()
-        if now - self._last_weapon_state_push < _WEAPON_STATE_PUSH_INTERVAL:
+        if not force and now - self._last_weapon_state_push < _WEAPON_STATE_PUSH_INTERVAL:
             return
-        snapshot = self._wiring.planet.weapons.level_experience_snapshot()
         if snapshot == self._pushed_weapon_state:
             return
         self._last_weapon_state_push = now

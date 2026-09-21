@@ -180,7 +180,7 @@ class InventoryMixin:
         Also skipped entirely while no save is loaded (see Core.at_main_menu) — apply_inventory()/
         restore_world_states() already no-op in that case, but weapons.wipe() below doesn't
         go through either of them and would otherwise write to a stale/invalid planet base."""
-        if not self.pine_connected:
+        if not self.pine_connected or not self._items_received_ready or not self._save_data_received:
             return
         inventory = self._parse_inventory()
         checked   = self._checked_location_names()
@@ -193,10 +193,15 @@ class InventoryMixin:
             wiring.apply_inventory(**inventory)
             wiring.restore_world_states(checked)
             wiring.restore_armour_from_locations(checked)
-        self._try_restore_weapon_state()
+            self._try_restore_weapon_state(force=True)
+            if wiring.planet.is_ready and not wiring.vendor_active:
+                self._connection_sync_pending = False
         self._pending_item_apply = False
 
     async def _apply_received_items(self) -> None:
+        if not self._items_received_ready or not self._save_data_received:
+            self._pending_item_apply = True
+            return
         if self._wiring.native.waiting:
             self._pending_item_apply = True
             return

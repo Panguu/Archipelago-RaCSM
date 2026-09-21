@@ -288,6 +288,7 @@ class Core:
             if wi.weapons.get(name, False) != owned:
                 wi.set(name, owned)
                 wi.weapons[name] = owned
+                wi._raw_weapons[name] = owned
         for name in wi._gadget_addrs:
             owned = self._ap_owned_gadgets.get(name, False)
             if wi.gadgets.get(name, False) != owned:
@@ -297,6 +298,7 @@ class Core:
                         self.send_location(loc)
                 wi.set(name, owned)
                 wi.gadgets[name] = owned
+                wi._raw_gadgets[name] = owned
 
     def _apply_mod_unlock_flags(self) -> None:
         """TODO: rebuild on top of the new vendor.py — used to write
@@ -408,6 +410,9 @@ class Core:
                 self._initial_load_done = True
                 self.on_initial_load()
 
+        if not self._ap_inventory_ready:
+            return
+
         self.skin.apply_pending(self.native.skin, allowed=(
             self._planet_settled() and self.planet.menu.get() == MenuStateValue.CLOSED
             and not self.planet.player.is_dead and not self.planet.player.is_picking_up
@@ -505,6 +510,8 @@ class Core:
         could otherwise get erased in the gap before the next tick()'s own check() call
         ever sees it. Safe to call more than once per tick: check() is idempotent once
         a piece has already been recorded."""
+        if not self._ap_inventory_ready:
+            return
         for set_key, piece in self.armour.check().items():
             for p in _ARMOUR_PIECES:
                 if piece & p:

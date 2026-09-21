@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, field
 class RAC5SaveData:
     """Playthrough state that must survive a client reconnect but isn't recoverable from
     AP's checked_locations/items_received: quick-select loadout, equipped armour slots,
-    and per-weapon level/experience. One AP data-storage key (context.py's
+    and per-weapon levels. One AP data-storage key (context.py's
     _save_data_key()) instead of three.
 
     Deliberately excludes armour/weapon ownership -- that always comes from
@@ -16,7 +16,7 @@ class RAC5SaveData:
 
     quick_select: dict[str, int] = field(default_factory=dict)
     armour_slots: dict[str, int] = field(default_factory=dict)
-    weapon_state: dict[str, dict] = field(default_factory=dict)
+    weapon_state: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -25,8 +25,19 @@ class RAC5SaveData:
     def from_dict(cls, data: dict | None) -> RAC5SaveData:
         if not isinstance(data, dict):
             return cls()
+        # Accept the old [level, experience] format, discarding experience.
+        from .weapons import WEAPON_MAX_LEVELS
+        levels = {}
+        raw = data.get("weapon_state")
+        if isinstance(raw, dict):
+            for name, value in raw.items():
+                if isinstance(value, (list, tuple)) and len(value) == 2:
+                    value = value[0]
+                if (name in WEAPON_MAX_LEVELS and type(value) is int
+                        and 0 <= value < WEAPON_MAX_LEVELS[name]):
+                    levels[name] = value
         return cls(
             quick_select=dict(data.get("quick_select") or {}),
             armour_slots=dict(data.get("armour_slots") or {}),
-            weapon_state=dict(data.get("weapon_state") or {}),
+            weapon_state=levels,
         )
