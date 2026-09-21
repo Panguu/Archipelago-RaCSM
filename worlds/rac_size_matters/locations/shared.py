@@ -26,6 +26,7 @@ from ..core.locations.challenge_locations import (
     GADGETBOT_TOSS_CLANK_PICKUPS,
 )
 from ..core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
+from ..constants.shrink_ray import SHRINK_RAY_LOCATION_PLANETS
 from ..core.shrink_ray import SHRINK_RAY_SKIP_LOCATION_NAMES
 from ..core.skill_points import (
     CLANK_CHALLENGE_SKILL_POINTS,
@@ -337,10 +338,11 @@ EXTRA_SKYBOARD_LOCATIONS: dict[str, RACLocationData] = {
     Rac5SkyboardChallenges.OUTPOST_OMEGA_VORTEX:     RACLocationData(_planet_id(Rac5Planets.OUTPOST_OMEGA), Rac5Planets.OUTPOST_OMEGA),
 }
 
-SHRINK_RAY_SKIP_LOCATIONS: dict[str, RACLocationData] = {
-    name: RACLocationData(_planet_id(Rac5Planets.KALIDON), Rac5Planets.KALIDON)
-    for name in SHRINK_RAY_SKIP_LOCATION_NAMES
-}
+SHRINK_RAY_SKIP_LOCATIONS: dict[str, RACLocationData] = {}
+for _name in SHRINK_RAY_SKIP_LOCATION_NAMES:
+    _planet = PLANET_ORDER[SHRINK_RAY_LOCATION_PLANETS[_name] - 1]
+    SHRINK_RAY_SKIP_LOCATIONS[_name] = RACLocationData(_planet_id(_planet), _planet)
+del _name, _planet
 
 CHALLENGE_LOCATIONS: dict[str, RACLocationData] = {
     cp.name: RACLocationData(_planet_id(cp.planet), cp.planet)
