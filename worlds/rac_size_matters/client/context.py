@@ -18,7 +18,7 @@ except ImportError:
     DYNAMIC_PINE_VERSION = None
 from CommonClient import logger
 
-from ..core import TextColour, colored_text, set_trap_durations
+from ..core import RAC5SaveData, TextColour, colored_text, set_trap_durations
 from ..core.core import Core
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
@@ -111,21 +111,17 @@ class RACContext(
     def _filler_applied_key(self) -> str:
         return f"racsm_filler_applied_{self.team}_{self.slot}"
 
-    def _qs_storage_key(self) -> str:
-        return f"racsm_quickselect_{self.team}_{self.slot}"
+    def _save_data_key(self) -> str:
+        return f"racsm_save_data_{self.team}_{self.slot}"
 
-    def _armour_slots_storage_key(self) -> str:
-        return f"racsm_armour_slots_{self.team}_{self.slot}"
-
-    def _weapon_state_storage_key(self) -> str:
-        return f"racsm_weapon_state_{self.team}_{self.slot}"
+    def _stored_save_data(self) -> RAC5SaveData:
+        return RAC5SaveData.from_dict(self.stored_data.get(self._save_data_key()))
 
     def _try_restore_weapon_state(self) -> None:
         if self._weapon_state_restored or not self._wiring.planet.is_ready:
             return
-        key = self._weapon_state_storage_key()
-        data = self.stored_data.get(key)
-        if isinstance(data, dict):
+        data = self._stored_save_data().weapon_state
+        if data:
             self._wiring.planet.weapons.restore_level_experience(data)
             self._weapon_state_restored = True
 
@@ -143,38 +139,27 @@ class RACContext(
             "operations": [{"operation": "replace", "value": 1}],
         }])
 
-    async def _persist_quick_select(self, data: dict) -> None:
+    async def _persist_save_data_field(self, field_name: str, data: dict) -> None:
+        """Merge one RAC5SaveData field into the slot's single save-data key, leaving the
+        other fields (pushed independently, on their own triggers/cadence) untouched."""
         if self.slot is None:
             return
         await self.send_msgs([{
             "cmd": "Set",
-            "key": self._qs_storage_key(),
+            "key": self._save_data_key(),
             "default": {},
             "want_reply": False,
-            "operations": [{"operation": "replace", "value": data}],
+            "operations": [{"operation": "update", "value": {field_name: data}}],
         }])
+
+    async def _persist_quick_select(self, data: dict) -> None:
+        await self._persist_save_data_field("quick_select", data)
 
     async def _persist_armour_slots(self, data: dict) -> None:
-        if self.slot is None:
-            return
-        await self.send_msgs([{
-            "cmd": "Set",
-            "key": self._armour_slots_storage_key(),
-            "default": {},
-            "want_reply": False,
-            "operations": [{"operation": "replace", "value": data}],
-        }])
+        await self._persist_save_data_field("armour_slots", data)
 
     async def _persist_weapon_state(self, data: dict) -> None:
-        if self.slot is None:
-            return
-        await self.send_msgs([{
-            "cmd": "Set",
-            "key": self._weapon_state_storage_key(),
-            "default": {},
-            "want_reply": False,
-            "operations": [{"operation": "replace", "value": data}],
-        }])
+        await self._persist_save_data_field("weapon_state", data)
 
     def _checked_location_names(self) -> set[str]:
         id_to_name = {v: k for k, v in self._location_name_to_id.items()}
@@ -241,6 +226,7 @@ class RACContext(
                 lambda slot: self.player_names.get(slot, f"Player {slot}"))
 
         if cmd == "Connected":
+            self._wiring.native.ap_connected = True
             self.slot_data = args.get("slot_data", {})
             self._wiring.native.enabled = True
             native_ids = set(args.get("missing_locations", ())) | set(args.get("checked_locations", ()))
@@ -370,34 +356,28 @@ class RACContext(
                 link_keys += [self._ghost_link_key(slot) for slot in self._ghost_link_slots]
             for key in (
                 self._filler_applied_key(),
-                self._qs_storage_key(),
-                self._armour_slots_storage_key(),
+                self._save_data_key(),
                 self._starting_items_key(),
-                self._weapon_state_storage_key(),
                 *link_keys,
             ):
                 self.set_notify(key)
             asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [
                 self._filler_applied_key(),
-                self._qs_storage_key(),
-                self._armour_slots_storage_key(),
+                self._save_data_key(),
                 self._starting_items_key(),
-                self._weapon_state_storage_key(),
                 *link_keys,
             ]}]))
             return
 
         if cmd in ("Retrieved", "SetReply") and self.slot is not None:
             if not self._ap_loadout_restored:
-                qs_key = self._qs_storage_key()
-                if qs_key in self.stored_data and isinstance(self.stored_data[qs_key], dict):
-                    self._wiring.quick_select.load(self.stored_data[qs_key])
+                save_data = self._stored_save_data()
+                if save_data.quick_select:
+                    self._wiring.quick_select.load(save_data.quick_select)
                     if self._wiring.planet.is_ready:
                         self._wiring.quick_select.restore()
-                armour_key = self._armour_slots_storage_key()
-                if armour_key in self.stored_data and isinstance(self.stored_data[armour_key], dict):
-                    if self._wiring.planet.is_ready:
-                        self._wiring.armour.sync_equipped(self.stored_data[armour_key])
+                if save_data.armour_slots and self._wiring.planet.is_ready:
+                    self._wiring.armour.sync_equipped(save_data.armour_slots)
                 self._ap_loadout_restored = True
             self._try_restore_weapon_state()
             if self._ammo_link_enabled:
@@ -438,11 +418,9 @@ class RACContext(
             if data.get("source") != self.auth:
                 asyncio.create_task(self._receive_death_link(data))
 
-    def on_connection_closed(self) -> None:
-        super().on_connection_closed()
-        self._write_notification_text(colored_text(
-            "Disconnected from ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
-        ))
+    async def connection_closed(self) -> None:
+        self._wiring.native.ap_connected = False
+        await super().connection_closed()
 
     def on_print_json(self, args: dict) -> None:
         super().on_print_json(args)

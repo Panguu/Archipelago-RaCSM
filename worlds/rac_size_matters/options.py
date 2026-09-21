@@ -425,6 +425,7 @@ class WeaponLevelChecks(Choice):
 
 class StartingSkin(Choice):
     """Cosmetic skin for Ratchet. Applied automatically on each planet load.
+    Includes the thirteen red multiplayer skins; blue variants are excluded.
     All skins are unlocked in-game regardless of this choice."""
     display_name = "Starting Skin"
     option_default          = 0
@@ -434,6 +435,19 @@ class StartingSkin(Choice):
     option_swim_ratchet     = 4
     option_kanga_ratchet    = 5
     option_hiro_ratchet     = 6
+    option_mp_ratchet       = 7
+    option_snowman          = 8
+    option_hotbot           = 9
+    option_qwark            = 10
+    option_ninja            = 11
+    option_training_bot     = 12
+    option_nurse            = 13
+    option_technomite       = 14
+    option_dan              = 15
+    option_low_rider_ratchet = 16
+    option_samurai_ratchet  = 17
+    option_kangaroo_ratchet = 18
+    option_tuxedo_ratchet   = 19
     default = 0
 
 

@@ -132,6 +132,7 @@ class Core:
 
         self._ap_owned_weapons: dict[str, bool] = {}
         self._ap_owned_gadgets: dict[str, bool] = {}
+        self._ap_inventory_ready: bool = False
 
         self.send_location:      Callable[[str], None] = lambda _: None
         self.send_deathlink:     Callable[[int], None]  = lambda _: None
@@ -238,6 +239,7 @@ class Core:
         to avoid fighting those windows' own zero/restore cycles."""
         if self._refresh_main_menu_state():
             return
+        self._ap_inventory_ready = True
         self.planet_unlock.set_unlocked_planets(infobot_planets)
         if self.progressive_challenge_mode_enabled:
             self.planet.weapons.challenge_mode = challenge_mode
@@ -384,11 +386,14 @@ class Core:
             self.planet.weapons.wipe()
             if not self._initial_load_done:
                 self.planet.weapon_cycler.initialize(self._first_owned_weapon_id)
-            self._sync_weapon_gadget_ownership()
-            if (not self.vendor_active and not self.planet.player.is_dead
-                    and not self.planet.player.is_picking_up and not self.planet.giant_clank_active):
-                self._report_new_armour_pickups()
-                self.armour.apply_full()
+            if self._ap_inventory_ready:
+                # Skip until apply_inventory() has run this session, or ap_armour/_ap_owned_*
+                # are still empty defaults and stale save memory reads as a brand-new pickup.
+                self._sync_weapon_gadget_ownership()
+                if (not self.vendor_active and not self.planet.player.is_dead
+                        and not self.planet.player.is_picking_up and not self.planet.giant_clank_active):
+                    self._report_new_armour_pickups()
+                    self.armour.apply_full()
             if self.native.armour is None:
                 self.armour_spawn_gate.apply(self.planet.planet_id)
             self.skin.setup()
@@ -400,6 +405,10 @@ class Core:
                 self._initial_load_done = True
                 self.on_initial_load()
 
+        self.skin.apply_pending(self.native.skin, allowed=(
+            self._planet_settled() and self.planet.menu.get() == MenuStateValue.CLOSED
+            and not self.planet.player.is_dead and not self.planet.player.is_picking_up
+            and not self.planet.giant_clank_active))
         self.quick_select.check()
 
         if self._planet_settled():

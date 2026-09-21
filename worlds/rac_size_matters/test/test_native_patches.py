@@ -18,6 +18,8 @@ from ..core.patches import armour_pickup, item_toast, pokitaru_ship, sprout_pick
 from ..core.patches.asm import packed
 
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/native_us.json").read_text())
+SHIP_FIXTURES = json.loads((Path(__file__).parent / "fixtures/ship_menu_us.json").read_text())
+SKIN_EXIT_FIXTURES = json.loads((Path(__file__).parent / "fixtures/skins_exit_us.json").read_text())
 
 
 class Memory:
@@ -27,6 +29,10 @@ class Memory:
         self.writes = []
         self.fail_once = None
         for address, data in self.fixture["segments"]:
+            self.data[address:address + len(data) // 2] = bytes.fromhex(data)
+        for address, data in SHIP_FIXTURES[fixture]["segments"]:
+            self.data[address:address + len(data) // 2] = bytes.fromhex(data)
+        for address, data in SKIN_EXIT_FIXTURES[fixture]["segments"]:
             self.data[address:address + len(data) // 2] = bytes.fromhex(data)
         self.write_int32(0x1F4C76C, self.fixture["planet"])
         self.writes.clear()
@@ -56,13 +62,15 @@ class CPU:
         self.r[31], self.r[29] = self.STOP, 0x1FF0000
         self.calls = []
 
-    def run(self, pc, stop=None, stubs=()):
+    def run(self, pc, stop=None, stubs=(), max_steps=1000):
         stop = self.STOP if stop is None else stop
         delayed = None
-        for _ in range(300):
+        for _ in range(max_steps):
             if pc == stop: return
             if pc in stubs:
                 self.calls.append(pc)
+                if isinstance(stubs, dict):
+                    stubs[pc](self)
                 pc = self.r[31]
                 continue
             instruction = self.memory.read_int32(pc)
@@ -75,7 +83,10 @@ class CPU:
             if instruction == 0: pass
             elif op == 0:
                 if fn == 0: self.r[rd] = self.r[rt] << shift
+                elif fn == 2: self.r[rd] = self.r[rt] >> shift
                 elif fn in (0x21, 0x2D): self.r[rd] = self.r[rs] + self.r[rt]
+                elif fn == 0x25: self.r[rd] = self.r[rs] | self.r[rt]
+                elif fn == 0x2B: self.r[rd] = int(self.r[rs] < self.r[rt])
                 elif fn == 8: delayed = self.r[rs]
                 else: raise AssertionError(hex(instruction))
             elif op == 2:
@@ -89,6 +100,7 @@ class CPU:
                 if self.r[rs] != self.r[rt]: delayed = pc + 4 + signed * 4
             elif op == 9: self.r[rt] = self.r[rs] + signed
             elif op == 11: self.r[rt] = int(self.r[rs] < (signed & 0xFFFFFFFF))
+            elif op == 12: self.r[rt] = self.r[rs] & imm
             elif op == 13: self.r[rt] = self.r[rs] | imm
             elif op == 14: self.r[rt] = self.r[rs] ^ imm
             elif op == 15: self.r[rt] = imm << 16
@@ -118,7 +130,7 @@ def plans(memory):
 class NativePatchTests(unittest.TestCase):
     def test_vendor_display_survives_post_relocation_loading(self):
         p = Memory()
-        planet = SimpleNamespace(is_ready=False, planet_id=1,
+        planet = SimpleNamespace(is_ready=False, planet_id=1, starting_planet_id=None,
                                  menu=SimpleNamespace(get=lambda: 9))
         v = SimpleNamespace(planet=planet, native_plan=None,
                             _is_titan_pending=lambda name: False)
@@ -263,5 +275,6 @@ class NativePatchTests(unittest.TestCase):
         self.assertFalse(planet.is_ready)
         self.assertEqual(planet._pending_planet_id, 1)
         self.assertEqual(planet._prev_gate, -1)
-        self.assertEqual(len(runtime.plans), 4)
+        self.assertEqual(len(runtime.plans), 7)
+        self.assertIn(runtime.skin, runtime.plans)
         self.assertEqual(p.read_int32(pokitaru_ship.SITE), 0x24020001)

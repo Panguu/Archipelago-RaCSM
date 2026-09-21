@@ -183,7 +183,6 @@ class PlanetInventory:
         self._prev_gate: int = TRANSITION_GATE_IDLE
 
         self.starting_planet_id: int | None = None
-        self._start_redirect_pending: bool = False
         self._quick_select_primed: bool = False
 
         self.giant_clank_allowed: bool = True
@@ -206,10 +205,11 @@ class PlanetInventory:
         self._cached_movement: PlayerMovementState | None = None
 
     def set_starting_planet(self, planet_id: int | None) -> None:
-        """Set once from slot_data: the planet id the first Pokitaru arrival should be
-        redirected to. None (option off, or already Pokitaru) leaves it untouched."""
+        """Configure the frontend New Game patch; never redirect loaded saves."""
+        from .patches.starting_planet import ELIGIBLE
+        if planet_id is not None and planet_id not in ELIGIBLE:
+            raise ValueError(f"Invalid starting planet: {planet_id!r}")
         self.starting_planet_id = planet_id
-        self._start_redirect_pending = planet_id is not None and planet_id != Planets.POKITARU.planet_id
 
     def set_planet(self, planet_id: int) -> None:
         """Rebind every planet-dependent Inventory to the newly loaded planet, including
@@ -257,11 +257,6 @@ class PlanetInventory:
         return False
 
     def _ready_on_planet(self, planet_id: int) -> None:
-        if self._start_redirect_pending and planet_id == Planets.POKITARU.planet_id:
-            self._start_redirect_pending = False
-            self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, self.starting_planet_id)
-            return
-
         config = GIANT_CLANK_CONFIGS.get(planet_id)
         if config is not None and not self.giant_clank_allowed:
             self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.origin_id)

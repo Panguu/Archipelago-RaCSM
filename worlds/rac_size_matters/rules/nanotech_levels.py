@@ -12,14 +12,12 @@ _GOOD_EXP_PLANET_THRESHOLD: int = 20
 
 
 def set_nanotech_level_rules(world: RACSizeMatterWorld) -> None:
-    """Nanotech Level Interval/Max options: levels above 20 need
-    HasGoodExpPlanet(), levels 6-20 are otherwise unrestricted. Only sets a
-    rule for levels regions.py actually created a location for (see
-    nanotech_level_locations_for) — both must agree on the same set."""
     created = nanotech_level_locations_for(
         world.options.nanotech_level_interval.value, world.options.nanotech_level_max.value,
     )
     if not created:
+        return
+    if world.options.nanotech_experience_multiplier.value > 1:
         return
 
     player = world.player

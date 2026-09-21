@@ -13,7 +13,7 @@ from .asm import Patch, jump, packed
 from .plan import Plan
 
 
-def prepare(pine, *, code_start, code, small_box, starter):
+def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, status_hook=None):
     def read(address, count):
         offset = address - code_start
         if not 0 <= offset <= len(code) - count:
@@ -58,6 +58,16 @@ def prepare(pine, *, code_start, code, small_box, starter):
         m.addiu(m.A2, m.A2, message & 0xFFFF),
         m.addiu(m.A0, m.ZERO, 0xEF), jump(text), m.addiu(m.A1, m.ZERO, 0xCD),
     ]
+    if frame_hook is not None:
+        # Run with no notification too; preserve the fixed data offsets.
+        words[2:2] = [jump(frame_hook), m.NOP]
+        words[8] = m.beq(m.T1, m.ZERO, 27 - 8 - 1)
+    if status_hook is not None:
+        # Draw after the native prompt, even when no item message is queued.
+        insert = 6 if frame_hook is not None else 4
+        words[insert:insert] = [jump(status_hook), m.NOP]
+        empty_branch = 10 if frame_hook is not None else 8
+        words[empty_branch] = m.beq(m.T1, m.ZERO, 27 - empty_branch - 1)
     words += [0] * (27 - len(words))
     words += [m.ld(m.RA, 8, m.SP), m.jr(m.RA), m.addiu(m.SP, m.SP, 16), m.NOP, m.NOP]
     replacement = packed(*words) + bytes(100)
@@ -65,6 +75,7 @@ def prepare(pine, *, code_start, code, small_box, starter):
                        Patch(wrapper + 8, packed(jump(draw)), packed(jump(entry)))])
     plan.mutable_data = ((timer, 100),)
     plan.timer, plan.message = timer, message
+    plan.font, plan.colour, plan.text = font, colour, text
     return plan
 
 

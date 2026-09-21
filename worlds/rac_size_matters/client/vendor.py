@@ -203,15 +203,13 @@ class InventoryMixin:
         if not self.pine_connected:
             self._pending_item_apply = True
             return
-        if not self.items_received:
-            return
         if self._wiring.at_main_menu:
             self._pending_item_apply = True
             return
         inventory = self._parse_inventory()
         async with self._pine_lock:
             self._wiring.apply_inventory(**inventory)
-            if self._filler_checkpoint_synced:
+            if self.items_received and self._filler_checkpoint_synced:
                 self._grant_new_bolt_items()
                 self._grant_new_trap_items()
                 await self._persist_filler_checkpoint()

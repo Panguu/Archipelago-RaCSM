@@ -150,6 +150,9 @@ class PineMixin:
 
         prev_planet = self.current_planet
         async with self._pine_lock:
+            self._wiring.native.ap_connected = bool(
+                self.slot is not None and self.server and self.server.socket
+                and not self.server.socket.closed)
             self._wiring.tick()
         self.current_planet = PLANET_ID_TO_REGION.get(self._wiring.planet.planet_id, "Galaxy")
         if self.current_planet != prev_planet:

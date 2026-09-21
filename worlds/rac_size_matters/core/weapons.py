@@ -71,7 +71,7 @@ WEAPON_DATA: dict[str, WeaponData] = {
         exp_thresholds=(15000, 27000, 45000, None, 65_000, 225_000, 350_000, None),
     ),
     Rac5WeaponKeys.SUCK_CANNON: WeaponData(
-        is_projectile=True, classification=ItemClassification.useful, max_level=8, mod_count=1,
+        is_projectile=False, classification=ItemClassification.useful, max_level=8, mod_count=1,
         exp_thresholds=(3500, 5000, 7000, None, 12_500, 43_000, 67_500, None),
     ),
     Rac5WeaponKeys.MOOTATOR: WeaponData(

@@ -179,5 +179,6 @@ def prepare(pine, *, code_start, code, base_locations, titan_locations, checked=
     plan.journals = ((base_table, 48),)
     plan.starter = starter
     plan.view_mode = mode
+    plan.arena = arena
     plan.mutable_data = ((mode, 4),)
     return plan

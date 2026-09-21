@@ -21,7 +21,7 @@ def prepare(pine, code_start, code):
         offset = address - code_start
         if not 0 <= offset <= len(code) - 4:
             raise RuntimeError("Vendor presentation code outside module")
-        return struct.unpack_from('<I', code, offset)[0]
+        return struct.unpack_from("<I", code, offset)[0]
     def target(address):
         w = word(address)
         if w >> 26 != 3:
@@ -31,7 +31,7 @@ def prepare(pine, code_start, code):
         a, b = word(upper), word(lower)
         if a & 0xFFFF0000 != hi or b & 0xFFFF0000 != lo:
             raise RuntimeError("Vendor presentation address signature changed")
-        return ((a & 65535) << 16) + struct.unpack('<h', packed(b)[:2])[0]
+        return ((a & 65535) << 16) + struct.unpack("<h", packed(b)[:2])[0]
     header = pair(render + 0x14, render + 0x5C, 0x3C100000, 0x26040000)
     strings = target(render + 0x27C)
     string_state = pair(strings + 0x1C, strings + 0x20, 0x3C030000, 0x24700000)
@@ -60,7 +60,7 @@ class VendorPresentation:
         self.icon_id = None
 
     def validate(self):
-        if (self.pine.get_game_id() != 'SCUS-97615'
+        if (self.pine.get_game_id() != "SCUS-97615"
                 or self.pine.read_bytes(self.render, len(RENDER_SIGNATURE)) != RENDER_SIGNATURE):
             raise RuntimeError("Vendor presentation module changed")
 
@@ -71,26 +71,26 @@ class VendorPresentation:
         return address
 
     def _rows(self):
-        pointer, count, columns, selected = struct.unpack('<4I', self.pine.read_bytes(self.header, 16))
+        pointer, count, columns, selected = struct.unpack("<4I", self.pine.read_bytes(self.header, 16))
         if count == 0:
             return []
         if not 0 < count <= 64 or selected >= count or pointer % 4:
             raise RuntimeError("Invalid native vendor rows")
         self._pointer(pointer, count * 28)
         raw = self.pine.read_bytes(pointer, count * 28)
-        return [(pointer + i * 28, struct.unpack_from('<7I', raw, i * 28), i == selected)
+        return [(pointer + i * 28, struct.unpack_from("<7I", raw, i * 28), i == selected)
                 for i in range(count)]
 
     def _strings(self):
         p = self.pine
         state = p.read_bytes(self.string_state, 24)
-        pointer, count = struct.unpack_from('<I', state)[0], struct.unpack_from('<I', state, 16)[0]
+        pointer, count = struct.unpack_from("<I", state)[0], struct.unpack_from("<I", state, 16)[0]
         if not state[8] or not 0 < count < 20000 or state[20] not in (0, 1) or state[21] not in (0, 1):
             raise RuntimeError("Invalid localization table")
         stride = 8 + state[20] * 4 + state[21] * 4
         start = self._pointer(pointer + state[20] * 4, count * stride)
         raw = p.read_bytes(start, count * stride)
-        self.string_entries = {struct.unpack_from('<I', raw, i * stride)[0]: start + i * stride + 4
+        self.string_entries = {struct.unpack_from("<I", raw, i * stride)[0]: start + i * stride + 4
                                for i in range(count)}
 
     def _change(self, changes, address, replacement):
@@ -123,24 +123,24 @@ class VendorPresentation:
         if level > 9:
             raise RuntimeError("Invalid vendor weapon level")
         spec = self._pointer(self.pine.read_int32(data + 0x10 + level * 4), 24)
-        title_id, desc_id = struct.unpack('<2I', self.pine.read_bytes(spec + 16, 8))
+        title_id, desc_id = struct.unpack("<2I", self.pine.read_bytes(spec + 16, 8))
         title_entry, desc_entry = self.string_entries.get(title_id), self.string_entries.get(desc_id)
         if title_entry is None or desc_entry is None or title_entry == desc_entry:
             return
         desc = self._pointer(self.pine.read_int32(desc_entry), 2048)
         original = self.pine.read_bytes(desc, 2048)
-        end = original.find(b'\0')
+        end = original.find(b"\0")
         if end < 24:
             return
         capacity = end + 1
-        clean = lambda text: ''.join(c if 32 <= ord(c) < 127 else '?' for c in text).encode('ascii')
+        clean = lambda text: "".join(c if 32 <= ord(c) < 127 else "?" for c in text).encode("ascii")
         title = clean(reward.item_name)
-        recipient = b'For ' + clean(reward.recipient_name)
+        recipient = b"For " + clean(reward.recipient_name)
         title_limit = min(96, capacity - min(len(recipient) + 1, 48) - 5)
         title = title[:max(1, title_limit)]
-        title = bytes((0x90, reward.title_color)) + title + b'\x90\x01\0'
-        recipient = recipient[:capacity - len(title) - 1] + b'\0'
-        payload = (title + recipient).ljust(capacity, b'\0')
+        title = bytes((0x90, reward.title_color)) + title + b"\x90\x01\0"
+        recipient = recipient[:capacity - len(title) - 1] + b"\0"
+        payload = (title + recipient).ljust(capacity, b"\0")
         self._change(self.text_changes, desc, payload)
         self._change(self.text_changes, title_entry, packed(desc))
         self._change(self.text_changes, desc_entry, packed(desc + len(title)))
@@ -155,16 +155,16 @@ class VendorPresentation:
             if resource >= 2048:
                 continue
             entry = self.textures + resource * 100
-            image, palette = struct.unpack('<2I', p.read_bytes(entry + 12, 8))
+            image, palette = struct.unpack("<2I", p.read_bytes(entry + 12, 8))
             if not (0x100000 <= image < 0x1FFFFC0 and 0x100000 <= palette < 0x1FFFFC0):
                 continue
             ih, ph = p.read_bytes(image, 64), p.read_bytes(palette, 64)
-            if (struct.unpack_from('<3H', ih, 4) != (5, 0, 32)
-                    or struct.unpack_from('<H', ih, 10)[0] != 32
-                    or struct.unpack_from('<H', ph, 8)[0] != 256):
+            if (struct.unpack_from("<3H", ih, 4) != (5, 0, 32)
+                    or struct.unpack_from("<H", ih, 10)[0] != 32
+                    or struct.unpack_from("<H", ph, 8)[0] != 256):
                 continue
-            pixels = self._pointer(struct.unpack_from('<I', ih, 48)[0], 1024)
-            colors = self._pointer(struct.unpack_from('<I', ph, 48)[0], 1024)
+            pixels = self._pointer(struct.unpack_from("<I", ih, 48)[0], 1024)
+            colors = self._pointer(struct.unpack_from("<I", ph, 48)[0], 1024)
             if len(_ICON_INDICES) != 1024 or len(_ICON_CLUT) != 1024:
                 raise RuntimeError("AP icon requires 32x32 indices and 256 RGBA palette entries")
             self._change(self.icon_changes, pixels, _ICON_INDICES)

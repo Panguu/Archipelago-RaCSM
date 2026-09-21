@@ -11,6 +11,7 @@ from .planets import (
     PLANET_STATE_ADDRESSES,
 )
 from .player import PlayerMovementState
+from .save_data import RAC5SaveData
 from .skill_points import SKILL_POINT_ADDRESS, SKILL_POINTS
 from .titanium_bolts import TITANIUM_BOLTS
 from .traps import ALL_TRAPS, activate_trap, reconcile_traps, set_trap_durations

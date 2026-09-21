@@ -4,6 +4,7 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from CommonClient import logger
+from ..core.skins import Skin
 
 try:
     from worlds.tracker.TrackerClient import TrackerCommandProcessor as ClientCommandProcessor
@@ -60,6 +61,24 @@ class RACCommandProcessor(ClientCommandProcessor):
         w = self.ctx._wiring
         w.vendor.force_refresh()
         logger.info(f"[RAC] {w.vendor!r}")
+        return True
+
+    def _cmd_skin(self, skin: str = "") -> bool:
+        """Set a skin directly: /skin trash, /skin tuxedo, or an id 0-19."""
+        names = {s.name.lower(): s for s in Skin}
+        names.update({s.name.lower().removesuffix('_ratchet'): s for s in Skin})
+        names.update({str(s.equip_id): s for s in Skin})
+        selected = names.get(skin.lower().replace('-', '_').replace(' ', '_'))
+        if selected is None:
+            logger.info("[RAC] /skin default|pirate|trash|tuxedo|qwark|ninja (or 0-19). "
+                        "Multiplayer skins use their red variant.")
+            return False
+        if not self.ctx.pine_connected or self.ctx._wiring is None:
+            logger.info("[RAC] Connect to PCSX2 before changing skins.")
+            return False
+        asyncio.create_task(self.ctx._guarded_wiring_call(
+            lambda: self.ctx._wiring.skin.set(selected)))
+        logger.info("[RAC] Skin queued: %s. Applies when gameplay is ready.", selected.name)
         return True
 
     def _cmd_spawn_ghost(self) -> bool:
