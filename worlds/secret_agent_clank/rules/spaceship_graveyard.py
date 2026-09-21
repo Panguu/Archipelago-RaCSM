@@ -1,7 +1,7 @@
 """Spaceship Graveyard's per-location rules -- every location belonging to this case is set here explicitly (mirrors worlds/rac_size_matters/rules' per-planet files, one world.set_rule() call per location, grouped by which options.py toggle gates that location's category -- a location only exists in the multiworld at all when its category's option is on, so calling get_location() on it unguarded would raise)."""
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import True_
+from rule_builder.rules import True_, HasAll
 
 from ..constants.alien_codes import SACAlienCodeLocations
 from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
@@ -25,7 +25,8 @@ def set_spaceship_graveyard_rules(world: "SecretAgentClankWorld") -> None:
 
     # Always-on
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_1, player), _base)
-    world.set_rule(mw.get_location(SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_2, player), _base & Has(SACClankWeapons.THROWTIE))
+    world.set_rule(mw.get_location(SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_2, player), _base
+                   & HasAll(SACClankWeapons.THROWTIE, SACClankGadgets.OMNIKEY))
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_3, player), _tangle)
     world.set_rule(mw.get_location(SACTitaniumBoltLocations.SPACESHIP_GRAVEYARD_4, player), _tangle)
 
