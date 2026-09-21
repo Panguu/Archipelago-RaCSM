@@ -4,6 +4,7 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from CommonClient import logger
+
 from ..core.skins import Skin
 
 try:
@@ -66,9 +67,9 @@ class RACCommandProcessor(ClientCommandProcessor):
     def _cmd_skin(self, skin: str = "") -> bool:
         """Set a skin directly: /skin trash, /skin tuxedo, or an id 0-19."""
         names = {s.name.lower(): s for s in Skin}
-        names.update({s.name.lower().removesuffix('_ratchet'): s for s in Skin})
+        names.update({s.name.lower().removesuffix("_ratchet"): s for s in Skin})
         names.update({str(s.equip_id): s for s in Skin})
-        selected = names.get(skin.lower().replace('-', '_').replace(' ', '_'))
+        selected = names.get(skin.lower().replace("-", "_").replace(" ", "_"))
         if selected is None:
             logger.info("[RAC] /skin default|pirate|trash|tuxedo|qwark|ninja (or 0-19). "
                         "Multiplayer skins use their red variant.")

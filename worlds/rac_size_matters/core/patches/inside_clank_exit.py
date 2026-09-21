@@ -31,10 +31,10 @@ def prepare(pine, *, code_start, code, arena, gate):
     transition = unique(packed(0x27BDFFF0, 0xFFB00000, 0xFFBF0008,
                                0x10A00006, 0x0080802D))
     menu_call = unique(packed(0x24050001, jump(transition))) + 4
-    if int.from_bytes(read(menu_call + 4, 4), 'little') & 0xFFFF0000 != 0x8C440000:
+    if int.from_bytes(read(menu_call + 4, 4), "little") & 0xFFFF0000 != 0x8C440000:
         raise RuntimeError("Inside Clank ship destination load changed")
     completion_call = unique(packed(0x2402000A, 0x0043102B, 0x10400002)) - 16
-    original, delay, move = struct.unpack('<3I', read(completion_call, 12))
+    original, delay, move = struct.unpack("<3I", read(completion_call, 12))
     if original >> 26 != 3 or delay != 0x0200882D or move != 0x0040202D:
         raise RuntimeError("Inside Clank completion call changed")
     evaluator = (original & 0x3FFFFFF) << 2
@@ -49,8 +49,8 @@ def prepare(pine, *, code_start, code, arena, gate):
         m.beq(m.T0, m.ZERO, 3), m.NOP,
         m.jr(m.RA), m.daddu(m.V0, m.ZERO, m.ZERO),
         j(evaluator), m.NOP)
-    payload = menu_code.ljust(completion - entry, b'\0') + check_code
-    payload = payload.ljust(flag - entry + 4, b'\0')
+    payload = menu_code.ljust(completion - entry, b"\0") + check_code
+    payload = payload.ljust(flag - entry + 4, b"\0")
     plan = Plan(pine, [Patch(entry, pine.read_bytes(entry, len(payload)), payload),
                        Patch(menu_call, packed(jump(transition)), packed(jump(entry))),
                        Patch(completion_call, packed(original), packed(jump(completion)))])

@@ -8,10 +8,20 @@ from . import vendor_presentation
 from .address_maps import CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR, PLANET_ADDRESSES
 from .armour import ARMOUR_PICKUPS, ArmourPiece, ArmourStruct
 from .menu import MenuStateValue
-from .patches import armour_pickup, item_toast, pokitaru_ship, ship_menu, sprout_pickup, vendor as vendor_patch
+from .patches import (
+    armour_pickup,
+    connection_warning,
+    inside_clank_exit,
+    item_toast,
+    multiplayer_skins,
+    pokitaru_ship,
+    ship_menu,
+    skins,
+    sprout_pickup,
+    vendor as vendor_patch,
+)
 from .patches.loader_gate import LoaderGate
 from .patches.starting_planet import StartingPlanet
-from .patches import connection_warning, inside_clank_exit, skins, multiplayer_skins
 from .vendor import WEAPON_VENDOR_IDS
 
 logger = logging.getLogger("CommonClient")

@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from .structs.game import SkinStruct
 from .patches.skins import MODEL_IDS
+from .structs.game import SkinStruct
 
 if TYPE_CHECKING:
     from ..pypine import Pine

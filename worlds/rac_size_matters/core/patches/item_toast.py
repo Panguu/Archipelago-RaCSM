@@ -5,8 +5,8 @@ starter-grant function (see vendor.py), so the loader must install both plans.
 The game expires the message in rendered frames; no delayed IPC callbacks can
 write into a different level after a transition.
 """
-import struct
 import re
+import struct
 
 from . import mips as m
 from .asm import Patch, jump, packed
@@ -21,7 +21,7 @@ def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, stat
         return code[offset:offset + count]
 
     def target(address):
-        word, = struct.unpack('<I', read(address, 4))
+        word, = struct.unpack("<I", read(address, 4))
         if word >> 26 != 3:
             raise RuntimeError("Item message renderer call changed")
         return (word & 0x3FFFFFF) << 2
@@ -84,48 +84,48 @@ def format_text(value):
     if len(data) <= 96:
         return data
     result = bytearray()
-    for token in re.findall(rb'\x90[\s\S]|[^\x90]', data[:-1]):
+    for token in re.findall(rb"\x90[\s\S]|[^\x90]", data[:-1]):
         if len(result) + len(token) > 92:
             break
         result.extend(token)
-    return bytes(result) + b'...\0'
+    return bytes(result) + b"...\0"
 
 
 def _wrap_text(value):
     """Wrap visible characters while retaining complete native colour pairs."""
     raw = (bytes(value) if isinstance(value, (bytes, bytearray))
-           else str(value).encode('ascii', errors='replace')).split(b'\0', 1)[0]
+           else str(value).encode("ascii", errors="replace")).split(b"\0", 1)[0]
     result = bytearray()
     line, width = 0, 0
-    words = raw.replace(b'\n', b' \n ').split(b' ')
+    words = raw.replace(b"\n", b" \n ").split(b" ")
     for word_index, word in enumerate(words):
-        if word == b'\n':
+        if word == b"\n":
             if line:
-                result.extend(b'...')
+                result.extend(b"...")
                 break
-            result.extend(b'\n')
+            result.extend(b"\n")
             line, width = 1, 0
             continue
-        tokens = re.findall(rb'\x90[\s\S]|[^\x90]', word)
+        tokens = re.findall(rb"\x90[\s\S]|[^\x90]", word)
         visible = sum(len(t) == 1 for t in tokens)
         if width and width + 1 + visible > 42:
             if line:
-                result.extend(b'...')
+                result.extend(b"...")
                 break
-            result.extend(b'\n')
+            result.extend(b"\n")
             line, width = 1, 0
         elif width and word:
-            result.extend(b' ')
+            result.extend(b" ")
             width += 1
         for token in tokens:
             if len(result) + len(token) > 92 or (len(token) == 1 and width == 42 and line):
-                return bytes(result) + b'...\0'
+                return bytes(result) + b"...\0"
             if len(token) == 1 and width == 42:
-                result.extend(b'\n')
+                result.extend(b"\n")
                 line, width = 1, 0
             result.extend(token)
             width += len(token) == 1
-    return bytes(result) + b'\0'
+    return bytes(result) + b"\0"
 
 
 def show(plan, value):
@@ -133,5 +133,5 @@ def show(plan, value):
     data = format_text(value)
     plan._validate(replacement=True)
     plan.pine.write_int32(plan.timer, 0)
-    plan.pine.write_bytes(plan.message, data.ljust(96, b'\0'))
+    plan.pine.write_bytes(plan.message, data.ljust(96, b"\0"))
     plan.pine.write_int32(plan.timer, 180)

@@ -4,25 +4,24 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from .test_native_patches import Memory, CPU
-from ..core.patches import multiplayer_skins as mp
+from ..core.patches import mips as m, multiplayer_skins as mp
 from ..core.patches.asm import Patch
-from ..core.patches import mips as m
+from .test_native_patches import CPU, Memory
 
-FIXTURES = json.loads((Path(__file__).parent / 'fixtures/multiplayer_skins_us.json').read_text())
-GEOMETRY = json.loads((Path(__file__).parent / 'fixtures/multiplayer_geometry_us.json').read_text())
+FIXTURES = json.loads((Path(__file__).parent / "fixtures/multiplayer_skins_us.json").read_text())
+GEOMETRY = json.loads((Path(__file__).parent / "fixtures/multiplayer_geometry_us.json").read_text())
 
 
-def prepare(name='pokitaru'):
+def prepare(name="pokitaru"):
     p = Memory()
     p.data = bytearray(0x2000000)
     f = FIXTURES[name]
-    for address, data in f['segments']:
+    for address, data in f["segments"]:
         p.write_bytes(address, bytes.fromhex(data))
-    code = p.read_bytes(f['base'], 0x280000)
-    skin = SimpleNamespace(begin=f['begin'], finish=f['finish'],
-                           edits=[Patch(f['gate'] + 4, b'0000', b'0000')])
-    plan = mp.prepare(p, code_start=f['base'], code=code, skin=skin)
+    code = p.read_bytes(f["base"], 0x280000)
+    skin = SimpleNamespace(begin=f["begin"], finish=f["finish"],
+                           edits=[Patch(f["gate"] + 4, b"0000", b"0000")])
+    plan = mp.prepare(p, code_start=f["base"], code=code, skin=skin)
     return p, f, plan
 
 
@@ -72,20 +71,20 @@ class MultiplayerSkinsTests(unittest.TestCase):
         for index, (name, geometry) in enumerate(GEOMETRY.items()):
             with self.subTest(skin=name):
                 p, f, plan = prepare()
-                code = p.read_bytes(f['base'], 0x280000)
-                def word(a): return struct.unpack_from('<I', code, a - f['base'])[0]
+                code = p.read_bytes(f["base"], 0x280000)
+                def word(a): return struct.unpack_from("<I", code, a - f["base"])[0]
                 def ptr(a, b):
                     low = word(b) & 65535
                     return ((word(a) & 65535) << 16) + (low - 65536 if low & 32768 else low)
-                end, begin = f['finish'], f['begin']
+                end, begin = f["finish"], f["begin"]
                 pending = ptr(end + 4, end + 16)
                 changed = ptr(end + 0x98, end + 0xA4)
                 apply = ptr(end + 0x9C, end + 0xA8)
                 asset = (word(end + 0xB4) & 0x3FFFFFF) << 2
                 size = (word(begin + 0xAC) & 0x3FFFFFF) << 2
                 load = (word(begin + 0xE4) & 0x3FFFFFF) << 2
-                commands = bytes.fromhex(geometry['commands'])
-                mapping = bytes.fromhex(geometry['mapping'])
+                commands = bytes.fromhex(geometry["commands"])
+                mapping = bytes.fromhex(geometry["mapping"])
                 plan.install()
                 p.write_int32(pending, index + 7)
                 p.write_int8(changed, 1)
@@ -118,12 +117,12 @@ class MultiplayerSkinsTests(unittest.TestCase):
 
     def test_missing_bone_mapping_is_rejected(self):
         with self.assertRaises(ValueError):
-            mp.promoted_commands(struct.pack('<2I', 0xFA000002, 0xFE000000), b'\0\1')
+            mp.promoted_commands(struct.pack("<2I", 0xFA000002, 0xFE000000), b"\0\1")
 
     def test_unallocated_hero_buffer_rejected_without_writes(self):
         p, f, _ = prepare()
         p.write_int32(mp.MCP + 0x2DC, 0)
         before = bytes(p.data)
-        with self.assertRaisesRegex(RuntimeError, 'not allocated'):
-            mp.prepare(p, code_start=f['base'], code=p.read_bytes(f['base'], 0x280000), skin=None)
+        with self.assertRaisesRegex(RuntimeError, "not allocated"):
+            mp.prepare(p, code_start=f["base"], code=p.read_bytes(f["base"], 0x280000), skin=None)
         self.assertEqual(p.data, before)

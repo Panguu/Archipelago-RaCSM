@@ -4,10 +4,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from .test_native_patches import CPU, Memory
 from ..core.patches import starting_planet as sp
 from ..core.patches.loader_gate import LoaderGate
 from ..core.planets import PlanetInventory
+from .test_native_patches import CPU, Memory
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/starting_planet_us.json").read_text())
 BASE = FIXTURE["base"]

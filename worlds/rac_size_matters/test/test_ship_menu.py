@@ -1,8 +1,8 @@
 """Execute the rebuilt menu and confirmation branches using retail excerpts."""
 import unittest
 
-from .test_native_patches import CPU, Memory, SHIP_FIXTURES
 from ..core.patches import ship_menu
+from .test_native_patches import CPU, SHIP_FIXTURES, Memory
 
 
 class ShipMenuTests(unittest.TestCase):

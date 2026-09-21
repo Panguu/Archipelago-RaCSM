@@ -5,8 +5,8 @@ import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5CutsceneLocations, Rac5GadgetKeys, Rac5Locations
-from ..locations import TITAN_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION, WEAPON_LEVEL_LOOKUP
+from ..constants import Rac5CutsceneLocations, Rac5Locations
+from ..locations import TITAN_INTERNAL_TO_LOCATION, WEAPON_LEVEL_LOOKUP
 from .address_maps import CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece
 from .armour_spawn_gate import ArmourSpawnGate
@@ -26,7 +26,6 @@ from .skill_points import SkillPointInventory
 from .skins import SkinInventory
 from .titanium_bolts import TitaniumBoltInventory
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
-from .weapons import TITAN_ELIGIBLE_WEAPONS
 
 if TYPE_CHECKING:
     from ..pypine import Pine

@@ -16,7 +16,7 @@ MODEL_IDS = (0, 5, 4, 6, 3, 1, 2) + tuple(range(7, 20))
 
 def prepare(pine, *, code_start, code, arena, menu, model_count=7):
     if model_count not in (7, len(MODEL_IDS)):
-        raise ValueError('Unsupported skin model count')
+        raise ValueError("Unsupported skin model count")
     if pine.get_game_id() != "SCUS-97615":
         raise RuntimeError("Skin patch requires US PS2 Size Matters")
     def read(address, size):
@@ -33,7 +33,7 @@ def prepare(pine, *, code_start, code, arena, menu, model_count=7):
         return code_start + hits[0]
 
     def call(address):
-        word, = struct.unpack('<I', read(address, 4))
+        word, = struct.unpack("<I", read(address, 4))
         if word >> 26 != 3:
             raise RuntimeError("Native skin call changed")
         return (word & 0x3FFFFFF) << 2
@@ -52,8 +52,8 @@ def prepare(pine, *, code_start, code, arena, menu, model_count=7):
     # load. This is distinct from the saved menu selection byte at SKIN_BASE+1.
     upper = read(close + 32, 4)
     load = read(close + 40, 4)
-    if (int.from_bytes(upper, 'little') & 0xFFFF0000 != 0x3C020000
-            or int.from_bytes(load, 'little') & 0xFFFF0000 != 0x8C430000
+    if (int.from_bytes(upper, "little") & 0xFFFF0000 != 0x3C020000
+            or int.from_bytes(load, "little") & 0xFFFF0000 != 0x8C430000
             or read(close + 44, 4) != packed(0xA0641C7E)):
         raise RuntimeError("Native skin save sequence changed")
 
@@ -81,7 +81,7 @@ def prepare(pine, *, code_start, code, arena, menu, model_count=7):
     words += [m.beq(m.V0, m.ZERO, 0), m.NOP, jump(finish), m.NOP]
     failed_finish = len(words)
     words += [m.beq(m.V0, m.ZERO, 0), m.NOP,
-              int.from_bytes(upper, 'little'), int.from_bytes(load, 'little'),
+              int.from_bytes(upper, "little"), int.from_bytes(load, "little"),
               m.lw(m.A0, 8, m.SP), m.sb(m.A0, 0x1C7E, m.V1)]
     epilogue = len(words)
     words += [m.ld(m.RA, 0, m.SP), m.addiu(m.SP, m.SP, 16)]
@@ -94,7 +94,7 @@ def prepare(pine, *, code_start, code, arena, menu, model_count=7):
     payload = packed(*words)
     if len(payload) > request - entry:
         raise RuntimeError("Skin callback exceeds reserved storage")
-    payload = payload.ljust(request - entry, b'\0') + b'\xff'
+    payload = payload.ljust(request - entry, b"\0") + b"\xff"
     plan = Plan(pine, [Patch(gate + 4, packed(0x1074000A), packed(m.NOP)),
                        Patch(entry, pine.read_bytes(entry, len(payload)), payload)])
     plan.mutable_data = ((request, 1),)

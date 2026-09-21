@@ -2,10 +2,10 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from .test_native_patches import CPU, Memory, plans
-from ..core.patches import connection_warning, item_toast
+from ..client.context import CommonContext, RACContext
 from ..core.native_runtime import NativeRuntime
-from ..client.context import RACContext, CommonContext
+from ..core.patches import connection_warning, item_toast
+from .test_native_patches import CPU, Memory, plans
 
 
 class ConnectionWarningTests(unittest.TestCase):
@@ -47,23 +47,23 @@ class ConnectionWarningTests(unittest.TestCase):
             skin = vendor.arena + 0x100 if with_skin else None
             toast = item_toast.prepare(p, code_start=0xD00000,
                                       code=p.read_bytes(0xD00000, 0x400000),
-                                      small_box=p.fixture['small_box'], starter=vendor.starter,
+                                      small_box=p.fixture["small_box"], starter=vendor.starter,
                                       frame_hook=skin, status_hook=warning.entry)
             toast.install()
             # Read native draw from the original prepared payload (before the hook).
-            draw = (int.from_bytes(old_toast.edits[0].replacement[8:12], 'little') & 0x3FFFFFF) << 2
+            draw = (int.from_bytes(old_toast.edits[0].replacement[8:12], "little") & 0x3FFFFFF) << 2
             stubs = [draw, toast.font, toast.colour, toast.text]
             if skin is not None:
                 stubs.append(skin)
-            before = p.read_bytes(p.fixture['small_box'], 0x40)
+            before = p.read_bytes(p.fixture["small_box"], 0x40)
             cpu = CPU(p)
             cpu.run(toast.edits[0].address, stubs=stubs)
             self.assertIn(toast.text, cpu.calls)
             if skin is not None:
                 self.assertIn(skin, cpu.calls)
             self.assertEqual(p.read_int32(toast.timer), 0)
-            self.assertEqual(p.read_bytes(p.fixture['small_box'], 0x40), before)
-            item_toast.show(toast, 'Received item')
+            self.assertEqual(p.read_bytes(p.fixture["small_box"], 0x40), before)
+            item_toast.show(toast, "Received item")
             cpu = CPU(p)
             cpu.run(toast.edits[0].address, stubs=stubs)
             self.assertEqual(cpu.calls.count(toast.text), 2)
@@ -96,7 +96,7 @@ class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         # Invoke on a real class instance without opening sockets or initializing UI.
         context = RACContext.__new__(RACContext)
         context._wiring = SimpleNamespace(native=SimpleNamespace(ap_connected=True))
-        with patch.object(CommonContext, 'connection_closed', new_callable=AsyncMock) as closed:
+        with patch.object(CommonContext, "connection_closed", new_callable=AsyncMock) as closed:
             await context.connection_closed()
         closed.assert_awaited_once()
         self.assertFalse(context._wiring.native.ap_connected)

@@ -22,7 +22,7 @@ def prepare(pine, *, arena, font, colour, text):
         jump(text), m.addiu(m.A1, m.ZERO, 0x30),
         m.ld(m.RA, 0, m.SP), m.jr(m.RA), m.addiu(m.SP, m.SP, 16),
     ]
-    payload = packed(*words).ljust(heartbeat - entry, b'\0') + packed(0) + MESSAGE
+    payload = packed(*words).ljust(heartbeat - entry, b"\0") + packed(0) + MESSAGE
     plan = Plan(pine, [Patch(entry, pine.read_bytes(entry, len(payload)), payload)])
     plan.mutable_data = ((heartbeat, 4),)
     plan.entry, plan.heartbeat, plan.message = entry, heartbeat, message

@@ -2,26 +2,25 @@
 import unittest
 from types import SimpleNamespace
 
-from .test_native_patches import CPU, Memory, SKIN_EXIT_FIXTURES, plans
-from ..core.patches import inside_clank_exit, item_toast, skins
-from ..core.patches import mips as m
+from ..core.patches import inside_clank_exit, item_toast, mips as m, skins
 from ..core.patches.asm import packed
 from ..core.patches.loader_gate import LoaderGate
 from ..core.skins import Skin, SkinInventory
+from .test_native_patches import CPU, SKIN_EXIT_FIXTURES, Memory, plans
 
 
 def prepare(name="pokitaru"):
     p = Memory()
     f = SKIN_EXIT_FIXTURES[name]
-    if name != 'pokitaru':
+    if name != "pokitaru":
         p.data = bytearray(0x2000000)
-        for address, data in f['segments']:
+        for address, data in f["segments"]:
             p.write_bytes(address, bytes.fromhex(data))
         p.writes.clear()
-    kwargs = dict(code_start=f['base'], code=p.read_bytes(f['base'], 0x240000), arena=f['arena'])
-    skin = skins.prepare(p, **kwargs, menu=f['menu'])
+    kwargs = dict(code_start=f["base"], code=p.read_bytes(f["base"], 0x240000), arena=f["arena"])
+    skin = skins.prepare(p, **kwargs, menu=f["menu"])
     exit_plan = (inside_clank_exit.prepare(p, **kwargs, gate=SimpleNamespace(
-        pine=p, held_module=lambda: (9, f['base']))) if f['planet'] == 9 else None)
+        pine=p, held_module=lambda: (9, f["base"]))) if f["planet"] == 9 else None)
     return p, f, skin, exit_plan
 
 
@@ -60,7 +59,7 @@ class SkinExitTests(unittest.TestCase):
                 # Decode the original save-pointer load reused by the callback.
                 payload = plan.edits[1].replacement
                 index = payload.index(packed(0x8C43F32C))
-                upper = int.from_bytes(payload[index - 4:index], 'little') & 65535
+                upper = int.from_bytes(payload[index - 4:index], "little") & 65535
                 p.write_int32((upper << 16) - 0xCD4, 0x1F4AB00)
                 inv = SkinInventory(p)
                 inv.set(selected)
@@ -73,7 +72,7 @@ class SkinExitTests(unittest.TestCase):
                 self.assertEqual(cpu.calls, [plan.begin, plan.finish])
                 self.assertEqual(p.read_int8(0x1F4C77E), skins.MODEL_IDS[selected.equip_id])
                 self.assertEqual(p.read_int8(plan.request), 255)
-                self.assertEqual(p.read_bytes(f['menu'], 8), bytes(8))
+                self.assertEqual(p.read_bytes(f["menu"], 8), bytes(8))
                 self.assertEqual(inv.equipped, selected.equip_id)
                 cpu.calls.clear()
                 cpu.run(plan.entry, stubs=(plan.begin, plan.finish))
@@ -84,8 +83,8 @@ class SkinExitTests(unittest.TestCase):
             p, f, plan, _ = prepare()
             plan.install()
             p.write_int32(LoaderGate.STATE, state)
-            p.write_int32(f['menu'], menu)
-            p.write_int32(f['menu'] + 4, next_menu)
+            p.write_int32(f["menu"], menu)
+            p.write_int32(f["menu"] + 4, next_menu)
             p.write_int8(plan.request, 6)
             cpu = CPU(p)
             cpu.run(plan.entry, stubs=(plan.begin, plan.finish))
@@ -118,9 +117,9 @@ class SkinExitTests(unittest.TestCase):
     def test_frame_hook_runs_when_toast_is_empty(self):
         p, f, skin, _ = prepare()
         vendor, _, _ = plans(p)
-        toast = item_toast.prepare(p, code_start=f['base'],
-                                  code=p.read_bytes(f['base'], 0x240000),
-                                  small_box=p.fixture['small_box'], starter=vendor.starter,
+        toast = item_toast.prepare(p, code_start=f["base"],
+                                  code=p.read_bytes(f["base"], 0x240000),
+                                  small_box=p.fixture["small_box"], starter=vendor.starter,
                                   frame_hook=skin.entry)
         vendor.install()
         skin.install()
@@ -133,7 +132,7 @@ class SkinExitTests(unittest.TestCase):
         self.assertEqual(p.read_int32(toast.timer), 0)
 
     def test_inside_clank_menu_exit_never_runs_completion_evaluator(self):
-        p, _, _, plan = prepare('inside_clank')
+        p, _, _, plan = prepare("inside_clank")
         plan.install()
         p.write_int8(0x1F4C66A, 3)  # Quodrona owned
         p.write_int32(0x1F4B3D4, 0)  # Inside Clank unfinished
@@ -152,7 +151,7 @@ class SkinExitTests(unittest.TestCase):
         plan._validate(True)
 
     def test_scripted_completion_still_uses_native_evaluator(self):
-        p, _, _, plan = prepare('inside_clank')
+        p, _, _, plan = prepare("inside_clank")
         plan.install()
         cpu = CPU(p)
         cpu.r[m.V0] = 1
@@ -176,7 +175,7 @@ class SkinExitTests(unittest.TestCase):
         self.assertFalse(p.writes)
 
     def test_inside_clank_requires_held_correct_level(self):
-        p, f, _, _ = prepare('inside_clank')
+        p, f, _, _ = prepare("inside_clank")
         with self.assertRaises(RuntimeError):
-            inside_clank_exit.prepare(p, code_start=f['base'], code=b'', arena=f['arena'],
-                                     gate=SimpleNamespace(pine=p, held_module=lambda: (1, f['base'])))
+            inside_clank_exit.prepare(p, code_start=f["base"], code=b"", arena=f["arena"],
+                                     gate=SimpleNamespace(pine=p, held_module=lambda: (1, f["base"])))
