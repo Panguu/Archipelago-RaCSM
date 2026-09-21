@@ -500,6 +500,12 @@ VENDOR_GADGET_LOC: dict[str, str] = {
 WEAPON_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_WEAPON_LOC.items()}
 GADGET_INTERNAL_TO_LOCATION: dict[str, str] = {v: k for k, v in VENDOR_GADGET_LOC.items()}
 
+# Skill points whose completion hard-requires owning a specific, disable-able weapon
+# (no fallback like the projectile-weapon-or-glitch checks elsewhere).
+SKILL_POINT_WEAPON_LOC: dict[str, str] = {
+    Rac5SkillPoints.POKITARU_COWS: WEAPON_DISPLAY_TO_INTERNAL["Mootator"],
+}
+
 # Scorcher Spitfire is confirmed in slot 2; all others use the first available slot.
 _MOD_SLOT_ASSIGNMENT: list[tuple[str, int, str]] = [
     ("lacerator",       2, Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK),
@@ -561,5 +567,8 @@ def disabled_weapon_location_names(enabled_weapons: frozenset[str]) -> frozenset
     )
     names.update(
         loc for (internal, _level), loc in WEAPON_LEVEL_LOOKUP.items() if internal in disabled_internal
+    )
+    names.update(
+        loc for loc, internal in SKILL_POINT_WEAPON_LOC.items() if internal in disabled_internal
     )
     return frozenset(names)

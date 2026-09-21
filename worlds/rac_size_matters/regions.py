@@ -140,6 +140,10 @@ def create_regions(world: RACSizeMatterWorld) -> None:
                 name: data for name, data in easy_skill_points.items()
                 if name not in GIANT_CLANK_LOCATIONS
             }
+        easy_skill_points = {
+            name: data for name, data in easy_skill_points.items()
+            if name not in disabled_weapon_locs
+        }
         location_tables.append(easy_skill_points)
     if world.options.skill_points.value >= 2:
         hard_skill_points = HARD_SKILL_POINT_LOCATIONS
@@ -148,6 +152,10 @@ def create_regions(world: RACSizeMatterWorld) -> None:
                 name: data for name, data in hard_skill_points.items()
                 if name not in GIANT_CLANK_LOCATIONS
             }
+        hard_skill_points = {
+            name: data for name, data in hard_skill_points.items()
+            if name not in disabled_weapon_locs
+        }
         location_tables.append(hard_skill_points)
     if world.options.enable_clank_challenge_skill_points:
         location_tables.append(CLANK_CHALLENGE_SKILL_POINT_LOCATIONS)

@@ -27,7 +27,7 @@ def set_pokitaru_rules(world: "RACSizeMatterWorld") -> None:
     if world.options.skill_points.value >= 1:
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_TRAIN, player), HasProjectileWeapon() | _GLITCH)
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_BOAT, player), HasProjectileWeapon() | _GLITCH)
-    if world.options.skill_points.value >= 2:
+    if world.options.skill_points.value >= 2 and weapon_enabled(world, Rac5Weapons.MOOTATOR):
         world.set_rule(mw.get_location(Rac5SkillPoints.POKITARU_COWS, player), HasWeapon(Rac5Weapons.MOOTATOR))
 
     if world.options.all_missions:
