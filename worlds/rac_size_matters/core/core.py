@@ -151,6 +151,7 @@ class Core:
 
         self.on_bonus_weapon_pickup:    Callable[[str], None] = lambda _: None
         self.on_scripted_gadget_pickup: Callable[[str], None] = lambda _: None
+        self.on_weapon_level_up:        Callable[[], None]    = lambda: None
 
         self.at_main_menu: bool = True
         self._planet_settle_until: float = float("inf")
@@ -186,6 +187,7 @@ class Core:
         on_equipped_armour_saved:  Callable[[dict[str, int]], None] | None = None,
         on_bonus_weapon_pickup:    Callable[[str], None]            | None = None,
         on_scripted_gadget_pickup: Callable[[str], None]            | None = None,
+        on_weapon_level_up:        Callable[[], None]               | None = None,
     ) -> None:
         self.send_location = send_location
         if send_deathlink is not None:
@@ -210,6 +212,8 @@ class Core:
             self.on_bonus_weapon_pickup = on_bonus_weapon_pickup
         if on_scripted_gadget_pickup is not None:
             self.on_scripted_gadget_pickup = on_scripted_gadget_pickup
+        if on_weapon_level_up is not None:
+            self.on_weapon_level_up = on_weapon_level_up
 
     @property
     def vendor_active(self) -> bool:
@@ -592,11 +596,13 @@ class Core:
                 if name in _SCRIPTED_PICKUP_GADGETS:
                     self.on_scripted_gadget_pickup(name)
 
-        if self.weapon_level_checks_enabled:
-            for name, level in changed["levels"]:
-                loc = WEAPON_LEVEL_LOOKUP.get((name, level))
-                if loc:
-                    self.send_location(loc)
+        if changed["levels"]:
+            if self.weapon_level_checks_enabled:
+                for name, level in changed["levels"]:
+                    loc = WEAPON_LEVEL_LOOKUP.get((name, level))
+                    if loc:
+                        self.send_location(loc)
+            self.on_weapon_level_up()
 
         for name in changed["titans"]:
             titan_loc = TITAN_INTERNAL_TO_LOCATION.get(name)

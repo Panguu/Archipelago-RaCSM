@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 
 from CommonClient import logger
 from NetUtils import ClientStatus
@@ -33,10 +34,21 @@ class EventsHandlerMixin:
 
     def _on_planet_ready(self) -> None:
         """Re-applies received items and retries the starting-bolts grant on every planet transition,
-        since writing PLAYER_BOLT_COUNT before a planet has loaded doesn't reliably stick."""
+        since writing PLAYER_BOLT_COUNT before a planet has loaded doesn't reliably stick. Also
+        force-restores weapon level/experience every time, since Core.tick() wipes them for the
+        newly-loaded planet's weapon array on every transition, not just the first."""
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
-        self._try_restore_weapon_state()
+        self._try_restore_weapon_state(force=True)
+
+    def _on_weapon_level_up(self) -> None:
+        """Fired from Core whenever any weapon's level increases. Pushes the level/experience
+        snapshot to AP data storage immediately, bypassing the periodic push's throttle, so a
+        disconnect right after leveling up doesn't lose the gain."""
+        snapshot = self._wiring.planet.weapons.level_experience_snapshot()
+        self._last_weapon_state_push = time.monotonic()
+        self._pushed_weapon_state = snapshot
+        asyncio.create_task(self._persist_weapon_state(snapshot))
 
     async def _grant_starting_items(self) -> None:
         if self._starting_items_sent or not self.pine_connected:

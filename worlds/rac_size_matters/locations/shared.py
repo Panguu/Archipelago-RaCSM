@@ -13,6 +13,7 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5WeaponKeys,
 )
+from ..constants.shrink_ray import SHRINK_RAY_LOCATION_PLANETS
 from ..core.armour import ARMOUR_PICKUPS
 from ..core.locations.armour_set_locations import ARMOUR_SET_CHECKS
 from ..core.locations.challenge_locations import (
@@ -26,7 +27,6 @@ from ..core.locations.challenge_locations import (
     GADGETBOT_TOSS_CLANK_PICKUPS,
 )
 from ..core.locations.weapon_level_locations import WEAPON_LEVEL_NAMES
-from ..constants.shrink_ray import SHRINK_RAY_LOCATION_PLANETS
 from ..core.shrink_ray import SHRINK_RAY_SKIP_LOCATION_NAMES
 from ..core.skill_points import (
     CLANK_CHALLENGE_SKILL_POINTS,

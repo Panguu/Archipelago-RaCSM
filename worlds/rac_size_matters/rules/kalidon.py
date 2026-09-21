@@ -45,7 +45,7 @@ def set_kalidon_rules(world: "RACSizeMatterWorld") -> None:
 
     world.set_rule(mw.get_location(Rac5TBolts.KALIDON_SHIP, player), True_())
     world.set_rule(
-        mw.get_location(Rac5TBolts.KALIDON_FACTORY, player), Has(Rac5Gadgets.HYPERSHOT) | Has(GLITCHES_ITEM_NAME)
+        mw.get_location(Rac5TBolts.KALIDON_FACTORY, player), Has(Rac5Gadgets.HYPERSHOT) | HasAll(GLITCHES_ITEM_NAME, Rac5Gadgets.SHRINK_RAY)
     )
     world.set_rule(mw.get_location(Rac5TBolts.KALIDON_RAMP, player), _inside)
 

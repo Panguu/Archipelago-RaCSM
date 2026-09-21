@@ -117,13 +117,17 @@ class RACContext(
     def _stored_save_data(self) -> RAC5SaveData:
         return RAC5SaveData.from_dict(self.stored_data.get(self._save_data_key()))
 
-    def _try_restore_weapon_state(self) -> None:
-        if self._weapon_state_restored or not self._wiring.planet.is_ready:
+    def _try_restore_weapon_state(self, *, force: bool = False) -> None:
+        """Write the AP-stored weapon level/experience snapshot back into game memory.
+        `force` re-applies it even if already restored once this connection — needed on
+        every planet transition, since Core.tick()'s wipe() zeroes level/experience for
+        the newly-loaded planet's weapon array every time, not just on first load."""
+        if (not force and self._weapon_state_restored) or not self._wiring.planet.is_ready:
             return
         data = self._stored_save_data().weapon_state
         if data:
             self._wiring.planet.weapons.restore_level_experience(data)
-            self._weapon_state_restored = True
+        self._weapon_state_restored = True
 
     def _starting_items_key(self) -> str:
         return f"racsm_starting_items_sent_{self.team}_{self.slot}"
@@ -323,6 +327,7 @@ class RACContext(
                 on_bonus_weapon_pickup = self._grant_random_bonus_item,
                 on_scripted_gadget_pickup = self._handle_scripted_gadget_pickup,
                 on_planet_ready    = self._on_planet_ready,
+                on_weapon_level_up = self._on_weapon_level_up,
                 on_initial_load    = lambda: asyncio.create_task(self._send_playing_status()),
             )
             checked = self._checked_location_names()
