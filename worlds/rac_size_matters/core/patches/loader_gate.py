@@ -1,16 +1,26 @@
 """Hold the resident MCP loop after relocation and before level-thread startup."""
-from .asm import packed, branch
+
+from .asm import branch, packed
 
 
 class LoaderGate:
     SITE = 0x01E66414
     ORIGINAL = 0x24040005
-    HELD = branch(SITE, 0x01E66A60)
+    HELD = branch(SITE, 0x01E66A60)  # Branch from SITE to 31877728.
     SIGNATURE_START = 0x01E66400
     SIGNATURE = (
-        0x0C7993A8, 0, 0x2405FFFF, 0x10450194, 0x3C0201F5,
-        ORIGINAL, 0x2442A740, 0xAE24DAB8, 0x24030001,
-        0xAC450004, 0x0C799CE0, 0xAC430018,
+        0x0C7993A8,
+        0,
+        0x2405FFFF,
+        0x10450194,
+        0x3C0201F5,
+        ORIGINAL,
+        0x2442A740,
+        0xAE24DAB8,
+        0x24030001,
+        0xAC450004,
+        0x0C799CE0,
+        0xAC430018,
     )
     STATE = 0x01EDDAB8
     HANDLE = 0x01EDC7D0
@@ -18,13 +28,45 @@ class LoaderGate:
     LOAD_THREAD = 0x01EDDAE8
     MODULES = 0x01FBE750
 
-    def __init__(self, pine):
+    def __init__(self, pine, *, game_id="SCUS-97615"):
+        if game_id not in ("SCUS-97615", "SCES-55019", "SCPS-15120"):
+            raise ValueError("Unsupported loader region")
         self.pine = pine
+        self.game_id = game_id
+        if game_id == "SCES-55019":
+            self.SITE = 0x01E6613C
+            self.HELD = branch(self.SITE, 0x01E66788)
+            self.SIGNATURE_START = 0x01E66128
+            self.SIGNATURE = (
+                0x0C7992F2, 0, 0x2405FFFF, 0x10450194,
+                0x3C0201F5, self.ORIGINAL, 0x2442A740,
+                0xAE24D8B8, 0x24030001, 0xAC450004,
+                0x0C799C2A, 0xAC430018,
+            )
+            self.STATE = 0x01EDD8B8
+            self.HANDLE = 0x01EDC5D0
+            self.TARGET = 0x01EDD8E4
+            self.LOAD_THREAD = 0x01EDD8E8
+        elif game_id == "SCPS-15120":
+            self.SITE = 0x01E6824C
+            self.HELD = branch(self.SITE, 0x01E68898)
+            self.SIGNATURE_START = 0x01E68238
+            self.SIGNATURE = (
+                0x0C799B36, 0, 0x2405FFFF, 0x10450194,
+                0x3C0201F5, self.ORIGINAL, 0x2442A580,
+                0xAE24F7D8, 0x24030001, 0xAC450004,
+                0x0C79A46E, 0xAC430018,
+            )
+            self.STATE = 0x01EDF7D8
+            self.HANDLE = 0x01EDE4F8
+            self.TARGET = 0x01EDF804
+            self.LOAD_THREAD = 0x01EDF808
+            self.MODULES = 0x01FBE790
         self.armed = False
 
     def validate(self, *, patched=False):
-        if self.pine.get_game_id() != "SCUS-97615":
-            raise RuntimeError("Loader gate requires SCUS-97615")
+        if self.pine.get_game_id() != self.game_id:
+            raise RuntimeError(f"Loader gate requires {self.game_id}")
         expected = list(self.SIGNATURE)
         if patched:
             expected[5] = self.HELD

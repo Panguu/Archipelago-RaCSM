@@ -2,123 +2,38 @@ from __future__ import annotations
 
 import struct as _struct
 from collections.abc import Callable
-from typing import TYPE_CHECKING, NamedTuple
-
-from BaseClasses import ItemClassification
+from contextlib import contextmanager
+from functools import wraps
+from typing import TYPE_CHECKING
 
 from ..constants import Rac5GadgetKeys, Rac5WeaponKeys
+from ..data.weapons import (
+    GADGET_DATA,
+    WEAPON_DATA,
+    WEAPON_EXP_THRESHOLDS,
+    WEAPON_MAX_LEVELS,
+    WEAPON_MOD_COUNTS as WEAPON_MOD_COUNTS,
+    WEAPON_VENDOR_DISPLAY_AMMO as WEAPON_VENDOR_DISPLAY_AMMO,
+    Gadget as Gadget,
+    Weapon as Weapon,
+)
+from .inventory import InventoryEntry, InventoryField
 from .locations import weapon_locations as _weapon_locations
+from .memory import MemoryWindow
 
 if TYPE_CHECKING:
     from ..pypine import Pine
 
 
-
 WEAPON_STRUCT_SIZE = 0x58
 WEAPON_MIN_CONSECUTIVE = 4
 
-PROGRESSIVE_OFF       = 0
-PROGRESSIVE_MANUAL    = 1
+PROGRESSIVE_OFF = 0
+PROGRESSIVE_MANUAL = 1
 PROGRESSIVE_AUTOMATIC = 2
 
-class WeaponData(NamedTuple):
-    is_projectile: bool
-    classification: ItemClassification
-    max_level: int
-    mod_count: int
-    exp_thresholds: tuple[int, ...] = ()
 
-
-WEAPON_DATA: dict[str, WeaponData] = {
-    Rac5WeaponKeys.LACERATOR: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(3000, 9000, 15000, None, 27000, 55000, 205000, None),
-    ),
-    Rac5WeaponKeys.CONCUSSION_GUN: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=3,
-        exp_thresholds=(6000, 9000, 12000, None, 50000, 78000, 158000, None),
-    ),
-    Rac5WeaponKeys.ACID_BOMB_GLOVE: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(3000, 6000, 9000, None, 27_000, 55_000, 55_000, None),
-    ),
-    Rac5WeaponKeys.AGENTS_OF_DOOM: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(6000, 9000, 12000, None, 27_000, 100_000, 250_000, None),
-    ),
-    Rac5WeaponKeys.BEE_MINE_GLOVE: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(6000, 7500, 9000, None, 50_000, 142_000, 225_000, None),
-    ),
-    Rac5WeaponKeys.STATIC_BARRIER: WeaponData(
-        is_projectile=False, classification=ItemClassification.useful, max_level=8, mod_count=2,
-        exp_thresholds=(15000, 18000, 21000, None, 24_000, 27_000, 30_000, None),
-    ),
-    Rac5WeaponKeys.SHOCK_ROCKET: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=3,
-        exp_thresholds=(15000, 19000, 42000, None, 60_000, 145_000, 250_000, None),
-    ),
-    Rac5WeaponKeys.SNIPER_MINE: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(4000, 5500, 7000, None, 50_000, 142_000, 225_000, None),
-    ),
-    Rac5WeaponKeys.SCORCHER: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(7000, 8500, 10000, None, 27_000, 55_000, 205_000, None),
-    ),
-    Rac5WeaponKeys.LASER_TRACER: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=8, mod_count=2,
-        exp_thresholds=(15000, 27000, 45000, None, 65_000, 225_000, 350_000, None),
-    ),
-    Rac5WeaponKeys.SUCK_CANNON: WeaponData(
-        is_projectile=False, classification=ItemClassification.useful, max_level=8, mod_count=1,
-        exp_thresholds=(3500, 5000, 7000, None, 12_500, 43_000, 67_500, None),
-    ),
-    Rac5WeaponKeys.MOOTATOR: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=8, mod_count=0,
-        exp_thresholds=(12000, 12000, 16000, None, 50_000, 142_000, 225_000, None),
-    ),
-    Rac5WeaponKeys.RYNO: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
-        exp_thresholds=(85000, 350000, 999000, None),
-    ),
-}
-
-TITAN_ELIGIBLE_WEAPONS: frozenset[str] = frozenset(
-    key for key in WEAPON_DATA if key != Rac5WeaponKeys.RYNO
-)
-
-
-class VendorDisplayAmmo(NamedTuple):
-    """Ammo count shown while the weapons vendor's buy-new view displays this weapon;
-    `titan` is shown once Titan-pending, None for RYNO (no Titan variant)."""
-    base: int
-    titan: int | None = None
-
-
-WEAPON_VENDOR_DISPLAY_AMMO: dict[str, VendorDisplayAmmo] = {
-    Rac5WeaponKeys.LACERATOR:       VendorDisplayAmmo(base=60, titan=120),
-    Rac5WeaponKeys.CONCUSSION_GUN:  VendorDisplayAmmo(base=25, titan=30),
-    Rac5WeaponKeys.ACID_BOMB_GLOVE: VendorDisplayAmmo(base=5, titan=10),
-    Rac5WeaponKeys.AGENTS_OF_DOOM:  VendorDisplayAmmo(base=6, titan=10),
-    Rac5WeaponKeys.BEE_MINE_GLOVE:  VendorDisplayAmmo(base=8, titan=8),
-    Rac5WeaponKeys.STATIC_BARRIER:  VendorDisplayAmmo(base=5, titan=5),
-    Rac5WeaponKeys.SHOCK_ROCKET:    VendorDisplayAmmo(base=20, titan=22),
-    Rac5WeaponKeys.SNIPER_MINE:     VendorDisplayAmmo(base=8, titan=10),
-    Rac5WeaponKeys.SCORCHER:        VendorDisplayAmmo(base=60, titan=90),
-    Rac5WeaponKeys.LASER_TRACER:    VendorDisplayAmmo(base=200, titan=300),
-    Rac5WeaponKeys.SUCK_CANNON:     VendorDisplayAmmo(base=8, titan=16),
-    Rac5WeaponKeys.MOOTATOR:        VendorDisplayAmmo(base=0, titan=0),
-    Rac5WeaponKeys.RYNO:            VendorDisplayAmmo(base=30),
-}
-
-WEAPON_MOD_COUNTS: dict[str, int] = {key: data.mod_count for key, data in WEAPON_DATA.items()}
-
-WEAPON_MAX_LEVELS: dict[str, int] = {key: data.max_level for key, data in WEAPON_DATA.items()}
-
-WEAPON_EXP_THRESHOLDS: dict[str, tuple[int, ...]] = {
-    key: data.exp_thresholds for key, data in WEAPON_DATA.items()
-}
+TITAN_ELIGIBLE_WEAPONS: frozenset[str] = frozenset(key for key in WEAPON_DATA if key != Rac5WeaponKeys.RYNO)
 
 
 def exp_threshold_for_level(weapon: str, level: int) -> int | None:
@@ -138,13 +53,13 @@ def is_weapon_candidate(data: bytes, i: int) -> bool:
         return False
     if data[i + 0x45] > 1:
         return False
-    level, = _struct.unpack_from("<I", data, i + 0x2D)
+    (level,) = _struct.unpack_from("<I", data, i + 0x2D)
     if level > 7:
         return False
-    ammo, = _struct.unpack_from("<I", data, i + 0x31)
+    (ammo,) = _struct.unpack_from("<I", data, i + 0x31)
     if ammo > 9999:
         return False
-    icon, = _struct.unpack_from("<I", data, i + 0x1D)
+    (icon,) = _struct.unpack_from("<I", data, i + 0x1D)
     if icon == 0:
         return False
     return True
@@ -157,16 +72,16 @@ def is_ps2_weapon_candidate(data: bytes, i: int) -> bool:
         return False
     if data[i + 0x45] > 1:
         return False
-    level, = _struct.unpack_from("<I", data, i + 0x2D)
+    (level,) = _struct.unpack_from("<I", data, i + 0x2D)
     if level > 7:
         return False
-    ammo, = _struct.unpack_from("<I", data, i + 0x31)
+    (ammo,) = _struct.unpack_from("<I", data, i + 0x31)
     if ammo > 9999:
         return False
-    icon, = _struct.unpack_from("<I", data, i + 0x1D)
+    (icon,) = _struct.unpack_from("<I", data, i + 0x1D)
     if icon == 0:
         return False
-    item, = _struct.unpack_from("<I", data, i + 0x15)
+    (item,) = _struct.unpack_from("<I", data, i + 0x15)
     if item == 0:
         return False
     return True
@@ -185,17 +100,17 @@ class WeaponByteField:
     def __get__(self, instance, owner) -> bool | None:
         if instance is None:
             return None
-        return bool(instance.pine.read_int8(self._address(instance)))
+        return bool(instance.read_field(self.field_name, 1))
 
     def __set__(self, instance, value: bool) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(self._address(instance), int(value))
+        instance.write_field(self.field_name, int(value), 1)
 
     def __delete__(self, instance) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(self._address(instance), 0)
+        instance.write_field(self.field_name, 0, 1)
 
 
 class WeaponInt32Field:
@@ -210,46 +125,75 @@ class WeaponInt32Field:
     def __get__(self, instance, owner) -> int | None:
         if instance is None:
             return None
-        return instance.pine.read_int32(self._address(instance))
+        return instance.read_field(self.field_name, 4)
 
     def __set__(self, instance, value: int) -> None:
         if instance is None:
             return
-        instance.pine.write_int32(self._address(instance), value)
+        instance.write_field(self.field_name, value, 4)
 
     def __delete__(self, instance) -> None:
         if instance is None:
             return
-        instance.pine.write_int32(self._address(instance), 0)
+        instance.write_field(self.field_name, 0, 4)
 
 
-class WeaponAddresses:
+class InventoryMemory:
+    window: MemoryWindow | None = None
+
+    def read_field(self, name, size):
+        address = self.base + self._OFFSETS[name]
+        if self.window is not None:
+            return self.window.read(address, size)
+        return int.from_bytes(self.pine.read_bytes(address, size), "little")
+
+    def write_field(self, name, value, size):
+        address = self.base + self._OFFSETS[name]
+        if self.window is not None:
+            self.window.write(address, value, size)
+        else:
+            self.pine.write_bytes(address, int(value).to_bytes(size, "little"))
+
+    def read_bytes(self):
+        return self.pine.read_bytes(self.base, WEAPON_STRUCT_SIZE)
+
+
+def batched_inventory(method):
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        with self.memory():
+            return method(self, *args, **kwargs)
+
+    return call
+
+
+class WeaponAddresses(InventoryMemory):
     """Pine-backed live accessor for one weapon struct instance — every
     field reads/writes memory directly via its descriptor."""
 
     _OFFSETS: dict[str, int] = {
-        "level":            0x2D,
-        "experience":       0x35,
-        "mod_slot_one":     0x3D,
-        "mod_slot_two":     0x3E,
-        "mod_slot_three":   0x3F,
-        "mod_unlock_one":   0x40,
-        "mod_unlock_two":   0x41,
+        "level": 0x2D,
+        "experience": 0x35,
+        "mod_slot_one": 0x3D,
+        "mod_slot_two": 0x3E,
+        "mod_slot_three": 0x3F,
+        "mod_unlock_one": 0x40,
+        "mod_unlock_two": 0x41,
         "mod_unlock_three": 0x42,
-        "unlocked":         0x45,
-        "ammo":             0x31,
+        "unlocked": 0x45,
+        "ammo": 0x31,
     }
 
-    level            = WeaponInt32Field("level")
-    experience       = WeaponInt32Field("experience")
-    ammo             = WeaponInt32Field("ammo")
-    mod_slot_one     = WeaponByteField("mod_slot_one")
-    mod_slot_two     = WeaponByteField("mod_slot_two")
-    mod_slot_three   = WeaponByteField("mod_slot_three")
-    mod_unlock_one   = WeaponByteField("mod_unlock_one")
-    mod_unlock_two   = WeaponByteField("mod_unlock_two")
+    level = WeaponInt32Field("level")
+    experience = WeaponInt32Field("experience")
+    ammo = WeaponInt32Field("ammo")
+    mod_slot_one = WeaponByteField("mod_slot_one")
+    mod_slot_two = WeaponByteField("mod_slot_two")
+    mod_slot_three = WeaponByteField("mod_slot_three")
+    mod_unlock_one = WeaponByteField("mod_unlock_one")
+    mod_unlock_two = WeaponByteField("mod_unlock_two")
     mod_unlock_three = WeaponByteField("mod_unlock_three")
-    unlocked         = WeaponByteField("unlocked")
+    unlocked = WeaponByteField("unlocked")
 
     def __init__(self, base: int, pine: Pine) -> None:
         self.base = base
@@ -259,7 +203,7 @@ class WeaponAddresses:
         return f"WeaponAddresses(base=0x{self.base:08X}, unlocked={self.unlocked}, level={self.level})"
 
 
-class GadgetAddresses:
+class GadgetAddresses(InventoryMemory):
     """Pine-backed live accessor for one gadget struct instance."""
 
     _OFFSETS: dict[str, int] = {
@@ -274,22 +218,6 @@ class GadgetAddresses:
 
     def __repr__(self) -> str:
         return f"GadgetAddresses(base=0x{self.base:08X}, unlocked={self.unlocked})"
-
-
-class GadgetData(NamedTuple):
-    classification: ItemClassification
-
-
-GADGET_DATA: dict[str, GadgetData] = {
-    Rac5GadgetKeys.HYPERSHOT:      GadgetData(classification=ItemClassification.progression),
-    Rac5GadgetKeys.SPROUT_O_MATIC: GadgetData(classification=ItemClassification.progression),
-    Rac5GadgetKeys.POLARIZER:      GadgetData(classification=ItemClassification.progression),
-    Rac5GadgetKeys.PDA:            GadgetData(classification=ItemClassification.useful),
-    Rac5GadgetKeys.SHRINK_RAY:     GadgetData(classification=ItemClassification.progression),
-    Rac5GadgetKeys.BOLT_GRABBER:   GadgetData(classification=ItemClassification.useful),
-    Rac5GadgetKeys.MAP_O_MATIC:    GadgetData(classification=ItemClassification.useful),
-    Rac5GadgetKeys.BOX_BREAKER:    GadgetData(classification=ItemClassification.useful),
-}
 
 
 WEAPON_ORDER: list[str | None] = [
@@ -340,7 +268,6 @@ def build_weapons(array_base: int | None, pine: Pine) -> tuple[dict[str, WeaponA
     return weapons, gadgets
 
 
-
 _MOD_SLOTS = ("mod_slot_one", "mod_slot_two", "mod_slot_three")
 
 
@@ -348,14 +275,34 @@ class WeaponInventory:
     """Pine-backed live accessor + ownership/vendor tracking for weapons, gadgets and
     mods. Planet-dependent: call set_base(array_base) whenever the loaded planet changes."""
 
+    weapons = InventoryField("owned", gadget=False)
+    ap_weapons = InventoryField("ap_owned", gadget=False)
+    ap_gadgets = InventoryField("ap_owned", gadget=True)
+    gadgets = InventoryField("owned", gadget=True)
+    mods = InventoryField("mods", gadget=False)
+    _raw_weapons = InventoryField("raw_owned", gadget=False)
+    _raw_gadgets = InventoryField("raw_owned", gadget=True)
+    _raw_mods = InventoryField("raw_mods", gadget=False)
+    _raw_level = InventoryField("raw_level", gadget=False)
+    _prev_experience = InventoryField("previous_experience", gadget=False)
+    _pinned_experience = InventoryField("pinned_experience", gadget=False)
+    level_caps = InventoryField("level_cap", gadget=False)
+    titan_purchased = InventoryField("titan_purchased", gadget=False)
+    _weapon_addrs = InventoryField("address", gadget=False)
+    _gadget_addrs = InventoryField("address", gadget=True)
+
     def __init__(self, pine: Pine) -> None:
+        self.entries = {
+            name: InventoryEntry(name, name in GADGET_DATA)
+            for name in (*WEAPON_ORDER, *GADGET_ORDER)
+            if name is not None
+        }
         self.pine = pine
-        _weapon_locations._ensure_loc_data()
-        self.weapons: dict[str, bool]         = {}
-        self.gadgets: dict[str, bool]         = {}
+        self.weapons: dict[str, bool] = {}
+        self.gadgets: dict[str, bool] = {}
         self.mods: dict[str, dict[str, bool]] = {}
-        self._raw_weapons: dict[str, bool]         = {}
-        self._raw_gadgets: dict[str, bool]         = {}
+        self._raw_weapons: dict[str, bool] = {}
+        self._raw_gadgets: dict[str, bool] = {}
         self._raw_mods: dict[str, dict[str, bool]] = {}
         self._raw_level: dict[str, int] = {}
         self.vendor_locations: dict[str, bool] = dict.fromkeys(
@@ -378,6 +325,33 @@ class WeaponInventory:
 
         self.challenge_mode: int = 0
         self.titan_purchased: dict[str, bool] = dict.fromkeys(TITAN_ELIGIBLE_WEAPONS, False)
+
+    @contextmanager
+    def memory(self):
+        addresses = (*self._weapon_addrs.values(), *self._gadget_addrs.values())
+        if not addresses or not all(isinstance(address, InventoryMemory) for address in addresses):
+            yield
+            return
+        if addresses[0].window is not None:
+            yield
+            return
+        base = min(address.base for address in addresses)
+        end = max(address.base for address in addresses) + WEAPON_STRUCT_SIZE
+        window = MemoryWindow.read_bytes(self.pine, base, end - base)
+        for address in addresses:
+            address.window = window
+        try:
+            yield
+            window.flush(self.pine)
+        finally:
+            for address in addresses:
+                address.window = None
+
+    @batched_inventory
+    def update_progression(self, vendor_active=False):
+        self.apply_experience_boost()
+        if not vendor_active:
+            self.apply_progressive_leveling()
 
     def set_base(self, array_base: int | None) -> None:
         """Rebind every weapon/gadget address to the planet's array base, or unbind
@@ -450,10 +424,9 @@ class WeaponInventory:
             addr.level = level
         self._raw_level[weapon] = level
 
+    @batched_inventory
     def zero_levels_for_vendor(self, purchasable: frozenset[str] | None = None) -> dict[str, int]:
-        """Snapshot every weapon's level, then zero out the ones in `purchasable` so the
-        vendor's level-derived price doesn't leak a leveled-but-unowned weapon's real
-        price; caller must pass the snapshot to restore_levels() once the vendor closes."""
+        """Snapshot every weapon's level, then zero out the ones in `purchasable` so the vendor's level-derived price doesn't leak a leveled-but-unowned weapon's real price; caller must pass the snapshot to restore_levels() once the vendor closes."""
         snapshot = {name: addr.level for name, addr in self._weapon_addrs.items()}
         for name, addr in self._weapon_addrs.items():
             if purchasable is None or name in purchasable:
@@ -461,6 +434,7 @@ class WeaponInventory:
                 self._raw_level[name] = 0
         return snapshot
 
+    @batched_inventory
     def restore_levels(self, snapshot: dict[str, int]) -> None:
         """Write back a snapshot taken by zero_levels_for_vendor(), also rebaselining
         _raw_level so check() doesn't misread the restore as a fresh level-up."""
@@ -475,9 +449,7 @@ class WeaponInventory:
         restore_ammo(), for VendorInventory's display override."""
         if names is None:
             return {name: addr.ammo for name, addr in self._weapon_addrs.items()}
-        return {
-            name: addr.ammo for name, addr in self._weapon_addrs.items() if name in names
-        }
+        return {name: addr.ammo for name, addr in self._weapon_addrs.items() if name in names}
 
     def restore_ammo(self, snapshot: dict[str, int]) -> None:
         """Write back a snapshot taken by snapshot_ammo()."""
@@ -499,10 +471,9 @@ class WeaponInventory:
         if addr is not None:
             setattr(addr, attr, value)
 
+    @batched_inventory
     def check(self) -> dict[str, list]:
-        """Batch-read every weapon/gadget/mod byte, update ownership state, and return
-        what newly changed since the raw memory's last reading (not weapons/gadgets/mods,
-        which never regress, so a repurchase of an already-owned item wouldn't show)."""
+        """Batch-read every weapon/gadget/mod byte, update ownership state, and return what newly changed since the raw memory's last reading (not weapons/gadgets/mods, which never regress, so a repurchase of an already-owned item wouldn't show)."""
         newly_weapons: list[str] = []
         newly_gadgets: list[str] = []
         newly_mods: list[tuple[str, str]] = []
@@ -512,31 +483,9 @@ class WeaponInventory:
         weapon_names = list(self._weapon_addrs)
         gadget_names = list(self._gadget_addrs)
 
-        byte_addrs: list[int] = []
-        byte_spec: list[tuple[str, str]] = []
-        for name in weapon_names:
-            addr = self._weapon_addrs[name]
-            for field in ("unlocked", *_MOD_SLOTS):
-                byte_addrs.append(addr.base + addr._OFFSETS[field])
-                byte_spec.append((name, field))
-        for name in gadget_names:
-            addr = self._gadget_addrs[name]
-            byte_addrs.append(addr.base + addr._OFFSETS["unlocked"])
-            byte_spec.append((name, "unlocked"))
-
-        level_addrs = [
-            self._weapon_addrs[name].base + self._weapon_addrs[name]._OFFSETS["level"]
-            for name in weapon_names
-        ]
-
-        byte_values  = self.pine.batch_read_int8(byte_addrs) if byte_addrs else []
-        level_values = self.pine.batch_read_int32(level_addrs) if level_addrs else []
-        bytes_by_key: dict[tuple[str, str], int] = dict(zip(byte_spec, byte_values, strict=True))
-        levels_by_name: dict[str, int] = dict(zip(weapon_names, level_values, strict=True))
-
         for name in weapon_names:
             was_unlocked = self._raw_weapons.get(name, False)
-            is_unlocked  = bool(bytes_by_key[(name, "unlocked")])
+            is_unlocked = bool(self._weapon_addrs[name].unlocked)
             self._raw_weapons[name] = is_unlocked
             if is_unlocked:
                 self.weapons[name] = True
@@ -544,10 +493,10 @@ class WeaponInventory:
                 newly_weapons.append(name)
 
             prev_mods = dict(self._raw_mods.get(name, dict.fromkeys(_MOD_SLOTS, False)))
-            raw_mods  = self._raw_mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
-            mods      = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
+            raw_mods = self._raw_mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
+            mods = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
             for slot in _MOD_SLOTS:
-                slot_unlocked = bool(bytes_by_key[(name, slot)])
+                slot_unlocked = bool(getattr(self._weapon_addrs[name], slot))
                 raw_mods[slot] = slot_unlocked
                 if slot_unlocked:
                     mods[slot] = True
@@ -556,7 +505,7 @@ class WeaponInventory:
 
             if is_unlocked:
                 prev_level = self._raw_level.get(name, -1)
-                current_level = levels_by_name[name]
+                current_level = self._weapon_addrs[name].level
                 if current_level > prev_level:
                     for idx in range(prev_level + 1, current_level + 1):
                         level = idx + 1
@@ -568,7 +517,7 @@ class WeaponInventory:
 
         for name in gadget_names:
             was_unlocked = self._raw_gadgets.get(name, False)
-            is_unlocked  = bool(bytes_by_key[(name, "unlocked")])
+            is_unlocked = bool(self._gadget_addrs[name].unlocked)
             self._raw_gadgets[name] = is_unlocked
             if is_unlocked:
                 self.gadgets[name] = True
@@ -576,17 +525,19 @@ class WeaponInventory:
                 newly_gadgets.append(name)
 
         return {
-            "weapons": newly_weapons, "gadgets": newly_gadgets,
-            "mods": newly_mods, "levels": newly_levels, "titans": newly_titans,
+            "weapons": newly_weapons,
+            "gadgets": newly_gadgets,
+            "mods": newly_mods,
+            "levels": newly_levels,
+            "titans": newly_titans,
         }
 
+    @batched_inventory
     def apply_experience_boost(self) -> None:
-        """Inflate each weapon's experience gain by experience_multiplier every tick.
-        Diffed against _prev_experience so only genuine in-game gain gets amplified,
-        never our own previous write; stops once a weapon reaches its max level."""
+        """Inflate each weapon's experience gain by experience_multiplier every tick."""
         multiplier = self.experience_multiplier
         for name, addr in self._weapon_addrs.items():
-            current  = addr.experience
+            current = addr.experience
             previous = self._prev_experience.get(name)
             if previous is None:
                 self._prev_experience[name] = current
@@ -612,10 +563,9 @@ class WeaponInventory:
             return None, 4
         return 3, None
 
+    @batched_inventory
     def apply_progressive_leveling(self) -> None:
-        """Gate weapon leveling behind Progressive Weapon items and/or Challenge Mode
-        Titan purchase every tick. automatic pins level to cap and zeroes experience;
-        manual clamps experience to the next threshold so a boosted tick's gain can't skip a level."""
+        """Gate weapon leveling behind Progressive Weapon items and/or Challenge Mode Titan purchase every tick."""
         mode = self.progressive_mode
         titan_active = self.challenge_mode >= 1
         if mode == PROGRESSIVE_OFF and not titan_active:
@@ -678,10 +628,9 @@ class WeaponInventory:
                 if ceiling is not None and addr.experience > ceiling:
                     addr.experience = ceiling
 
+    @batched_inventory
     def wipe(self) -> None:
-        """Zero every weapon/gadget/mod unlock bit and level, and rebaseline
-        every tracking dict. Called once on first planet-ready after connect, or
-        stale save progress would look like a batch of brand-new pickups."""
+        """Zero every weapon/gadget/mod unlock bit and level, and rebaseline every tracking dict."""
         for addr in self._weapon_addrs.values():
             addr.unlocked = False
             for slot in _MOD_SLOTS:
@@ -699,6 +648,7 @@ class WeaponInventory:
         self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
         self._prev_experience = {name: addr.experience for name, addr in self._weapon_addrs.items()}
 
+    @batched_inventory
     def sync(self) -> None:
         """Write the current ownership dicts into game memory for the current planet's array."""
         for name, addr in self._weapon_addrs.items():
@@ -709,25 +659,27 @@ class WeaponInventory:
         for name, addr in self._gadget_addrs.items():
             addr.unlocked = self.gadgets.get(name, False)
 
+    @batched_inventory
     def sync_slots(self) -> None:
         """Read the current planet's array into the ownership dicts (no change report).
         Also re-baselines check()'s raw-memory dicts so it doesn't see this resync as a change."""
         for name, addr in self._weapon_addrs.items():
             unlocked = bool(addr.unlocked)
-            self.weapons[name]     = unlocked
+            self.weapons[name] = unlocked
             self._raw_weapons[name] = unlocked
-            mods     = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
+            mods = self.mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
             raw_mods = self._raw_mods.setdefault(name, dict.fromkeys(_MOD_SLOTS, False))
             for slot in _MOD_SLOTS:
-                slot_unlocked  = bool(getattr(addr, slot))
-                mods[slot]     = slot_unlocked
+                slot_unlocked = bool(getattr(addr, slot))
+                mods[slot] = slot_unlocked
                 raw_mods[slot] = slot_unlocked
             self._prev_experience[name] = addr.experience
         for name, addr in self._gadget_addrs.items():
             unlocked = bool(addr.unlocked)
-            self.gadgets[name]      = unlocked
+            self.gadgets[name] = unlocked
             self._raw_gadgets[name] = unlocked
 
+    @batched_inventory
     def apply_vendor_locations(self, allowed_extra: frozenset[str] = frozenset()) -> None:
         """Zero all weapon/gadget/mod memory then restore what the player may keep:
         purchased-and-owned or in allowed_extra for weapons/gadgets; purchased-only for mods."""
@@ -766,11 +718,13 @@ class WeaponInventory:
         for name, addr in self._gadget_addrs.items():
             addr.unlocked = gadget_unlocked[name]
 
+    @batched_inventory
     def zero_unpurchased_mod_slots(self, names: frozenset[str]) -> None:
         """Re-zero mod_slot_N unless bought from this vendor, since a Progressive-item
         grant can race back in after apply_vendor_locations()'s own zero/restore pass."""
         purchased_slots = {
-            _weapon_locations._MOD_LOC[loc] for loc, bought in self.vendor_locations.items()
+            _weapon_locations._MOD_LOC[loc]
+            for loc, bought in self.vendor_locations.items()
             if bought and loc in _weapon_locations._MOD_LOC
         }
         for name in names:
@@ -798,14 +752,14 @@ class WeaponInventory:
             elif loc in _weapon_locations._TITAN_LOC:
                 self.titan_purchased[_weapon_locations._TITAN_LOC[loc]] = True
 
+    @batched_inventory
     def level_snapshot(self) -> dict[str, int]:
         """Levels only; experience remains managed by the game."""
         return {name: addr.level for name, addr in self._weapon_addrs.items()}
 
+    @batched_inventory
     def revert_unowned(self, is_ap_owned: Callable[[str], bool]) -> None:
-        """Zero unlocked + every mod slot for every weapon is_ap_owned says no to.
-        Cleans up the mod vendor's temporary display hack, since apply_inventory()'s
-        resync is additive-only and wouldn't undo it on its own."""
+        """Zero unlocked + every mod slot for every weapon is_ap_owned says no to."""
         for weapon, addr in self._weapon_addrs.items():
             if is_ap_owned(weapon):
                 continue

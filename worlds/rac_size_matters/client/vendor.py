@@ -8,6 +8,7 @@ from ..core import (
     WEAPON_MAX_LEVELS,
     activate_trap,
 )
+from ..core import address_maps
 from ..core.address_maps import PLAYER_BOLT_COUNT
 from ..core.notifications import receipt_text, sent_text
 from ..core.player_bolts import MAX_PLAYER_BOLTS
@@ -320,11 +321,11 @@ class InventoryMixin:
         if bolt_items_to_grant <= 0 or not self.pine_connected:
             return
         try:
-            current = self.pine.read_int32(PLAYER_BOLT_COUNT)
+            current = self.pine.read_int32(address_maps.PLAYER_BOLT_COUNT)
             for _ in range(bolt_items_to_grant):
                 grant = min(200000, max(75000, int(current * 0.2)))
                 current = min(current + grant, MAX_PLAYER_BOLTS)
-            self.pine.write_int32(PLAYER_BOLT_COUNT, current)
+            self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, current)
             self._wiring.player_bolts.rebaseline(current)
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")

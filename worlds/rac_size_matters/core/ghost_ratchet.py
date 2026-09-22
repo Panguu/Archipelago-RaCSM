@@ -114,12 +114,44 @@ class GhostRatchetInventory:
         self._follow_addr: GhostRatchetAddresses | None = None
         self._follow_trigger: int | None = None
 
+    def _prepare_ghost(self, planet_addrs) -> bool:
+        """Initialize an unused native ghost before enabling its callbacks.
+
+        Level loading allocates the 0x18C-byte payload without initializing it.
+        Its update/destructor dereference the owner at offset zero. Validate
+        reciprocal object links and the native payload size before writing.
+        """
+        p = self.pine
+        obj = planet_addrs.trigger - 0x40
+        matrix = planet_addrs.ghost_base - 0x14
+        player = planet_addrs.player_position - 0x30
+        if (p.read_int32(obj + 0x24) != 0x0805C334
+                or p.read_int32(obj + 0xC) != matrix
+                or p.read_int32(matrix + 0x40) != obj):
+            return False
+        player_obj = p.read_int32(player + 0x40)
+        definition = p.read_int32(obj + 0x10)
+        payload = p.read_int32(matrix + 0x58)
+        if not all(0x100000 <= value < 0x1E00000 - 0x18C
+                   for value in (player_obj, definition, payload)):
+            return False
+        if (p.read_int32(player_obj + 0x24) != 0x36919224
+                or p.read_int32(player_obj + 0xC) != player
+                or p.read_int32(definition + 0x1C) != 0x18C):
+            return False
+        if p.read_int32(matrix + 0x64) == 0x8000:
+            p.write_bytes(payload, struct.pack('<I', player) + bytes(0x188))
+        return p.read_int32(payload) == player
+
     def spawn(self, planet_id: int) -> bool:
         """Spawn a ghost at Ratchet's current position on `planet_id`.
         Returns False (no-op) if that planet isn't in
         GHOST_RATCHET_ADDRESSES yet."""
         planet_addrs = GHOST_RATCHET_ADDRESSES.get(planet_id)
         if planet_addrs is None:
+            return False
+
+        if not self._prepare_ghost(planet_addrs):
             return False
 
         x, y, z = struct.unpack_from("<3f", self.pine.read_bytes(planet_addrs.player_position, 12))
@@ -180,6 +212,8 @@ class GhostRatchetInventory:
         stop_following() once that peer's data goes stale or they leave the planet."""
         planet_addrs = GHOST_RATCHET_ADDRESSES.get(planet_id)
         if planet_addrs is None:
+            return False
+        if not self._prepare_ghost(planet_addrs):
             return False
         if self._follow_planet_id != planet_id:
             self._follow_addr = GhostRatchetAddresses(planet_addrs.ghost_base, self.pine)

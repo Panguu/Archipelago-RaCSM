@@ -2,20 +2,13 @@ from __future__ import annotations
 
 import ctypes
 
-from ..address_maps import (
-    CHALLENGE_MODE_BASE,
-    LOADING_PLANET_ADDRESS,
-    PLANET_PROGRESS_BASE,
-    QUICK_SELECT_BASE,
-    SKIN_BASE,
-    TRANSITION_GATE_ADDRESS,
-)
+from ..address_maps import Address
 from .base import MemoryStruct
 
 
 class PlanetProgressStruct(MemoryStruct):
 
-    BASE_ADDRESS = PLANET_PROGRESS_BASE
+    BASE_ADDRESS = Address("PLANET_PROGRESS_BASE")
     _pack_ = 1
     _fields_ = [
         ("pokitaru",      ctypes.c_uint8),
@@ -38,7 +31,7 @@ class PlanetProgressStruct(MemoryStruct):
 
 
 class QuickSelectStruct(MemoryStruct):
-    BASE_ADDRESS = QUICK_SELECT_BASE
+    BASE_ADDRESS = Address("QUICK_SELECT_BASE")
     _pack_ = 1
     _fields_ = [
         ("right",         ctypes.c_uint32),
@@ -58,7 +51,7 @@ class QuickSelectStruct(MemoryStruct):
 
 
 class SkinStruct(MemoryStruct):
-    BASE_ADDRESS = SKIN_BASE
+    BASE_ADDRESS = Address("SKIN_BASE")
     _pack_ = 1
     _fields_ = [
         ("unlocked", ctypes.c_uint8),
@@ -67,7 +60,7 @@ class SkinStruct(MemoryStruct):
 
 
 class ChallengeModeStruct(MemoryStruct):
-    BASE_ADDRESS = CHALLENGE_MODE_BASE
+    BASE_ADDRESS = Address("CHALLENGE_MODE_BASE")
     _pack_ = 1
     _fields_ = [("tier", ctypes.c_uint8)]
 
@@ -83,12 +76,12 @@ TRANSITION_GATE_ARRIVED: int = 0x00000100
 
 
 class TransitionGateStruct(MemoryStruct):
-    BASE_ADDRESS = TRANSITION_GATE_ADDRESS
+    BASE_ADDRESS = Address("TRANSITION_GATE_ADDRESS")
     _pack_ = 1
     _fields_ = [("value", ctypes.c_uint32)]
 
 
 class LoadingPlanetStruct(MemoryStruct):
-    BASE_ADDRESS = LOADING_PLANET_ADDRESS
+    BASE_ADDRESS = Address("LOADING_PLANET_ADDRESS")
     _pack_ = 1
     _fields_ = [("value", ctypes.c_uint32)]

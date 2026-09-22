@@ -1,13 +1,16 @@
 from typing import Any, ClassVar
 
-from BaseClasses import Item, ItemClassification, Location, Tutorial
+from BaseClasses import ItemClassification, Tutorial
 
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 
 from .constants import Rac5Infobots
+from .constants.options import Rac5Options
 from .core.starting_planet import PLANET_TO_ID, PLANET_TO_INFOBOT, choose_starting_planets
 from .core.weapons import WEAPON_MOD_COUNTS
+from .data.models import RACItem as RACItem, RACLocation as RACLocation
+from .data.weapons import WEAPON_DATA
 from .items import (
     ALL_ITEMS,
     ARMOUR_DISPLAY_TO_INTERNAL,
@@ -41,6 +44,7 @@ from .options import (
     AllMissions,
     ArmourSetChecks,
     ClankChallenges,
+    EnabledWeapons,
     EnableClankChallengeSkillPoints,
     EnableSkyboardChallengeSkillPoints,
     ProgressiveArmour,
@@ -50,6 +54,7 @@ from .options import (
     ShrinkRayOptions,
     SkillPoints,
     SkyboardChallenges,
+    StartingWeapons,
     WeaponLevelChecks,
     racsm_option_groups,
 )
@@ -60,6 +65,7 @@ from .universal_tracker import setup_options_from_slot_data, tracker_world
 
 try:
     from worlds.dynamicpine import DynamicPineGame
+
     _DYNAMIC_PINE_SPEC = DynamicPineGame(
         game_ids="SCUS-97615",
         client_component="Ratchet & Clank: Size Matters Client",
@@ -67,14 +73,6 @@ try:
     )
 except ImportError:
     _DYNAMIC_PINE_SPEC = None
-
-
-class RACItem(Item):
-    game: str = "Ratchet & Clank: Size Matters"
-
-
-class RACLocation(Location):
-    game: str = "Ratchet & Clank: Size Matters"
 
 
 class RACWeb(WebWorld):
@@ -122,14 +120,21 @@ class RACSizeMatterWorld(World):
     def create_item(self, name: str) -> RACItem:
         data = ALL_ITEMS[name]
         classification = data.classification
-        if (classification == ItemClassification.useful
-                and self.options.armour_set_checks
-                and (name in ARMOUR_ITEM_TABLE or name in ARMOUR_PROGRESSIVE_ITEM_TABLE
-                     or name in ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE)):
+        if (
+            classification == ItemClassification.useful
+            and self.options.armour_set_checks
+            and (
+                name in ARMOUR_ITEM_TABLE
+                or name in ARMOUR_PROGRESSIVE_ITEM_TABLE
+                or name in ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE
+            )
+        ):
             classification = ItemClassification.progression_skip_balancing
-        if (classification == ItemClassification.useful
-                and self.options.weapon_level_checks
-                and name in WEAPON_ITEM_TABLE):
+        if (
+            classification == ItemClassification.useful
+            and self.options.weapon_level_checks
+            and name in WEAPON_ITEM_TABLE
+        ):
             classification = ItemClassification.progression_skip_balancing
         return RACItem(name, classification, data.code, self.player)
 
@@ -138,6 +143,31 @@ class RACSizeMatterWorld(World):
 
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
+        self._validate_weapon_options()
+
+    def _validate_weapon_options(self) -> None:
+        """EnabledWeapons/StartingWeapons combinations that make generation impossible or
+        silently drop starting weapons the player asked for: raise instead of failing later
+        with an opaque fill error, or quietly granting fewer starting weapons than requested."""
+        enabled_weapons = enabled_weapon_names(dict(self.options.enabled_weapons.value))
+        player_name = self.multiworld.get_player_name(self.player)
+        if len(enabled_weapons) < 1:
+            raise OptionError(
+                f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} has only "
+                f"{len(enabled_weapons)} weapon(s) enabled; at least 1 is required."
+            )
+        if not any(WEAPON_DATA[WEAPON_DISPLAY_TO_INTERNAL[name]].is_projectile for name in enabled_weapons):
+            raise OptionError(
+                f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} must include at least "
+                "one projectile weapon - many locations are only reachable with one."
+            )
+        starting_weapons = self.options.starting_weapons.value
+        if starting_weapons > len(enabled_weapons):
+            raise OptionError(
+                f"{player_name}'s RAC Size Matters: {StartingWeapons.display_name} "
+                f"({starting_weapons}) is greater than the number of weapons enabled by "
+                f"{EnabledWeapons.display_name} ({len(enabled_weapons)})."
+            )
 
     def create_regions(self) -> None:
         create_regions(self)
@@ -165,12 +195,14 @@ class RACSizeMatterWorld(World):
         if weapon_count > 0:
             if self.options.progressive_weapons:
                 weapon_pool = [
-                    PROGRESSIVE_WEAPON_NAME[display] for display in WEAPON_PROGRESSIVE_STEPS
+                    PROGRESSIVE_WEAPON_NAME[display]
+                    for display in WEAPON_PROGRESSIVE_STEPS
                     if (ng_plus or display not in NG_PLUS_WEAPONS) and display in enabled_weapons
                 ]
             else:
                 weapon_pool = [
-                    name for name in WEAPON_ITEM_TABLE
+                    name
+                    for name in WEAPON_ITEM_TABLE
                     if (ng_plus or name not in NG_PLUS_WEAPONS) and name in enabled_weapons
                 ]
             preplaced += self.random.sample(weapon_pool, min(weapon_count, len(weapon_pool)))
@@ -197,7 +229,8 @@ class RACSizeMatterWorld(World):
                 pool += [PROGRESSIVE_WEAPON_NAME[display]] * steps
         else:
             pool += [
-                name for name in WEAPON_ITEM_TABLE
+                name
+                for name in WEAPON_ITEM_TABLE
                 if (ng_plus or name not in NG_PLUS_WEAPONS) and name in enabled_weapons
             ]
 
@@ -212,9 +245,9 @@ class RACSizeMatterWorld(World):
                 pool += [PROGRESSIVE_MOD_NAME[display]] * steps
         else:
             pool += [
-                name for name in WEAPON_MOD_ITEM_TABLE
-                if (ng_plus or name not in NG_PLUS_WEAPON_MODS)
-                and WEAPON_MOD_NAME_TO_SLOT[name][0] in enabled_weapons
+                name
+                for name in WEAPON_MOD_ITEM_TABLE
+                if (ng_plus or name not in NG_PLUS_WEAPON_MODS) and WEAPON_MOD_NAME_TO_SLOT[name][0] in enabled_weapons
             ]
 
         pool += list(GADGET_ITEM_TABLE)
@@ -246,10 +279,7 @@ class RACSizeMatterWorld(World):
             steps = sum(4 for _display, internal in ARMOUR_SETS if _armour_set_enabled(internal))
             pool += [PROGRESSIVE_ARMOUR_UNIFIED_NAME] * steps
         else:
-            pool += [
-                name for name in ARMOUR_ITEM_TABLE
-                if _armour_set_enabled(ARMOUR_DISPLAY_TO_INTERNAL[name][0])
-            ]
+            pool += [name for name in ARMOUR_ITEM_TABLE if _armour_set_enabled(ARMOUR_DISPLAY_TO_INTERNAL[name][0])]
 
         for name in self.preplaced_items:
             pool.remove(name)
@@ -311,8 +341,10 @@ class RACSizeMatterWorld(World):
             f"{count} items have nowhere to be placed."
         )
         if count >= 20:
-            message += (f"\nThis large of a difference requires {ProgressiveWeapons.display_name} to be disabled, "
-                        f"{ClankChallenges.display_name} set to All, or {SkyboardChallenges.display_name} set to All.")
+            message += (
+                f"\nThis large of a difference requires {ProgressiveWeapons.display_name} to be disabled, "
+                f"{ClankChallenges.display_name} set to All, or {SkyboardChallenges.display_name} set to All."
+            )
         if count <= 10 and sum(self.options.start_inventory_from_pool.value.values()) <= 10:
             message += "Consider adding some items to your starting_items_from_pool or "
         else:
@@ -323,44 +355,47 @@ class RACSizeMatterWorld(World):
     def fill_slot_data(self) -> dict[str, Any]:
         return {
             "split_infobots": True,
-            "death_link": bool(self.options.death_link.value),
-            "ammo_link": bool(self.options.ammo_link.value),
-            "bolt_link": bool(self.options.bolt_link.value),
-            "ghost_link": bool(self.options.ghost_link.value) and bool(self.settings.ghost_link),
-            "ghost_link_update_interval": int(self.options.ghost_link_update_interval.value),
-            "all_missions": bool(self.options.all_missions.value),
-            "all_cutscenes": bool(self.options.all_cutscenes.value),
-            "giant_clank": bool(self.options.giant_clank.value),
-            "clank_challenges": self.options.clank_challenges.value,
-            "clank_challenge_groups": dict(self.options.clank_challenge_groups.value),
-            "skyboard_challenges": self.options.skyboard_challenges.value,
-            "shrink_ray_options": self.options.shrink_ray_options.value,
-
-            "skill_points": self.options.skill_points.value,
-            "enable_clank_challenge_skill_points": bool(self.options.enable_clank_challenge_skill_points.value),
-            "enable_skyboard_challenge_skill_points": bool(self.options.enable_skyboard_challenge_skill_points.value),
-            "armour_set_checks": bool(self.options.armour_set_checks.value),
-            "ng_plus_items": bool(self.options.ng_plus_items.value),
-            "challenge_mode": self.options.challenge_mode.value,
-            "progressive_challenge_mode": bool(self.options.progressive_challenge_mode.value),
-            "starting_bolts": self.options.starting_bolts.value,
-            "death_amnesty": self.options.death_amnesty.value,
-            "progressive_weapons": self.options.progressive_weapons.value,
-            "progressive_mods": self.options.progressive_mods.value,
-            "progressive_armour": self.options.progressive_armour.value,
-            "enabled_weapons": dict(self.options.enabled_weapons.value),
-            "starting_weapons": self.options.starting_weapons.value,
-            "starting_gadgets": self.options.starting_gadgets.value,
-            "random_starting_planet": self.options.random_starting_planet.value,
+            Rac5Options.DEATH_LINK: bool(self.options.death_link.value),
+            Rac5Options.AMMO_LINK: bool(self.options.ammo_link.value),
+            Rac5Options.BOLT_LINK: bool(self.options.bolt_link.value),
+            Rac5Options.GHOST_LINK: bool(self.options.ghost_link.value) and bool(self.settings.ghost_link),
+            Rac5Options.GHOST_LINK_UPDATE_INTERVAL: int(self.options.ghost_link_update_interval.value),
+            Rac5Options.ALL_MISSIONS: bool(self.options.all_missions.value),
+            Rac5Options.ALL_CUTSCENES: bool(self.options.all_cutscenes.value),
+            Rac5Options.GIANT_CLANK: bool(self.options.giant_clank.value),
+            Rac5Options.CLANK_CHALLENGES: self.options.clank_challenges.value,
+            Rac5Options.CLANK_CHALLENGE_GROUPS: dict(self.options.clank_challenge_groups.value),
+            Rac5Options.SKYBOARD_CHALLENGES: self.options.skyboard_challenges.value,
+            Rac5Options.SHRINK_RAY_OPTIONS: self.options.shrink_ray_options.value,
+            Rac5Options.SKILL_POINTS: self.options.skill_points.value,
+            Rac5Options.ENABLE_CLANK_CHALLENGE_SKILL_POINTS: bool(
+                self.options.enable_clank_challenge_skill_points.value
+            ),
+            Rac5Options.ENABLE_SKYBOARD_CHALLENGE_SKILL_POINTS: bool(
+                self.options.enable_skyboard_challenge_skill_points.value
+            ),
+            Rac5Options.ARMOUR_SET_CHECKS: bool(self.options.armour_set_checks.value),
+            Rac5Options.NG_PLUS_ITEMS: bool(self.options.ng_plus_items.value),
+            Rac5Options.CHALLENGE_MODE: self.options.challenge_mode.value,
+            Rac5Options.PROGRESSIVE_CHALLENGE_MODE: bool(self.options.progressive_challenge_mode.value),
+            Rac5Options.STARTING_BOLTS: self.options.starting_bolts.value,
+            Rac5Options.DEATH_AMNESTY: self.options.death_amnesty.value,
+            Rac5Options.PROGRESSIVE_WEAPONS: self.options.progressive_weapons.value,
+            Rac5Options.PROGRESSIVE_MODS: self.options.progressive_mods.value,
+            Rac5Options.PROGRESSIVE_ARMOUR: self.options.progressive_armour.value,
+            Rac5Options.ENABLED_WEAPONS: dict(self.options.enabled_weapons.value),
+            Rac5Options.STARTING_WEAPONS: self.options.starting_weapons.value,
+            Rac5Options.STARTING_GADGETS: self.options.starting_gadgets.value,
+            Rac5Options.RANDOM_STARTING_PLANET: self.options.random_starting_planet.value,
             "starting_planet_id": self.starting_planet_id,
-            "starting_skin": self.options.starting_skin.value,
-            "weapon_experience_multiplier": self.options.weapon_experience_multiplier.value,
-            "bolt_multiplier": self.options.bolt_multiplier.value,
-            "nanotech_experience_multiplier": self.options.nanotech_experience_multiplier.value,
-            "nanotech_level_interval": self.options.nanotech_level_interval.value,
-            "nanotech_level_max": self.options.nanotech_level_max.value,
-            "weapon_level_checks": self.options.weapon_level_checks.value,
-            "trap_duration": dict(self.options.trap_duration.value),
+            Rac5Options.STARTING_SKIN: self.options.starting_skin.value,
+            Rac5Options.WEAPON_EXPERIENCE_MULTIPLIER: self.options.weapon_experience_multiplier.value,
+            Rac5Options.BOLT_MULTIPLIER: self.options.bolt_multiplier.value,
+            Rac5Options.NANOTECH_EXPERIENCE_MULTIPLIER: self.options.nanotech_experience_multiplier.value,
+            Rac5Options.NANOTECH_LEVEL_INTERVAL: self.options.nanotech_level_interval.value,
+            Rac5Options.NANOTECH_LEVEL_MAX: self.options.nanotech_level_max.value,
+            Rac5Options.WEAPON_LEVEL_CHECKS: self.options.weapon_level_checks.value,
+            Rac5Options.TRAP_DURATION: dict(self.options.trap_duration.value),
         }
 
     @staticmethod

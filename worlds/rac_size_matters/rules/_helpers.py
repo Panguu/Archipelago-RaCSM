@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or, True_
 
 from ..constants import Rac5Gadgets, Rac5Infobots
-from ..core.weapons import WEAPON_DATA
+from ..data.weapons import WEAPON_DATA
 from ..items import (
     ARMOUR_SETS,
     PROGRESSIVE_ARMOUR_NAME,
@@ -12,80 +12,55 @@ from ..items import (
     PROGRESSIVE_WEAPON_NAME,
     WEAPON_DISPLAY_TO_INTERNAL,
 )
+from ..options import ShrinkRayOptions
 
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
-
 _PROJECTILE_WEAPONS = [
-    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
-    if WEAPON_DATA[internal].is_projectile
+    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_DATA[internal].is_projectile
 ]
-_PROJECTILE_WEAPONS_ALL_NAMES = [
-    *_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _PROJECTILE_WEAPONS),
-]
-
+_PROJECTILE_WEAPONS_ALL_NAMES = [*_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _PROJECTILE_WEAPONS)]
 _ARMOUR_PIECE_INDEX: dict[str, int] = {"Chestplate": 1, "Helmet": 2, "Gloves": 3, "Boots": 4}
-
 _ARMOUR_SET_ORDER_INDEX: dict[str, int] = {display: i for i, (display, _internal) in enumerate(ARMOUR_SETS)}
 
 
 def _unified_armour_count(set_display: str, piece_name: str) -> int:
-    """Copies of PROGRESSIVE_ARMOUR_UNIFIED_NAME needed to have granted `piece_name` of
-    `set_display`: every piece of every earlier set in ARMOUR_SETS order, plus this
-    piece's own 1-indexed position within its set."""
+    """Copies of PROGRESSIVE_ARMOUR_UNIFIED_NAME needed to have granted `piece_name` of `set_display`: every piece of every earlier set in ARMOUR_SETS order, plus this piece's own 1-indexed position within its set."""
     return _ARMOUR_SET_ORDER_INDEX[set_display] * 4 + _ARMOUR_PIECE_INDEX[piece_name]
 
 
 def HasProjectileWeapon() -> HasAny:
     return HasAny(*_PROJECTILE_WEAPONS_ALL_NAMES)
 
+
 def HasArmourPiece(set_display: str, piece_name: str) -> HasAnyCount:
-    return HasAnyCount({
-        f"{set_display} {piece_name}": 1,
-        PROGRESSIVE_ARMOUR_NAME[set_display]: _ARMOUR_PIECE_INDEX[piece_name],
-        PROGRESSIVE_ARMOUR_UNIFIED_NAME: _unified_armour_count(set_display, piece_name),
-    })
-def HasWeapon(weapon: str) -> HasAny:
-    return HasAny(weapon, PROGRESSIVE_WEAPON_NAME[weapon])
+    return HasAnyCount(
+        {
+            f"{set_display} {piece_name}": 1,
+            PROGRESSIVE_ARMOUR_NAME[set_display]: _ARMOUR_PIECE_INDEX[piece_name],
+            PROGRESSIVE_ARMOUR_UNIFIED_NAME: _unified_armour_count(set_display, piece_name),
+        }
+    )
+
 
 def HasTitanPrereq(world: "RACSizeMatterWorld", weapon: str) -> HasAny | Has:
-    """Weapon Titan variant purchase prerequisite: reaching level 4 is what
-    unlocks the purchase in-game (see core/vendor.py's Titan-purchase
-    handling, which floors the weapon to level 5 the moment it's bought).
-    Off mode has no logic-checkable level gate (leveling is unconstrained by
-    play alone, same reasoning as HasWeapon() elsewhere), so just owning the
-    weapon is enough; manual/automatic require 4 Progressive Weapon copies."""
+    """Weapon Titan variant purchase prerequisite: reaching level 4 is what unlocks the purchase in-game (see core/vendor.py's Titan-purchase handling, which floors the weapon to level 5 the moment it's bought)."""
     if world.options.progressive_weapons:
         return Has(PROGRESSIVE_WEAPON_NAME[weapon], 4)
-    return HasWeapon(weapon)
+    return HasAny(weapon, PROGRESSIVE_WEAPON_NAME[weapon])
+
 
 def HasArmourSet(set_display: str) -> And:
     return And(*(HasArmourPiece(set_display, piece) for piece in _ARMOUR_PIECE_INDEX))
 
-def HasGadget(gadget: str) -> HasAny:
-    return HasAny(gadget)
-
-def HasInfobot(infobot: str) -> HasAny:
-    return Has(infobot)
 
 def weapon_enabled(world: "RACSizeMatterWorld", weapon: str) -> bool:
-    """EnabledWeapons option (options.py): whether `weapon` (display name) is still
-    in the pool at all. Every per-planet rules/<planet>.py file must guard its
-    weapon/mod/Titan vendor-location set_rule() calls with this — regions.py skips
-    creating those Locations entirely for a disabled weapon (see
-    locations.disabled_weapon_location_names()), so an unguarded set_rule() would
-    target a Location that doesn't exist."""
+    """EnabledWeapons option (options.py): whether `weapon` (display name) is still in the pool at all."""
     return weapon in world.options.enabled_weapons.value
 
 
 def HasChallengeMode(world: "RACSizeMatterWorld", tier: int) -> Has | True_:
-    """Challenge Mode tier gate for content options.py's ChallengeMode option makes
-    exist at all (RYNO, Titan variants, Challenge-Mode-only mods, Hyperborean/Chameleon
-    pickups). With ProgressiveChallengeMode off (default), that content is reachable as
-    soon as its own region/other requirements are, exactly like today — the tier is a
-    fixed connect-time value, not something logic can gate on. With it on, reaching
-    tier `tier` additionally requires having received that many Progressive Challenge
-    Mode items, since the in-game tier now only rises as those items come in."""
+    """Challenge Mode tier gate for content options.py's ChallengeMode option makes exist at all (RYNO, Titan variants, Challenge-Mode-only mods, Hyperborean/Chameleon pickups)."""
     if not world.options.progressive_challenge_mode:
         return True_()
     return Has(PROGRESSIVE_CHALLENGE_MODE_NAME, tier)
@@ -102,6 +77,9 @@ def HasGoodExpPlanet() -> Or:
 
 def HasShrinkRayDoorAccess(world):
     """Skip mode opens door interlocks without the gadget."""
-    from ..options import ShrinkRayOptions
-    return (True_() if world.options.shrink_ray_options.value == ShrinkRayOptions.option_skip
-            else Has(Rac5Gadgets.SHRINK_RAY))
+
+    return (
+        True_()
+        if world.options.shrink_ray_options.value == ShrinkRayOptions.option_skip
+        else Has(Rac5Gadgets.SHRINK_RAY)
+    )

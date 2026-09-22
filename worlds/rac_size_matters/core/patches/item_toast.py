@@ -1,42 +1,42 @@
-"""Render-only item message, with no prompt state or controller writes.
+"""Render-only item message, with no prompt state or controller writes."""
 
-Runs after the native small-prompt renderer. Storage belongs to the disabled
-starter-grant function (see vendor.py), so the loader must install both plans.
-The game expires the message in rendered frames; no delayed IPC callbacks can
-write into a different level after a transition.
-"""
 import re
 import struct
 
-from . import mips as m
+from . import asm as m
 from .asm import Patch, jump, packed
-from .plan import Plan
+from .plan import Plan, supported_game_id
 
 
 def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, status_hook=None):
+    game_id = supported_game_id(pine)
     def read(address, count):
         offset = address - code_start
         if not 0 <= offset <= len(code) - count:
             raise RuntimeError("Item message code outside loaded module")
-        return code[offset:offset + count]
+        return code[offset : offset + count]
 
     def target(address):
-        word, = struct.unpack("<I", read(address, 4))
+        (word,) = struct.unpack("<I", read(address, 4))
         if word >> 26 != 3:
             raise RuntimeError("Item message renderer call changed")
         return (word & 0x3FFFFFF) << 2
 
-    signature = packed(0x27BDFFD0, 0x3C020000 | ((small_box + 0x8000) >> 16),
-                       0xFFB00010, 0x24420000 | (small_box & 0xFFFF),
-                       0xFFBF0018, 0x00048080, 0xE7B40020)
-    hits = [i for i in range(0, len(code) - len(signature), 4)
-            if code[i:i + len(signature)] == signature]
+    signature = packed(
+        0x27BDFFD0,
+        0x3C020000 | ((small_box + 0x8000) >> 16),
+        0xFFB00010,
+        0x24420000 | (small_box & 0xFFFF),
+        0xFFBF0018,
+        0x00048080,
+        0xE7B40020,
+    )
+    hits = [i for i in range(0, len(code) - len(signature), 4) if code[i : i + len(signature)] == signature]
     if len(hits) != 1:
         raise RuntimeError("Expected one small-prompt renderer")
     draw = code_start + hits[0]
     wrapper = draw + 0x190
-    expected = packed(0x27BDFFF0, 0xFFBF0000, jump(draw), 0x0000202D,
-                       0xDFBF0000, 0x03E00008, 0x27BD0010)
+    expected = packed(0x27BDFFF0, 0xFFBF0000, jump(draw), 0x0000202D, 0xDFBF0000, 0x03E00008, 0x27BD0010)  # Call draw.
     if read(wrapper, len(expected)) != expected:
         raise RuntimeError("Small-prompt renderer wrapper changed")
     font, colour, text = (target(draw + offset) for offset in (0x30, 0xCC, 0x100))
@@ -46,33 +46,56 @@ def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, stat
     timer = entry + 128
     message = timer + 4
     words = [
-        m.addiu(m.SP, m.SP, -16), m.sd(m.RA, 8, m.SP), jump(draw), m.daddu(m.A0, m.ZERO, m.ZERO),
-        m.lui(m.T0, (timer + 0x8000) >> 16),
-        m.lw(m.T1, timer & 0xFFFF, m.T0),
-        m.beq(m.T1, m.ZERO, 27 - 6 - 1),       # empty -> epilogue (word 27)
-        m.addiu(m.T1, m.T1, -1),
-        m.sw(m.T1, timer & 0xFFFF, m.T0),
-        m.daddu(m.A0, m.ZERO, m.ZERO), jump(font), m.daddu(m.A1, m.ZERO, m.ZERO),
-        m.lui(m.A0, 0xFFFF), jump(colour), m.ori(m.A0, m.A0, 0xFFFF),
-        m.lui(m.A2, (message + 0x8000) >> 16),
-        m.addiu(m.A2, m.A2, message & 0xFFFF),
-        m.addiu(m.A0, m.ZERO, 0xEF), jump(text), m.addiu(m.A1, m.ZERO, 0xCD),
+        m.addiu(m.SP, m.SP, -16),  # Set SP to SP + -16.
+        m.sd(m.RA, 8, m.SP),  # Store RA at SP + 8.
+        jump(draw),  # Call draw.
+        m.daddu(m.A0, m.ZERO, m.ZERO),  # Add signed immediate; Save 64-bit register; Add 64-bit registers.
+        m.lui(m.T0, (timer + 0x8000) >> 16),  # Load upper half of T0 with timer + 32768 >> 16.
+        m.lw(m.T1, timer & 0xFFFF, m.T0),  # Load T1 from T0 + timer & 65535.
+        m.beq(m.T1, m.ZERO, 27 - 6 - 1),  # empty -> epilogue (word 27)
+        m.addiu(m.T1, m.T1, -1),  # Set T1 to T1 + -1.
+        m.sw(m.T1, timer & 0xFFFF, m.T0),  # Store T1 at T0 + timer & 65535.
+        m.daddu(m.A0, m.ZERO, m.ZERO),  # Set A0 to ZERO + ZERO.
+        jump(font),  # Call font.
+        m.daddu(m.A1, m.ZERO, m.ZERO),  # Add 64-bit registers.
+        m.lui(m.A0, 0xFFFF),  # Load upper half of A0 with 65535.
+        jump(colour),  # Call colour.
+        m.ori(m.A0, m.A0, 0xFFFF),  # Load upper immediate; OR immediate.
+        m.lui(m.A2, (message + 0x8000) >> 16),  # Load upper half of A2 with message + 32768 >> 16.
+        m.addiu(m.A2, m.A2, message & 0xFFFF),  # Set A2 to A2 + message & 65535.
+        m.addiu(m.A0, m.ZERO, 0xEF),  # Set A0 to ZERO + 239.
+        jump(text),  # Call text.
+        m.addiu(m.A1, m.ZERO, 0xCD),  # Set A1 to ZERO + 205.
     ]
     if frame_hook is not None:
         # Run with no notification too; preserve the fixed data offsets.
-        words[2:2] = [jump(frame_hook), m.NOP]
-        words[8] = m.beq(m.T1, m.ZERO, 27 - 8 - 1)
+        words[2:2] = [jump(frame_hook), m.NOP]  # Call frame_hook.
+        words[8] = m.beq(m.T1, m.ZERO, 27 - 8 - 1)  # Branch 27 - 8 - 1 words if T1 == ZERO.
     if status_hook is not None:
         # Draw after the native prompt, even when no item message is queued.
         insert = 6 if frame_hook is not None else 4
-        words[insert:insert] = [jump(status_hook), m.NOP]
+        words[insert:insert] = [jump(status_hook), m.NOP]  # Call status_hook.
         empty_branch = 10 if frame_hook is not None else 8
-        words[empty_branch] = m.beq(m.T1, m.ZERO, 27 - empty_branch - 1)
+        words[empty_branch] = m.beq(
+            m.T1, m.ZERO, 27 - empty_branch - 1
+        )  # Branch 27 - empty_branch - 1 words if T1 == ZERO.
     words += [0] * (27 - len(words))
-    words += [m.ld(m.RA, 8, m.SP), m.jr(m.RA), m.addiu(m.SP, m.SP, 16), m.NOP, m.NOP]
+    words += [
+        m.ld(m.RA, 8, m.SP),  # Load RA from SP + 8.
+        m.jr(m.RA),  # Jump to RA.
+        m.addiu(m.SP, m.SP, 16),  # Set SP to SP + 16.
+        m.NOP,
+        m.NOP,
+    ]  # Load 64-bit register; Jump to register; Add signed immediate; No operation.
     replacement = packed(*words) + bytes(100)
-    plan = Plan(pine, [Patch(entry, read(entry, len(replacement)), replacement),
-                       Patch(wrapper + 8, packed(jump(draw)), packed(jump(entry)))])
+    plan = Plan(
+        pine,
+        [
+            Patch(entry, read(entry, len(replacement)), replacement),
+            Patch(wrapper + 8, packed(jump(draw)), packed(jump(entry))),  # Call draw. Call entry.
+        ],
+        expected_game_id=game_id,
+    )
     plan.mutable_data = ((timer, 100),)
     plan.timer, plan.message = timer, message
     plan.font, plan.colour, plan.text = font, colour, text
@@ -93,8 +116,9 @@ def format_text(value):
 
 def _wrap_text(value):
     """Wrap visible characters while retaining complete native colour pairs."""
-    raw = (bytes(value) if isinstance(value, (bytes, bytearray))
-           else str(value).encode("ascii", errors="replace")).split(b"\0", 1)[0]
+    raw = (
+        bytes(value) if isinstance(value, (bytes, bytearray)) else str(value).encode("ascii", errors="replace")
+    ).split(b"\0", 1)[0]
     result = bytearray()
     line, width = 0, 0
     words = raw.replace(b"\n", b" \n ").split(b" ")

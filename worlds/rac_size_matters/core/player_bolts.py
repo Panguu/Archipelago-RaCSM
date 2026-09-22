@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from . import address_maps
 from .address_maps import PLAYER_BOLT_COUNT
 
 if TYPE_CHECKING:
@@ -20,10 +21,10 @@ class PlayerBoltInventory:
         self._prev: int | None = None
 
     def get(self) -> int:
-        return self.pine.read_int32(PLAYER_BOLT_COUNT)
+        return self.pine.read_int32(address_maps.PLAYER_BOLT_COUNT)
 
     def set(self, value: int) -> None:
-        self.pine.write_int32(PLAYER_BOLT_COUNT, min(value, MAX_PLAYER_BOLTS))
+        self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, min(value, MAX_PLAYER_BOLTS))
 
     def rebaseline(self, value: int | None = None) -> None:
         """Re-sync the baseline apply_boost() diffs against, without boosting anything.

@@ -6,6 +6,7 @@ from CommonClient import logger
 from NetUtils import ClientStatus
 
 from ..core import ARMOUR_SET_CHECKS
+from ..core import address_maps
 from ..core.address_maps import PLAYER_BOLT_COUNT
 from ..core.player_bolts import MAX_PLAYER_BOLTS
 
@@ -33,6 +34,14 @@ class EventsHandlerMixin:
 
     def _on_planet_ready(self) -> None:
         """Reapply AP inventory and saved levels after the planet array is reset."""
+        if self._save_data_received and not self._ap_loadout_restored:
+            saved = self._stored_save_data()
+            if saved.quick_select:
+                self._wiring.quick_select.load(saved.quick_select)
+                self._wiring.quick_select.restore()
+            if saved.armour_slots:
+                self._wiring.armour.sync_equipped(saved.armour_slots)
+            self._ap_loadout_restored = True
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
         self._try_restore_weapon_state(force=True)
@@ -51,9 +60,9 @@ class EventsHandlerMixin:
             return
         async with self._pine_lock:
             try:
-                current = self.pine.read_int32(PLAYER_BOLT_COUNT)
+                current = self.pine.read_int32(address_maps.PLAYER_BOLT_COUNT)
                 granted = min(current + starting_bolts, MAX_PLAYER_BOLTS)
-                self.pine.write_int32(PLAYER_BOLT_COUNT, granted)
+                self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, granted)
                 self._wiring.player_bolts.rebaseline(granted)
             except Exception as exc:
                 logger.warning(f"[RAC] Could not grant starting bolts: {exc}")

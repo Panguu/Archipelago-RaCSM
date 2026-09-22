@@ -1,3 +1,5 @@
+from .constants.options import Rac5Options
+
 """Universal Tracker integration for Ratchet & Clank: Size Matters"""
 
 from typing import TYPE_CHECKING, Any
@@ -6,16 +8,16 @@ if TYPE_CHECKING:
     from worlds.rac_size_matters.world import RACSizeMatterWorld
 
 PLANET_TO_MAP_INDEX: dict[str, int] = {
-    "Pokitaru":     1,
-    "Ryllus":       2,
-    "Kalidon":      3,
-    "Metalis":      4,
-    "Dreamtime":    5,
+    "Pokitaru": 1,
+    "Ryllus": 2,
+    "Kalidon": 3,
+    "Metalis": 4,
+    "Dreamtime": 5,
     "Outpost Omega": 6,
-    "Challax":      7,
-    "Dayni Moon":   8,
+    "Challax": 7,
+    "Dayni Moon": 8,
     "Inside Clank": 9,
-    "Quodrona":     10,
+    "Quodrona": 10,
 }
 
 PLANET_ID_TO_REGION: dict[int, str] = {
@@ -40,46 +42,51 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
         if world.game in world.multiworld.re_gen_passthrough:
             world.using_ut = True
             world.passthrough = world.multiworld.re_gen_passthrough[world.game]
-            world.options.all_missions.value = world.passthrough.get("all_missions", True)
-            world.options.all_cutscenes.value = world.passthrough.get("all_cutscenes", False)
-            world.options.giant_clank.value = world.passthrough.get("giant_clank", False)
-            world.options.progressive_weapons.value = world.passthrough["progressive_weapons"]
-            world.options.progressive_mods.value = world.passthrough.get("progressive_mods", False)
-            world.options.progressive_armour.value = world.passthrough["progressive_armour"]
+            world.options.all_missions.value = world.passthrough.get(Rac5Options.ALL_MISSIONS, True)
+            world.options.all_cutscenes.value = world.passthrough.get(Rac5Options.ALL_CUTSCENES, False)
+            world.options.giant_clank.value = world.passthrough.get(Rac5Options.GIANT_CLANK, False)
+            world.options.progressive_weapons.value = world.passthrough[Rac5Options.PROGRESSIVE_WEAPONS]
+            world.options.progressive_mods.value = world.passthrough.get(Rac5Options.PROGRESSIVE_MODS, False)
+            world.options.progressive_armour.value = world.passthrough[Rac5Options.PROGRESSIVE_ARMOUR]
             world.options.enabled_weapons.value = world.passthrough.get(
-                "enabled_weapons", dict(world.options.enabled_weapons.default)
+                Rac5Options.ENABLED_WEAPONS, dict(world.options.enabled_weapons.default)
             )
-            world.options.death_link.value = world.passthrough["death_link"]
-            world.options.clank_challenges.value = world.passthrough.get("clank_challenges", 0)
+            world.options.death_link.value = world.passthrough[Rac5Options.DEATH_LINK]
+            world.options.clank_challenges.value = world.passthrough.get(Rac5Options.CLANK_CHALLENGES, 0)
             world.options.clank_challenge_groups.value = world.passthrough.get(
-                "clank_challenge_groups", dict(world.options.clank_challenge_groups.default)
+                Rac5Options.CLANK_CHALLENGE_GROUPS, dict(world.options.clank_challenge_groups.default)
             )
-            world.options.skyboard_challenges.value = world.passthrough.get("skyboard_challenges", 0)
-            world.options.shrink_ray_options.value = world.passthrough.get("shrink_ray_options", 1)
-            world.options.skill_points.value = world.passthrough.get("skill_points", True)
-            world.options.enable_clank_challenge_skill_points.value = \
-                world.passthrough.get("enable_clank_challenge_skill_points", False)
-            world.options.enable_skyboard_challenge_skill_points.value = \
-                world.passthrough.get("enable_skyboard_challenge_skill_points", False)
+            world.options.skyboard_challenges.value = world.passthrough.get(Rac5Options.SKYBOARD_CHALLENGES, 0)
+            world.options.shrink_ray_options.value = world.passthrough.get(Rac5Options.SHRINK_RAY_OPTIONS, 1)
+            world.options.skill_points.value = world.passthrough.get(Rac5Options.SKILL_POINTS, True)
+            world.options.enable_clank_challenge_skill_points.value = world.passthrough.get(
+                Rac5Options.ENABLE_CLANK_CHALLENGE_SKILL_POINTS, False
+            )
+            world.options.enable_skyboard_challenge_skill_points.value = world.passthrough.get(
+                Rac5Options.ENABLE_SKYBOARD_CHALLENGE_SKILL_POINTS, False
+            )
 
-            world.options.armour_set_checks.value = world.passthrough["armour_set_checks"]
-            world.options.ng_plus_items.value = world.passthrough.get("ng_plus_items", True)
-            world.options.challenge_mode.value = world.passthrough.get("challenge_mode", 0)
-            world.options.progressive_challenge_mode.value = \
-                world.passthrough.get("progressive_challenge_mode", False)
-            world.options.random_starting_planet.value = world.passthrough.get("random_starting_planet", 0)
-            world.options.starting_weapons.value = world.passthrough["starting_weapons"]
-            world.options.starting_gadgets.value = world.passthrough["starting_gadgets"]
-            world.options.starting_bolts.value = world.passthrough["starting_bolts"]
-            world.options.death_amnesty.value = world.passthrough["death_amnesty"]
-            world.options.weapon_level_checks.value = world.passthrough.get("weapon_level_checks", 0)
-            world.options.nanotech_level_interval.value = world.passthrough.get("nanotech_level_interval", 0)
-            world.options.nanotech_level_max.value = world.passthrough.get("nanotech_level_max", 75)
-            world.options.weapon_experience_multiplier.value = \
-                world.passthrough.get("weapon_experience_multiplier", 0)
-            world.options.bolt_multiplier.value = world.passthrough.get("bolt_multiplier", 0)
-            world.options.nanotech_experience_multiplier.value = \
-                world.passthrough.get("nanotech_experience_multiplier", 0)
+            world.options.armour_set_checks.value = world.passthrough[Rac5Options.ARMOUR_SET_CHECKS]
+            world.options.ng_plus_items.value = world.passthrough.get(Rac5Options.NG_PLUS_ITEMS, True)
+            world.options.challenge_mode.value = world.passthrough.get(Rac5Options.CHALLENGE_MODE, 0)
+            world.options.progressive_challenge_mode.value = world.passthrough.get(
+                Rac5Options.PROGRESSIVE_CHALLENGE_MODE, False
+            )
+            world.options.random_starting_planet.value = world.passthrough.get(Rac5Options.RANDOM_STARTING_PLANET, 0)
+            world.options.starting_weapons.value = world.passthrough[Rac5Options.STARTING_WEAPONS]
+            world.options.starting_gadgets.value = world.passthrough[Rac5Options.STARTING_GADGETS]
+            world.options.starting_bolts.value = world.passthrough[Rac5Options.STARTING_BOLTS]
+            world.options.death_amnesty.value = world.passthrough[Rac5Options.DEATH_AMNESTY]
+            world.options.weapon_level_checks.value = world.passthrough.get(Rac5Options.WEAPON_LEVEL_CHECKS, 0)
+            world.options.nanotech_level_interval.value = world.passthrough.get(Rac5Options.NANOTECH_LEVEL_INTERVAL, 0)
+            world.options.nanotech_level_max.value = world.passthrough.get(Rac5Options.NANOTECH_LEVEL_MAX, 75)
+            world.options.weapon_experience_multiplier.value = world.passthrough.get(
+                Rac5Options.WEAPON_EXPERIENCE_MULTIPLIER, 0
+            )
+            world.options.bolt_multiplier.value = world.passthrough.get(Rac5Options.BOLT_MULTIPLIER, 0)
+            world.options.nanotech_experience_multiplier.value = world.passthrough.get(
+                Rac5Options.NANOTECH_EXPERIENCE_MULTIPLIER, 0
+            )
         else:
             world.using_ut = False
     else:

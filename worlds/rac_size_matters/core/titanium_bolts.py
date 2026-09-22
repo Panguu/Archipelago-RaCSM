@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..locations import ALL_LOCATIONS
+from ..locations.observation import LocationObservation
+from . import address_maps
 from .address_maps import TITANIUM_BOLT_BASE
 from .locations.titanium_bolt_locations import BOLT_BY_PLANET_AND_DELTA, TITANIUM_BOLTS, TitaniumBolt
 
@@ -15,15 +18,14 @@ __all__ = [
     "TitaniumBoltInventory",
 ]
 
-_PICKUP_ADDR = TITANIUM_BOLT_BASE + 0x00
-_TOTAL_ADDR  = TITANIUM_BOLT_BASE + 0x05
+_PICKUP_ADDR = address_maps.TITANIUM_BOLT_BASE + 0x00
+_TOTAL_ADDR = address_maps.TITANIUM_BOLT_BASE + 0x05
 
 
 class TitaniumBoltSlot:
     """Pine-backed accessor for the 5-byte cumulative bolt-pickup bitmask."""
 
-    def __init__(self, address: int) -> None:
-        self.address = address
+    address = address_maps.Address("TITANIUM_BOLT_BASE")
 
     def __get__(self, instance, owner) -> int | None:
         if instance is None:
@@ -44,8 +46,7 @@ class TitaniumBoltSlot:
 class TitaniumBoltTotalSlot:
     """Pine-backed accessor for the single-byte cumulative bolt count."""
 
-    def __init__(self, address: int) -> None:
-        self.address = address
+    address = address_maps.Address("TITANIUM_BOLT_BASE", 5)
 
     def __get__(self, instance, owner) -> int | None:
         if instance is None:
@@ -67,8 +68,8 @@ class TitaniumBoltInventory:
     """Pine-backed live accessor + completion tracking for titanium bolts,
     replacing TitaniumBoltState. Global fixed address — no per-planet base."""
 
-    pickup = TitaniumBoltSlot(_PICKUP_ADDR)
-    total  = TitaniumBoltTotalSlot(_TOTAL_ADDR)
+    pickup = TitaniumBoltSlot()
+    total = TitaniumBoltTotalSlot()
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
@@ -87,17 +88,17 @@ class TitaniumBoltInventory:
     def delete(self, name: str) -> None:
         self.set(name, False)
 
-    def check(self) -> list[str]:
+    def check(self, current: int | None = None) -> list[str]:
         """Read the cumulative bitmask and return newly completed AP location names for this call."""
-        current = self.pickup
+        current = self.pickup if current is None else current
         delta = current & ~self._last
         self._last = current
-        newly: list[str] = []
-        if delta:
-            for name, bolt in TITANIUM_BOLTS.items():
-                if name not in self.completed and (delta & bolt.delta):
-                    self.completed.add(name)
-                    newly.append(name)
+
+        observation = LocationObservation(bolt_bits=delta)
+        newly = [
+            name for name in TITANIUM_BOLTS if name not in self.completed and ALL_LOCATIONS[name].completed(observation)
+        ]
+        self.completed.update(newly)
         return newly
 
     def sync(self) -> None:

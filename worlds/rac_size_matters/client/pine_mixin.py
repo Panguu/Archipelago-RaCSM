@@ -7,15 +7,25 @@ from CommonClient import logger
 
 from ..core import TextColour, colored_text, reconcile_traps
 from ..universal_tracker import PLANET_ID_TO_REGION
-from .constants import EXPECTED_GAME_ID, PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
+from ..core.address_maps import SUPPORTED_GAMES
+from .constants import PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
 
 _WEAPON_STATE_PUSH_INTERVAL: float = 5.0
 
 
 class PineMixin:
-    """Owns the raw PINE socket and poll loop that drives Core.tick(). The game's SCUS id is
-    re-verified every poll, not just at connect, so Core never has to reason about connection health."""
+    """Detect the supported region before driving Core and recheck every poll."""
+
+    def _select_game_region(self, game_id: str) -> None:
+        """Called under the PINE lock, before any initial reads or game ticks."""
+        if self._wiring.select_game(game_id):
+            self._weapon_state_restored = False
+            self._ap_loadout_restored = False
+            self._connection_sync_pending = True
+            self._pending_item_apply = True
+            self.current_planet = "Galaxy"
+            logger.info(f"[RAC] Selected {SUPPORTED_GAMES[game_id]} addresses [{game_id}].")
 
     async def _teardown_pine_connection(self) -> None:
         """Drop the raw socket. Safe to call even if it's already down."""
@@ -48,10 +58,10 @@ class PineMixin:
         elif known_game:
             logger.warning(
                 f"[RAC] Wrong game in PCSX2: detected {known_game} [{game_id}]. This client is for "
-                f"Ratchet & Clank: Size Matters [{EXPECTED_GAME_ID}]. Connection rejected."
+                "Ratchet & Clank: Size Matters (US/EU/JP). Connection rejected."
             )
         else:
-            logger.warning(f"[RAC] Wrong game in PCSX2: {game_id!r} (expected {EXPECTED_GAME_ID!r}). "
+            logger.warning(f"[RAC] Unsupported game in PCSX2: {game_id!r} (supported: {', '.join(SUPPORTED_GAMES)}). "
                             "Connection rejected.")
         async with self._pine_lock:
             await self._teardown_pine_connection()
@@ -68,20 +78,27 @@ class PineMixin:
                 await self._teardown_pine_connection()
                 return
 
-        if game_id != EXPECTED_GAME_ID:
+        if game_id not in SUPPORTED_GAMES:
             await self._reject_wrong_game(game_id, is_disconnect=False)
             return
 
         await asyncio.sleep(PINE_CONNECT_SETTLE_DELAY_S)
 
+        # PCSX2 may have changed games during the settle delay.
+        async with self._pine_lock:
+            game_id = self.pine.get_game_id()
+        if game_id not in SUPPORTED_GAMES:
+            await self._reject_wrong_game(game_id, is_disconnect=False)
+            return
+
         async with self._pine_lock:
             logger.info(
-                "[RAC] Reconnected to PCSX2 - R&C: Size Matters detected."
-                if is_reconnect else
-                "[RAC] Connected to PCSX2 - R&C: Size Matters detected."
+                f"[RAC] {'Reconnected' if is_reconnect else 'Connected'} to PCSX2 - "
+                f"R&C: Size Matters {SUPPORTED_GAMES[game_id]} [{game_id}] detected."
             )
             self.pine_connected = True
             try:
+                self._select_game_region(game_id)
                 self._wiring.sync_from_ap(self._checked_location_names())
                 self._connection_sync_pending = True
                 self._wiring._ap_inventory_ready = False
@@ -147,7 +164,9 @@ class PineMixin:
     async def _poll_game(self) -> None:
         async with self._pine_lock:
             game_id = self.pine.get_game_id()
-        if game_id != EXPECTED_GAME_ID:
+            if game_id in SUPPORTED_GAMES:
+                self._select_game_region(game_id)
+        if game_id not in SUPPORTED_GAMES:
             await self._reject_wrong_game(game_id, is_disconnect=True)
             return
 

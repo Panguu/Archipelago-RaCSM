@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
+from ..data.weapons import WEAPON_MAX_LEVELS
+
 
 @dataclass
 class RAC5SaveData:
@@ -26,15 +28,13 @@ class RAC5SaveData:
         if not isinstance(data, dict):
             return cls()
         # Accept the old [level, experience] format, discarding experience.
-        from .weapons import WEAPON_MAX_LEVELS
         levels = {}
         raw = data.get("weapon_state")
         if isinstance(raw, dict):
             for name, value in raw.items():
                 if isinstance(value, (list, tuple)) and len(value) == 2:
                     value = value[0]
-                if (name in WEAPON_MAX_LEVELS and type(value) is int
-                        and 0 <= value < WEAPON_MAX_LEVELS[name]):
+                if name in WEAPON_MAX_LEVELS and type(value) is int and 0 <= value < WEAPON_MAX_LEVELS[name]:
                     levels[name] = value
         return cls(
             quick_select=dict(data.get("quick_select") or {}),

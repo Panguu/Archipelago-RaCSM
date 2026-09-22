@@ -2,6 +2,7 @@
 import struct
 
 from .asm import packed
+from .plan import supported_game_id
 
 SIGNATURE = packed(0x8C830058, 0x90620050, 0x03E00008, 0x0002102B,
                    0x27BDFFC0, 0xFFB20030, 0xFFB00020, 0x0080902D,
@@ -28,13 +29,14 @@ def prepare(pine, *, code_start, code):
 class DoorLocks:
     def __init__(self, pine, getter):
         self.pine, self.getter = pine, getter
+        self.game_id = supported_game_id(pine)
         self.installed = False
         self.locks = None
         self.changed = set()
 
     def _validate(self, replacement=False):
-        if self.pine.get_game_id() != "SCUS-97615":
-            raise RuntimeError("Shrink Ray bypass requires SCUS-97615")
+        if self.pine.get_game_id() != self.game_id:
+            raise RuntimeError(f"Shrink Ray bypass requires {self.game_id}")
         if self.pine.read_bytes(self.getter, len(SIGNATURE)) != SIGNATURE:
             raise RuntimeError("Shrink Ray module changed")
 
@@ -90,7 +92,7 @@ class DoorLocks:
         self._validate()
         # Restore interlocks only. Native completion still takes precedence;
         # a door already opened may require a level reload to close again.
-        flags = self.pine.read_int16(0x1F4B40E)
+        flags = self.pine.read_int16(0x1F4B24E if self.game_id == "SCPS-15120" else 0x1F4B40E)
         for lock in self.changed:
             if self._valid_lock(lock) and self.pine.read_int32(lock[3] + 0x4C) == 0:
                 self.pine.write_int8(lock[3] + 0x50, int(not flags & (1 << lock[4])))

@@ -1,8 +1,9 @@
 """Execute the new callbacks against bounded retail instruction fixtures."""
+
 import unittest
 from types import SimpleNamespace
 
-from ..core.patches import inside_clank_exit, item_toast, mips as m, skins
+from ..core.patches import asm as m, inside_clank_exit, item_toast, skins
 from ..core.patches.asm import packed
 from ..core.patches.loader_gate import LoaderGate
 from ..core.skins import Skin, SkinInventory
@@ -19,8 +20,11 @@ def prepare(name="pokitaru"):
         p.writes.clear()
     kwargs = dict(code_start=f["base"], code=p.read_bytes(f["base"], 0x240000), arena=f["arena"])
     skin = skins.prepare(p, **kwargs, menu=f["menu"])
-    exit_plan = (inside_clank_exit.prepare(p, **kwargs, gate=SimpleNamespace(
-        pine=p, held_module=lambda: (9, f["base"]))) if f["planet"] == 9 else None)
+    exit_plan = (
+        inside_clank_exit.prepare(p, **kwargs, gate=SimpleNamespace(pine=p, held_module=lambda: (9, f["base"])))
+        if f["planet"] == 9
+        else None
+    )
     return p, f, skin, exit_plan
 
 
@@ -59,7 +63,7 @@ class SkinExitTests(unittest.TestCase):
                 # Decode the original save-pointer load reused by the callback.
                 payload = plan.edits[1].replacement
                 index = payload.index(packed(0x8C43F32C))
-                upper = int.from_bytes(payload[index - 4:index], "little") & 65535
+                upper = int.from_bytes(payload[index - 4 : index], "little") & 65535
                 p.write_int32((upper << 16) - 0xCD4, 0x1F4AB00)
                 inv = SkinInventory(p)
                 inv.set(selected)
@@ -117,10 +121,14 @@ class SkinExitTests(unittest.TestCase):
     def test_frame_hook_runs_when_toast_is_empty(self):
         p, f, skin, _ = prepare()
         vendor, _, _ = plans(p)
-        toast = item_toast.prepare(p, code_start=f["base"],
-                                  code=p.read_bytes(f["base"], 0x240000),
-                                  small_box=p.fixture["small_box"], starter=vendor.starter,
-                                  frame_hook=skin.entry)
+        toast = item_toast.prepare(
+            p,
+            code_start=f["base"],
+            code=p.read_bytes(f["base"], 0x240000),
+            small_box=p.fixture["small_box"],
+            starter=vendor.starter,
+            frame_hook=skin.entry,
+        )
         vendor.install()
         skin.install()
         toast.install()
@@ -177,5 +185,10 @@ class SkinExitTests(unittest.TestCase):
     def test_inside_clank_requires_held_correct_level(self):
         p, f, _, _ = prepare("inside_clank")
         with self.assertRaises(RuntimeError):
-            inside_clank_exit.prepare(p, code_start=f["base"], code=b"", arena=f["arena"],
-                                     gate=SimpleNamespace(pine=p, held_module=lambda: (1, f["base"])))
+            inside_clank_exit.prepare(
+                p,
+                code_start=f["base"],
+                code=b"",
+                arena=f["arena"],
+                gate=SimpleNamespace(pine=p, held_module=lambda: (1, f["base"])),
+            )

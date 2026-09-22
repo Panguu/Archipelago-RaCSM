@@ -1,14 +1,17 @@
 import json
 import struct
 import unittest
+from itertools import product
 from pathlib import Path
 from types import SimpleNamespace
 
-from ..core.patches import mips as m, multiplayer_skins as mp
+from ..core.patches import asm as m, multiplayer_skins as mp
 from ..core.patches.asm import Patch
 from .test_native_patches import CPU, Memory
 
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/multiplayer_skins_us.json").read_text())
+FIXTURES.update(json.loads((Path(__file__).parent / "fixtures/multiplayer_skins_eu.json").read_text()))
+FIXTURES.update(json.loads((Path(__file__).parent / "fixtures/multiplayer_skins_jp.json").read_text()))
 GEOMETRY = json.loads((Path(__file__).parent / "fixtures/multiplayer_geometry_us.json").read_text())
 
 
@@ -16,11 +19,11 @@ def prepare(name="pokitaru"):
     p = Memory()
     p.data = bytearray(0x2000000)
     f = FIXTURES[name]
+    p.get_game_id = lambda: f.get("game_id", "SCUS-97615")
     for address, data in f["segments"]:
         p.write_bytes(address, bytes.fromhex(data))
     code = p.read_bytes(f["base"], 0x280000)
-    skin = SimpleNamespace(begin=f["begin"], finish=f["finish"],
-                           edits=[Patch(f["gate"] + 4, b"0000", b"0000")])
+    skin = SimpleNamespace(begin=f["begin"], finish=f["finish"], edits=[Patch(f["gate"] + 4, b"0000", b"0000")], menu_anchor=f["gate"])
     plan = mp.prepare(p, code_start=f["base"], code=code, skin=skin)
     return p, f, plan
 
@@ -41,18 +44,20 @@ class MultiplayerSkinsTests(unittest.TestCase):
                 cpu.r[m.S4] = plan.buffer
                 cpu.r[m.S6] = plan.buffer + mp.PRIMARY_LIMIT
                 calls = []
-                cpu.run(plan.buffer + 0x75900, stubs={
-                    0x1E92A20: lambda c: calls.append(c.r[m.S6]),
-                })
+                cpu.run(
+                    plan.buffer + 0x75900,
+                    stubs={
+                        0x1E92A20: lambda c: calls.append(c.r[m.S6]),
+                    },
+                )
                 self.assertEqual(calls, [plan.buffer + 0x84000])
                 self.assertEqual(cpu.r[m.S3], selected)
-                self.assertEqual(cpu.r[m.S0] & 0xFFFFFFFF,
-                                 0xFFFFFFFF if selected >= 7 else selected)
+                self.assertEqual(cpu.r[m.S0] & 0xFFFFFFFF, 0xFFFFFFFF if selected >= 7 else selected)
 
     def test_all_levels_install_restore_and_red_only_menu(self):
         for name in FIXTURES:
             with self.subTest(level=name):
-                p, _, plan = prepare(name)
+                p, f, plan = prepare(name)
                 before = bytes(p.data)
                 plan.install()
                 self.assertEqual(plan.count, 20)
@@ -62,20 +67,23 @@ class MultiplayerSkinsTests(unittest.TestCase):
                     self.assertEqual(p.read_int32(row), 7 + index)
                     self.assertEqual(p.read_int32(row + 12), 7 + index)
                     descriptor = plan.descriptors + (7 + index) * 24
-                    self.assertEqual(p.read_int32(descriptor + 4),
-                                     p.read_int32(mp.MP_TABLE + index * 64 + 4))
+                    self.assertEqual(p.read_int32(descriptor + 4), p.read_int32(f.get("mp_table", mp.MP_TABLE) + index * 64 + 4))
                 plan.restore()
                 self.assertEqual(p.data, before)
 
     def test_native_converter_matches_full_skeleton_for_all_meshes(self):
-        for index, (name, geometry) in enumerate(GEOMETRY.items()):
-            with self.subTest(skin=name):
-                p, f, plan = prepare()
+        for region, (index, (name, geometry)) in product(("pokitaru", "eu_pokitaru", "jp_pokitaru"), enumerate(GEOMETRY.items())):
+            with self.subTest(region=region, skin=name):
+                p, f, plan = prepare(region)
                 code = p.read_bytes(f["base"], 0x280000)
-                def word(a): return struct.unpack_from("<I", code, a - f["base"])[0]
+
+                def word(a):
+                    return struct.unpack_from("<I", code, a - f["base"])[0]
+
                 def ptr(a, b):
                     low = word(b) & 65535
                     return ((word(a) & 65535) << 16) + (low - 65536 if low & 32768 else low)
+
                 end, begin = f["finish"], f["begin"]
                 pending = ptr(end + 4, end + 16)
                 changed = ptr(end + 0x98, end + 0xA4)
@@ -101,18 +109,28 @@ class MultiplayerSkinsTests(unittest.TestCase):
                 p.write_int32(b + 0x120, b + 0x1000 + len(commands))
                 p.write_bytes(b + 0x1000, commands)
                 cpu = CPU(p)
-                cpu.run(plan.finish, stubs={
-                    size: lambda c: c.r.__setitem__(m.V0, 0x4550),
-                    load: lambda c: c.r.__setitem__(m.V0, 1),
-                    asset: lambda c: c.r.__setitem__(m.V0, 1),
-                }, max_steps=200000)
+
+                def load_asset(c):
+                    # The generated loader must use the regional MP table too,
+                    # not just the Python-side descriptor/menu builder.
+                    self.assertEqual(c.r[m.S1], f.get("mp_table", mp.MP_TABLE) + index * 64)
+                    c.r[m.V0] = 1
+
+                cpu.run(
+                    plan.finish,
+                    stubs={
+                        size: lambda c: c.r.__setitem__(m.V0, 0x4550),
+                        load: lambda c: c.r.__setitem__(m.V0, 1),
+                        asset: load_asset,
+                    },
+                    max_steps=200000,
+                )
                 self.assertEqual(cpu.r[m.V0], 1)
-                self.assertEqual(p.read_int8(mp.MCP + 0x2E0), index + 7)
+                self.assertEqual(p.read_int8(f.get("mcp", mp.MCP) + 0x2E0), index + 7)
                 self.assertEqual(p.read_int32(pending), 0xFFFFFFFF)
                 self.assertEqual(p.read_int32(b + 32), b + 0x200)
                 self.assertEqual(p.read_int32(b + 0x118), plan.promoted)
-                self.assertEqual(p.read_bytes(plan.promoted, len(commands)),
-                                 mp.promoted_commands(commands, mapping))
+                self.assertEqual(p.read_bytes(plan.promoted, len(commands)), mp.promoted_commands(commands, mapping))
                 self.assertEqual(p.read_bytes(b + 0x1000, len(commands)), commands)
 
     def test_missing_bone_mapping_is_rejected(self):

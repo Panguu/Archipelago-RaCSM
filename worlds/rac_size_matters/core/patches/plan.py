@@ -1,15 +1,24 @@
-"""Checked writes shared by the native patch experiments.
+"""Checked writes shared by the native patch experiments."""
 
-The caller must keep the affected functions idle during installation/restoration.
-Preparing a plan never writes memory. A plan is tied to one loaded module.
-"""
-from .asm import Patch
+from .asm import Patch as Patch
+
+
+def supported_game_id(pine):
+    """Pin a checked US/EU/JP plan to the game for which it was prepared."""
+    game_id = pine.get_game_id()
+    if game_id not in ("SCUS-97615", "SCES-55019", "SCPS-15120"):
+        raise RuntimeError("Native patch requires US, EU or JP PS2 Size Matters")
+    return game_id
 
 
 class Plan:
-    def __init__(self, pine, edits):
+    def __init__(self, pine, edits, *, enabled=True, expected_game_id="SCUS-97615"):
+        if expected_game_id not in ("SCUS-97615", "SCES-55019", "SCPS-15120"):
+            raise ValueError("Unsupported native patch region")
+        self.expected_game_id = expected_game_id
         self.pine = pine
-        self.edits = tuple(edits)
+        self.enabled = enabled
+        self.edits = tuple(edit for edit in edits if edit.enabled)
         self.installed = False
         self.journals = ()
         self.mutable_data = ()
@@ -20,8 +29,8 @@ class Plan:
             raise ValueError("Overlapping patches")
 
     def _validate(self, replacement=False):
-        if self.pine.get_game_id() != "SCUS-97615":
-            raise RuntimeError("Native patches require US PS2 Size Matters (SCUS-97615)")
+        if self.pine.get_game_id() != self.expected_game_id:
+            raise RuntimeError(f"Native patches require {self.expected_game_id}")
         for edit in self.edits:
             expected = edit.replacement if replacement else edit.original
             actual = bytearray(self.pine.read_bytes(edit.address, len(expected)))
@@ -42,6 +51,8 @@ class Plan:
                 raise RuntimeError(f"Native code changed at {edit.address:#x}")
 
     def install(self):
+        if not self.enabled:
+            return
         self._validate()
         attempted = []
         try:
@@ -58,6 +69,8 @@ class Plan:
         self.installed = True
 
     def restore(self):
+        if not self.enabled and not self.installed:
+            return
         self._validate(replacement=True)
         for edit in reversed(self.edits):
             self.pine.write_bytes(edit.address, edit.original)

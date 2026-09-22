@@ -4,6 +4,8 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5Traps
+from ..data.traps import TRAP_DURATIONS as TRAP_DURATIONS
+from . import address_maps
 from .address_maps import (
     BRIGHTNESS_ADDRESS,
     CHEATS,
@@ -15,29 +17,21 @@ from .address_maps import (
 if TYPE_CHECKING:
     from ..pypine import Pine
 
-_DIRECT_ADDRESSES: dict[str, int] = {
-    Rac5Traps.TRAP_FEVERDREAMTIME: DREAMTIME_EFFECT,
-    Rac5Traps.TRAP_BRIGHTNESS:     BRIGHTNESS_ADDRESS,
+_DIRECT_ADDRESSES: dict[str, str] = {
+    Rac5Traps.TRAP_FEVERDREAMTIME: "DREAMTIME_EFFECT",
+    Rac5Traps.TRAP_BRIGHTNESS: "BRIGHTNESS_ADDRESS",
 }
 
-MIRROR_LEVEL_CHEAT_BIT:     int = 0x10
+MIRROR_LEVEL_CHEAT_BIT: int = 0x10
 REVERSE_CONTROLS_CHEAT_BIT: int = 0x40
 WEAPON_SWITCHING_CHEAT_BIT: int = 0x80
 
 _CHEAT_BITS: dict[str, int] = {
-    Rac5Traps.TRAP_MIRROR_LEVEL:     MIRROR_LEVEL_CHEAT_BIT,
+    Rac5Traps.TRAP_MIRROR_LEVEL: MIRROR_LEVEL_CHEAT_BIT,
     Rac5Traps.TRAP_REVERSE_CONTROLS: REVERSE_CONTROLS_CHEAT_BIT,
     Rac5Traps.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
 }
 
-TRAP_DURATIONS: dict[str, float] = {
-    Rac5Traps.TRAP_FEVERDREAMTIME:   20,
-    Rac5Traps.TRAP_BRIGHTNESS:       20,
-    Rac5Traps.TRAP_MIRROR_LEVEL:     20,
-    Rac5Traps.TRAP_REVERSE_CONTROLS: 20,
-    Rac5Traps.TRAP_WEAPON_SWITCHING: 20,
-    Rac5Traps.TRAP_RESET_LEVEL:      1,
-}
 
 ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
 
@@ -51,6 +45,7 @@ def set_trap_durations(overrides: dict[str, float]) -> None:
         if trap_name in _trap_durations:
             _trap_durations[trap_name] = seconds
 
+
 _active_deadlines: dict[str, float] = {}
 _revert_handles: dict[str, asyncio.TimerHandle] = {}
 
@@ -59,8 +54,8 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     """Activate a trap by name and schedule it to automatically revert. Re-activating
     a still-active trap extends (stacks) its deadline rather than reverting at the first."""
     if trap_name == Rac5Traps.TRAP_RESET_LEVEL:
-        planet_id = pine.read_int8(CURRENT_PLANET_ADDRESS)
-        pine.write_int32(NEW_PLANET_START_LOAD_ADDR, planet_id)
+        planet_id = pine.read_int8(address_maps.CURRENT_PLANET_ADDRESS)
+        pine.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, planet_id)
         return
 
     duration = _trap_durations.get(trap_name)
@@ -77,7 +72,7 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
         existing_handle.cancel()
 
     if trap_name in _DIRECT_ADDRESSES:
-        address = _DIRECT_ADDRESSES[trap_name]
+        address = getattr(address_maps, _DIRECT_ADDRESSES[trap_name])
         pine.write_int8(address, 1)
 
         def _revert() -> None:
@@ -91,14 +86,14 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     bit = _CHEAT_BITS.get(trap_name)
     if bit is None:
         return
-    current = pine.read_int8(CHEATS)
-    pine.write_int8(CHEATS, current | bit)
+    current = pine.read_int8(address_maps.CHEATS)
+    pine.write_int8(address_maps.CHEATS, current | bit)
 
     def _revert() -> None:
         _active_deadlines.pop(trap_name, None)
         _revert_handles.pop(trap_name, None)
-        latest = pine.read_int8(CHEATS)
-        pine.write_int8(CHEATS, latest & ~bit)
+        latest = pine.read_int8(address_maps.CHEATS)
+        pine.write_int8(address_maps.CHEATS, latest & ~bit)
 
     _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
 
@@ -106,7 +101,8 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
 def reconcile_traps(pine: Pine) -> None:
     """Clear any trap effect in game memory with no bookkeeping in _active_deadlines,
     called on PINE (re)connect — catches a bit left stuck by a client restart or dropped revert."""
-    for trap_name, address in _DIRECT_ADDRESSES.items():
+    for trap_name, field in _DIRECT_ADDRESSES.items():
+        address = getattr(address_maps, field)
         if trap_name in _active_deadlines:
             continue
         if pine.read_int8(address):
@@ -117,7 +113,7 @@ def reconcile_traps(pine: Pine) -> None:
         if trap_name not in _active_deadlines:
             clear_mask |= bit
     if clear_mask:
-        current = pine.read_int8(CHEATS)
+        current = pine.read_int8(address_maps.CHEATS)
         cleared = current & ~clear_mask
         if cleared != current:
-            pine.write_int8(CHEATS, cleared)
+            pine.write_int8(address_maps.CHEATS, cleared)

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from .address_maps import save_address
+
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5Planets
+from ..locations import ALL_LOCATIONS
+from ..locations.observation import LocationObservation
 from .locations.challenge_locations import (
     ALL_CLANK_ADDRESS_MAP,
     CHALLENGE_ADDRESS_MAP,
@@ -22,9 +26,7 @@ _CLANK_ADDRESSES: tuple[int, ...] = tuple(ALL_CLANK_ADDRESS_MAP)
 
 
 class ChallengeInventory:
-    """Pine-backed live accessor for every clank-challenge completion byte.
-    check() is a pull-based poll reporting newly-completed AP location names,
-    including the Ultimate Gladiator failsafe."""
+    """Pine-backed live accessor for every clank-challenge completion byte."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
@@ -34,21 +36,21 @@ class ChallengeInventory:
         self.gladiator_sent: set[str] = set()
 
     def _read_all(self) -> dict[int, int]:
-        values = self.pine.batch_read_int8(list(_CLANK_ADDRESSES))
+        values = self.pine.batch_read_int8([save_address(a) for a in list(_CLANK_ADDRESSES)])
         return dict(zip(_CLANK_ADDRESSES, values, strict=True))
 
     def get(self, name: str) -> int:
-        return self.pine.read_int8(self._name_to_address[name])
+        return self.pine.read_int8(save_address(self._name_to_address[name]))
 
     def set(self, name: str, value: int) -> None:
-        self.pine.write_int8(self._name_to_address[name], value)
+        self.pine.write_int8(save_address(self._name_to_address[name]), value)
 
     def delete(self, name: str) -> None:
         self.set(name, 0)
 
     def unlock_section(self, planet: str, section: ChallengeSection, value: int = 0x0F) -> None:
         """Unlock a single challenge section (Derby / Gadgetbot Toss / Gadgetbot) on a planet."""
-        self.pine.write_int8(CLANK_SECTION_UNLOCK_ADDRESSES[planet][section], value)
+        self.pine.write_int8(save_address(CLANK_SECTION_UNLOCK_ADDRESSES[planet][section]), value)
 
     def setup(self, all_challenges: bool = False) -> None:
         """Unlock every section on every tracked planet. Never writes individual
@@ -58,21 +60,22 @@ class ChallengeInventory:
             for section in sections:
                 self.unlock_section(planet, section)
 
-    def check(self, all_challenges: bool = False) -> list[str]:
+    def check(self, all_challenges: bool = False, raw_by_address=None) -> list[str]:
         """Read every tracked byte and return newly completed AP location
         names for this call, including any gladiator failsafe locations."""
-        raw_by_address = self._read_all()
+
+        if raw_by_address is None:
+            raw_by_address = self._read_all()
         newly: list[str] = []
         addr_map = ALL_CLANK_ADDRESS_MAP if all_challenges else CHALLENGE_ADDRESS_MAP
         for address, name in addr_map.items():
             if name in self.completed:
                 continue
             count = raw_by_address[address]
+            observation = LocationObservation(challenges=raw_by_address, previous={address: self._counts.get(name, 0)})
+            done = ALL_LOCATIONS[name].completed(observation)
             if address in COUNT_BASED_CHALLENGE_ADDRS:
-                done = count > self._counts.get(name, 0)
                 self._counts[name] = count
-            else:
-                done = count >= 2
             if done:
                 self.completed.add(name)
                 newly.append(name)
@@ -119,36 +122,36 @@ class SkyboardInventory:
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
-        self._name_to_addr_mask: dict[str, tuple[int, int]] = {
-            n: k for k, n in SKYBOARD_ADDRESS_MASK_MAP.items()
-        }
+        self._name_to_addr_mask: dict[str, tuple[int, int]] = {n: k for k, n in SKYBOARD_ADDRESS_MASK_MAP.items()}
         self.completed: set[str] = set()
 
     def _read_all(self) -> dict[int, int]:
-        values = self.pine.batch_read_int8(list(_SKYBOARD_ADDRESSES))
+        values = self.pine.batch_read_int8([save_address(a) for a in list(_SKYBOARD_ADDRESSES)])
         return dict(zip(_SKYBOARD_ADDRESSES, values, strict=True))
 
     def get(self, name: str) -> bool:
         address, mask = self._name_to_addr_mask[name]
-        return bool(self.pine.read_int8(address) & mask)
+        return bool(self.pine.read_int8(save_address(address)) & mask)
 
     def set(self, name: str, value: bool) -> None:
         address, mask = self._name_to_addr_mask[name]
-        raw = self.pine.read_int8(address)
+        raw = self.pine.read_int8(save_address(address))
         raw = (raw | mask) if value else (raw & ~mask)
-        self.pine.write_int8(address, raw)
+        self.pine.write_int8(save_address(address), raw)
 
     def delete(self, name: str) -> None:
         self.set(name, False)
 
-    def check(self) -> list[str]:
+    def check(self, raw_by_address=None) -> list[str]:
         """Read every tracked bit and return newly completed AP location names for this call."""
-        raw_by_address = self._read_all()
+
+        if raw_by_address is None:
+            raw_by_address = self._read_all()
         newly: list[str] = []
         for (address, mask), name in SKYBOARD_ADDRESS_MASK_MAP.items():
             if name in self.completed:
                 continue
-            if raw_by_address[address] & mask:
+            if ALL_LOCATIONS[name].completed(LocationObservation(skyboard=raw_by_address)):
                 self.completed.add(name)
                 newly.append(name)
         return newly

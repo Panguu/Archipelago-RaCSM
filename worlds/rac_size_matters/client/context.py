@@ -4,15 +4,19 @@ import asyncio
 from collections.abc import Callable
 from typing import Any
 
+from ..constants.options import Rac5Options
+
 tracker_loaded: bool = False
 dynamicpine_loaded: bool = False
 try:
     from worlds.tracker.TrackerClient import UT_VERSION, TrackerGameContext as CommonContext
+
     tracker_loaded = True
 except ImportError:
     from CommonClient import CommonContext
 try:
     from worlds.dynamicpine import DYNAMIC_PINE_VERSION, get_pending_auth, get_pine_port, launched_via_hub
+
     dynamicpine_loaded = True
 except ImportError:
     DYNAMIC_PINE_VERSION = None
@@ -20,6 +24,7 @@ from CommonClient import logger
 
 from ..core import RAC5SaveData, TextColour, colored_text, set_trap_durations
 from ..core.core import Core
+from ..core.options import ClientOptions
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
 from ..world import RACSizeMatterWorld
@@ -36,8 +41,16 @@ from .vendor_scouts import VendorScouts
 
 
 class RACContext(
-    PineMixin, CutsceneHandlerMixin, EventsHandlerMixin,
-    DeathLinkMixin, AmmoLinkMixin, BoltLinkMixin, GhostLinkMixin, VendorHandlerMixin, InventoryMixin, CommonContext,
+    PineMixin,
+    CutsceneHandlerMixin,
+    EventsHandlerMixin,
+    DeathLinkMixin,
+    AmmoLinkMixin,
+    BoltLinkMixin,
+    GhostLinkMixin,
+    VendorHandlerMixin,
+    InventoryMixin,
+    CommonContext,
 ):
     game = GAME_NAME
     command_processor = RACCommandProcessor
@@ -108,8 +121,9 @@ class RACContext(
             try:
                 fn()
             except Exception as exc:
-                logger.warning(f"[RAC] PINE call failed during wiring sync: {exc}. "
-                                "If syncing stops working, use /reconnect.")
+                logger.warning(
+                    f"[RAC] PINE call failed during wiring sync: {exc}. If syncing stops working, use /reconnect."
+                )
                 self.pine_connected = False
 
     def _filler_applied_key(self) -> str:
@@ -123,10 +137,14 @@ class RACContext(
 
     def _try_restore_weapon_state(self, *, force: bool = False) -> None:
         """Restore levels only, after this connection's storage reply has arrived."""
-        if (not self._save_data_received or not self.pine_connected
-                or (not force and self._weapon_state_restored)
-                or not self._wiring.planet.is_ready or self._wiring.at_main_menu
-                or self._wiring.vendor_active):
+        if (
+            not self._save_data_received
+            or not self.pine_connected
+            or (not force and self._weapon_state_restored)
+            or not self._wiring.planet.is_ready
+            or self._wiring.at_main_menu
+            or self._wiring.vendor_active
+        ):
             return
         data = self._local_weapon_state or self._stored_save_data().weapon_state
         self._wiring.planet.weapons.restore_levels(data)
@@ -139,26 +157,34 @@ class RACContext(
     async def _persist_starting_items_sent(self) -> None:
         if self.slot is None:
             return
-        await self.send_msgs([{
-            "cmd": "Set",
-            "key": self._starting_items_key(),
-            "default": 0,
-            "want_reply": False,
-            "operations": [{"operation": "replace", "value": 1}],
-        }])
+        await self.send_msgs(
+            [
+                {
+                    "cmd": "Set",
+                    "key": self._starting_items_key(),
+                    "default": 0,
+                    "want_reply": False,
+                    "operations": [{"operation": "replace", "value": 1}],
+                }
+            ]
+        )
 
     async def _persist_save_data_field(self, field_name: str, data: dict) -> None:
         """Merge one RAC5SaveData field into the slot's single save-data key, leaving the
         other fields (pushed independently, on their own triggers/cadence) untouched."""
         if self.slot is None:
             return
-        await self.send_msgs([{
-            "cmd": "Set",
-            "key": self._save_data_key(),
-            "default": {},
-            "want_reply": False,
-            "operations": [{"operation": "update", "value": {field_name: data}}],
-        }])
+        await self.send_msgs(
+            [
+                {
+                    "cmd": "Set",
+                    "key": self._save_data_key(),
+                    "default": {},
+                    "want_reply": False,
+                    "operations": [{"operation": "update", "value": {field_name: data}}],
+                }
+            ]
+        )
 
     async def _persist_quick_select(self, data: dict) -> None:
         await self._persist_save_data_field("quick_select", data)
@@ -172,9 +198,7 @@ class RACContext(
     def _checked_location_names(self) -> set[str]:
         id_to_name = {v: k for k, v in self._location_name_to_id.items()}
         return {
-            id_to_name[lid]
-            for lid in (self.checked_locations | self._locally_checked_locations)
-            if lid in id_to_name
+            id_to_name[lid] for lid in (self.checked_locations | self._locally_checked_locations) if lid in id_to_name
         }
 
     def _dyanmic_pine_port(self) -> None:
@@ -230,8 +254,10 @@ class RACContext(
 
         if cmd in ("LocationInfo", "DataPackage", "RoomUpdate"):
             self.vendor_scouts.update(
-                self.locations_info.values(), self.item_names.lookup_in_slot,
-                lambda slot: self.player_names.get(slot, f"Player {slot}"))
+                self.locations_info.values(),
+                self.item_names.lookup_in_slot,
+                lambda slot: self.player_names.get(slot, f"Player {slot}"),
+            )
 
         if cmd == "Connected":
             self._wiring.native.ap_connected = True
@@ -256,113 +282,97 @@ class RACContext(
             self._items_received_ready = False
             self._connection_sync_pending = True
             self._wiring._ap_inventory_ready = False
-            self._death_link_enabled = bool(self.slot_data.get("death_link", False))
-            self._ammo_link_enabled = bool(self.slot_data.get("ammo_link", False))
-            self._bolt_link_enabled = bool(self.slot_data.get("bolt_link", False))
-            self._ghost_link_enabled = bool(self.slot_data.get("ghost_link", False))
-            self._ghost_link_interval = float(self.slot_data.get("ghost_link_update_interval", 5) or 0)
+            self._death_link_enabled = bool(self.slot_data.get(Rac5Options.DEATH_LINK, False))
+            self._ammo_link_enabled = bool(self.slot_data.get(Rac5Options.AMMO_LINK, False))
+            self._bolt_link_enabled = bool(self.slot_data.get(Rac5Options.BOLT_LINK, False))
+            self._ghost_link_enabled = bool(self.slot_data.get(Rac5Options.GHOST_LINK, False))
+            self._ghost_link_interval = float(self.slot_data.get(Rac5Options.GHOST_LINK_UPDATE_INTERVAL, 5) or 0)
             if self._ghost_link_enabled:
                 self._refresh_ghost_link_slots()
-            self._armour_set_checks_enabled = bool(self.slot_data.get("armour_set_checks", False))
-            clank_mode = int(self.slot_data.get("clank_challenges", 1))
-            self._wiring.clank_enabled        = clank_mode >= 1
-            self._wiring.clank_all_challenges = clank_mode >= 2
-            self._wiring.skyboard_enabled     = int(self.slot_data.get("skyboard_challenges", 0)) >= 1
-            shrink_ray_mode = int(self.slot_data.get("shrink_ray_options", 1))
-            self._wiring.shrink_ray_skips_enabled     = shrink_ray_mode == 2
-            self._wiring.shrink_ray_locations_enabled = shrink_ray_mode == 1
-            self._wiring.skill_points_enabled = (
-                int(self.slot_data.get("skill_points", 0)) >= 1
-                or bool(self.slot_data.get("enable_clank_challenge_skill_points", False))
-                or bool(self.slot_data.get("enable_skyboard_challenge_skill_points", False))
-            )
-            self._wiring.weapon_level_checks_enabled = (
-                int(self.slot_data.get("weapon_level_checks", 0)) >= 1
-            )
-            self._wiring.nanotech_level_checks_enabled = (
-                int(self.slot_data.get("nanotech_level_interval", 0)) > 0
-            )
-            self._wiring.all_missions_enabled  = bool(self.slot_data.get("all_missions", True))
-            self._wiring.all_cutscenes_enabled = bool(self.slot_data.get("all_cutscenes", False))
-            self._wiring.planet.giant_clank_allowed = bool(self.slot_data.get("giant_clank", False))
+            self._armour_set_checks_enabled = bool(self.slot_data.get(Rac5Options.ARMOUR_SET_CHECKS, False))
+            self._wiring.options = ClientOptions.from_slot_data(self.slot_data)
+            self._wiring.planet.giant_clank_allowed = bool(self.slot_data.get(Rac5Options.GIANT_CLANK, False))
             self._wiring.planet.set_starting_planet(self.slot_data.get("starting_planet_id"))
             self._wiring.planet_unlock.set_random_start(
-                int(self.slot_data.get("random_starting_planet", 0)) != 0
+                int(self.slot_data.get(Rac5Options.RANDOM_STARTING_PLANET, 0)) != 0
             )
             self._wiring.planet.weapons.experience_multiplier = (
-                int(self.slot_data.get("weapon_experience_multiplier", 0)) or 1
+                int(self.slot_data.get(Rac5Options.WEAPON_EXPERIENCE_MULTIPLIER, 0)) or 1
             )
-            self._wiring.planet.weapons.progressive_mode = (
-                int(self.slot_data.get("progressive_weapons", 0))
-            )
+            self._wiring.planet.weapons.progressive_mode = int(self.slot_data.get(Rac5Options.PROGRESSIVE_WEAPONS, 0))
             self._wiring.progressive_challenge_mode_enabled = bool(
-                self.slot_data.get("progressive_challenge_mode", False)
+                self.slot_data.get(Rac5Options.PROGRESSIVE_CHALLENGE_MODE, False)
             )
-            self._wiring.native.progressive_challenge_mode_enabled = (
-                self._wiring.progressive_challenge_mode_enabled
-            )
+            self._wiring.native.progressive_challenge_mode_enabled = self._wiring.progressive_challenge_mode_enabled
             if self._wiring.progressive_challenge_mode_enabled:
                 challenge_mode_option = 0
             else:
-                challenge_mode_option = int(self.slot_data.get("challenge_mode", 0))
+                challenge_mode_option = int(self.slot_data.get(Rac5Options.CHALLENGE_MODE, 0))
                 self._wiring.planet.weapons.challenge_mode = challenge_mode_option
                 self._wiring.vendor.challenge_mode = challenge_mode_option
-            self._wiring.player_bolts.multiplier = (
-                int(self.slot_data.get("bolt_multiplier", 0)) or 1
-            )
+            self._wiring.player_bolts.multiplier = int(self.slot_data.get(Rac5Options.BOLT_MULTIPLIER, 0)) or 1
             self._wiring.player_health_exp.multiplier = (
-                int(self.slot_data.get("nanotech_experience_multiplier", 0)) or 1
+                int(self.slot_data.get(Rac5Options.NANOTECH_EXPERIENCE_MULTIPLIER, 0)) or 1
             )
-            trap_duration = self.slot_data.get("trap_duration")
+            trap_duration = self.slot_data.get(Rac5Options.TRAP_DURATION)
             if isinstance(trap_duration, dict):
                 set_trap_durations(trap_duration)
-            self._starting_skin_option = int(self.slot_data.get("starting_skin", 0))
-            link_tags = [tag for tag, enabled in (
-                ("DeathLink", self._death_link_enabled),
-                ("AmmoLink", self._ammo_link_enabled),
-                ("BoltLink", self._bolt_link_enabled),
-                ("GhostLink", self._ghost_link_enabled),
-            ) if enabled]
+            self._starting_skin_option = int(self.slot_data.get(Rac5Options.STARTING_SKIN, 0))
+            link_tags = [
+                tag
+                for tag, enabled in (
+                    ("DeathLink", self._death_link_enabled),
+                    ("AmmoLink", self._ammo_link_enabled),
+                    ("BoltLink", self._bolt_link_enabled),
+                    ("GhostLink", self._ghost_link_enabled),
+                )
+                if enabled
+            ]
             if link_tags:
                 self.tags |= set(link_tags)
                 asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}]))
             self._wiring.wire(
-                send_location      = self._append_location_by_name,
-                send_deathlink     = self._send_death_link_from_sync,
-                death_amnesty      = lambda: int(self.slot_data.get("death_amnesty", 1)),
-                death_link_enabled = lambda: self._death_link_enabled,
-                on_goal            = lambda: asyncio.create_task(self._send_goal_status()),
-                on_vendor_open     = lambda: asyncio.create_task(self._send_vendor_hints()),
-                on_vendor_close    = self._on_vendor_close,
-                on_equipped_armour_saved = self._on_equipped_armour_saved,
-                on_bonus_weapon_pickup = self._grant_random_bonus_item,
-                on_scripted_gadget_pickup = self._handle_scripted_gadget_pickup,
-                on_planet_ready    = self._on_planet_ready,
-                on_weapon_level_up = self._on_weapon_level_up,
-                on_initial_load    = lambda: asyncio.create_task(self._send_playing_status()),
+                send_location=self._append_location_by_name,
+                send_deathlink=self._send_death_link_from_sync,
+                death_amnesty=lambda: int(self.slot_data.get(Rac5Options.DEATH_AMNESTY, 1)),
+                death_link_enabled=lambda: self._death_link_enabled,
+                on_goal=lambda: asyncio.create_task(self._send_goal_status()),
+                on_vendor_open=lambda: asyncio.create_task(self._send_vendor_hints()),
+                on_vendor_close=self._on_vendor_close,
+                on_equipped_armour_saved=self._on_equipped_armour_saved,
+                on_bonus_weapon_pickup=self._grant_random_bonus_item,
+                on_scripted_gadget_pickup=self._handle_scripted_gadget_pickup,
+                on_planet_ready=self._on_planet_ready,
+                on_weapon_level_up=self._on_weapon_level_up,
+                on_initial_load=lambda: asyncio.create_task(self._send_playing_status()),
             )
             checked = self._checked_location_names()
             starting_skin = self._starting_skin_option
-            asyncio.create_task(self._guarded_wiring_call(
-                lambda: (
-                    self._wiring.skin.set_by_option(starting_skin),
-                    self._wiring.challenge_mode.set_by_option(challenge_mode_option),
-                    self._wiring.sync_from_ap(checked),
+            asyncio.create_task(
+                self._guarded_wiring_call(
+                    lambda: (
+                        self._wiring.skin.set_by_option(starting_skin),
+                        self._wiring.challenge_mode.set_by_option(challenge_mode_option),
+                        self._wiring.sync_from_ap(checked),
+                    )
                 )
-            ))
+            )
             self._pending_item_apply = True
             asyncio.create_task(self.force_sync())
-            self._write_notification_text(colored_text(
-                "Connected to ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
-            ))
+            self._write_notification_text(
+                colored_text(
+                    "Connected to ",
+                    TextColour.YELLOW,
+                    "Archipelago",
+                    TextColour.WHITE,
+                )
+            )
             if not self.pine_connected:
                 self._dyanmic_pine_port()
                 asyncio.create_task(self._attempt_pine_connect(), name="PCSX2 PINE connect")
             else:
                 asyncio.create_task(self._send_map_page(self.current_planet))
-            self._wiring.quick_select.on_save = (
-                lambda data: asyncio.create_task(self._persist_quick_select(data))
-            )
+            self._wiring.quick_select.on_save = lambda data: asyncio.create_task(self._persist_quick_select(data))
             link_keys = []
             if self._ammo_link_enabled:
                 link_keys.append(self._ammo_link_key())
@@ -377,17 +387,29 @@ class RACContext(
                 *link_keys,
             ):
                 self.set_notify(key)
-            asyncio.create_task(self.send_msgs([{"cmd": "Get", "keys": [
-                self._filler_applied_key(),
-                self._save_data_key(),
-                self._starting_items_key(),
-                *link_keys,
-            ]}]))
+            asyncio.create_task(
+                self.send_msgs(
+                    [
+                        {
+                            "cmd": "Get",
+                            "keys": [
+                                self._filler_applied_key(),
+                                self._save_data_key(),
+                                self._starting_items_key(),
+                                *link_keys,
+                            ],
+                        }
+                    ]
+                )
+            )
             return
 
         if cmd in ("Retrieved", "SetReply") and self.slot is not None:
-            save_reply = (self._save_data_key() in args.get("keys", {}) if cmd == "Retrieved"
-                          else args.get("key") == self._save_data_key())
+            save_reply = (
+                self._save_data_key() in args.get("keys", {})
+                if cmd == "Retrieved"
+                else args.get("key") == self._save_data_key()
+            )
             if save_reply:
                 self._save_data_received = True
             if self._save_data_received and not self._ap_loadout_restored:
@@ -427,9 +449,7 @@ class RACContext(
                 self._items_received_ready = True
                 self._notification_item_index = len(self.items_received)
             checked = self._checked_location_names()
-            asyncio.create_task(self._guarded_wiring_call(
-                lambda: self._wiring.sync_from_ap(checked)
-            ))
+            asyncio.create_task(self._guarded_wiring_call(lambda: self._wiring.sync_from_ap(checked)))
             self._pending_item_apply = True
             asyncio.create_task(self._apply_received_items())
             return

@@ -6,11 +6,9 @@ import time
 from typing import Any
 
 from CommonClient import logger
+from ..core import address_maps
 
 from ..core import (
-    PLAYER_ADDRS,
-    PLAYER_HEALTH,
-    PLAYER_STATE,
     PlayerMovementState as PlayerState,
     TextColour,
     colored_text,
@@ -127,7 +125,7 @@ class DeathLinkMixin:
         if self._wiring.at_main_menu:
             return
         planet_id = self._wiring.planet.planet_id
-        state_addr, health_addr = PLAYER_ADDRS.get(planet_id, (PLAYER_STATE, PLAYER_HEALTH))
+        state_addr, health_addr = address_maps.PLAYER_ADDRS.get(planet_id, (address_maps.PLAYER_STATE, address_maps.PLAYER_HEALTH))
         death_state = random.choice(list(_DEATH_CAUSES))
         self.pine.write_int16(state_addr, death_state)
         self.pine.write_int16(health_addr, 0)

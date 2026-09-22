@@ -58,7 +58,10 @@ class SkinSlot:
 
     def __init__(self, field: str) -> None:
         self.field = field
-        self.address = SkinStruct.address_of(field)
+
+    @property
+    def address(self):
+        return SkinStruct.address_of(self.field)
 
     def __get__(self, instance, owner) -> int | None:
         if instance is None:

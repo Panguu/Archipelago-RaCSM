@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..locations import ALL_LOCATIONS
+from ..locations.observation import LocationObservation
+from . import address_maps
 from .address_maps import SKILL_POINTS_BASE as SKILL_POINT_ADDRESS
 from .locations.skill_point_locations import (
     CLANK_CHALLENGE_SKILL_POINTS,
@@ -32,8 +35,7 @@ __all__ = [
 class SkillPointSlot:
     """Pine-backed accessor for the 5-byte (40-bit) skill-point earned bitmask."""
 
-    def __init__(self, address: int) -> None:
-        self.address = address
+    address = address_maps.Address("SKILL_POINTS_BASE")
 
     def __get__(self, instance, owner) -> int | None:
         if instance is None:
@@ -55,7 +57,7 @@ class SkillPointInventory:
     """Pine-backed live accessor + completion tracking for skill points,
     replacing SkillPointState. Global fixed address — no per-planet base."""
 
-    bits = SkillPointSlot(SKILL_POINT_ADDRESS)
+    bits = SkillPointSlot()
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
@@ -74,17 +76,17 @@ class SkillPointInventory:
     def delete(self, name: str) -> None:
         self.set(name, False)
 
-    def check(self) -> list[str]:
+    def check(self, current: int | None = None) -> list[str]:
         """Read the earned bitmask and return newly earned AP location names for this call."""
-        current = self.bits
+        current = self.bits if current is None else current
         newly_set = current & ~self._last
         self._last = current
-        newly: list[str] = []
-        if newly_set:
-            for name, sp in SKILL_POINTS.items():
-                if name not in self.completed and (newly_set & sp.mask):
-                    self.completed.add(name)
-                    newly.append(name)
+
+        observation = LocationObservation(skill_bits=newly_set)
+        newly = [
+            name for name in SKILL_POINTS if name not in self.completed and ALL_LOCATIONS[name].completed(observation)
+        ]
+        self.completed.update(newly)
         return newly
 
     def sync(self) -> None:

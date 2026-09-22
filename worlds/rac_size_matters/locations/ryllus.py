@@ -1,28 +1,157 @@
-"""Ryllus's slice of the shared location registry (locations/shared.py), by category."""
-from ..constants import Rac5Planets
-from . import shared
+from rule_builder.options import OptionFilter
+from rule_builder.rules import Has, HasAll, True_
 
-_PLANET = Rac5Planets.RYLLUS
+from .. import constants as C
+from ..constants import Rac5Gadgets
+from ..options import AllCutscenes, AllMissions, ChallengeMode, SkillPoints
+from ..rules._helpers import HasChallengeMode
+from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
-TITANIUM_BOLT_LOCATIONS = shared.for_planet(_PLANET, shared.TITANIUM_BOLT_LOCATIONS)
-ARMOUR_PICKUP_LOCATIONS = shared.for_planet(_PLANET, shared.ARMOUR_PICKUP_LOCATIONS)
-VENDOR_LOCATIONS = shared.for_planet(
-    _PLANET,
-    shared.WEAPON_VENDOR_LOCATIONS, shared.GADGET_VENDOR_LOCATIONS,
-    shared.WEAPON_MOD_VENDOR_LOCATIONS, shared.WEAPON_TITAN_VENDOR_LOCATIONS,
+_S = Rac5CompletionSources
+
+LOCATIONS = (
+    Rac5Locations(
+        C.Rac5TBolts.RYLLUS_CLIFF,
+        C.Rac5Planets.RYLLUS,
+        lambda world: True_(),
+        Completion(_S.BOLT_BITS, None, 16),
+        categories=frozenset(("titanium_bolt",)),
+        native_planets=(2,),
+        definition_order=2,
+    ),
+    Rac5Locations(
+        C.Rac5TBolts.RYLLUS_WALL,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.BOLT_BITS, None, 32),
+        categories=frozenset(("titanium_bolt",)),
+        native_planets=(2,),
+        definition_order=3,
+    ),
+    Rac5Locations(
+        C.Rac5Locations.RYLLUS_BOOTS,
+        C.Rac5Planets.RYLLUS,
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.ARMOUR, "sludge", 16),
+        categories=frozenset(("armour_pickup",)),
+        definition_order=22,
+    ),
+    Rac5Locations(
+        C.Rac5Locations.RYLLUS_HELMET,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.ARMOUR, "wildfire", 2),
+        categories=frozenset(("armour_pickup",)),
+        definition_order=23,
+    ),
+    Rac5Locations(
+        C.Rac5Locations.RYLLUS_HYPERBOREAN_BOOTS,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC) & HasChallengeMode(world, 1),
+        Completion(_S.ARMOUR, "hyperborean", 16),
+        options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),)),
+        categories=frozenset(("armour_pickup", "challenge_mode_1_armour")),
+        definition_order=34,
+    ),
+    Rac5Locations(
+        C.Rac5Locations.RYLLUS_SPROUT,
+        C.Rac5Planets.RYLLUS,
+        lambda world: True_(),
+        Completion(_S.EVENTS, C.Rac5Locations.RYLLUS_SPROUT),
+        categories=frozenset(("gadget_pickup",)),
+        definition_order=42,
+    ),
+    Rac5Locations(
+        C.Rac5SkillPoints.RYLLUS_BURY,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.SKILL_BITS, None, 16),
+        options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
+        categories=frozenset(("skill_point", "hard_skill_point")),
+        native_planets=(2,),
+        definition_order=47,
+    ),
+    Rac5Locations(
+        C.Rac5SkillPoints.RYLLUS_CAMERA,
+        C.Rac5Planets.RYLLUS,
+        lambda world: True_(),
+        Completion(_S.SKILL_BITS, None, 32),
+        options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
+        categories=frozenset(("skill_point", "easy_skill_point")),
+        native_planets=(2,),
+        definition_order=48,
+    ),
+    Rac5Locations(
+        C.Rac5SkillPoints.RYLLUS_SHIP_IT,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.SKILL_BITS, None, 64),
+        options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
+        categories=frozenset(("skill_point", "easy_skill_point")),
+        native_planets=(2,),
+        definition_order=49,
+    ),
+    Rac5Locations(
+        C.Rac5CutsceneLocations.RYLLUS_ARTIFACT,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.MISSIONS, 32814022, 8, 2),
+        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
+        categories=frozenset(("story_mission", "mission")),
+        check_order=4,
+        definition_order=69,
+    ),
+    Rac5Locations(
+        C.Rac5CutsceneLocations.RYLLUS_TEMPLE,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.MISSIONS, 32814022, 16, 2),
+        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
+        categories=frozenset(("story_mission", "mission")),
+        check_order=5,
+        definition_order=70,
+    ),
+    Rac5Locations(
+        C.Rac5CutsceneLocations.RYLLUS_BUZZING,
+        C.Rac5Planets.RYLLUS,
+        lambda world: True_(),
+        Completion(_S.MISSIONS, 32814022, 2, 2),
+        options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
+        categories=frozenset(("cutscene", "mission")),
+        grants_location=C.Rac5Locations.RYLLUS_SPROUT,
+        check_order=26,
+        definition_order=86,
+    ),
+    Rac5Locations(
+        C.Rac5CutsceneLocations.RYLLUS_ENTER,
+        C.Rac5Planets.RYLLUS,
+        lambda world: True_(),
+        Completion(_S.MISSIONS, 32814022, 1, 2),
+        options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
+        categories=frozenset(("cutscene", "mission")),
+        check_order=18,
+        definition_order=95,
+    ),
+    Rac5Locations(
+        C.Rac5VendorLocations.RYLLUS_AGENTS,
+        C.Rac5Planets.RYLLUS,
+        lambda world: True_(),
+        Completion(_S.EVENTS, C.Rac5VendorLocations.RYLLUS_AGENTS),
+        options=LocationOptions(weapon=C.Rac5Weapons.AGENTS_OF_DOOM),
+        categories=frozenset(("weapon_vendor",)),
+        weapon="agents_of_doom",
+        definition_order=107,
+    ),
+    Rac5Locations(
+        C.Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN,
+        C.Rac5Planets.RYLLUS,
+        lambda world: HasChallengeMode(world, 1),
+        Completion(_S.EVENTS, C.Rac5TitanVendorLocations.RYLLUS_AGENTS_TITAN),
+        options=LocationOptions(
+            requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.AGENTS_OF_DOOM
+        ),
+        categories=frozenset(("weapon_titan_vendor",)),
+        weapon="agents_of_doom",
+        definition_order=147,
+    ),
 )
-STORY_MISSION_LOCATIONS = shared.for_planet(_PLANET, shared.STORY_MISSION_LOCATIONS)
-CUTSCENE_LOCATIONS = shared.for_planet(_PLANET, shared.CUTSCENE_LOCATIONS)
-SKILL_POINT_LOCATIONS = shared.for_planet(_PLANET, shared.SKILL_POINT_LOCATIONS)
-GADGET_PICKUP_LOCATIONS = shared.for_planet(_PLANET, shared.GADGET_PICKUP_LOCATIONS)
-SKYBOARD_LOCATIONS = shared.for_planet(_PLANET, shared.SKYBOARD_ITEM_LOCATIONS, shared.EXTRA_SKYBOARD_LOCATIONS)
-SHRINK_RAY_SKIP_LOCATIONS = shared.for_planet(_PLANET, shared.SHRINK_RAY_SKIP_LOCATIONS)
-CHALLENGE_LOCATIONS = shared.for_planet(_PLANET, shared.CHALLENGE_LOCATIONS, shared.ALL_CLANK_LOCATIONS)
-BOSS_LOCATIONS = shared.for_planet(_PLANET, shared.BOSS_LOCATIONS)
-
-LOCATIONS: dict[str, shared.RACLocationData] = {
-    **TITANIUM_BOLT_LOCATIONS, **ARMOUR_PICKUP_LOCATIONS, **VENDOR_LOCATIONS,
-    **STORY_MISSION_LOCATIONS, **CUTSCENE_LOCATIONS, **SKILL_POINT_LOCATIONS,
-    **GADGET_PICKUP_LOCATIONS, **SKYBOARD_LOCATIONS, **SHRINK_RAY_SKIP_LOCATIONS,
-    **CHALLENGE_LOCATIONS, **BOSS_LOCATIONS,
-}

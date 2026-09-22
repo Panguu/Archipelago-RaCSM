@@ -26,6 +26,7 @@ def colored_text(*parts: bytes | str) -> bytes:
     return bytes(buf)
 
 
+from . import address_maps
 from .address_maps import (
     MULTI_LINE_TEXT_BOX_BY_PLANET,
     SMALL_TEXT_BOX_BY_PLANET,
@@ -49,8 +50,10 @@ class SmallTextBox:
         ipc.write_int16(self.message_str_pointer, msg_id)
 
     def write_text(self, ipc, text: bytes) -> None:
-        ipc.write_bytes(_STATIC_TEXT_BUFFER, text)
-        ipc.write_int32(self.message_str_pointer, _STATIC_TEXT_BUFFER)
+        if address_maps.STATIC_TEXT_BUFFER is None:
+            raise RuntimeError("This region requires native text notifications")
+        ipc.write_bytes(address_maps.STATIC_TEXT_BUFFER, text)
+        ipc.write_int32(self.message_str_pointer, address_maps.STATIC_TEXT_BUFFER)
         ipc.write_int8(self.countdown_timer, 0xAA)
         trigger_addr = self.base_addr + 0x39
         ipc.write_int8(trigger_addr, 0x02)
@@ -73,8 +76,10 @@ class MultiLineTextBox:
         ipc.write_int16(self.message_str_pointer, msg_id)
 
     def write_text(self, ipc, text: bytes) -> None:
-        ipc.write_bytes(_STATIC_TEXT_BUFFER, text)
-        ipc.write_int32(self.message_str_pointer, _STATIC_TEXT_BUFFER)
+        if address_maps.STATIC_TEXT_BUFFER is None:
+            raise RuntimeError("This region requires native text notifications")
+        ipc.write_bytes(address_maps.STATIC_TEXT_BUFFER, text)
+        ipc.write_int32(self.message_str_pointer, address_maps.STATIC_TEXT_BUFFER)
         ipc.write_int8(self.countdown_timer, 0xFF)
         trigger_addr = self.base_addr + 0x39
         ipc.write_int8(trigger_addr, 0x02)
@@ -115,9 +120,9 @@ class TextBoxInventory:
         if timer <= 0:
             return None
         ptr = self.pine.read_int32(cfg.message_str_pointer)
-        if ptr != _STATIC_TEXT_BUFFER:
+        if ptr != address_maps.STATIC_TEXT_BUFFER:
             return None
-        return self.pine.read_string(_STATIC_TEXT_BUFFER, 256)
+        return self.pine.read_string(address_maps.STATIC_TEXT_BUFFER, 256)
 
     def set(self, text: bytes | str) -> None:
         cfg = self._config
@@ -142,8 +147,8 @@ class TextBoxInventory:
 
 
 def small_text_box_inventory(pine: Pine) -> TextBoxInventory:
-    return TextBoxInventory(pine, SmallTextBoxAddrs)
+    return TextBoxInventory(pine, [SmallTextBox(pid, addr) for pid, addr in SMALL_TEXT_BOX_BY_PLANET.items()])
 
 
 def multi_line_text_box_inventory(pine: Pine) -> TextBoxInventory:
-    return TextBoxInventory(pine, MultiLineTextBoxAddrs)
+    return TextBoxInventory(pine, [MultiLineTextBox(pid, addr) for pid, addr in MULTI_LINE_TEXT_BOX_BY_PLANET.items()])

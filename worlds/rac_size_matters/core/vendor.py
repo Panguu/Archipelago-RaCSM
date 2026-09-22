@@ -9,6 +9,7 @@ from ..locations import (
     WEAPON_INTERNAL_TO_LOCATION,
     WEAPON_LEVEL_LOOKUP,
 )
+from . import address_maps
 from .address_maps import PLANET_ADDRESSES, WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS
 from .controller import GlobalButtonState, PauseSelectButtons
 from .menu import MenuStateValue
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from .planets import PlanetInventory, PlanetUnlockState
     from .weapons import WeaponInventory
 
-MAX_VENDOR_SLOTS = (WEAPON_VENDOR_SLOTS - WEAPON_VENDOR_ITEMS) // 4
+MAX_VENDOR_SLOTS = (address_maps.WEAPON_VENDOR_SLOTS - address_maps.WEAPON_VENDOR_ITEMS) // 4
 
 # array slot index + 2 offset. Confirmed in-game.
 WEAPON_VENDOR_IDS: dict[str, int] = {
@@ -453,10 +454,10 @@ class VendorInventory:
         satisfies."""
         item_ids = [_ITEM_IDS[name] for name in self._items]
         for i, item_id in enumerate(item_ids):
-            self.pine.write_bytes(WEAPON_VENDOR_ITEMS + i * 4, item_id.to_bytes(4, "little"))
+            self.pine.write_bytes(address_maps.WEAPON_VENDOR_ITEMS + i * 4, item_id.to_bytes(4, "little"))
         for i in range(len(item_ids), MAX_VENDOR_SLOTS):
-            self.pine.write_bytes(WEAPON_VENDOR_ITEMS + i * 4, (0).to_bytes(4, "little"))
-        self.pine.write_bytes(WEAPON_VENDOR_SLOTS, len(item_ids).to_bytes(4, "little"))
+            self.pine.write_bytes(address_maps.WEAPON_VENDOR_ITEMS + i * 4, (0).to_bytes(4, "little"))
+        self.pine.write_bytes(address_maps.WEAPON_VENDOR_SLOTS, len(item_ids).to_bytes(4, "little"))
         self.planet.menu.set(menu_value)
 
     def __repr__(self) -> str:

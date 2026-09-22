@@ -1,76 +1,30 @@
-from __future__ import annotations
+from ...locations.model import LocationView
+from ...locations.shared import LOCATIONS
+from ..address_maps import PLANET_MISSION_ADDRESSES
 
-from ...constants import Rac5CutsceneLocations
-from ..address_maps import PLANET_ADDRESSES, PLANET_MISSION_ADDRESSES
-
-
-_ADDRS = PLANET_MISSION_ADDRESSES
-
-STORY_MISSION_MAP: dict[tuple[int, int], str] = {
-    (_ADDRS["Pokitaru"],      0x0004): Rac5CutsceneLocations.POKITARU_RESCUE,
-    (_ADDRS["Kalidon"],       0x0004): Rac5CutsceneLocations.KALIDON_SEARCH,
-    (_ADDRS["Challax"],       0x0004): Rac5CutsceneLocations.CHALLAX_EXPLORE,
-
-    (_ADDRS["Pokitaru"],      0x0002): Rac5CutsceneLocations.POKITARU_FIGHT,
-
-    (_ADDRS["Ryllus"],        0x0008): Rac5CutsceneLocations.RYLLUS_ARTIFACT,
-    (_ADDRS["Ryllus"],        0x0010): Rac5CutsceneLocations.RYLLUS_TEMPLE,
-
-    (_ADDRS["Kalidon"],       0x0010): Rac5CutsceneLocations.KALIDON_WIN,
-
-    (_ADDRS["Metalis"],       0x0002): Rac5CutsceneLocations.METALIS_WAR,
-
-    (_ADDRS["Dreamtime"],     0x0004): Rac5CutsceneLocations.DREAMTIME_COMPLETE,
-
-    (_ADDRS["Outpost Omega"], 0x0080): Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
-    (_ADDRS["Outpost Omega"], 0x0010): Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,
-
-
-    (_ADDRS["Dayni Moon"],    0x0008): Rac5CutsceneLocations.DAYNI_MOON,
-    (_ADDRS["Dayni Moon"],    0x0004): Rac5CutsceneLocations.DAYNI_MOON_LUNA,
-    (_ADDRS["Dayni Moon"],    0x0020): Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,
-
-    (_ADDRS["Inside Clank"],  0x0002): Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES,
-
-    (_ADDRS["Quodrona"],      0x0004): Rac5CutsceneLocations.QUODRONA_FIND,
-    (_ADDRS["Quodrona"],      0x0140): Rac5CutsceneLocations.QUODRONA_GOAL,
-}
-
-CUTSCENE_MAP: dict[tuple[int, int], str] = {
-    (_ADDRS["Pokitaru"],      0x0001): Rac5CutsceneLocations.POKITARU_ENTER,
-    (_ADDRS["Ryllus"],        0x0001): Rac5CutsceneLocations.RYLLUS_ENTER,
-    (_ADDRS["Kalidon"],       0x0001): Rac5CutsceneLocations.KALIDON_ENTER,
-    (_ADDRS["Metalis"],       0x0001): Rac5CutsceneLocations.METALIS_ENTER,
-    (_ADDRS["Dreamtime"],     0x0001): Rac5CutsceneLocations.DREAMTIME_ENTER,
-    (_ADDRS["Outpost Omega"], 0x0001): Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,
-    (_ADDRS["Challax"],       0x0001): Rac5CutsceneLocations.CHALLAX_ENTER,
-
-    (_ADDRS["Inside Clank"],  0x0001): Rac5CutsceneLocations.INSIDE_CLANK_ENTER,
-    (_ADDRS["Quodrona"],      0x0001): Rac5CutsceneLocations.QUODRONA_ENTER,
-
-    (_ADDRS["Ryllus"],        0x0002): Rac5CutsceneLocations.RYLLUS_BUZZING,
-    (_ADDRS["Kalidon"],       0x0008): Rac5CutsceneLocations.KALIDON_EXPLORE,
-    (_ADDRS["Outpost Omega"], 0x0002): Rac5CutsceneLocations.OUTPOST_OMEGA,
-    (_ADDRS["Dayni Moon"],    0x0010): Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,
-    (_ADDRS["Dayni Moon"],    0x0002): Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,
-    (_ADDRS["Dreamtime"],     0x0002): Rac5CutsceneLocations.DREAMTIME_SLEEPING_RATCHET,
-    (_ADDRS["Quodrona"],      0x0008): Rac5CutsceneLocations.QUODRONA_CLONE,
-    (_ADDRS["Quodrona"],      0x0010): Rac5CutsceneLocations.QUODRONA_CHASE,
-    (_ADDRS["Quodrona"],      0x0020): Rac5CutsceneLocations.QUODRONA_MECHA,
-}
-
-MISSION_COMPLETE_MAP: dict[tuple[int, int], str] = {**STORY_MISSION_MAP, **CUTSCENE_MAP}
-
-VALIDATED_MISSION_MAP: dict[tuple[int, int], str] = {
-    k: v for k, v in MISSION_COMPLETE_MAP.items() if k[1] != 0x0000
-}
-
-PLANET_BY_ADDR: dict[int, str] = {v: k for k, v in PLANET_MISSION_ADDRESSES.items()}
-
-_PLANET_ID_BY_NAME: dict[str, int] = {p.name: pid for pid, p in PLANET_ADDRESSES.items()}
-
-LOCATION_TO_PLANET_ID: dict[str, int] = {
-    name: _PLANET_ID_BY_NAME[PLANET_BY_ADDR[address]]
-    for (address, _mask), name in VALIDATED_MISSION_MAP.items()
-    if PLANET_BY_ADDR[address] in _PLANET_ID_BY_NAME
-}
+_MISSIONS = tuple(
+    sorted(
+        (location for location in LOCATIONS if location.completed.source == "missions"),
+        key=lambda location: location.check_order,
+    )
+)
+STORY_MISSION_MAP = LocationView(
+    _MISSIONS,
+    lambda location: "cutscene" not in location.categories,
+    key=lambda location: (location.completed.key, location.completed.mask),
+    value=lambda location: location.name,
+)
+CUTSCENE_MAP = LocationView(
+    _MISSIONS,
+    lambda location: "cutscene" in location.categories,
+    key=lambda location: (location.completed.key, location.completed.mask),
+    value=lambda location: location.name,
+)
+MISSION_COMPLETE_MAP = LocationView(
+    _MISSIONS,
+    key=lambda location: (location.completed.key, location.completed.mask),
+    value=lambda location: location.name,
+)
+VALIDATED_MISSION_MAP = MISSION_COMPLETE_MAP
+LOCATION_TO_PLANET_ID = LocationView(_MISSIONS, value=lambda location: location.completed.planet_id)
+PLANET_BY_ADDR = {address: name for name, address in PLANET_MISSION_ADDRESSES.items()}

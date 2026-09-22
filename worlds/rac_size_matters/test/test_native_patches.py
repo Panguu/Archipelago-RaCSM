@@ -4,6 +4,7 @@ Fixtures contain only the instructions read by the plan builders, not complete
 game binaries. The CPU executes emitted branches and delay slots so tests check
 observable journal/ownership behavior rather than only comparing opcodes.
 """
+
 import json
 import struct
 import unittest
@@ -14,7 +15,7 @@ from unittest.mock import Mock, patch
 from ..core.armour_spawn_gate import _scan
 from ..core.native_runtime import NativeRuntime
 from ..core.notifications import receipt_text
-from ..core.patches import armour_pickup, item_toast, pokitaru_ship, sprout_pickup, vendor
+from ..core.patches import PatchOptions, armour_pickup, item_toast, pokitaru_ship, sprout_pickup, vendor
 from ..core.patches.asm import packed
 
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/native_us.json").read_text())
@@ -29,28 +30,38 @@ class Memory:
         self.writes = []
         self.fail_once = None
         for address, data in self.fixture["segments"]:
-            self.data[address:address + len(data) // 2] = bytes.fromhex(data)
+            self.data[address : address + len(data) // 2] = bytes.fromhex(data)
         for address, data in SHIP_FIXTURES[fixture]["segments"]:
-            self.data[address:address + len(data) // 2] = bytes.fromhex(data)
+            self.data[address : address + len(data) // 2] = bytes.fromhex(data)
         for address, data in SKIN_EXIT_FIXTURES[fixture]["segments"]:
-            self.data[address:address + len(data) // 2] = bytes.fromhex(data)
+            self.data[address : address + len(data) // 2] = bytes.fromhex(data)
         self.write_int32(0x1F4C76C, self.fixture["planet"])
         self.writes.clear()
 
-    def get_game_id(self): return "SCUS-97615"
-    def read_bytes(self, address, size): return bytes(self.data[address:address + size])
-    def read_int8(self, address): return self.data[address]
-    def read_int32(self, address): return struct.unpack_from("<I", self.data, address)[0]
+    def get_game_id(self):
+        return "SCUS-97615"
+
+    def read_bytes(self, address, size):
+        return bytes(self.data[address : address + size])
+
+    def read_int8(self, address):
+        return self.data[address]
+
+    def read_int32(self, address):
+        return struct.unpack_from("<I", self.data, address)[0]
 
     def write_bytes(self, address, data):
         self.writes.append((address, bytes(data)))
         if self.fail_once == address:
             self.fail_once = None
             raise OSError("injected IPC failure")
-        self.data[address:address + len(data)] = data
+        self.data[address : address + len(data)] = data
 
-    def write_int8(self, address, value): self.write_bytes(address, bytes([value]))
-    def write_int32(self, address, value): self.write_bytes(address, packed(value))
+    def write_int8(self, address, value):
+        self.write_bytes(address, bytes([value]))
+
+    def write_int32(self, address, value):
+        self.write_bytes(address, packed(value))
 
 
 class CPU:
@@ -66,7 +77,8 @@ class CPU:
         stop = self.STOP if stop is None else stop
         delayed = None
         for _ in range(max_steps):
-            if pc == stop: return
+            if pc == stop:
+                return
             if pc in stubs:
                 self.calls.append(pc)
                 if isinstance(stubs, dict):
@@ -80,37 +92,60 @@ class CPU:
             signed = imm - 65536 if imm & 32768 else imm
             destination, delayed = delayed, None
             addr = (self.r[rs] + signed) & 0xFFFFFFFF
-            if instruction == 0: pass
+            if instruction == 0:
+                pass
             elif op == 0:
-                if fn == 0: self.r[rd] = self.r[rt] << shift
-                elif fn == 2: self.r[rd] = self.r[rt] >> shift
-                elif fn in (0x21, 0x2D): self.r[rd] = self.r[rs] + self.r[rt]
-                elif fn == 0x25: self.r[rd] = self.r[rs] | self.r[rt]
-                elif fn == 0x2B: self.r[rd] = int(self.r[rs] < self.r[rt])
-                elif fn == 8: delayed = self.r[rs]
-                else: raise AssertionError(hex(instruction))
+                if fn == 0:
+                    self.r[rd] = self.r[rt] << shift
+                elif fn == 2:
+                    self.r[rd] = self.r[rt] >> shift
+                elif fn in (0x21, 0x2D):
+                    self.r[rd] = self.r[rs] + self.r[rt]
+                elif fn == 0x25:
+                    self.r[rd] = self.r[rs] | self.r[rt]
+                elif fn == 0x2B:
+                    self.r[rd] = int(self.r[rs] < self.r[rt])
+                elif fn == 8:
+                    delayed = self.r[rs]
+                else:
+                    raise AssertionError(hex(instruction))
             elif op == 2:
                 delayed = (instruction & 0x3FFFFFF) << 2
             elif op == 3:
                 self.r[31] = pc + 8
                 delayed = (instruction & 0x3FFFFFF) << 2
             elif op == 4:
-                if self.r[rs] == self.r[rt]: delayed = pc + 4 + signed * 4
+                if self.r[rs] == self.r[rt]:
+                    delayed = pc + 4 + signed * 4
             elif op == 5:
-                if self.r[rs] != self.r[rt]: delayed = pc + 4 + signed * 4
-            elif op == 9: self.r[rt] = self.r[rs] + signed
-            elif op == 11: self.r[rt] = int(self.r[rs] < (signed & 0xFFFFFFFF))
-            elif op == 12: self.r[rt] = self.r[rs] & imm
-            elif op == 13: self.r[rt] = self.r[rs] | imm
-            elif op == 14: self.r[rt] = self.r[rs] ^ imm
-            elif op == 15: self.r[rt] = imm << 16
-            elif op == 35: self.r[rt] = self.memory.read_int32(addr)
-            elif op == 36: self.r[rt] = self.memory.read_int8(addr)
-            elif op == 40: self.memory.write_int8(addr, self.r[rt] & 255)
-            elif op == 43: self.memory.write_int32(addr, self.r[rt])
-            elif op == 55: self.r[rt] = int.from_bytes(self.memory.read_bytes(addr, 8), "little")
-            elif op == 63: self.memory.write_bytes(addr, self.r[rt].to_bytes(8, "little"))
-            else: raise AssertionError(hex(instruction))
+                if self.r[rs] != self.r[rt]:
+                    delayed = pc + 4 + signed * 4
+            elif op == 9:
+                self.r[rt] = self.r[rs] + signed
+            elif op == 11:
+                self.r[rt] = int(self.r[rs] < (signed & 0xFFFFFFFF))
+            elif op == 12:
+                self.r[rt] = self.r[rs] & imm
+            elif op == 13:
+                self.r[rt] = self.r[rs] | imm
+            elif op == 14:
+                self.r[rt] = self.r[rs] ^ imm
+            elif op == 15:
+                self.r[rt] = imm << 16
+            elif op == 35:
+                self.r[rt] = self.memory.read_int32(addr)
+            elif op == 36:
+                self.r[rt] = self.memory.read_int8(addr)
+            elif op == 40:
+                self.memory.write_int8(addr, self.r[rt] & 255)
+            elif op == 43:
+                self.memory.write_int32(addr, self.r[rt])
+            elif op == 55:
+                self.r[rt] = int.from_bytes(self.memory.read_bytes(addr, 8), "little")
+            elif op == 63:
+                self.memory.write_bytes(addr, self.r[rt].to_bytes(8, "little"))
+            else:
+                raise AssertionError(hex(instruction))
             self.r = [x & 0xFFFFFFFF for x in self.r]
             self.r[0] = 0
             pc = destination if destination is not None else pc + 4
@@ -119,10 +154,12 @@ class CPU:
 
 def plans(memory):
     code = memory.read_bytes(0xD00000, 0x400000)
-    v = vendor.prepare(memory, code_start=0xD00000, code=code,
-                       base_locations={2: "weapon"}, titan_locations={2: "titan"})
-    t = item_toast.prepare(memory, code_start=0xD00000, code=code,
-                          small_box=memory.fixture["small_box"], starter=v.starter)
+    v = vendor.prepare(
+        memory, code_start=0xD00000, code=code, base_locations={2: "weapon"}, titan_locations={2: "titan"}
+    )
+    t = item_toast.prepare(
+        memory, code_start=0xD00000, code=code, small_box=memory.fixture["small_box"], starter=v.starter
+    )
     a = armour_pickup.prepare(memory, code_start=0xD00000, code=code, locations={0: "armour"})
     return v, t, a
 
@@ -130,16 +167,15 @@ def plans(memory):
 class NativePatchTests(unittest.TestCase):
     def test_vendor_display_survives_post_relocation_loading(self):
         p = Memory()
-        planet = SimpleNamespace(is_ready=False, planet_id=1, starting_planet_id=None,
-                                 menu=SimpleNamespace(get=lambda: 9))
-        v = SimpleNamespace(planet=planet, native_plan=None,
-                            _is_titan_pending=lambda name: False)
+        planet = SimpleNamespace(
+            is_ready=False, planet_id=1, starting_planet_id=None, menu=SimpleNamespace(get=lambda: 9)
+        )
+        v = SimpleNamespace(planet=planet, native_plan=None, _is_titan_pending=lambda name: False)
         runtime = NativeRuntime(p, v, lambda _: None, lambda _: None)
         runtime.enabled = True
         runtime.vendor_scouts = object()
         display = Mock()
-        with patch("worlds.rac_size_matters.core.native_runtime.vendor_presentation.prepare",
-                   return_value=display):
+        with patch("worlds.rac_size_matters.core.native_runtime.vendor_presentation.prepare", return_value=display):
             runtime.gate.held_module = lambda: (1, 0xD4B380)
             runtime._prepare(1, 0xD4B380)
         runtime.gate.arm = lambda: None
@@ -164,9 +200,11 @@ class NativePatchTests(unittest.TestCase):
                 p = Memory(fixture)
                 original = bytes(p.data)
                 patches = plans(p)
-                for patch in patches: patch.install()
+                for patch in patches:
+                    patch.install()
                 item_toast.show(patches[1], receipt_text("Lacerator", "Sender"))
-                for patch in reversed(patches): patch.restore()
+                for patch in reversed(patches):
+                    patch.restore()
                 self.assertEqual(p.data, original)
 
     def test_vendor_purchase_records_even_when_already_owned(self):
@@ -221,7 +259,8 @@ class NativePatchTests(unittest.TestCase):
     def test_toast_only_calls_rendering_functions_and_expires(self):
         p = Memory()
         v, t, _ = plans(p)
-        v.install(); t.install()
+        v.install()
+        t.install()
         before = p.read_bytes(p.fixture["small_box"], 0x40)
         text = receipt_text("Lacerator", "Sender")
         item_toast.show(t, text)
@@ -229,10 +268,12 @@ class NativePatchTests(unittest.TestCase):
         entry = t.edits[0].address
         stubs = [(p.read_int32(entry + offset) & 0x3FFFFFF) << 2 for offset in (8, 40, 52, 72)]
         p.write_int32(t.timer, 1)
-        cpu = CPU(p); cpu.run(entry, stubs=stubs)
+        cpu = CPU(p)
+        cpu.run(entry, stubs=stubs)
         self.assertEqual(cpu.calls, stubs)
         self.assertEqual(p.read_int32(t.timer), 0)
-        cpu = CPU(p); cpu.run(entry, stubs=stubs)
+        cpu = CPU(p)
+        cpu.run(entry, stubs=stubs)
         self.assertEqual(cpu.calls, stubs[:1])
         self.assertEqual(p.read_bytes(p.fixture["small_box"], 0x40), before)
 
@@ -250,7 +291,8 @@ class NativePatchTests(unittest.TestCase):
         p = Memory()
         v, _, _ = plans(p)
         p.data[v.edits[0].address] ^= 1
-        with self.assertRaises(RuntimeError): v.install()
+        with self.assertRaises(RuntimeError):
+            v.install()
         self.assertEqual(p.writes, [])
 
     def test_partial_install_rolls_back(self):
@@ -258,7 +300,8 @@ class NativePatchTests(unittest.TestCase):
         v, _, _ = plans(p)
         before = bytes(p.data)
         p.fail_once = v.edits[1].address
-        with self.assertRaises(OSError): v.install()
+        with self.assertRaises(OSError):
+            v.install()
         self.assertEqual(p.data, before)
 
     def test_scan_terminates_at_short_final_chunk(self):
@@ -278,3 +321,30 @@ class NativePatchTests(unittest.TestCase):
         self.assertEqual(len(runtime.plans), 7)
         self.assertIn(runtime.skin, runtime.plans)
         self.assertEqual(p.read_int32(pokitaru_ship.SITE), 0x24020001)
+
+    def test_patch_switches_leave_disabled_features_uninstalled(self):
+        p = Memory()
+        planet = SimpleNamespace(is_ready=True, planet_id=1)
+        v = SimpleNamespace(planet=planet, native_plan=None)
+        options = PatchOptions(**{name: False for name in PatchOptions.__dataclass_fields__})
+        runtime = NativeRuntime(p, v, lambda _: None, lambda _: None, patch_options=options)
+        before = bytes(p.data)
+        runtime._prepare(1, 0xD4B380)
+        self.assertEqual(bytes(p.data), before)
+        self.assertEqual(runtime.plans, [])
+        self.assertIsNone(v.native_plan)
+        self.assertIsNone(runtime.skin)
+        self.assertIsNone(runtime.armour)
+
+    def test_disabling_vendor_also_disables_dependent_ui_hooks(self):
+        p = Memory()
+        planet = SimpleNamespace(is_ready=True, planet_id=1)
+        v = SimpleNamespace(planet=planet, native_plan=None)
+        runtime = NativeRuntime(p, v, lambda _: None, lambda _: None, patch_options=PatchOptions(vendor=False))
+        runtime.gate.held_module = lambda: (1, 0xD4B380)
+        runtime._prepare(1, 0xD4B380)
+        self.assertIsNone(v.native_plan)
+        self.assertIsNone(runtime.skin)
+        self.assertIsNone(runtime.toast)
+        self.assertIsNone(runtime.connection_warning)
+        self.assertTrue(runtime.armour.installed)

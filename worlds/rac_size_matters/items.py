@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from dataclasses import dataclass
 
 from BaseClasses import ItemClassification
 
@@ -14,91 +14,94 @@ from .constants import (
     Rac5WeaponMods,
     Rac5Weapons,
 )
-from .core.planets import INFOBOT_ITEM_TO_PLANET
-from .core.traps import TRAP_DURATIONS
-from .core.weapons import GADGET_DATA, WEAPON_DATA, WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
+from .data.planets import INFOBOT_ITEM_TO_PLANET
+from .data.traps import TRAP_DURATIONS
+from .data.weapons import GADGET_DATA, WEAPON_DATA, WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS
 
 BASE_ID = 77_700_000
 
 
-class RACItemData(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class RACItemData:
     code: int
     classification: ItemClassification
 
 
 WEAPON_DISPLAY_TO_INTERNAL: dict[str, str] = {
-    Rac5Weapons.LACERATOR:       Rac5WeaponKeys.LACERATOR,
-    Rac5Weapons.CONCUSSION_GUN:  Rac5WeaponKeys.CONCUSSION_GUN,
+    Rac5Weapons.LACERATOR: Rac5WeaponKeys.LACERATOR,
+    Rac5Weapons.CONCUSSION_GUN: Rac5WeaponKeys.CONCUSSION_GUN,
     Rac5Weapons.ACID_BOMB_GLOVE: Rac5WeaponKeys.ACID_BOMB_GLOVE,
-    Rac5Weapons.AGENTS_OF_DOOM:  Rac5WeaponKeys.AGENTS_OF_DOOM,
-    Rac5Weapons.BEE_MINE_GLOVE:  Rac5WeaponKeys.BEE_MINE_GLOVE,
-    Rac5Weapons.STATIC_BARRIER:  Rac5WeaponKeys.STATIC_BARRIER,
-    Rac5Weapons.SHOCK_ROCKET:    Rac5WeaponKeys.SHOCK_ROCKET,
-    Rac5Weapons.SNIPER_MINE:     Rac5WeaponKeys.SNIPER_MINE,
-    Rac5Weapons.SCORCHER:        Rac5WeaponKeys.SCORCHER,
-    Rac5Weapons.LASER_TRACER:    Rac5WeaponKeys.LASER_TRACER,
-    Rac5Weapons.SUCK_CANNON:     Rac5WeaponKeys.SUCK_CANNON,
-    Rac5Weapons.MOOTATOR:        Rac5WeaponKeys.MOOTATOR,
-    Rac5Weapons.RYNO:            Rac5WeaponKeys.RYNO,
+    Rac5Weapons.AGENTS_OF_DOOM: Rac5WeaponKeys.AGENTS_OF_DOOM,
+    Rac5Weapons.BEE_MINE_GLOVE: Rac5WeaponKeys.BEE_MINE_GLOVE,
+    Rac5Weapons.STATIC_BARRIER: Rac5WeaponKeys.STATIC_BARRIER,
+    Rac5Weapons.SHOCK_ROCKET: Rac5WeaponKeys.SHOCK_ROCKET,
+    Rac5Weapons.SNIPER_MINE: Rac5WeaponKeys.SNIPER_MINE,
+    Rac5Weapons.SCORCHER: Rac5WeaponKeys.SCORCHER,
+    Rac5Weapons.LASER_TRACER: Rac5WeaponKeys.LASER_TRACER,
+    Rac5Weapons.SUCK_CANNON: Rac5WeaponKeys.SUCK_CANNON,
+    Rac5Weapons.MOOTATOR: Rac5WeaponKeys.MOOTATOR,
+    Rac5Weapons.RYNO: Rac5WeaponKeys.RYNO,
 }
 
 GADGET_DISPLAY_TO_INTERNAL: dict[str, str] = {
-    Rac5Gadgets.HYPERSHOT:      Rac5GadgetKeys.HYPERSHOT,
+    Rac5Gadgets.HYPERSHOT: Rac5GadgetKeys.HYPERSHOT,
     Rac5Gadgets.SPROUT_O_MATIC: Rac5GadgetKeys.SPROUT_O_MATIC,
-    Rac5Gadgets.POLARIZER:      Rac5GadgetKeys.POLARIZER,
-    Rac5Gadgets.PDA:            Rac5GadgetKeys.PDA,
-    Rac5Gadgets.SHRINK_RAY:     Rac5GadgetKeys.SHRINK_RAY,
-    Rac5Gadgets.BOLT_GRABBER:   Rac5GadgetKeys.BOLT_GRABBER,
-    Rac5Gadgets.MAP_O_MATIC:    Rac5GadgetKeys.MAP_O_MATIC,
-    Rac5Gadgets.BOX_BREAKER:    Rac5GadgetKeys.BOX_BREAKER,
+    Rac5Gadgets.POLARIZER: Rac5GadgetKeys.POLARIZER,
+    Rac5Gadgets.PDA: Rac5GadgetKeys.PDA,
+    Rac5Gadgets.SHRINK_RAY: Rac5GadgetKeys.SHRINK_RAY,
+    Rac5Gadgets.BOLT_GRABBER: Rac5GadgetKeys.BOLT_GRABBER,
+    Rac5Gadgets.MAP_O_MATIC: Rac5GadgetKeys.MAP_O_MATIC,
+    Rac5Gadgets.BOX_BREAKER: Rac5GadgetKeys.BOX_BREAKER,
 }
 
 ARMOUR_DISPLAY_TO_INTERNAL: dict[str, tuple[str, int]] = {
-    Rac5Armours.WILDFIRE_CHESTPLATE:     ("wildfire",     0x01),
-    Rac5Armours.WILDFIRE_HELMET:         ("wildfire",     0x02),
-    Rac5Armours.WILDFIRE_GLOVES:         ("wildfire",     0x04),
-    Rac5Armours.WILDFIFE_BOOTS:          ("wildfire",     0x10),
-    Rac5Armours.SLUDGE_MK9_CHESTPLATE:   ("sludge",       0x01),
-    Rac5Armours.SLUDGE_MK9_HELMET:       ("sludge",       0x02),
-    Rac5Armours.SLUDGE_MK9_GLOVES:       ("sludge",       0x04),
-    Rac5Armours.SLUDGE_MK9_BOOTS:        ("sludge",       0x10),
-    Rac5Armours.CRYSTALLIX_CHESTPLATE:   ("crystallix",   0x01),
-    Rac5Armours.CRYSTALLIX_HELMET:       ("crystallix",   0x02),
-    Rac5Armours.CRYSTALLIX_GLOVES:       ("crystallix",   0x04),
-    Rac5Armours.CRYSTALLIX_BOOTS:        ("crystallix",   0x10),
+    Rac5Armours.WILDFIRE_CHESTPLATE: ("wildfire", 0x01),
+    Rac5Armours.WILDFIRE_HELMET: ("wildfire", 0x02),
+    Rac5Armours.WILDFIRE_GLOVES: ("wildfire", 0x04),
+    Rac5Armours.WILDFIFE_BOOTS: ("wildfire", 0x10),
+    Rac5Armours.SLUDGE_MK9_CHESTPLATE: ("sludge", 0x01),
+    Rac5Armours.SLUDGE_MK9_HELMET: ("sludge", 0x02),
+    Rac5Armours.SLUDGE_MK9_GLOVES: ("sludge", 0x04),
+    Rac5Armours.SLUDGE_MK9_BOOTS: ("sludge", 0x10),
+    Rac5Armours.CRYSTALLIX_CHESTPLATE: ("crystallix", 0x01),
+    Rac5Armours.CRYSTALLIX_HELMET: ("crystallix", 0x02),
+    Rac5Armours.CRYSTALLIX_GLOVES: ("crystallix", 0x04),
+    Rac5Armours.CRYSTALLIX_BOOTS: ("crystallix", 0x10),
     Rac5Armours.ELECTROSHOCK_CHESTPLATE: ("electroshock", 0x01),
-    Rac5Armours.ELECTROSHOCK_HELMET:     ("electroshock", 0x02),
-    Rac5Armours.ELECTROSHOCK_GLOVES:     ("electroshock", 0x04),
-    Rac5Armours.ELECTROSHOCK_BOOTS:      ("electroshock", 0x10),
-    Rac5Armours.MEGA_BOMB_CHESTPLATE:    ("mega_bomb",    0x01),
-    Rac5Armours.MEGA_BOMB_HELMET:        ("mega_bomb",    0x02),
-    Rac5Armours.MEGA_BOMB_GLOVES:        ("mega_bomb",    0x04),
-    Rac5Armours.MEGA_BOMB_BOOTS:         ("mega_bomb",    0x10),
-    Rac5Armours.HYPERBOREAN_CHESTPLATE:  ("hyperborean",  0x01),
-    Rac5Armours.HYPERBOREAN_HELMET:      ("hyperborean",  0x02),
-    Rac5Armours.HYPERBOREAN_GLOVES:      ("hyperborean",  0x04),
-    Rac5Armours.HYPERBOREAN_BOOTS:       ("hyperborean",  0x10),
-    Rac5Armours.CHAMELEON_CHESTPLATE:    ("chameleon",    0x01),
-    Rac5Armours.CHAMELEON_HELMET:        ("chameleon",    0x02),
-    Rac5Armours.CHAMELEON_GLOVES:        ("chameleon",    0x04),
-    Rac5Armours.CHAMELEON_BOOTS:         ("chameleon",    0x10),
+    Rac5Armours.ELECTROSHOCK_HELMET: ("electroshock", 0x02),
+    Rac5Armours.ELECTROSHOCK_GLOVES: ("electroshock", 0x04),
+    Rac5Armours.ELECTROSHOCK_BOOTS: ("electroshock", 0x10),
+    Rac5Armours.MEGA_BOMB_CHESTPLATE: ("mega_bomb", 0x01),
+    Rac5Armours.MEGA_BOMB_HELMET: ("mega_bomb", 0x02),
+    Rac5Armours.MEGA_BOMB_GLOVES: ("mega_bomb", 0x04),
+    Rac5Armours.MEGA_BOMB_BOOTS: ("mega_bomb", 0x10),
+    Rac5Armours.HYPERBOREAN_CHESTPLATE: ("hyperborean", 0x01),
+    Rac5Armours.HYPERBOREAN_HELMET: ("hyperborean", 0x02),
+    Rac5Armours.HYPERBOREAN_GLOVES: ("hyperborean", 0x04),
+    Rac5Armours.HYPERBOREAN_BOOTS: ("hyperborean", 0x10),
+    Rac5Armours.CHAMELEON_CHESTPLATE: ("chameleon", 0x01),
+    Rac5Armours.CHAMELEON_HELMET: ("chameleon", 0x02),
+    Rac5Armours.CHAMELEON_GLOVES: ("chameleon", 0x04),
+    Rac5Armours.CHAMELEON_BOOTS: ("chameleon", 0x10),
 }
 
 NG_PLUS_WEAPONS: frozenset[str] = frozenset({Rac5Weapons.RYNO})
 NG_PLUS_ARMOUR_SETS: frozenset[str] = frozenset({"hyperborean", "chameleon"})
 
-NG_PLUS_WEAPON_MODS: frozenset[str] = frozenset({
-    Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
-    Rac5WeaponMods.SCORCHER_MOD_SUNFLARE,
-    Rac5WeaponMods.SUCK_CANNON_MOD_BOUNCE,
-    Rac5WeaponMods.BEE_MINE_GLOVE_MOD_HIVE_BOMB,
-    Rac5WeaponMods.SNIPER_MINE_MOD_SMART_REFLECTOR,
-    Rac5WeaponMods.SHOCK_ROCKET_MOD_MULTI_LAUNCHER,
-    Rac5WeaponMods.STATIC_BARRIER_MOD_REFLECTION,
-    Rac5WeaponMods.STATIC_BARRIER_MOD_MIRAGE,
-    Rac5WeaponMods.LASER_TRACER_MOD_PIERCE,
-    Rac5WeaponMods.LASER_TRACER_MOD_RICOCHET,
-})
+NG_PLUS_WEAPON_MODS: frozenset[str] = frozenset(
+    {
+        Rac5WeaponMods.AGENTS_OF_DOOM_MOD_EXPLOSIVE,
+        Rac5WeaponMods.SCORCHER_MOD_SUNFLARE,
+        Rac5WeaponMods.SUCK_CANNON_MOD_BOUNCE,
+        Rac5WeaponMods.BEE_MINE_GLOVE_MOD_HIVE_BOMB,
+        Rac5WeaponMods.SNIPER_MINE_MOD_SMART_REFLECTOR,
+        Rac5WeaponMods.SHOCK_ROCKET_MOD_MULTI_LAUNCHER,
+        Rac5WeaponMods.STATIC_BARRIER_MOD_REFLECTION,
+        Rac5WeaponMods.STATIC_BARRIER_MOD_MIRAGE,
+        Rac5WeaponMods.LASER_TRACER_MOD_PIERCE,
+        Rac5WeaponMods.LASER_TRACER_MOD_RICOCHET,
+    }
+)
 
 WEAPON_ITEM_TABLE: dict[str, RACItemData] = {
     name: RACItemData(BASE_ID + idx, WEAPON_DATA[internal].classification)
@@ -111,19 +114,19 @@ WEAPON_PROGRESSIVE_STEPS: dict[str, int] = {
 }
 
 PROGRESSIVE_WEAPON_NAME: dict[str, str] = {
-    Rac5Weapons.LACERATOR:       Rac5ProgressiveWeapons.LACERATOR,
-    Rac5Weapons.CONCUSSION_GUN:  Rac5ProgressiveWeapons.CONCUSSION_GUN,
+    Rac5Weapons.LACERATOR: Rac5ProgressiveWeapons.LACERATOR,
+    Rac5Weapons.CONCUSSION_GUN: Rac5ProgressiveWeapons.CONCUSSION_GUN,
     Rac5Weapons.ACID_BOMB_GLOVE: Rac5ProgressiveWeapons.ACID_BOMB_GLOVE,
-    Rac5Weapons.AGENTS_OF_DOOM:  Rac5ProgressiveWeapons.AGENTS_OF_DOOM,
-    Rac5Weapons.BEE_MINE_GLOVE:  Rac5ProgressiveWeapons.BEE_MINE_GLOVE,
-    Rac5Weapons.STATIC_BARRIER:  Rac5ProgressiveWeapons.STATIC_BARRIER,
-    Rac5Weapons.SHOCK_ROCKET:    Rac5ProgressiveWeapons.SHOCK_ROCKET,
-    Rac5Weapons.SNIPER_MINE:     Rac5ProgressiveWeapons.SNIPER_MINE,
-    Rac5Weapons.SCORCHER:        Rac5ProgressiveWeapons.SCORCHER,
-    Rac5Weapons.LASER_TRACER:    Rac5ProgressiveWeapons.LASER_TRACER,
-    Rac5Weapons.SUCK_CANNON:     Rac5ProgressiveWeapons.SUCK_CANNON,
-    Rac5Weapons.MOOTATOR:        Rac5ProgressiveWeapons.MOOTATOR,
-    Rac5Weapons.RYNO:            Rac5ProgressiveWeapons.RYNO,
+    Rac5Weapons.AGENTS_OF_DOOM: Rac5ProgressiveWeapons.AGENTS_OF_DOOM,
+    Rac5Weapons.BEE_MINE_GLOVE: Rac5ProgressiveWeapons.BEE_MINE_GLOVE,
+    Rac5Weapons.STATIC_BARRIER: Rac5ProgressiveWeapons.STATIC_BARRIER,
+    Rac5Weapons.SHOCK_ROCKET: Rac5ProgressiveWeapons.SHOCK_ROCKET,
+    Rac5Weapons.SNIPER_MINE: Rac5ProgressiveWeapons.SNIPER_MINE,
+    Rac5Weapons.SCORCHER: Rac5ProgressiveWeapons.SCORCHER,
+    Rac5Weapons.LASER_TRACER: Rac5ProgressiveWeapons.LASER_TRACER,
+    Rac5Weapons.SUCK_CANNON: Rac5ProgressiveWeapons.SUCK_CANNON,
+    Rac5Weapons.MOOTATOR: Rac5ProgressiveWeapons.MOOTATOR,
+    Rac5Weapons.RYNO: Rac5ProgressiveWeapons.RYNO,
 }
 
 WEAPON_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
@@ -132,22 +135,21 @@ WEAPON_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
 }
 
 _WEAPONS_WITH_MODS: list[str] = [
-    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
-    if WEAPON_MOD_COUNTS.get(internal, 0) > 0
+    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_MOD_COUNTS.get(internal, 0) > 0
 ]
 
 PROGRESSIVE_MOD_NAME: dict[str, str] = {
-    Rac5Weapons.LACERATOR:       Rac5ProgressiveWeaponMods.LACERATOR,
-    Rac5Weapons.CONCUSSION_GUN:  Rac5ProgressiveWeaponMods.CONCUSSION_GUN,
+    Rac5Weapons.LACERATOR: Rac5ProgressiveWeaponMods.LACERATOR,
+    Rac5Weapons.CONCUSSION_GUN: Rac5ProgressiveWeaponMods.CONCUSSION_GUN,
     Rac5Weapons.ACID_BOMB_GLOVE: Rac5ProgressiveWeaponMods.ACID_BOMB_GLOVE,
-    Rac5Weapons.AGENTS_OF_DOOM:  Rac5ProgressiveWeaponMods.AGENTS_OF_DOOM,
-    Rac5Weapons.BEE_MINE_GLOVE:  Rac5ProgressiveWeaponMods.BEE_MINE_GLOVE,
-    Rac5Weapons.STATIC_BARRIER:  Rac5ProgressiveWeaponMods.STATIC_BARRIER,
-    Rac5Weapons.SHOCK_ROCKET:    Rac5ProgressiveWeaponMods.SHOCK_ROCKET,
-    Rac5Weapons.SNIPER_MINE:     Rac5ProgressiveWeaponMods.SNIPER_MINE,
-    Rac5Weapons.SCORCHER:        Rac5ProgressiveWeaponMods.SCORCHER,
-    Rac5Weapons.LASER_TRACER:    Rac5ProgressiveWeaponMods.LASER_TRACER,
-    Rac5Weapons.SUCK_CANNON:     Rac5ProgressiveWeaponMods.SUCK_CANNON,
+    Rac5Weapons.AGENTS_OF_DOOM: Rac5ProgressiveWeaponMods.AGENTS_OF_DOOM,
+    Rac5Weapons.BEE_MINE_GLOVE: Rac5ProgressiveWeaponMods.BEE_MINE_GLOVE,
+    Rac5Weapons.STATIC_BARRIER: Rac5ProgressiveWeaponMods.STATIC_BARRIER,
+    Rac5Weapons.SHOCK_ROCKET: Rac5ProgressiveWeaponMods.SHOCK_ROCKET,
+    Rac5Weapons.SNIPER_MINE: Rac5ProgressiveWeaponMods.SNIPER_MINE,
+    Rac5Weapons.SCORCHER: Rac5ProgressiveWeaponMods.SCORCHER,
+    Rac5Weapons.LASER_TRACER: Rac5ProgressiveWeaponMods.LASER_TRACER,
+    Rac5Weapons.SUCK_CANNON: Rac5ProgressiveWeaponMods.SUCK_CANNON,
 }
 
 WEAPON_PROGRESSIVE_MOD_ITEM_TABLE: dict[str, RACItemData] = {
@@ -230,13 +232,13 @@ GADGET_ITEM_TABLE: dict[str, RACItemData] = {
 }
 
 ARMOUR_SETS: list[tuple[str, str]] = [
-    ("Wildfire",     "wildfire"),
-    ("Sludge Mk9",   "sludge"),
-    ("Crystallix",   "crystallix"),
+    ("Wildfire", "wildfire"),
+    ("Sludge Mk9", "sludge"),
+    ("Crystallix", "crystallix"),
     ("Electroshock", "electroshock"),
-    ("Mega Bomb",    "mega_bomb"),
-    ("Hyperborean",  "hyperborean"),
-    ("Chameleon",    "chameleon"),
+    ("Mega Bomb", "mega_bomb"),
+    ("Hyperborean", "hyperborean"),
+    ("Chameleon", "chameleon"),
 ]
 
 ARMOUR_SET_DISPLAY_TO_INTERNAL: dict[str, str] = dict(ARMOUR_SETS)
@@ -250,13 +252,13 @@ ARMOUR_ITEM_TABLE: dict[str, RACItemData] = {
 }
 
 PROGRESSIVE_ARMOUR_NAME: dict[str, str] = {
-    "Wildfire":     Rac5ProgressiveArmours.PROGRESSIVE_WILDFIRE,
-    "Sludge Mk9":   Rac5ProgressiveArmours.PROGRESSIVE_SLUDGE_MK9,
-    "Crystallix":   Rac5ProgressiveArmours.PROGRESSIVE_CRYSTALLIX,
+    "Wildfire": Rac5ProgressiveArmours.PROGRESSIVE_WILDFIRE,
+    "Sludge Mk9": Rac5ProgressiveArmours.PROGRESSIVE_SLUDGE_MK9,
+    "Crystallix": Rac5ProgressiveArmours.PROGRESSIVE_CRYSTALLIX,
     "Electroshock": Rac5ProgressiveArmours.PROGRESSIVE_ELECTROSHOCK,
-    "Mega Bomb":    Rac5ProgressiveArmours.PROGRESSIVE_MEGA_BOMB,
-    "Hyperborean":  Rac5ProgressiveArmours.PROGRESSIVE_HYPERBOREAN,
-    "Chameleon":    Rac5ProgressiveArmours.PROGRESSIVE_CHAMELEON,
+    "Mega Bomb": Rac5ProgressiveArmours.PROGRESSIVE_MEGA_BOMB,
+    "Hyperborean": Rac5ProgressiveArmours.PROGRESSIVE_HYPERBOREAN,
+    "Chameleon": Rac5ProgressiveArmours.PROGRESSIVE_CHAMELEON,
 }
 
 ARMOUR_PROGRESSIVE_ITEM_TABLE: dict[str, RACItemData] = {
@@ -280,8 +282,7 @@ INFOBOT_ITEM_TABLE: dict[str, RACItemData] = {
 }
 
 TRAP_ITEM_TABLE: dict[str, RACItemData] = {
-    name: RACItemData(BASE_ID + 600 + idx, ItemClassification.trap)
-    for idx, name in enumerate(TRAP_DURATIONS, start=1)
+    name: RACItemData(BASE_ID + 600 + idx, ItemClassification.trap) for idx, name in enumerate(TRAP_DURATIONS, start=1)
 }
 
 GLITCHES_ITEM_NAME = "Glitches"
@@ -324,5 +325,6 @@ def enabled_weapon_names(weights: dict[str, int]) -> frozenset[str]:
     Defaulting a missing key to "enabled" would silently re-enable exactly the
     weapon the player turned off."""
     return frozenset(name for name in WEAPON_DISPLAY_TO_INTERNAL if name in weights)
+
 
 ITEM_ID_TO_NAME: dict[int, str] = {data.code: name for name, data in ALL_ITEMS.items()}

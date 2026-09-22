@@ -3,6 +3,7 @@ import struct
 from importlib.resources import files
 
 from .patches.asm import packed
+from .patches.plan import supported_game_id
 
 _ICON_ROOT = files(__package__.rsplit(".", 1)[0]).joinpath("images", "icons")
 _ICON_INDICES = _ICON_ROOT.joinpath("archipelago-icon.indices").read_bytes()
@@ -50,6 +51,7 @@ def prepare(pine, code_start, code):
 class VendorPresentation:
     def __init__(self, pine, render, header, string_state, equipment, icons, textures):
         self.pine = pine
+        self.game_id = supported_game_id(pine)
         self.render, self.header, self.string_state = render, header, string_state
         self.equipment, self.icons, self.textures = equipment, icons, textures
         self.text_changes = []
@@ -60,7 +62,7 @@ class VendorPresentation:
         self.icon_id = None
 
     def validate(self):
-        if (self.pine.get_game_id() != "SCUS-97615"
+        if (self.pine.get_game_id() != self.game_id
                 or self.pine.read_bytes(self.render, len(RENDER_SIGNATURE)) != RENDER_SIGNATURE):
             raise RuntimeError("Vendor presentation module changed")
 

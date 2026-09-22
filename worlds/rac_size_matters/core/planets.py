@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING, NamedTuple
 
-from ..constants import Rac5CutsceneLocations, Rac5Infobots, Rac5Locations
+from ..constants import Rac5CutsceneLocations, Rac5Locations
+from ..data.planets import INFOBOT_ITEM_TO_PLANET as INFOBOT_ITEM_TO_PLANET
+from . import address_maps
 from .address_maps import (
     CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
@@ -20,6 +22,7 @@ from .armour import ArmourPiece, ArmourStruct
 from .controller import GlobalButtonState
 from .display_text import multi_line_text_box_inventory, small_text_box_inventory
 from .menu import MenuInventory, MenuStateValue
+from .patches.starting_planet import ELIGIBLE
 from .player import PlayerInventory, PlayerMovementState
 from .states.base_state import BaseState
 from .structs.game import (
@@ -41,80 +44,68 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Planet:
-    name:      str
+    name: str
     planet_id: int
-    menu_addr: int | None = None
+    @property
+    def menu_addr(self) -> int | None:
+        return MENU_ADDR_BY_PLANET_ID.get(self.planet_id)
 
 
 class Planets:
-    POKITARU        = Planet("Pokitaru",              0x01, menu_addr=MENU_ADDR_BY_PLANET_ID[0x01])
-    RYLLUS          = Planet("Ryllus",                0x02, menu_addr=MENU_ADDR_BY_PLANET_ID[0x02])
-    KALIDON         = Planet("Kalidon",               0x03, menu_addr=MENU_ADDR_BY_PLANET_ID[0x03])
-    METALIS         = Planet("Metalis",               0x04, menu_addr=MENU_ADDR_BY_PLANET_ID[0x04])
-    DREAMTIME       = Planet("Dreamtime",             0x05, menu_addr=MENU_ADDR_BY_PLANET_ID[0x05])
-    CHALLAX         = Planet("Challax",               0x07, menu_addr=MENU_ADDR_BY_PLANET_ID[0x07])
-    DAYNI_MOON      = Planet("Dayni Moon",            0x08, menu_addr=MENU_ADDR_BY_PLANET_ID[0x08])
-    INSIDE_CLANK    = Planet("Inside Clank",          0x09)
-    QUODRONA        = Planet("Quodrona",              0x0A, menu_addr=MENU_ADDR_BY_PLANET_ID[0x0A])
+    POKITARU = Planet("Pokitaru", 0x01)
+    RYLLUS = Planet("Ryllus", 0x02)
+    KALIDON = Planet("Kalidon", 0x03)
+    METALIS = Planet("Metalis", 0x04)
+    DREAMTIME = Planet("Dreamtime", 0x05)
+    CHALLAX = Planet("Challax", 0x07)
+    DAYNI_MOON = Planet("Dayni Moon", 0x08)
+    INSIDE_CLANK = Planet("Inside Clank", 0x09)
+    QUODRONA = Planet("Quodrona", 0x0A)
     GIANT_CLANK_METALIS = Planet("Giant Clank (Metalis)", 0x0F)
     GIANT_CLANK_CHALLAX = Planet("Giant Clank (Challax)", 0x15)
-    KALIDON_RACE    = Planet("Kalidon Race Track",    0x16)
-    OUTPOST_OMEGA_2 = Planet("Outpost Omega 2",       0x17, menu_addr=MENU_ADDR_BY_PLANET_ID[0x17])
+    KALIDON_RACE = Planet("Kalidon Race Track", 0x16)
+    OUTPOST_OMEGA_2 = Planet("Outpost Omega 2", 0x17)
 
 
-BY_ID: dict[int, Planet] = {
-    p.planet_id: p
-    for p in vars(Planets).values()
-    if isinstance(p, Planet)
-}
+BY_ID: dict[int, Planet] = {p.planet_id: p for p in vars(Planets).values() if isinstance(p, Planet)}
+
 
 @dataclass(frozen=True)
 class PlanetUnlock:
-    unlock_addr:   int
-    state_addr:    int
+    unlock_addr: int
+    state_addr: int
     default_state: int = 0
 
 
 _DEFAULT_STATES: dict[str, int] = {
-    "DREAMTIME":     3,
+    "DREAMTIME": 3,
     "OUTPOST_OMEGA": 3,
 }
 
 PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
     name: PlanetUnlock(
         unlock_addr=addr,
-        state_addr=addr + PLANET_STATE_OFFSET,
+        state_addr=addr + address_maps.PLANET_STATE_OFFSET,
         default_state=_DEFAULT_STATES.get(name, 0),
     )
     for name, addr in PLANET_UNLOCK_ADDRESSES.items()
 }
 
 
-
 INFOBOT_UNLOCK_VALUE = 3
 
-INFOBOT_ITEM_TO_PLANET: dict[str, tuple[str, ...]] = {
-    Rac5Infobots.POKITARU:     ("pokitaru",),
-    Rac5Infobots.KALIDON:      ("kalidon",),
-    Rac5Infobots.METALIS:      ("metalis",),
-    Rac5Infobots.OUTPOST_OMEGA: ("outpost_omega",),
-    Rac5Infobots.CHALLAX:      ("challax",),
-    Rac5Infobots.DAYNI_MOON:   ("dayni_moon",),
-    Rac5Infobots.QUODRONA:     ("quodrona",),
-    Rac5Infobots.RYLLUS:       ("ryllus",),
-}
 
 PLANET_STATE_ADDRESSES: dict[str, int] = {
-    "pokitaru":          PLANET_UNLOCK_ADDRESSES["POKITARU"],
-    "ryllus":            PLANET_UNLOCK_ADDRESSES["RYLLUS"],
-    "kalidon":           PLANET_UNLOCK_ADDRESSES["KALIDON"],
-    "metalis":           PLANET_UNLOCK_ADDRESSES["METALIS"],
-    "outpost_omega":     PLANET_UNLOCK_ADDRESSES["OUTPOST_OMEGA"],
+    "pokitaru": PLANET_UNLOCK_ADDRESSES["POKITARU"],
+    "ryllus": PLANET_UNLOCK_ADDRESSES["RYLLUS"],
+    "kalidon": PLANET_UNLOCK_ADDRESSES["KALIDON"],
+    "metalis": PLANET_UNLOCK_ADDRESSES["METALIS"],
+    "outpost_omega": PLANET_UNLOCK_ADDRESSES["OUTPOST_OMEGA"],
     "outpost_omega_oo2": 0x1F4C677,
-    "challax":           PLANET_UNLOCK_ADDRESSES["CHALLAX"],
-    "dayni_moon":        PLANET_UNLOCK_ADDRESSES["DAYNI_MOON"],
-    "inside_clank":      PLANET_UNLOCK_ADDRESSES["INSIDE_CLANK"],
-    "quodrona":          PLANET_UNLOCK_ADDRESSES["QUODRONA"],
+    "challax": PLANET_UNLOCK_ADDRESSES["CHALLAX"],
+    "dayni_moon": PLANET_UNLOCK_ADDRESSES["DAYNI_MOON"],
+    "inside_clank": PLANET_UNLOCK_ADDRESSES["INSIDE_CLANK"],
+    "quodrona": PLANET_UNLOCK_ADDRESSES["QUODRONA"],
 }
 
 AUTO_UNLOCK_ADDRESSES: list[int] = [
@@ -122,35 +113,37 @@ AUTO_UNLOCK_ADDRESSES: list[int] = [
 ]
 
 
-
 logger = logging.getLogger("CommonClient")
 
 _METALIS_ID: int = 0x04
 _CHALLAX_ID: int = 0x07
 
-_GIANT_CLANK_METALIS_ID:  int = 0x0F
-_GIANT_CLANK_CHALLAX_ID:  int = 0x15
+_GIANT_CLANK_METALIS_ID: int = 0x0F
+_GIANT_CLANK_CHALLAX_ID: int = 0x15
 
 
 class GiantClankConfig(NamedTuple):
-    origin_id:        int
-    armour_set:       str
-    piece:            ArmourPiece
+    origin_id: int
+    armour_set: str
+    piece: ArmourPiece
     pickup_locations: tuple[str, ...]
-    redirect_to:      int | None = None
-    escape_location:  str | None = None
+    redirect_to: int | None = None
+    escape_location: str | None = None
 
 
 GIANT_CLANK_CONFIGS: dict[int, GiantClankConfig] = {
     _GIANT_CLANK_METALIS_ID: GiantClankConfig(
         origin_id=_METALIS_ID,
-        armour_set="electroshock", piece=ArmourPiece.GLOVES,
+        armour_set="electroshock",
+        piece=ArmourPiece.GLOVES,
         pickup_locations=(Rac5Locations.METALIS_GLOVES,),
-        redirect_to=_METALIS_ID, escape_location=Rac5CutsceneLocations.METALIS_ESCAPE,
+        redirect_to=_METALIS_ID,
+        escape_location=Rac5CutsceneLocations.METALIS_ESCAPE,
     ),
     _GIANT_CLANK_CHALLAX_ID: GiantClankConfig(
         origin_id=_CHALLAX_ID,
-        armour_set="electroshock", piece=ArmourPiece.CHESTPLATE,
+        armour_set="electroshock",
+        piece=ArmourPiece.CHESTPLATE,
         pickup_locations=(Rac5Locations.CHALLAX_CHESTPLATE, Rac5CutsceneLocations.CHALLAX_CLANK),
     ),
 }
@@ -166,16 +159,16 @@ class PlanetInventory:
         armour: ArmourInventory,
         quick_select: QuickSelectState,
     ) -> None:
-        self.pine         = pine
-        self.armour       = armour
+        self.pine = pine
+        self.armour = armour
         self.quick_select = quick_select
 
-        self.player           = PlayerInventory(pine)
-        self.menu             = MenuInventory(pine)
-        self.weapons          = WeaponInventory(pine)
-        self.weapon_cycler    = WeaponCyclerInventory(pine)
-        self.small_text       = small_text_box_inventory(pine)
-        self.multi_line_text  = multi_line_text_box_inventory(pine)
+        self.player = PlayerInventory(pine)
+        self.menu = MenuInventory(pine)
+        self.weapons = WeaponInventory(pine)
+        self.weapon_cycler = WeaponCyclerInventory(pine)
+        self.small_text = small_text_box_inventory(pine)
+        self.multi_line_text = multi_line_text_box_inventory(pine)
 
         self.planet_id: int | None = None
         self.is_ready: bool = False
@@ -191,14 +184,14 @@ class PlanetInventory:
         self._giant_clank_had_piece: bool = False
         self._giant_clank_escape_sent: bool = False
 
-        self.equipped_armour:  dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
-        self._was_picking_up:    bool = False
+        self.equipped_armour: dict[str, int] = dict.fromkeys(ArmourStruct.SLOT_FIELDS, 0)
+        self._was_picking_up: bool = False
         self._equipped_pickup_baseline: dict[str, int] | None = None
 
-        self.on_death:                 Callable[[], None]              = lambda: None
-        self.on_respawn:               Callable[[], None]              = lambda: None
+        self.on_death: Callable[[], None] = lambda: None
+        self.on_respawn: Callable[[], None] = lambda: None
         self.on_equipped_armour_saved: Callable[[dict[str, int]], None] = lambda _: None
-        self.on_pause_close:           Callable[[], None]              = lambda: None
+        self.on_pause_close: Callable[[], None] = lambda: None
 
         self._prev_dead: bool = False
         self._prev_menu: MenuStateValue | None = None
@@ -206,7 +199,6 @@ class PlanetInventory:
 
     def set_starting_planet(self, planet_id: int | None) -> None:
         """Configure the frontend New Game patch; never redirect loaded saves."""
-        from .patches.starting_planet import ELIGIBLE
         if planet_id is not None and planet_id not in ELIGIBLE:
             raise ValueError(f"Invalid starting planet: {planet_id!r}")
         self.starting_planet_id = planet_id
@@ -230,7 +222,7 @@ class PlanetInventory:
         if gate != self._prev_gate:
             prev = self._prev_gate
             self._prev_gate = gate
-            left_idle    = prev == TRANSITION_GATE_IDLE and gate != TRANSITION_GATE_IDLE
+            left_idle = prev == TRANSITION_GATE_IDLE and gate != TRANSITION_GATE_IDLE
             back_to_idle = prev != TRANSITION_GATE_IDLE and gate == TRANSITION_GATE_IDLE
 
             if left_idle:
@@ -249,7 +241,7 @@ class PlanetInventory:
 
             return False
 
-        current_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
+        current_id = self.pine.read_int8(address_maps.CURRENT_PLANET_ADDRESS)
         if current_id != 0 and current_id != self.planet_id and self._pending_planet_id is None:
             self._ready_on_planet(current_id)
             return True
@@ -259,7 +251,7 @@ class PlanetInventory:
     def _ready_on_planet(self, planet_id: int) -> None:
         config = GIANT_CLANK_CONFIGS.get(planet_id)
         if config is not None and not self.giant_clank_allowed:
-            self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.origin_id)
+            self.pine.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, config.origin_id)
             return
 
         self.set_planet(planet_id)
@@ -310,9 +302,9 @@ class PlanetInventory:
         self._giant_clank_had_piece = has_piece
 
         if config.redirect_to is not None:
-            load_value = self.pine.read_int32(NEW_PLANET_START_LOAD_ADDR)
-            if load_value != PLANET_LOAD_IDLE_VALUE:
-                self.pine.write_int32(NEW_PLANET_START_LOAD_ADDR, config.redirect_to)
+            load_value = self.pine.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR)
+            if load_value != address_maps.PLANET_LOAD_IDLE_VALUE:
+                self.pine.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, config.redirect_to)
                 if not self._giant_clank_escape_sent:
                     self._giant_clank_escape_sent = True
                     if config.escape_location:
@@ -334,7 +326,7 @@ class PlanetInventory:
         movement = self.player.movement_state
         self._cached_movement = movement
         is_dead = movement is not None and PlayerMovementState.is_dead(int(movement))
-        newly_dead    = is_dead and not self._prev_dead
+        newly_dead = is_dead and not self._prev_dead
         newly_revived = self._prev_dead and not is_dead
         self._prev_dead = is_dead
         if newly_dead:
@@ -369,8 +361,7 @@ class PlanetInventory:
         if is_picking_up and not self._was_picking_up:
             equipped = self.armour.read()
             self._equipped_pickup_baseline = {
-                name: int(getattr(equipped, name) or 0)
-                for name in ArmourStruct.SLOT_FIELDS
+                name: int(getattr(equipped, name) or 0) for name in ArmourStruct.SLOT_FIELDS
             }
         elif not is_picking_up and self._was_picking_up:
             if self._equipped_pickup_baseline is not None:
@@ -400,51 +391,59 @@ class PlanetInventory:
         return self.weapons.check()
 
     def check_weapon_cycler(
-        self, *, is_ap_owned: Callable[[int], bool], vendor_active: bool,
+        self,
+        *,
+        is_ap_owned: Callable[[int], bool],
+        vendor_active: bool,
         fallback_weapon_id: Callable[[], int | None],
     ) -> None:
         if not self.is_ready:
             return
         self.weapon_cycler.check(
-            is_ap_owned=is_ap_owned, vendor_active=vendor_active, fallback_weapon_id=fallback_weapon_id,
+            is_ap_owned=is_ap_owned,
+            vendor_active=vendor_active,
+            fallback_weapon_id=fallback_weapon_id,
         )
 
     def __repr__(self) -> str:
         return f"PlanetInventory(planet_id={self.planet_id})"
 
 
-
 PLANET_UNLOCK_BASE: int = PlanetProgressStruct.BASE_ADDRESS
 
+
 class PlanetLockValue(IntEnum):
-    LOCKED   = 0x00
+    LOCKED = 0x00
     UNLOCKED = 0x03
+
 
 PLANET_UNLOCK_ORDER: list[str] = list(PlanetProgressStruct.PLANET_NAME_ORDER)
 
-_AUTO_UNLOCK_NAMES: frozenset[str] = frozenset({
-    "DREAMTIME",
-})
+_AUTO_UNLOCK_NAMES: frozenset[str] = frozenset(
+    {
+        "DREAMTIME",
+    }
+)
 
 _NATURAL_UNLOCK_NAMES: frozenset[str] = frozenset({"INSIDE_CLANK"})
 
 _VENDOR_PLANET_GATE: dict[str, str] = {
-    "DREAMTIME":    "OUTPOST_OMEGA",
+    "DREAMTIME": "OUTPOST_OMEGA",
     "INSIDE_CLANK": "DAYNI_MOON",
 }
 
 _COUNT = len(PLANET_UNLOCK_ORDER)
 
-class PlanetUnlockState(BaseState):
 
+class PlanetUnlockState(BaseState):
     def __init__(self, pine: Pine) -> None:
         super().__init__()
         self.pine = pine
         self.unlocked: dict[str, bool] = dict.fromkeys(PLANET_UNLOCK_ORDER, False)
         self._desired: dict[str, bool] = {p: p in _AUTO_UNLOCK_NAMES for p in PLANET_UNLOCK_ORDER}
-        self._desired["RYLLUS"]        = True
-        self._enforce_active: bool     = True
-        self._ryllus_released: bool    = False
+        self._desired["RYLLUS"] = True
+        self._enforce_active: bool = True
+        self._ryllus_released: bool = False
         self._infobot_planets: set[str] = set()
         self._random_start: bool = False
         self.split_infobots: bool = False
@@ -494,7 +493,8 @@ class PlanetUnlockState(BaseState):
             pu = PLANET_UNLOCKS.get(name)
             if pu is not None:
                 state_val = max(int(unlock_val), pu.default_state)
-                self.pine.write_int8(pu.state_addr, state_val)
+                state_addr = PLANET_UNLOCK_ADDRESSES[name] + address_maps.PLANET_STATE_OFFSET
+                self.pine.write_int8(state_addr, state_val)
 
     def set_random_start(self, enabled: bool) -> None:
         self._random_start = enabled

@@ -1,14 +1,2 @@
-from .shared import *
-
-from . import (
-    challax,
-    dayni_moon,
-    dreamtime,
-    inside_clank,
-    kalidon,
-    metalis,
-    outpost_omega,
-    pokitaru,
-    quodrona,
-    ryllus,
-)
+from .model import Completion as Completion, LocationOptions as LocationOptions, Rac5Locations as Rac5Locations
+from .shared import *  # noqa: F403

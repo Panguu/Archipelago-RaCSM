@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from . import address_maps
 from .address_maps import PLAYER_HEALTH_EXP
 
 if TYPE_CHECKING:
@@ -32,10 +33,10 @@ class PlayerHealthExpInventory:
         self._last_level: int = 5
 
     def get(self) -> int:
-        return self.pine.read_int32(PLAYER_HEALTH_EXP)
+        return self.pine.read_int32(address_maps.PLAYER_HEALTH_EXP)
 
     def set(self, value: int) -> None:
-        self.pine.write_int32(PLAYER_HEALTH_EXP, value)
+        self.pine.write_int32(address_maps.PLAYER_HEALTH_EXP, value)
 
     def rebaseline(self, value: int | None = None) -> None:
         """Re-sync the baseline apply_boost() diffs against, without boosting anything.
