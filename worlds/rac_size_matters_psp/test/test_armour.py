@@ -5,7 +5,7 @@ from .bases import RACSizeMatterTestBase
 
 
 class TestProgressiveArmour(RACSizeMatterTestBase):
-    options = {"progressive_armour": 1}
+    options = {"progressive_armour": 1, "challenge_mode": 2}
 
     def test_progressive_armour_items_in_pool(self) -> None:
         pool_names = [item.name for item in self.multiworld.itempool]
@@ -35,7 +35,7 @@ class TestProgressiveArmour(RACSizeMatterTestBase):
 
 
 class TestNonProgressiveArmour(RACSizeMatterTestBase):
-    options = {"progressive_armour": 0}
+    options = {"progressive_armour": 0, "challenge_mode": 2}
 
     def test_individual_armour_items_in_pool(self) -> None:
         pool_names = {item.name for item in self.multiworld.itempool}
@@ -56,7 +56,7 @@ class TestNonProgressiveArmour(RACSizeMatterTestBase):
 
 
 class TestArmourSetChecksEnabled(RACSizeMatterTestBase):
-    options = {"armour_set_checks": 1}
+    options = {"armour_set_checks": 1, "challenge_mode": 2}
 
     def test_armour_set_check_locations_present(self) -> None:
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
@@ -86,7 +86,7 @@ class TestArmourSetChecksDisabled(RACSizeMatterTestBase):
 
 
 class TestAllOptionalChecksEnabled(RACSizeMatterTestBase):
-    options = {"armour_set_checks": 1}
+    options = {"armour_set_checks": 1, "challenge_mode": 2}
 
     def test_all_optional_locations_present(self) -> None:
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}

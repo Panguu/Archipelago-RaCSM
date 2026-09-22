@@ -16,6 +16,8 @@ from ..items import (
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_PIECE_BITMASKS,
     ARMOUR_SET_DISPLAY_TO_INTERNAL,
+    ARMOUR_SETS,
+    PROGRESSIVE_ARMOUR_UNIFIED_NAME,
     GADGET_DISPLAY_TO_INTERNAL,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_MOD_NAME,
@@ -84,6 +86,7 @@ class InventoryMixin:
         weapon_prog_counts:     dict[str, int] = {}
         weapon_mod_prog_counts: dict[str, int] = {}
         armour_prog_counts:     dict[str, int] = {}
+        unified_armour_count = 0
         weapon_unlocked:  dict[str, bool]     = {}
         gadget_unlocked:  dict[str, bool]     = {}
         weapon_mod_slots: dict[str, set[str]] = {}
@@ -106,6 +109,9 @@ class InventoryMixin:
                 mod_internal = WEAPON_DISPLAY_TO_INTERNAL.get(mod_display)
                 if mod_internal:
                     weapon_mod_slots.setdefault(mod_internal, set()).add(_SLOT_ATTR[slot])
+                continue
+            if item_name == PROGRESSIVE_ARMOUR_UNIFIED_NAME:
+                unified_armour_count += 1
                 continue
             if item_name in PROGRESSIVE_ARMOUR_NAME_REVERSE:
                 display = PROGRESSIVE_ARMOUR_NAME_REVERSE[item_name]
@@ -131,6 +137,13 @@ class InventoryMixin:
                 if i < count:
                     bitmask |= bit
             armour_unlocked[internal] = armour_unlocked.get(internal, 0) | bitmask
+
+        remaining = unified_armour_count
+        for _, internal in ARMOUR_SETS:
+            count = min(remaining, len(ARMOUR_PIECE_BITMASKS))
+            if count:
+                armour_unlocked[internal] = armour_unlocked.get(internal, 0) | sum(ARMOUR_PIECE_BITMASKS[:count])
+            remaining -= count
 
         # Progressive weapons: first copy unlocks, each further copy levels up
         weapon_levels: dict[str, int] = {}
@@ -190,19 +203,43 @@ class InventoryMixin:
         if not self.psp_connected:
             self._pending_item_apply = True
             return
-        if not self.items_received:
-            return
         inventory = self._parse_inventory()
         async with self._psp_lock:
+            if not self.psp_connected:
+                return
+            self.pine.validate_session()
             self._wiring.apply_inventory(**inventory)
-            # Bolts/traps are filler grants unrelated to any Inventory class —
-            # apply immediately regardless of planet readiness (addresses are global).
-            if self._filler_checkpoint_synced:
-                self._grant_new_bolt_items()
-                self._grant_new_trap_items()
-                await self._persist_filler_checkpoint()
+            # Global addresses are still overwritten by save/level loading.
+            # Consume rewards only after gameplay and server state are ready.
+            if self._filler_checkpoint_synced and self._wiring.planet.is_ready:
+                try:
+                    self._grant_pending_filler()
+                finally:
+                    await self._persist_filler_checkpoint()
         self._show_new_item_notifications()
         self._pending_item_apply = False
+
+    def _grant_pending_filler(self) -> None:
+        """One ordered cursor: a failed write must not acknowledge later items."""
+        start = min(self._processed_item_count, self._processed_trap_count)
+        starting_bolts = int(self.slot_data.get("starting_bolts", 0))
+        # The generator adds exactly one precollected Bolts placeholder for
+        # starting_bolts. Only that item is replaced by the separate grant.
+        placeholder = next((index for index, item in enumerate(self.items_received)
+                            if starting_bolts and item.location == -2
+                            and self.item_names[self.game].get(item.item, "") == "Bolts"), None)
+        for index in range(start, len(self.items_received)):
+            item = self.items_received[index]
+            name = self.item_names[self.game].get(item.item, "")
+            if name == "Bolts" and index != placeholder:
+                current = self.pine.read_int32(PLAYER_BOLT_COUNT)
+                grant = min(200000, max(75000, int(current * 0.2)))
+                balance = min(current + grant, MAX_PLAYER_BOLTS)
+                self.pine.write_int32(PLAYER_BOLT_COUNT, balance)
+                self._wiring.player_bolts.rebaseline(balance)
+            elif name in ALL_TRAPS:
+                activate_trap(self.pine, name)
+            self._processed_item_count = self._processed_trap_count = index + 1
 
     async def _persist_filler_checkpoint(self) -> None:
         """Persist how far into items_received bolts/traps have been granted,
@@ -212,6 +249,8 @@ class InventoryMixin:
         previous checkpoint.
         """
         checkpoint = max(self._processed_item_count, self._processed_trap_count)
+        if checkpoint == getattr(self, "_filler_persisted_checkpoint", None):
+            return
         await self.send_msgs([{
             "cmd": "Set",
             "key": self._filler_applied_key(),
@@ -219,6 +258,7 @@ class InventoryMixin:
             "want_reply": False,
             "operations": [{"operation": "max", "value": checkpoint}],
         }])
+        self._filler_persisted_checkpoint = checkpoint
 
     async def _restore_world_states(self) -> None:
         """Seed and apply bolt/skill-point/armour state from already-checked
@@ -288,55 +328,3 @@ class InventoryMixin:
             TextColour.WHITE, " from ", TextColour.ORANGE, player_name, TextColour.WHITE,
         )
         self._write_notification_text(msg)
-
-    def _grant_new_bolt_items(self) -> None:
-        # PLAYER_BOLT_COUNT is a global address — safe to write during a transition.
-        # The precollected starting-bolts item is granted separately by
-        # _grant_starting_items() (needs a loaded planet); skip counting it here
-        # as generic filler. Precollected items are always the earliest entries in
-        # items_received, so this only matters on a scan starting from checkpoint 0.
-        starting_bolts = int(self.slot_data.get("starting_bolts", 0))
-        skipped_precollected = self._processed_item_count != 0
-        new_items = self.items_received[self._processed_item_count:]
-        self._processed_item_count = len(self.items_received)
-
-        bolt_items_to_grant = 0
-        for network_item in new_items:
-            item_name = self.item_names[self.game].get(network_item.item, "")
-            if item_name != "Bolts":
-                continue
-            if starting_bolts and not skipped_precollected:
-                skipped_precollected = True
-                continue
-            bolt_items_to_grant += 1
-
-        if bolt_items_to_grant <= 0 or not self.psp_connected:
-            return
-        try:
-            current = self.pine.read_int32(PLAYER_BOLT_COUNT)
-            for _ in range(bolt_items_to_grant):
-                grant = min(200000, max(75000, int(current * 0.2)))
-                current = min(current + grant, MAX_PLAYER_BOLTS)
-            self.pine.write_int32(PLAYER_BOLT_COUNT, current)
-            # Rebaseline so Core's per-tick apply_boost() doesn't treat this
-            # one-shot filler grant as organic gameplay gain and multiply it.
-            self._wiring.player_bolts.rebaseline(current)
-        except Exception as exc:
-            self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
-
-    def _grant_new_trap_items(self) -> None:
-        # Trap addresses (DREAMTIME_EFFECT, BRIGHTNESS_ADDRESS, CHEATS) are all
-        # global — safe to write during a transition.
-        new_items = self.items_received[self._processed_trap_count:]
-        self._processed_trap_count = len(self.items_received)
-
-        if not self.psp_connected:
-            return
-        for network_item in new_items:
-            item_name = self.item_names[self.game].get(network_item.item, "")
-            if item_name not in ALL_TRAPS:
-                continue
-            try:
-                activate_trap(self.pine, item_name)
-            except Exception as exc:
-                self._log(f"[RAC] Could not activate trap {item_name!r}: {exc}", "warning")

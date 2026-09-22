@@ -17,20 +17,19 @@ _WEAPON_STATE_PUSH_INTERVAL: float = 5.0
 
 
 class PspMixin:
-    """Owns the connection to PPSSPP (procmem/transport.py's ProcMemTransport,
-    exposed as self.pine): connect/reconnect/teardown, and the poll loop that
-    drives Core.tick() every cycle.
-
-    The game id is only checked once, at connect() time, so a game swapped
-    inside an already-running PPSSPP process won't be noticed until the next
-    /reconnect. Any PPSSPP error in this file is caught and turned into a
-    clean disconnect + log line.
-    """
+    """Local pymem connection, checked runtime patches, and gameplay polling."""
 
     async def _teardown_psp_connection(self) -> None:
         """Drop the process handle (and any still-open bootstrap socket).
         Safe to call even if it's already down."""
         self.psp_connected = False
+        try:
+            if self.pine.is_connected():
+                self.pine.validate_session()
+                self._wiring.vendor_presentation.restore()
+                self.native.restore()
+        except Exception:
+            logger.warning("[RAC] Could not restore PSP patches; bytes were left untouched where validation failed", exc_info=True)
         try:
             self.pine.disconnect()
         except Exception:
@@ -154,12 +153,16 @@ class PspMixin:
                     f"[RAC] Lost PPSSPP connection or poll failed: {type(exc).__name__}: {exc}",
                     exc_info=True,
                 )
-                self.psp_connected = False
+                async with self._psp_lock:
+                    await self._teardown_psp_connection()
 
     async def _poll_game(self) -> None:
         prev_planet = self.current_planet
         async with self._psp_lock:
+            self.pine.validate_session()
             self._wiring.tick()
+            self.native.tick(self._wiring.planet.planet_id, self._wiring.planet.is_ready)
+            self._poll_resource_links()
         self.current_planet = PLANET_ID_TO_REGION.get(self._wiring.planet.planet_id, "Galaxy")
         if self.current_planet != prev_planet:
             await self._send_map_page(self.current_planet)

@@ -16,7 +16,7 @@ from .world import (
 def run_client(_url: str | None = None):
     """Launch the R&C: Size Matters PSP Archipelago client."""
     from .client import run_client as _run
-    launch_subprocess(_run, name="RACSmPSPClient")
+    launch_subprocess(_run, name="RACSmPSPClient", args=(_url,) if _url else ())
 
 
 components.append(Component(

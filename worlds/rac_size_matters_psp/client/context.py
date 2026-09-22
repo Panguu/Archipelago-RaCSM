@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import Callable
 from typing import Any
 
 tracker_loaded: bool = False
-try:
-    from worlds.tracker.TrackerClient import TrackerGameContext as CommonContext
-    tracker_loaded = True
-except ImportError:
-    from CommonClient import CommonContext
+from CommonClient import CommonContext
+if os.environ.get("RACSM_PSP_TRACKER") == "1":
+    try:
+        from worlds.tracker.TrackerClient import TrackerGameContext as CommonContext
+        tracker_loaded = True
+    except ImportError:
+        pass
 from CommonClient import logger
 
 from ..core import TextColour, colored_text, set_trap_durations
 from ..core.core import Core
+from ..core.native_runtime import NativeRuntime
 from ..locations import ALL_LOCATIONS
 from ..procmem.transport import ProcMemTransport
 from ..world import RACSizeMatterWorld
@@ -22,11 +26,12 @@ from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
 from .handlers import CutsceneHandlerMixin, EventsHandlerMixin
 from .psp_mixin import PspMixin
+from .links import ResourceLinkMixin
 from .vendor import InventoryMixin, VendorHandlerMixin
 
 
 class RACContext(
-    PspMixin, CutsceneHandlerMixin, EventsHandlerMixin,
+    ResourceLinkMixin, PspMixin, CutsceneHandlerMixin, EventsHandlerMixin,
     DeathLinkMixin, VendorHandlerMixin, InventoryMixin, CommonContext,
 ):
     game = GAME_NAME
@@ -38,7 +43,10 @@ class RACContext(
     def __init__(self, server_address: str | None, password: str | None) -> None:
         super().__init__(server_address, password)
 
-        self.pine = ProcMemTransport()
+        self._init_resource_links()
+        self.memory = ProcMemTransport()
+        self.pine = self.memory  # Compatibility name used by the existing PSP inventory accessors.
+        self.native = NativeRuntime(self.memory)
         self.psp_connected = False
         self._psp_lock = asyncio.Lock()
         self.slot_data: dict[str, Any] = {}
@@ -52,6 +60,7 @@ class RACContext(
         self._filler_checkpoint_synced = False
         self._ap_loadout_restored = False
         self._starting_items_sent = False
+        self._starting_checkpoint_synced = False
         self._death_count = 0
         self._pending_item_apply = True
         self._already_hinted: set[int] = set()
@@ -70,6 +79,23 @@ class RACContext(
         self._starting_skin_option = 0
 
         self._wiring = Core(self.pine, log=self._log)
+        self._wiring.vendor_presentation.reward_for_id = self._vendor_reward_for_id
+
+    def _vendor_reward_for_id(self, identity):
+        from ..core.vendor import WEAPON_VENDOR_IDS
+        from ..locations import WEAPON_INTERNAL_TO_LOCATION, GADGET_INTERNAL_TO_LOCATION
+        name = next((name for name, value in WEAPON_VENDOR_IDS.items() if value == identity), None)
+        location = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
+        info = self.locations_info.get(self._location_name_to_id.get(location))
+        if info is None:
+            return None
+        return (self.item_names.lookup_in_slot(info.item, info.player),
+                self.player_names.get(info.player, f'Player {info.player}'))
+
+    async def shutdown(self):
+        async with self._psp_lock:
+            await self._teardown_psp_connection()
+        await super().shutdown()
 
     async def _guarded_wiring_call(self, fn: Callable[[], None]) -> None:
         async with self._psp_lock:
@@ -172,12 +198,18 @@ class RACContext(
 
     def on_package(self, cmd: str, args: dict[str, Any]) -> None:
         super().on_package(cmd, args)
+        if cmd in ("Retrieved", "SetReply"):
+            self._resource_link_packet(cmd, args)
 
         if cmd == "Connected":
             self.slot_data = args.get("slot_data", {})
+            self._resource_link_packet(cmd, args)
             self._already_hinted.clear()
             self._ap_loadout_restored = False
             self._weapon_state_restored = False
+            self._starting_checkpoint_synced = False
+            self._filler_checkpoint_synced = False
+            self._filler_persisted_checkpoint = None
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
             self._armour_set_checks_enabled = bool(self.slot_data.get("armour_set_checks", False))
             clank_mode = int(self.slot_data.get("clank_challenges", 1))
@@ -192,6 +224,9 @@ class RACContext(
             self._wiring.weapon_level_checks_enabled = (
                 int(self.slot_data.get("weapon_level_checks", 0)) >= 1
             )
+            self._wiring.nanotech.interval = int(self.slot_data.get("nanotech_level_interval", 0))
+            self._wiring.nanotech.maximum = int(self.slot_data.get("nanotech_level_max", 75))
+            self._wiring.nanotech_checks_enabled = self._wiring.nanotech.interval > 0
             self._wiring.planet.weapons.experience_multiplier = (
                 int(self.slot_data.get("weapon_experience_multiplier", 0)) or 1
             )
@@ -205,8 +240,10 @@ class RACContext(
             if isinstance(trap_duration, dict):
                 set_trap_durations(trap_duration)
             self._starting_skin_option = int(self.slot_data.get("starting_skin", 0))
+            self.tags = self.tags - {"DeathLink", "AmmoLink", "BoltLink"}
             if self._death_link_enabled:
-                asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": ["DeathLink"]}]))
+                self.tags = self.tags | {"DeathLink"}
+            asyncio.create_task(self.send_msgs([{"cmd": "ConnectUpdate", "tags": sorted(self.tags)}]))
             self._wiring.wire(
                 send_location      = self._append_location_by_name,
                 send_deathlink     = self._send_death_link_from_sync,
@@ -275,6 +312,7 @@ class RACContext(
             self._try_restore_weapon_state()
             starting_items_key = self._starting_items_key()
             if starting_items_key in self.stored_data:
+                self._starting_checkpoint_synced = True
                 self._starting_items_sent = self._starting_items_sent or bool(self.stored_data[starting_items_key])
                 if not self._starting_items_sent and self._wiring.planet.is_ready:
                     asyncio.create_task(self._grant_starting_items())
@@ -308,6 +346,7 @@ class RACContext(
 
     def on_connection_closed(self) -> None:
         super().on_connection_closed()
+        self._init_resource_links()
         self._write_notification_text(colored_text(
             "Disconnected from ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
         ))
@@ -315,5 +354,5 @@ class RACContext(
     def make_gui(self):
         ui = super().make_gui()
         version = RACSizeMatterWorld.world_version.as_simple_string()
-        ui.base_title = f"Archipelago R&C: Size Matters Client v{version}"
+        ui.base_title = f"Archipelago R&C: Size Matters PSP Client v{version}"
         return ui

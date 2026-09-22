@@ -9,9 +9,6 @@ from .bases import RACSizeMatterTestBase
 
 
 class TestProgressiveWeapons(RACSizeMatterTestBase):
-    # Weapon mod items are always in the pool regardless of progressive_weapons,
-    # so enough extra location categories must be enabled to hold the larger
-    # progressive-weapons item pool (more copies needed for level-ups).
     options = {
         "progressive_weapons": 1,
         "all_cutscenes": 1,

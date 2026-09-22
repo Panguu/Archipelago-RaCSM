@@ -18,14 +18,26 @@ class TestRegionAccess(RACSizeMatterTestBase):
     def test_pokitaru_always_reachable(self) -> None:
         self.assertTrue(self.can_reach_region("Pokitaru"))
 
-    def test_ryllus_always_reachable_even_without_weapon(self) -> None:
-        # Ryllus has no entrance access_rule: the game force-unlocks it via the
-        # Pokitaru intro cutscene, so it's reachable from the start regardless
-        # of items (see core/planets.py PlanetUnlockState._ryllus_released).
+    def test_ryllus_requires_its_own_infobot(self) -> None:
+        self.assertFalse(self.can_reach_region("Ryllus"))
+        self.collect_by_name(["Infobot: Ryllus"])
         self.assertTrue(self.can_reach_region("Ryllus"))
 
     def test_ryllus_reachable_with_projectile(self) -> None:
         self.collect_by_name([ANY_PROJECTILE])
+        self.assertFalse(self.can_reach_region("Ryllus"))
+
+    def test_pokitaru_and_ryllus_infobots_are_independent(self) -> None:
+        infobot = self.world.create_item("Infobot: Pokitaru")
+        self.remove([infobot])
+        self.assertFalse(self.can_reach_region("Pokitaru"))
+        self.assertFalse(self.can_reach_region("Ryllus"))
+        self.collect([infobot])
+        self.assertTrue(self.can_reach_region("Pokitaru"))
+        self.assertFalse(self.can_reach_region("Ryllus"))
+        self.collect_by_name(["Infobot: Ryllus"])
+        self.remove([infobot])
+        self.assertFalse(self.can_reach_region("Pokitaru"))
         self.assertTrue(self.can_reach_region("Ryllus"))
 
     def test_kalidon_unreachable_without_gadgets(self) -> None:
@@ -67,7 +79,7 @@ class TestRegionAccess(RACSizeMatterTestBase):
 
     def test_ryllus_reachable_with_hypershot_only(self) -> None:
         self.collect_by_name(["Hypershot"])
-        self.assertTrue(self.can_reach_region("Ryllus"))
+        self.assertFalse(self.can_reach_region("Ryllus"))
 
     def test_kalidon_not_reachable_without_hypershot(self) -> None:
         self.collect_by_name([ANY_PROJECTILE, "Sprout-O-Matic"])

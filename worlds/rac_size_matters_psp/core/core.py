@@ -11,11 +11,13 @@ from .menu import MenuStateValue
 from .missions import MissionInventory
 from .planets import AUTO_UNLOCK_ADDRESSES, INFOBOT_UNLOCK_VALUE, PlanetInventory, PlanetUnlockState
 from .player_bolts import PlayerBoltInventory
+from .nanotech import NanotechChecks
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointInventory
 from .skins import SkinInventory
 from .titanium_bolts import TitaniumBoltInventory
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
+from .vendor_presentation import VendorPresentation
 from ..pypsp import Psp
 
 logger = logging.getLogger("CommonClient")
@@ -104,6 +106,7 @@ class Core:
 
     def __init__(self, pine: Psp, log: Callable[[str], None] | None = None) -> None:
         self.pine = pine
+        self.vendor_presentation = VendorPresentation(pine)
         self._log = log or logger.info
 
         self.armour        = ArmourInventory(pine)
@@ -115,6 +118,8 @@ class Core:
         self.skyboard     = SkyboardInventory(pine)
         self.bolts        = TitaniumBoltInventory(pine)
         self.player_bolts = PlayerBoltInventory(pine)
+        self.nanotech = NanotechChecks()
+        self.nanotech_checks_enabled = False
         self.skill_points = SkillPointInventory(pine)
         self.missions     = MissionInventory(pine)
         self.skin         = SkinInventory(pine)
@@ -265,7 +270,7 @@ class Core:
         # skipped — check_collected_armour()'s pickup-exit restore and
         # _handle_respawn() both read this later.
         self.planet.sync_unlock_armour(armour_unlocked)
-        if (not self.vendor_active and not self.planet.player.is_dead
+        if (self.planet.is_ready and not self.vendor_active and not self.planet.player.is_dead
                 and not self.planet.player.is_picking_up):
             self.armour.sync_unlocked(armour_unlocked)
 
@@ -381,6 +386,7 @@ class Core:
         self.planet.weapons.sync_from_ap(checked_locations)
         self.skill_points.sync_from_ap(checked_locations)
         self.missions.sync_from_ap(checked_locations)
+        self.nanotech.sync_from_ap(checked_locations)
         self.restore_armour_from_locations(checked_locations)
 
     # -- Notifications ---------------------------------------------------------
@@ -413,16 +419,17 @@ class Core:
         self.planet.check_controller()
         self.planet.check_death()
         self.planet.check_equipped_armour()
-        # Planet-unlock addresses are fixed/global, not per-planet-relative
-        # like weapons/menu/player — safe (and necessary) to keep enforcing
-        # every tick even while a transition is in flight, unlike everything
-        # gated below on is_ready.
-        self.planet_unlock.check()
-
         if not self.planet.is_ready:
+            self.vendor_presentation.abandon()
             return
 
+        self.planet_unlock.check()
+
         if became_ready:
+            self.vendor.abandon()
+            self.weapon_vendor.deactivate()
+            self.mod_vendor.deactivate()
+            self._prev_vendor = None
             if not self._initial_load_done:
                 # First planet-ready this process — the save's weapon state
                 # has never been touched by AP yet, so wipe it clean before
@@ -504,8 +511,16 @@ class Core:
         if not self.weapon_vendor.active:
             self.planet.weapons.apply_progressive_leveling()
         self.player_bolts.apply_boost()
+        if self.nanotech_checks_enabled:
+            for name in self.nanotech.check(self.planet.player.max_health):
+                self.send_location(name)
         self._check_armour_pickups()
         self._check_vendor_purchases()
+        self.vendor_presentation.update(
+            self.planet.planet_id, self.planet.is_ready,
+            self.planet.menu.get() == MenuStateValue.WEAPONS_VENDOR
+            and self.vendor.show_purchasable_weapons,
+        )
         self.planet.check_weapon_cycler(
             is_ap_owned=self._is_weapon_id_ap_owned, vendor_active=self.vendor_active,
             fallback_weapon_id=self._first_owned_weapon_id,

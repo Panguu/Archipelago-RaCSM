@@ -437,6 +437,13 @@ class VendorInventory:
                 + ", ".join(self._items)
             )
 
+    def abandon(self) -> None:
+        """Discard a departed overlay's menu state without restoring into new RAM."""
+        self._weapon_vendor_open = False
+        self._mod_vendor_open = False
+        self._level_snapshot = {}
+        self.show_purchasable_weapons = True
+
     def close(self) -> None:
         """Called once when either vendor menu closes, resetting the
         open-edge/toggle state so the next open starts fresh."""

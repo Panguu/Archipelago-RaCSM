@@ -43,7 +43,8 @@ class EventsHandlerMixin:
         self._try_restore_weapon_state()
 
     async def _grant_starting_items(self) -> None:
-        if self._starting_items_sent or not self.psp_connected:
+        if (self._starting_items_sent or not self.psp_connected
+                or not self._starting_checkpoint_synced or not self._wiring.planet.is_ready):
             return
         # Claim the grant synchronously, before any await point — this can be
         # scheduled from both _on_planet_ready and the "Retrieved"/"SetReply"
@@ -57,6 +58,10 @@ class EventsHandlerMixin:
             return
         async with self._psp_lock:
             try:
+                if not self.psp_connected or not self._wiring.planet.is_ready:
+                    self._starting_items_sent = False
+                    return
+                self.pine.validate_session()
                 current = self.pine.read_int32(PLAYER_BOLT_COUNT)
                 granted = min(current + starting_bolts, MAX_PLAYER_BOLTS)
                 self.pine.write_int32(PLAYER_BOLT_COUNT, granted)

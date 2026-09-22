@@ -23,6 +23,7 @@ import base64
 import itertools
 import json
 import struct
+import time
 from enum import IntEnum
 from typing import Any
 
@@ -118,7 +119,7 @@ class Psp:
 
     # ---- raw request/response --------------------------------------------
 
-    def _request(self, event: str, **params: Any) -> dict[str, Any]:
+    def _request(self, event: str, *, response_event: str | None = None, **params: Any) -> dict[str, Any]:
         if self._ws is None:
             raise self.ConnectionError("Not connected to PPSSPP. Call connect() first.")
 
@@ -133,9 +134,13 @@ class Psp:
         # PPSSPP can send spontaneous broadcast events (game/log/stepping/input)
         # on this same socket at any time. Skip anything that isn't the reply
         # to *this* request (matched by ticket, falling back to event name).
+        deadline = time.monotonic() + self._timeout
         while True:
             try:
-                raw = self._ws.recv(timeout=self._timeout)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError
+                raw = self._ws.recv(timeout=remaining)
             except TimeoutError as exc:
                 raise TimeoutError(f"Response to '{event}' timed out.") from exc
             except Exception as exc:
@@ -147,7 +152,14 @@ class Psp:
             except json.JSONDecodeError:
                 continue
 
-            if data.get("ticket") != ticket and data.get("event") != event:
+            if not isinstance(data, dict):
+                continue
+            # An explicit ticket always wins over event matching: late replies
+            # from timed-out requests must not satisfy a newer request.
+            reply_ticket = data.get("ticket")
+            if reply_ticket is not None and reply_ticket != ticket:
+                continue
+            if reply_ticket is None and data.get("event") != (response_event or event):
                 continue
 
             if data.get("event") == "error":

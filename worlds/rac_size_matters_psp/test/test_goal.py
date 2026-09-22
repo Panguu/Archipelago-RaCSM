@@ -56,7 +56,7 @@ class TestLocationRules(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_location("Metalis: T-Bolt: Behind the Polarized Door"))
 
     def test_ryllus_bolt_after_wall_needs_full_gadgets(self) -> None:
-        self.collect_by_name([ANY_PROJECTILE, "Hypershot"])
+        self.collect_by_name([ANY_PROJECTILE, "Hypershot", "Infobot: Ryllus"])
         self.assertFalse(self.can_reach_location("Ryllus: T-Bolt: After the Wall"))
         self.collect_by_name(["Sprout-O-Matic"])
         self.assertTrue(self.can_reach_location("Ryllus: T-Bolt: After the Wall"))
@@ -66,9 +66,6 @@ class TestLocationRules(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_location("Challax: T-Bolt: Hidden Room"))
 
     def test_challax_mimic_plant_lob_needs_sprout(self) -> None:
-        # Reaching Challax doesn't require Sprout-O-Matic, only the Mimic Plant
-        # Lob bolt itself does — so build the item set explicitly instead of
-        # using CHALLAX_ITEMS, which bundles Sprout-O-Matic in as a baseline.
         self.collect_by_name([
             ANY_PROJECTILE, "Hypershot", "Infobot: Kalidon",
             "Shrink Ray", "Infobot: Metalis", "Polarizer", "Infobot: Challax",
@@ -81,8 +78,6 @@ class TestLocationRules(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_location("Challax: T-Bolt: Mimic Plant Lob"))
 
     def test_dayni_moon_barnyard_bolt_needs_sprout(self) -> None:
-        # Same as above: Dayni Moon's entrance doesn't need Sprout-O-Matic,
-        # only this specific bolt does.
         self.collect_by_name([
             ANY_PROJECTILE, "Hypershot", "Infobot: Kalidon",
             "Shrink Ray", "Infobot: Metalis", "Polarizer", "Infobot: Challax",
@@ -96,8 +91,6 @@ class TestLocationRules(RACSizeMatterTestBase):
         self.assertTrue(self.can_reach_location("Dayni Moon: T-Bolt: Planting at the Barnyard"))
 
     def test_kalidon_bolt_behind_ship_always_reachable(self) -> None:
-        # This bolt's access_rule is unconditional once Kalidon is reached
-        # (see rules/kalidon.py KALIDON_SHIP) — no gadget gating.
         self.collect_by_name(KALIDON_ITEMS)
         self.assertTrue(self.can_reach_location("Kalidon: T-Bolt: Behind Ship"))
 

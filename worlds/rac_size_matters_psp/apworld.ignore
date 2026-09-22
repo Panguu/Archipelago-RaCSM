@@ -1,7 +1,6 @@
 .git*
 __pycache__
 build
-requirements.txt
 Ratchet & Clank Size Matters.yaml
 .pre-commit-config.yaml
 *.iso
@@ -9,3 +8,7 @@ ruff.toml
 test
 .ruff_cache
 poptracker
+.research
+tools
+logs
+*.pyc

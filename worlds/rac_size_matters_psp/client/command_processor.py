@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import TYPE_CHECKING
 
 from CommonClient import logger
 
-try:
-    from worlds.tracker.TrackerClient import TrackerCommandProcessor as ClientCommandProcessor
-except ImportError:
-    from CommonClient import ClientCommandProcessor
+from CommonClient import ClientCommandProcessor
+if os.environ.get("RACSM_PSP_TRACKER") == "1":
+    try:
+        from worlds.tracker.TrackerClient import TrackerCommandProcessor as ClientCommandProcessor
+    except ImportError:
+        pass
 
 if TYPE_CHECKING:
     from .context import RACContext
@@ -78,4 +81,15 @@ class RACCommandProcessor(ClientCommandProcessor):
     def _cmd_disable_deathlink(self) -> bool:
         """Disable DeathLink for this session."""
         asyncio.create_task(self.ctx._set_death_link_enabled(False))
+        return True
+
+
+    def _cmd_ammo_link(self) -> bool:
+        """Toggle shared weapon ammunition with other Size Matters players."""
+        asyncio.create_task(self.ctx._set_resource_link("ammo", not self.ctx._resource_links["ammo"]))
+        return True
+
+    def _cmd_bolt_link(self) -> bool:
+        """Toggle shared bolt counts with other Size Matters players."""
+        asyncio.create_task(self.ctx._set_resource_link("bolt", not self.ctx._resource_links["bolt"]))
         return True

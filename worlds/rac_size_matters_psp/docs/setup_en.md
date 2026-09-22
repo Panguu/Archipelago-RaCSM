@@ -1,5 +1,17 @@
 # Ratchet & Clank: Size Matters (PSP) Archipelago Setup Guide
 
+This is an experimental PSP port. Read [runtime parity status](runtime-parity.md) before generating a seed with newly added options.
+
+## First playtest
+
+Use `examples/PSPPlayer.yaml` for the initial playtest. It starts on Pokitaru and disables the runtime features that are still being ported. The generation rules remain shared with the PS2 version.
+
+For this checkout, `build/rac_size_matters_psp.apworld` is the installable package and `build/playtest/AP_63004146548060263751.zip` is a generated solo seed for slot **PSPPlayer**. Install the apworld in Archipelago, host the seed ZIP, launch **Ratchet & Clank: Size Matters PSP Client**, and connect as PSPPlayer. Load a new UCUS98633 game in PPSSPP with its remote debugger enabled. The startup grant is 45,000 bolts, two random weapons, and the Hypershot.
+
+The standard client runs without Universal Tracker. To opt into an installed and configured tracker, set `RACSM_PSP_TRACKER=1` before launching. In-game notification rendering and the newer native gameplay patches are not yet active; notifications appear in the client log.
+
+Validation includes a real local Archipelago server and the actual PSP client using synthetic PSP RAM: authentication, starting inventory, starting-bolt checkpoints, mission reporting, and reward delivery passed. This is not a completed live-emulator playthrough.
+
 ## Requirements
 
 The following are required in order to play Ratchet & Clank: Size Matters (PSP) in Archipelago
@@ -7,12 +19,13 @@ The following are required in order to play Ratchet & Clank: Size Matters (PSP) 
 - Installed the latest version of [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases)
 - The latest version of the Ratchet & Clank: Size Matters (PSP) apworld
 - [PPSSPP emulator](https://www.ppsspp.org/downloads) (Windows build)
+- Install `requirements.txt` using the Python environment that runs the Archipelago client (`python -m pip install -r requirements.txt`).
 - A copy of **Ratchet & Clank: Size Matters** — NTSC-U disc or ISO (`UCUS98633`)
 ---
 
 ## Enabling the remote debugger in PPSSPP
 
-The remote debugger is the interface the client uses to communicate with the emulator.
+Gameplay RAM reads and writes use pymem in the local PPSSPP process. The remote debugger supplies metadata and CPU/cache control; it does not read or write gameplay memory. Only one PPSSPP process may be running. The client discovers its local debugger port automatically, without the public discovery service.
 
 1. Open PPSSPP.
 2. Go to **Settings → Tools → Developer tools**.

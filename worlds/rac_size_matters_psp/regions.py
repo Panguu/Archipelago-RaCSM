@@ -1,139 +1,31 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 from BaseClasses import Region
 
-from .constants import Rac5CutsceneLocations, Rac5Planets
-from .locations import (
-    ALL_CLANK_LOCATIONS,
-    ARMOUR_PICKUP_LOCATIONS,
-    ARMOUR_SET_CHECK_LOCATIONS,
-    BOSS_LOCATIONS,
-    CHALLENGE_LOCATIONS,
-    CLANK_CHALLENGE_SKILL_POINT_LOCATIONS,
-    CUTSCENE_LOCATIONS,
-    EASY_SKILL_POINT_LOCATIONS,
-    EXTRA_SKYBOARD_LOCATIONS,
-    GADGET_PICKUP_LOCATIONS,
-    GADGET_VENDOR_LOCATIONS,
-    HARD_SKILL_POINT_LOCATIONS,
-    NG_PLUS_ARMOUR_SET_LOCATIONS,
-    NG_PLUS_WEAPON_LEVEL_LOCATIONS,
-    SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS,
-    SKYBOARD_ITEM_LOCATIONS,
-    STORY_MISSION_LOCATIONS,
-    TITANIUM_BOLT_LOCATIONS,
-    WEAPON_MAX_LEVEL_LOCATIONS,
-    WEAPON_MOD_VENDOR_LOCATIONS,
-    WEAPON_SUB_MAX_LEVEL_LOCATIONS,
-    WEAPON_VENDOR_LOCATIONS,
-)
+from .constants import Rac5Planets
+from .data.models import RACLocation
+from .locations import LOCATIONS, MENU_REGION, PLANET_ORDER
+from .locations.quodrona import victory_rule
 
-if TYPE_CHECKING:
-    from .world import RACSizeMatterWorld
-
-PLANET_NAMES: tuple[str, ...] = (
-    Rac5Planets.POKITARU,
-    Rac5Planets.RYLLUS,
-    Rac5Planets.KALIDON,
-    Rac5Planets.METALIS,
-    Rac5Planets.DREAMTIME,
-    Rac5Planets.OUTPOST_OMEGA,
-    Rac5Planets.CHALLAX,
-    Rac5Planets.DAYNI_MOON,
-    Rac5Planets.INSIDE_CLANK,
-    Rac5Planets.QUODRONA,
-)
+PLANET_NAMES = PLANET_ORDER
+REGION_LOCATIONS = tuple(sorted(LOCATIONS, key=lambda location: location.region_order))
 
 
-def create_regions(world: RACSizeMatterWorld) -> None:
-    from .world import RACLocation
+def create_regions(world) -> None:
 
-    player = world.player
-    multiworld = world.multiworld
-
-    menu_region = Region("Menu", player, multiworld)
-    planet_regions: dict[str, Region] = {
-        name: Region(name, player, multiworld)
-        for name in PLANET_NAMES
-    }
-
-    location_tables = [
-        TITANIUM_BOLT_LOCATIONS,
-        ARMOUR_PICKUP_LOCATIONS,
-        BOSS_LOCATIONS,
-        GADGET_PICKUP_LOCATIONS,
-        WEAPON_VENDOR_LOCATIONS,
-        GADGET_VENDOR_LOCATIONS,
-    ]
-    if world.options.all_missions:
-        story_missions = STORY_MISSION_LOCATIONS
-        if world.options.clank_challenges.value < 1:
-            # METALIS_WAR's trigger is completing the Buzzsaw Blitz clank
-            # challenge, which never unlocks with clank challenges off — drop
-            # it rather than create an unreachable location.
-            story_missions = {
-                name: data for name, data in STORY_MISSION_LOCATIONS.items()
-                if name != Rac5CutsceneLocations.METALIS_WAR
-            }
-        location_tables.append(story_missions)
-    if world.options.all_cutscenes:
-        location_tables.append(CUTSCENE_LOCATIONS)
-    if world.options.skill_points.value >= 1:
-        location_tables.append(EASY_SKILL_POINT_LOCATIONS)
-    if world.options.skill_points.value >= 2:
-        location_tables.append(HARD_SKILL_POINT_LOCATIONS)
-    if world.options.enable_clank_challenge_skill_points:
-        location_tables.append(CLANK_CHALLENGE_SKILL_POINT_LOCATIONS)
-    if world.options.enable_skyboard_challenge_skill_points:
-        location_tables.append(SKYBOARD_CHALLENGE_SKILL_POINT_LOCATIONS)
-    location_tables.append(WEAPON_MOD_VENDOR_LOCATIONS)
-    if world.options.clank_challenges.value >= 1:
-        location_tables.append(CHALLENGE_LOCATIONS)
-    if world.options.clank_challenges.value >= 2:
-        location_tables.append(ALL_CLANK_LOCATIONS)
-    if world.options.skyboard_challenges.value >= 1:
-        location_tables.append(SKYBOARD_ITEM_LOCATIONS)
-        location_tables.append(EXTRA_SKYBOARD_LOCATIONS)
-    ng_plus = bool(world.options.ng_plus_items)
-    if world.options.armour_set_checks:
-        armour_set_locations = ARMOUR_SET_CHECK_LOCATIONS
-        if not ng_plus:
-            armour_set_locations = {
-                name: data for name, data in ARMOUR_SET_CHECK_LOCATIONS.items()
-                if name not in NG_PLUS_ARMOUR_SET_LOCATIONS
-            }
-        location_tables.append(armour_set_locations)
-    if world.options.weapon_level_checks.value >= 1:
-        max_level_locations = WEAPON_MAX_LEVEL_LOCATIONS
-        if not ng_plus:
-            max_level_locations = {
-                name: data for name, data in WEAPON_MAX_LEVEL_LOCATIONS.items()
-                if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
-            }
-        location_tables.append(max_level_locations)
-    if world.options.weapon_level_checks.value >= 2:
-        sub_max_level_locations = WEAPON_SUB_MAX_LEVEL_LOCATIONS
-        if not ng_plus:
-            sub_max_level_locations = {
-                name: data for name, data in WEAPON_SUB_MAX_LEVEL_LOCATIONS.items()
-                if name not in NG_PLUS_WEAPON_LEVEL_LOCATIONS
-            }
-        location_tables.append(sub_max_level_locations)
-
-    for table in location_tables:
-        for loc_name, loc_data in table.items():
-            region = planet_regions[loc_data.region]
-            location = RACLocation(player, loc_name, loc_data.code, region)
+    player, multiworld = world.player, world.multiworld
+    regions = {name: Region(name, player, multiworld) for name in (MENU_REGION, *PLANET_NAMES)}
+    for definition in REGION_LOCATIONS:
+        if definition.available(world.options):
+            region = regions[definition.planet]
+            location = RACLocation(player, definition.name, definition.code, region)
+            location.rule_factory = definition.rule
             region.locations.append(location)
 
-    quodrona = planet_regions[Rac5Planets.QUODRONA]
-    victory_loc = RACLocation(player, "Quodrona Completed", None, quodrona)
-    victory_loc.place_locked_item(world.create_event("Victory"))
-    quodrona.locations.append(victory_loc)
+    quodrona = regions[Rac5Planets.QUODRONA]
+    victory = RACLocation(player, "Quodrona Completed", None, quodrona)
+    victory.rule_factory = victory_rule
+    victory.place_locked_item(world.create_event("Victory"))
+    quodrona.locations.append(victory)
 
     for planet in PLANET_NAMES:
-        menu_region.connect(planet_regions[planet], f"To {planet}")
-
-    multiworld.regions += [menu_region, *planet_regions.values()]
+        regions[MENU_REGION].connect(regions[planet], f"To {planet}")
+    multiworld.regions += list(regions.values())

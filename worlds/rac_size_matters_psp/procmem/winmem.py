@@ -1,19 +1,11 @@
-"""Raw Win32 process-memory access via ctypes — no third-party dependencies
-(pywin32/psutil can't be assumed present in a user's Archipelago environment).
-Plain ctypes against kernel32.dll: CreateToolhelp32Snapshot to find the PPSSPP
-process by name, OpenProcess for a handle, ReadProcessMemory/WriteProcessMemory
-to copy bytes into/out of its address space.
+"""Windows process discovery and pymem-backed memory access.
 
-Caveat: ReadProcessMemory/WriteProcessMemory require matching bitness between
-this process and the target. A mismatch surfaces as a WinMemError with a real
-GetLastError code (commonly ERROR_ACCESS_DENIED), not silent corruption; this
-module doesn't proactively detect/compare bitness.
-
-Windows-only — fails to import cleanly on any other platform, as expected.
+pymem is imported lazily so world generation does not require a Windows client.
 """
 from __future__ import annotations
 
 import ctypes
+import subprocess
 from ctypes import wintypes
 
 # ---- constants -------------------------------------------------------------
@@ -129,6 +121,7 @@ def find_pid_by_name(names: tuple[str, ...] = PPSSPP_PROCESS_NAMES) -> int | Non
 
     wanted = {name.lower() for name in names}
     found_by_name: dict[str, int] = {}
+    found_pids: set[int] = set()
     try:
         entry = PROCESSENTRY32W()
         entry.dwSize = ctypes.sizeof(PROCESSENTRY32W)
@@ -136,6 +129,8 @@ def find_pid_by_name(names: tuple[str, ...] = PPSSPP_PROCESS_NAMES) -> int | Non
             return None  # empty/failed-to-start enumeration, not an error
         while True:
             exe_name = entry.szExeFile.lower()
+            if exe_name in wanted:
+                found_pids.add(entry.th32ProcessID)
             if exe_name in wanted and exe_name not in found_by_name:
                 found_by_name[exe_name] = entry.th32ProcessID
             if not _kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
@@ -143,6 +138,8 @@ def find_pid_by_name(names: tuple[str, ...] = PPSSPP_PROCESS_NAMES) -> int | Non
     finally:
         _kernel32.CloseHandle(snapshot)
 
+    if len(found_pids) > 1:
+        raise WinMemError("Multiple PPSSPP processes found; close the extra instances")
     for name in names:
         pid = found_by_name.get(name.lower())
         if pid is not None:
@@ -153,13 +150,15 @@ def find_pid_by_name(names: tuple[str, ...] = PPSSPP_PROCESS_NAMES) -> int | Non
 # ---- process handle lifecycle ----------------------------------------------
 
 def open_process(pid: int) -> int:
-    """OpenProcess with PROCESS_VM_READ | PROCESS_VM_WRITE |
-    PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION. Returns the raw HANDLE
-    as a Python int. Raises WinMemError on failure (often a 32/64-bit
-    mismatch — see this module's docstring)."""
-    handle = _kernel32.OpenProcess(PROCESS_ACCESS, False, pid)
+    """Open a process using pymem; callers own the returned handle."""
+    try:
+        import pymem.process
+        handle = pymem.process.open(pid, debug=False, process_access=PROCESS_ACCESS)
+    except ImportError as exc:
+        raise WinMemError("pymem is required: install requirements.txt in the client Python environment") from exc
     if not handle:
-        _raise(f"OpenProcess(pid={pid})")
+        import pymem.ressources.kernel32
+        raise WinMemError(f"pymem.open(pid={pid})", winerror=pymem.ressources.kernel32.GetLastError())
     return handle
 
 
@@ -184,31 +183,19 @@ def is_process_alive(handle: int) -> bool:
 # ---- memory read/write -------------------------------------------------
 
 def read_process_memory(handle: int, address: int, length: int) -> bytes:
-    """ReadProcessMemory wrapper. `address` is a host-process pointer
-    (64-bit-capable, since PPSSPP's Windows build is normally 64-bit).
-    Returns exactly `length` bytes, or raises WinMemError (including on a
-    short/partial read, e.g. ERROR_PARTIAL_COPY)."""
-    buffer = ctypes.create_string_buffer(length)
-    bytes_read = ctypes.c_size_t(0)
-    ok = _kernel32.ReadProcessMemory(
-        handle, ctypes.c_void_p(address), buffer, ctypes.c_size_t(length), ctypes.byref(bytes_read)
-    )
-    if not ok or bytes_read.value != length:
-        _raise(f"ReadProcessMemory(address=0x{address:X}, length={length})")
-    return buffer.raw[:length]
+    import pymem.memory
+    try:
+        return pymem.memory.read_bytes(handle, address, length)
+    except Exception as exc:
+        raise WinMemError(f"pymem read at {address:#x} ({length} bytes)") from exc
 
 
 def write_process_memory(handle: int, address: int, data: bytes) -> None:
-    """WriteProcessMemory wrapper. `address` is a host-process pointer
-    (Python int, 64-bit-capable)."""
-    length = len(data)
-    buffer = ctypes.create_string_buffer(data, length)
-    bytes_written = ctypes.c_size_t(0)
-    ok = _kernel32.WriteProcessMemory(
-        handle, ctypes.c_void_p(address), buffer, ctypes.c_size_t(length), ctypes.byref(bytes_written)
-    )
-    if not ok or bytes_written.value != length:
-        _raise(f"WriteProcessMemory(address=0x{address:X}, length={length})")
+    import pymem.memory
+    try:
+        pymem.memory.write_bytes(handle, address, data, len(data))
+    except Exception as exc:
+        raise WinMemError(f"pymem write at {address:#x} ({len(data)} bytes)") from exc
 
 
 class ProcessHandle:
@@ -230,3 +217,17 @@ class ProcessHandle:
 
     def __exit__(self, *exc_info: object) -> None:
         self.close()
+
+
+def debugger_ports(pid: int) -> tuple[int, ...]:
+    """Find only listening sockets owned by the selected local emulator."""
+    result = subprocess.run(
+        ["netstat", "-ano", "-p", "tcp"], capture_output=True, text=True,
+        timeout=5, check=True, creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    ports = set()
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) == 5 and fields[0] == "TCP" and fields[-1] == str(pid) and fields[2].endswith(":0"):
+            ports.add(int(fields[1].rsplit(":", 1)[1]))
+    return tuple(sorted(ports))

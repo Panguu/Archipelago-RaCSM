@@ -4,8 +4,13 @@ from ..locations import (
     ALL_LOCATIONS,
     ARMOUR_PICKUP_LOCATIONS,
     BOSS_LOCATIONS,
+    CHALLENGE_MODE_1_ARMOUR_LOCATIONS,
+    CHALLENGE_MODE_2_ARMOUR_LOCATIONS,
+    CHALLENGE_MODE_MOD_LOCATIONS,
+    CHALLENGE_MODE_RYNO_LOCATION,
     GADGET_PICKUP_LOCATIONS,
     GADGET_VENDOR_LOCATIONS,
+    GIANT_CLANK_LOCATIONS,
     TITANIUM_BOLT_LOCATIONS,
     WEAPON_MOD_VENDOR_LOCATIONS,
     WEAPON_VENDOR_LOCATIONS,
@@ -50,15 +55,23 @@ class TestDefaultGeneration(RACSizeMatterTestBase):
     def test_all_armour_pickups_present(self) -> None:
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in ARMOUR_PICKUP_LOCATIONS:
+            if name in GIANT_CLANK_LOCATIONS:
+                continue
+            if name in CHALLENGE_MODE_1_ARMOUR_LOCATIONS or name in CHALLENGE_MODE_2_ARMOUR_LOCATIONS:
+                continue
             self.assertIn(name, names)
 
     def test_all_vendor_locations_present(self) -> None:
         names = {loc.name for loc in self.multiworld.get_locations(self.player)}
         for name in WEAPON_VENDOR_LOCATIONS:
+            if name in CHALLENGE_MODE_RYNO_LOCATION:
+                continue
             self.assertIn(name, names)
         for name in GADGET_VENDOR_LOCATIONS:
             self.assertIn(name, names)
         for name in WEAPON_MOD_VENDOR_LOCATIONS:
+            if name in CHALLENGE_MODE_MOD_LOCATIONS:
+                continue
             self.assertIn(name, names)
 
     def test_item_count_matches_location_count(self) -> None:

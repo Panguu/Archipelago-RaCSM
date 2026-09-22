@@ -88,6 +88,15 @@ class PlayerInventory:
         self.health_addr   = addrs[1] if addrs else None
 
     @property
+    def max_health(self) -> float | None:
+        # PSP player struct: current/max health are adjacent floats. The
+        # Pokitaru HUD loads max health at player+0x968 (health+4).
+        # Other planets use the same struct; their bases are mapped separately.
+        if self.health_addr is None:
+            return None
+        return self.pine.read_float(self.health_addr + 4)
+
+    @property
     def is_dead(self) -> bool:
         state = self.movement_state
         return state is not None and PlayerMovementState.is_dead(int(state))

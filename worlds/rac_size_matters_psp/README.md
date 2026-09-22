@@ -1,6 +1,6 @@
-# Ratchet & Clank Size Matters Archipelago
+# Ratchet & Clank Size Matters PSP Archipelago
 
-This is an implementation for the PS2 version of the game. You can find the setup guide [here](docs/setup_en.md).
+This is the experimental PSP implementation, using pymem with local PPSSPP. Generation definitions match the PS2 world; native gameplay feature parity is still in progress. See [runtime parity status](docs/runtime-parity.md). You can find the setup guide [here](docs/setup_en.md).
 
 ## Disclamer
 This is **not** all **Human written code**, this was developed with the help of AI. This was mostly done to speed up development and to test new logical improvements from how the original version of the AP was written.
@@ -10,7 +10,7 @@ This is **not** all **Human written code**, this was developed with the help of 
 - Giant Clank Metalis mission is currently not a checks (do not do this mission unless you have at least outpost omega so you dont get softlocked).
 
 ## Massive thank you's
-The PCSX2 PINE interface (`pcsx2_interface/`) is adapted from [evilwb/pypine](https://github.com/evilwb/pypine), based on https://projects.govanify.com/govanify/pine. This couldn't have been done without his pcsx2 interface.
+The original PS2 implementation used [evilwb/pypine](https://github.com/evilwb/pypine). The PSP client uses [pymem](https://pymem.readthedocs.io/en/latest/) for gameplay memory access.
 
 Massive inspiration from RAC2 and RAC3 AP's for how to handle Ratchet and Clank games.
 

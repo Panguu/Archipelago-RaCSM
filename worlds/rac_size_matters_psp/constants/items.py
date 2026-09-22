@@ -55,6 +55,8 @@ class Rac5ProgressiveArmours:
     PROGRESSIVE_HYPERBOREAN = "Progressive Hyperborean Armor"
     PROGRESSIVE_CHAMELEON = "Progressive Chameleon Armor"
 
+    PROGRESSIVE_ARMOUR = "Progressive Armour"
+
 
 @dataclass(frozen=True)
 class Rac5Infobots:

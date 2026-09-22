@@ -7,7 +7,7 @@ from dataclasses import dataclass
 class Rac5FlagLocations:
     """String constants for flag locations"""
 
-    RYLLUS_BUZZING = "Ryllus: Buzzing Cameras"  # Sprout-O-Matic cutscene
+    RYLLUS_BUZZING = "Ryllus: Buzzing Cameras"
     KALIDON_EXPLORE = "Kalidon: Explore the planet"
     METALIS_CLANK = "Metalis: Start Giant Clank"
     OUTPOST_OMEGA = "Outpost Omega: Escape from facility pt 1"

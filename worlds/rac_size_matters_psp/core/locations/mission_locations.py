@@ -10,13 +10,12 @@ from ..address_maps import PLANET_MISSION_ADDRESSES
 _ADDRS = PLANET_MISSION_ADDRESSES
 
 # Bits that must be force-written on initial load (not location checks).
-PRESET_MISSION_BITS: list[tuple[int, int]] = [
-    (_ADDRS["Pokitaru"], 0x0004),   # Rescue the girl
-    (_ADDRS["Kalidon"],  0x0004),   # Search the factory
-    (_ADDRS["Challax"],  0x0004),   # Explore the miniature city
-]
+PRESET_MISSION_BITS: list[tuple[int, int]] = []
 
 STORY_MISSION_MAP: dict[tuple[int, int], str] = {
+    (_ADDRS["Pokitaru"], 0x0004): Rac5CutsceneLocations.POKITARU_RESCUE,
+    (_ADDRS["Kalidon"], 0x0004): Rac5CutsceneLocations.KALIDON_SEARCH,
+    (_ADDRS["Challax"], 0x0004): Rac5CutsceneLocations.CHALLAX_EXPLORE,
     (_ADDRS["Pokitaru"],      0x0002): Rac5CutsceneLocations.POKITARU_FIGHT,
 
     (_ADDRS["Ryllus"],        0x0008): Rac5CutsceneLocations.RYLLUS_ARTIFACT,

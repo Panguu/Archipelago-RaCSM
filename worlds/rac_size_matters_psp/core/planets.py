@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
@@ -23,7 +22,6 @@ from .player import PlayerInventory
 from .states.base_state import BaseState
 from .structs.game import (
     TRANSITION_GATE_IDLE,
-    LoadingPlanetStruct,
     PlanetProgressStruct,
     TransitionGateStruct,
 )
@@ -141,11 +139,6 @@ AUTO_UNLOCK_ADDRESSES: list[int] = [
 
 logger = logging.getLogger("CommonClient")
 
-# How long after the transition gate leaves idle before _LOADING_PLANET_ADDR
-# is trustworthy — user-supplied/live-verified on PSP. See check_transition()
-# and structs/game.py's gate-address comment.
-TRANSITION_ARRIVAL_DELAY_S: float = 5.0
-
 _METALIS_ID: int = 0x04
 
 # Giant Clank on Metalis is unreachable/disabled (no AP location for it — see
@@ -188,12 +181,6 @@ class PlanetInventory:
         # is gated on this, since addresses are stale/unbound until then.
         self.is_ready: bool = False
         self._prev_gate: int = TRANSITION_GATE_IDLE
-        # Timestamp of the tick the gate was last seen leaving idle, or None
-        # when no transition is in flight. PSP has no "arrived" sentinel
-        # value like PS2 did — _LOADING_PLANET_ADDR isn't valid until
-        # roughly this long after the gate leaves idle, so the wait is timed
-        # instead of value-driven.
-        self._transition_started: float | None = None
         # Quick select starts frozen; zeroed the first time a planet becomes
         # ready (fresh boot), restored from the in-memory snapshot every time after.
         self._quick_select_primed: bool = False
@@ -240,70 +227,38 @@ class PlanetInventory:
         self.weapons.set_base(WEAPON_ARRAY_BASE_BY_PLANET.get(planet_id))
         self.weapon_cycler.set_base(planet_id)
 
+    def _suspend_planet(self, planet_id=None) -> None:
+        self.is_ready = False
+        self.quick_select.freeze()
+        self.set_planet(planet_id)
+        self._was_picking_up = False
+        self._equipped_pickup_baseline = None
+        self._prev_dead = False
+        self._prev_menu = None
+
     def check_transition(self) -> bool:
-        """Pull-based transition detector — call every tick.
+        """Bind only after the real transition gate is idle.
 
-        Primary signal is the transition gate: any change away from
-        TRANSITION_GATE_IDLE means a level transition has started and blocks
-        writes immediately. Unlike PS2, PSP has no "arrived" gate value to
-        poll for — _LOADING_PLANET_ADDR isn't valid until roughly
-        TRANSITION_ARRIVAL_DELAY_S seconds after the gate leaves idle, so
-        that read is timed on a wall-clock deadline instead of value-driven.
-
-        Backed up by a raw CURRENT_PLANET_ADDRESS comparison, checked every
-        tick regardless of gate state: catches a planet swap that never
-        touches the gate (e.g. the scripted Outpost Omega 1 -> 2 change), a
-        gate address that's unreadable, or any other miss by the gate-based
-        path — and lets a gate-detected transition resolve early if the real
-        planet id updates before the timed wait elapses.
-
-        Planet ID 0x00 is never treated as ready, since there's nothing
-        valid to bind addresses to.
-
-        Returns True exactly once, the tick the new planet becomes ready.
+        A destination ID and a five-second delay do not establish that its
+        overlay is loaded. In particular, slow loads and same-planet reloads
+        must never resume writes through the previous player's addresses.
         """
         try:
             gate = self.pine.read_int32(TransitionGateStruct.BASE_ADDRESS)
-        except Psp.RequestError:
-            gate = None
-
-        if gate is not None and gate != self._prev_gate:
-            prev = self._prev_gate
-            self._prev_gate = gate
-            left_idle = prev == TRANSITION_GATE_IDLE and gate != TRANSITION_GATE_IDLE
-
-            if left_idle:
-                self.is_ready = False
-                self.quick_select.freeze()
-                self._transition_started = time.monotonic()
-
-        # Timed wait for _LOADING_PLANET_ADDR to become valid — independent
-        # of whether the gate itself changed *this* tick, since the deadline
-        # usually lands on a later tick than the one that set it.
-        if self._transition_started is not None:
-            if time.monotonic() - self._transition_started >= TRANSITION_ARRIVAL_DELAY_S:
-                # Memory can be transiently unreadable mid-transition — treat
-                # a failed read as "not arrived yet" rather than raising.
-                try:
-                    planet_id = self.pine.read_int8(LoadingPlanetStruct.BASE_ADDRESS)
-                except Psp.RequestError:
-                    planet_id = 0
-                self._transition_started = None
-                if planet_id != 0:
-                    self._ready_on_planet(planet_id)
-                    return True
-
-        # Backup: plain planet-id-changed check, the one signal that doesn't
-        # depend on the gate address working at all.
-        try:
             current_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
         except Psp.RequestError:
+            self._suspend_planet()
             return False
-        if current_id != 0 and current_id != self.planet_id:
-            self._transition_started = None
+        self._prev_gate = gate
+        if gate != TRANSITION_GATE_IDLE:
+            self._suspend_planet()
+            return False
+        if current_id not in WEAPON_ARRAY_BASE_BY_PLANET:
+            self._suspend_planet(current_id)
+            return False
+        if not self.is_ready or current_id != self.planet_id:
             self._ready_on_planet(current_id)
             return True
-
         return False
 
     def _ready_on_planet(self, planet_id: int) -> None:

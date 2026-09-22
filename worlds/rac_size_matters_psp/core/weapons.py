@@ -222,6 +222,7 @@ class WeaponAddresses:
         "level":            0x2D,
         # Confirmed in-game for Lacerator on Pokitaru; same relative offset for every weapon.
         "experience":       0x35,
+        "ammo":             0x31,
         "mod_slot_one":     0x3D,
         "mod_slot_two":     0x3E,
         "mod_slot_three":   0x3F,
@@ -233,6 +234,7 @@ class WeaponAddresses:
 
     level            = WeaponInt32Field("level")
     experience       = WeaponInt32Field("experience")
+    ammo             = WeaponInt32Field("ammo")
     mod_slot_one     = WeaponByteField("mod_slot_one")
     mod_slot_two     = WeaponByteField("mod_slot_two")
     mod_slot_three   = WeaponByteField("mod_slot_three")
@@ -449,6 +451,17 @@ class WeaponInventory:
 
     def delete_mod(self, weapon: str, slot: str) -> None:
         self.set_mod(weapon, slot, False)
+
+    def get_ammo(self, weapon: str) -> int:
+        address = self._weapon_addrs.get(weapon)
+        return address.ammo if address is not None else 0
+
+    def set_ammo(self, weapon: str, value: int) -> None:
+        if type(value) is not int or not 0 <= value <= 9999:
+            raise ValueError("Invalid ammo count")
+        address = self._weapon_addrs.get(weapon)
+        if address is not None:
+            address.ammo = value
 
     def get_experience(self, weapon: str) -> int:
         addr = self._weapon_addrs.get(weapon)

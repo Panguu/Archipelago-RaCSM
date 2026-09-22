@@ -27,17 +27,21 @@ async def main(args: Namespace) -> None:
 
     # The first PPSSPP connect attempt is triggered from the "Connected" AP
     # package handler in context.py, not here — see that handler for why.
-    asyncio.create_task(ctx.game_watcher(), name="RAC game watcher")
+    watcher = asyncio.create_task(ctx.game_watcher(), name="RAC PSP game watcher")
 
-    await ctx.exit_event.wait()
-    await ctx.shutdown()
+    try:
+        await ctx.exit_event.wait()
+    finally:
+        watcher.cancel()
+        await asyncio.gather(watcher, return_exceptions=True)
+        await ctx.shutdown()
 
 
 def run_client(*args: str) -> None:
     from Utils import init_logging
 
-    init_logging("RACClient")
-    parser = get_base_parser(description="R&C Size Matters Archipelago Client")
+    init_logging("RACSmPSPClient")
+    parser = get_base_parser(description="R&C Size Matters PSP Archipelago Client")
     parser.add_argument("--name", default=None, help="Slot Name to connect as.")
     parser.add_argument("url", nargs="?", help="Archipelago connection url")
     parsed_args = handle_url_arg(parser.parse_args(args))
