@@ -15,7 +15,6 @@ from ..options import (
 from ..rules._helpers import (
     HasChallengeMode,
     HasProjectileWeapon,
-    HasShrinkRayDoorAccess,
     HasTitanPrereq,
 )
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
@@ -35,7 +34,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.DAYNI_MOON_MIMIC,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.BOLT_BITS, None, 536870912),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(8,),

@@ -12,8 +12,6 @@ from ..items import (
     PROGRESSIVE_WEAPON_NAME,
     WEAPON_DISPLAY_TO_INTERNAL,
 )
-from ..options import ShrinkRayOptions
-
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
 _PROJECTILE_WEAPONS = [
@@ -72,14 +70,4 @@ def HasGoodExpPlanet() -> Or:
         HasAll(Rac5Infobots.DAYNI_MOON, Rac5Gadgets.SPROUT_O_MATIC),
         HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         HasAll(Rac5Infobots.OUTPOST_OMEGA, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
-    )
-
-
-def HasShrinkRayDoorAccess(world):
-    """Skip mode opens door interlocks without the gadget."""
-
-    return (
-        True_()
-        if world.options.shrink_ray_options.value == ShrinkRayOptions.option_skip
-        else Has(Rac5Gadgets.SHRINK_RAY)
     )
