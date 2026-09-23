@@ -108,6 +108,7 @@ class Core:
         self.pine = pine
         self.vendor_presentation = VendorPresentation(pine)
         self._log = log or logger.info
+        self.notification_sink = lambda text: None
 
         self.armour        = ArmourInventory(pine)
         self.quick_select  = QuickSelectState(pine)
@@ -249,8 +250,12 @@ class Core:
         weapon_mods:     dict[str, set[str]],
         armour_unlocked: dict[str, int],
         infobot_planets: set[str],
+        write_memory: bool = True,
     ) -> None:
         """Write a fully-rebuilt AP inventory snapshot into game memory.
+
+        write_memory=False updates ownership bookkeeping only, so the client
+        can seed it before tick() validates and binds the current overlay.
 
         Called every tick (see PspMixin._poll_game()) to keep memory
         continuously synced with AP truth — but never while another window
@@ -270,7 +275,7 @@ class Core:
         # skipped — check_collected_armour()'s pickup-exit restore and
         # _handle_respawn() both read this later.
         self.planet.sync_unlock_armour(armour_unlocked)
-        if (self.planet.is_ready and not self.vendor_active and not self.planet.player.is_dead
+        if (write_memory and self.planet.is_ready and not self.vendor_active and not self.planet.player.is_dead
                 and not self.planet.player.is_picking_up):
             self.armour.sync_unlocked(armour_unlocked)
 
@@ -284,7 +289,7 @@ class Core:
         # writes, gated on progressive_mode.
         self.planet.weapons.level_caps = dict(weapon_levels)
 
-        if not self.planet.is_ready or self.vendor_active:
+        if not write_memory or not self.planet.is_ready or self.vendor_active:
             return
 
         wi = self.planet.weapons
@@ -392,11 +397,7 @@ class Core:
     # -- Notifications ---------------------------------------------------------
 
     def notify(self, text: bytes | str) -> None:
-        """In-game text-box notifications aren't supported on PSP. Log-only
-        stand-in so every existing caller keeps working unchanged. Callers
-        often still build messages with display_text.colored_text(), which
-        embeds raw 0x90-prefixed colour-marker byte pairs and a trailing
-        NUL — strip those out so the log line reads as plain text."""
+        """Log immediately and queue a message for the locked HUD renderer."""
         if isinstance(text, bytes):
             text = text.rstrip(b"\x00")
             parts = text.split(b"\x90")
@@ -404,6 +405,7 @@ class Core:
             for part in parts[1:]:
                 text += part[1:].decode("ascii", errors="replace")  # drop the colour-id byte after 0x90
         logger.info(f"[RAC] {text}")
+        self.notification_sink(text)
 
     def tick(self) -> None:
         """One poll cycle, called once per tick by PspMixin's poll loop.
@@ -475,7 +477,7 @@ class Core:
         if self.skill_points_enabled:
             for name in self.skill_points.check():
                 self.send_location(name)
-        for name in self.missions.check():
+        for name in self.missions.check(self.planet.planet_id):
             self.send_location(name)
             gadget_loc = _MISSION_GADGET_LOCATION.get(name)
             if gadget_loc:

@@ -1,13 +1,14 @@
-"""Lifecycle for verified PSP data patches during gameplay.
-
-The retail PSP executable hooks have not yet been mapped. The registry is
-intentionally empty until PSP-specific captures and cache handling exist.
-"""
+"""Lifecycle for checked PSP patches and owned HUD notification storage."""
+from .notifications import HudNotifications
 
 class NativeRuntime:
     def __init__(self, memory):
         self.memory = memory
         self.plans = []
+        self.notifications = HudNotifications(memory)
+
+    def notify(self, text):
+        self.notifications.enqueue(text)
 
     def register(self, plan):
         if plan.memory is not self.memory:
@@ -24,6 +25,7 @@ class NativeRuntime:
         self.plans.append(plan)
 
     def tick(self, planet_id, ready):
+        self.notifications.tick(planet_id, ready)
         for plan in self.plans:
             active = ready and (plan.planet_id is None or plan.planet_id == planet_id)
             if active:
@@ -32,5 +34,6 @@ class NativeRuntime:
                 plan.restore()
 
     def restore(self):
+        self.notifications.close()
         for plan in reversed(self.plans):
             plan.restore()

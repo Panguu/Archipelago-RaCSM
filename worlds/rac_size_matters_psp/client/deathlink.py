@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import random
 import time
 from typing import Any
@@ -8,13 +9,12 @@ from typing import Any
 from CommonClient import logger
 
 from ..core import (
-    PLAYER_ADDRS,
-    PLAYER_HEALTH,
-    PLAYER_STATE,
     PlayerMovementState as PlayerState,
     TextColour,
     colored_text,
 )
+from ..core.address_maps import CURRENT_PLANET_ADDRESS
+from ..core.structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
 
 _DEATH_CAUSES: dict[PlayerState, list[str]] = {
     PlayerState.FishDeath: [
@@ -76,11 +76,13 @@ class DeathLinkMixin:
         """Toggle DeathLink at runtime: updates the local gating flag and the
         server-side "DeathLink" connection tag."""
         self._death_link_enabled = enabled
+        if not enabled:
+            self._death_link_pending = False
         await self.update_death_link(enabled)
         logger.info(f"[RAC] DeathLink {'enabled' if enabled else 'disabled'}.")
 
     def _send_death_link_from_sync(self, player_state: int) -> None:
-        if not self._death_link_enabled:
+        if not self._death_link_enabled or getattr(self, '_death_link_applied', False):
             return
         now = time.time()
         if now - self._last_death_link < 1:
@@ -108,9 +110,14 @@ class DeathLinkMixin:
         )
 
     async def _receive_death_link(self, data: dict[str, Any]) -> None:
-        if not self.psp_connected:
+        if not self.psp_connected or not self._death_link_enabled:
             return
-        timestamp = float(data.get("time", 0))
+        try:
+            timestamp = float(data.get("time", 0))
+        except (TypeError, ValueError):
+            return
+        if not math.isfinite(timestamp):
+            return
         if timestamp and timestamp <= self._last_death_link:
             return
         self._last_death_link = max(timestamp, time.time())
@@ -121,11 +128,35 @@ class DeathLinkMixin:
             TextColour.RED, "Deathlink: ", source, TextColour.WHITE, " ", cause,
         ))
         async with self._psp_lock:
-            self._kill_player_sync()
+            self._death_link_pending = True
+            self._poll_death_link()
 
-    def _kill_player_sync(self) -> None:
-        planet_id = self._wiring.planet.planet_id
-        state_addr, health_addr = PLAYER_ADDRS.get(planet_id, (PLAYER_STATE, PLAYER_HEALTH))
-        death_state = random.choice(list(_DEATH_CAUSES))
-        self.pine.write_int16(state_addr, death_state)
-        self.pine.write_int16(health_addr, 0)
+    def _poll_death_link(self) -> None:
+        """Called under the PSP lock; defer incoming deaths until gameplay resumes."""
+        planet = self._wiring.planet
+        if not self.psp_connected or not planet.is_ready:
+            return
+        if getattr(self, '_death_link_applied', False) and not planet.player.is_dead:
+            self._death_link_applied = False
+        if getattr(self, '_death_link_pending', False) and self._death_link_enabled:
+            if self._kill_player_sync():
+                self._death_link_pending = False
+
+    def _kill_player_sync(self) -> bool:
+        planet = self._wiring.planet
+        player = planet.player
+        if (not self.psp_connected or not planet.is_ready or self._wiring.vendor_active
+                or player.health_addr is None or player.movement_addr is None):
+            return False
+        self.pine.validate_session()
+        if (self.pine.read_int32(TransitionGateStruct.BASE_ADDRESS) != TRANSITION_GATE_IDLE
+                or self.pine.read_int8(CURRENT_PLANET_ADDRESS) != planet.planet_id):
+            return False
+        if player.is_dead:
+            return True
+        # PSP health is a float32 and movement is one byte. Never fall back
+        # to Pokitaru addresses while another overlay is loading.
+        player.health = 0.0
+        player.movement_state = PlayerState.VoidDeath
+        self._death_link_applied = True
+        return True

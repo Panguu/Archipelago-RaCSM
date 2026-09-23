@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock
 
 from ..client.handlers import EventsHandlerMixin
 from ..client.vendor import InventoryMixin
+from ..client.server_sync import ServerSyncMixin
 from ..core.core import Core
 from ..core.address_maps import CURRENT_PLANET_ADDRESS, PLAYER_BOLT_COUNT
 from ..core.structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
@@ -32,7 +33,7 @@ class GameMemory(ProcMemTransport):
         pass
 
 
-class ClientHarness(InventoryMixin, EventsHandlerMixin):
+class ClientHarness(ServerSyncMixin, InventoryMixin, EventsHandlerMixin):
     def __init__(self):
         self.pine = GameMemory()
         self._wiring = Core(self.pine)
@@ -50,6 +51,8 @@ class ClientHarness(InventoryMixin, EventsHandlerMixin):
         self._starting_items_sent = False
         self._notification_item_index = 0
         self._pending_item_apply = True
+        self._items_received_ready = self._save_data_received = True
+        self._restore_server_loadout = Mock()
         self.send_msgs = AsyncMock()
         self._persist_starting_items_sent = AsyncMock()
         self._show_new_item_notifications = Mock()
@@ -140,5 +143,8 @@ class TestClientGameplay(unittest.IsolatedAsyncioTestCase):
         for (address, mask), name in VALIDATED_MISSION_MAP.items():
             if name in names:
                 self.ctx.pine.write_int16(address, self.ctx.pine.read_int16(address) | mask)
-        self.assertEqual(set(self.ctx._wiring.missions.check()), names)
+        reported = set()
+        for planet_id in (1, 3, 7):
+            reported.update(self.ctx._wiring.missions.check(planet_id))
+        self.assertEqual(reported, names)
         self.assertEqual(self.ctx._wiring.missions.check(), [])

@@ -24,8 +24,4 @@ def colored_text(*parts: bytes | str) -> bytes:
     return bytes(buf)
 
 
-# In-game text-box display (SmallTextBox/MultiLineTextBox, STATIC_TEXT_BUFFER)
-# was removed — PSP addresses for it were never verified and won't be pursued.
-# Core.notify() now just logs every message that would have gone through here
-# (item received, deathlink, connection status, ...); colored_text() above is
-# kept since callers still build messages with it for the log line.
+# Core.notify() logs and queues messages for the PSP-owned HUD renderer.

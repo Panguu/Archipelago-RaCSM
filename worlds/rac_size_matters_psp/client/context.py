@@ -27,11 +27,12 @@ from .deathlink import DeathLinkMixin
 from .handlers import CutsceneHandlerMixin, EventsHandlerMixin
 from .psp_mixin import PspMixin
 from .links import ResourceLinkMixin
+from .server_sync import ServerSyncMixin
 from .vendor import InventoryMixin, VendorHandlerMixin
 
 
 class RACContext(
-    ResourceLinkMixin, PspMixin, CutsceneHandlerMixin, EventsHandlerMixin,
+    ServerSyncMixin, ResourceLinkMixin, PspMixin, CutsceneHandlerMixin, EventsHandlerMixin,
     DeathLinkMixin, VendorHandlerMixin, InventoryMixin, CommonContext,
 ):
     game = GAME_NAME
@@ -71,14 +72,18 @@ class RACContext(
         self._last_weapon_state_push: float = 0.0
         self._pushed_weapon_state: dict[str, list[int]] = {}
         self._weapon_state_restored = False
+        self._reset_server_sync()
 
         self._death_link_enabled = False
+        self._death_link_pending = False
+        self._death_link_applied = False
         self._last_death_link = 0.0
         self._debug_messages = False
         self._challenge_defaults_written = False
         self._starting_skin_option = 0
 
         self._wiring = Core(self.pine, log=self._log)
+        self._wiring.notification_sink = self.native.notify
         self._wiring.vendor_presentation.reward_for_id = self._vendor_reward_for_id
 
     def _vendor_reward_for_id(self, identity):
@@ -99,6 +104,8 @@ class RACContext(
 
     async def _guarded_wiring_call(self, fn: Callable[[], None]) -> None:
         async with self._psp_lock:
+            if not self.psp_connected or not self._server_state_ready:
+                return
             try:
                 fn()
             except Exception as exc:
@@ -119,13 +126,14 @@ class RACContext(
         return f"racsm_weapon_state_{self.team}_{self.slot}"
 
     def _try_restore_weapon_state(self) -> None:
-        if self._weapon_state_restored or not self._wiring.planet.is_ready:
+        if (not self._server_state_ready or self._weapon_state_restored
+                or not self._wiring.planet.is_ready):
             return
         key = self._weapon_state_storage_key()
         data = self.stored_data.get(key)
         if isinstance(data, dict):
             self._wiring.planet.weapons.restore_level_experience(data)
-            self._weapon_state_restored = True
+        self._weapon_state_restored = True
 
     def _starting_items_key(self) -> str:
         return f"racsm_starting_items_sent_{self.team}_{self.slot}"
@@ -142,7 +150,7 @@ class RACContext(
         }])
 
     async def _persist_quick_select(self, data: dict) -> None:
-        if self.slot is None:
+        if self.slot is None or not self._server_state_ready or not self._ap_loadout_restored:
             return
         await self.send_msgs([{
             "cmd": "Set",
@@ -153,7 +161,7 @@ class RACContext(
         }])
 
     async def _persist_armour_slots(self, data: dict) -> None:
-        if self.slot is None:
+        if self.slot is None or not self._server_state_ready or not self._ap_loadout_restored:
             return
         await self.send_msgs([{
             "cmd": "Set",
@@ -202,14 +210,18 @@ class RACContext(
             self._resource_link_packet(cmd, args)
 
         if cmd == "Connected":
+            self._reset_server_sync()
+            self._death_link_pending = False
+            self._death_link_applied = False
             self.slot_data = args.get("slot_data", {})
+            self._wiring.planet_unlock.split_infobots = bool(self.slot_data.get("split_infobots", False))
+            self._wiring.planet_unlock.set_random_start(
+                int(self.slot_data.get("random_starting_planet", 0)) != 0
+            )
+            self._wiring.planet_unlock.set_unlocked_planets(set())
+            self._wiring.planet_unlock.reset_session()
             self._resource_link_packet(cmd, args)
             self._already_hinted.clear()
-            self._ap_loadout_restored = False
-            self._weapon_state_restored = False
-            self._starting_checkpoint_synced = False
-            self._filler_checkpoint_synced = False
-            self._filler_persisted_checkpoint = None
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
             self._armour_set_checks_enabled = bool(self.slot_data.get("armour_set_checks", False))
             clank_mode = int(self.slot_data.get("clank_challenges", 1))
@@ -237,8 +249,7 @@ class RACContext(
                 int(self.slot_data.get("bolt_multiplier", 0)) or 1
             )
             trap_duration = self.slot_data.get("trap_duration")
-            if isinstance(trap_duration, dict):
-                set_trap_durations(trap_duration)
+            set_trap_durations(trap_duration if isinstance(trap_duration, dict) else {}, self.pine)
             self._starting_skin_option = int(self.slot_data.get("starting_skin", 0))
             self.tags = self.tags - {"DeathLink", "AmmoLink", "BoltLink"}
             if self._death_link_enabled:
@@ -298,36 +309,13 @@ class RACContext(
             return
 
         if cmd in ("Retrieved", "SetReply") and self.slot is not None:
-            if not self._ap_loadout_restored:
-                qs_key = self._qs_storage_key()
-                if qs_key in self.stored_data and isinstance(self.stored_data[qs_key], dict):
-                    self._wiring.quick_select.load(self.stored_data[qs_key])
-                    if self._wiring.planet.is_ready:
-                        self._wiring.quick_select.restore()
-                armour_key = self._armour_slots_storage_key()
-                if armour_key in self.stored_data and isinstance(self.stored_data[armour_key], dict):
-                    if self._wiring.planet.is_ready:
-                        self._wiring.armour.sync_equipped(self.stored_data[armour_key])
-                self._ap_loadout_restored = True
-            self._try_restore_weapon_state()
-            starting_items_key = self._starting_items_key()
-            if starting_items_key in self.stored_data:
-                self._starting_checkpoint_synced = True
-                self._starting_items_sent = self._starting_items_sent or bool(self.stored_data[starting_items_key])
-                if not self._starting_items_sent and self._wiring.planet.is_ready:
-                    asyncio.create_task(self._grant_starting_items())
-            if not self._filler_checkpoint_synced:
-                key = self._filler_applied_key()
-                if key in self.stored_data:
-                    checkpoint = min(int(self.stored_data[key] or 0), len(self.items_received))
-                    self._processed_item_count = checkpoint
-                    self._processed_trap_count = checkpoint
-                    self._filler_checkpoint_synced = True
-                    self._pending_item_apply = True
-                    asyncio.create_task(self._apply_received_items())
+            self._record_server_snapshot(cmd, args)
+            self._pending_item_apply = True
+            asyncio.create_task(self._apply_received_items())
             return
 
         if cmd == "ReceivedItems":
+            self._record_server_snapshot(cmd, args)
             if args.get("index", 0) == 0:
                 self._notification_item_index = len(self.items_received)
             if self.psp_connected:
@@ -346,6 +334,7 @@ class RACContext(
 
     def on_connection_closed(self) -> None:
         super().on_connection_closed()
+        self._reset_server_sync()
         self._init_resource_links()
         self._write_notification_text(colored_text(
             "Disconnected from ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,

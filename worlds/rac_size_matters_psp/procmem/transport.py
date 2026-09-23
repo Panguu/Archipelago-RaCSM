@@ -240,19 +240,21 @@ class ProcMemTransport:
 
 
     @contextmanager
-    def paused(self):
+    def paused(self, *, resume_on_error=True):
         """Stop the guest CPU while updating native code; retain an existing pause."""
         self.validate_session()
         status = self._control._request("cpu.status")
         resume = not status.get("stepping", False)
+        succeeded = False
         try:
             if resume:
                 self._control._request("cpu.stepping")
             if not self._control._request("cpu.status").get("stepping", False):
                 raise self.RequestError("PPSSPP did not stop the CPU")
             yield
+            succeeded = True
         finally:
-            if resume and self._control is not None:
+            if resume and self._control is not None and (succeeded or resume_on_error):
                 self._control._request("cpu.resume")
 
     def invalidate_code(self):

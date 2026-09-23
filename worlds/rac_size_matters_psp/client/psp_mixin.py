@@ -6,6 +6,8 @@ import time
 from CommonClient import logger
 
 from ..core import TextColour, colored_text, reconcile_traps
+from ..core.traps import suspend_traps
+from ..core.structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
 from ..universal_tracker import PLANET_ID_TO_REGION
 from .constants import EXPECTED_GAME_ID, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
@@ -26,6 +28,8 @@ class PspMixin:
         try:
             if self.pine.is_connected():
                 self.pine.validate_session()
+                if self.pine.read_int32(TransitionGateStruct.BASE_ADDRESS) == TRANSITION_GATE_IDLE:
+                    suspend_traps(self.pine)
                 self._wiring.vendor_presentation.restore()
                 self.native.restore()
         except Exception:
@@ -94,13 +98,11 @@ class PspMixin:
             self.psp_connected = True
             try:
                 self._read_initial_state_sync()
-                # Trap bookkeeping (core/traps.py's _active_deadlines) isn't persisted
-                # and starts empty each restart — reconcile now so a trap stuck in
-                # game memory from a prior crash doesn't linger.
-                reconcile_traps(self.pine)
+                if self._wiring.planet.is_ready:
+                    reconcile_traps(self.pine)
                 # on_package's "Connected"/"ReceivedItems" handlers skip pushing
                 # skin/vendor state while psp_connected is False, so do it here instead.
-                if self.slot is not None:
+                if self.slot is not None and self._server_state_ready:
                     self._wiring.skin.set_by_option(self._starting_skin_option)
                     self._wiring.sync_from_ap(self._checked_location_names())
             except Exception as exc:
@@ -135,7 +137,12 @@ class PspMixin:
             self._log(f"[RAC] Initial state read failed: {exc}", "warning")
 
     def _read_initial_state_sync(self) -> None:
+        if not self._server_state_ready:
+            return
+        self._prepare_server_gameplay()
+        self._wiring.apply_inventory(**self._parse_inventory(), write_memory=False)
         self._wiring.tick()
+        self._restore_server_loadout()
         planet_id = self._wiring.planet.planet_id
         self.current_planet = PLANET_ID_TO_REGION.get(planet_id, "Galaxy")
 
@@ -157,10 +164,20 @@ class PspMixin:
                     await self._teardown_psp_connection()
 
     async def _poll_game(self) -> None:
+        if not self._server_state_ready:
+            return
         prev_planet = self.current_planet
         async with self._psp_lock:
+            if not self._server_state_ready:
+                return
             self.pine.validate_session()
+            self._prepare_server_gameplay()
+            self._wiring.apply_inventory(**self._parse_inventory(), write_memory=False)
             self._wiring.tick()
+            self._restore_server_loadout()
+            self._poll_death_link()
+            if self._wiring.planet.is_ready:
+                reconcile_traps(self.pine)
             self.native.tick(self._wiring.planet.planet_id, self._wiring.planet.is_ready)
             self._poll_resource_links()
         self.current_planet = PLANET_ID_TO_REGION.get(self._wiring.planet.planet_id, "Galaxy")
@@ -179,7 +196,8 @@ class PspMixin:
         and skipped if unchanged. Weapon XP isn't tracked by any AP item, so it
         must be saved explicitly or a reconnect's wipe() loses it for good.
         """
-        if self.slot is None or not self.psp_connected or not self._wiring.planet.is_ready:
+        if (self.slot is None or not self.psp_connected or not self._wiring.planet.is_ready
+                or not self._server_state_ready or not self._weapon_state_restored):
             return
         now = time.monotonic()
         if now - self._last_weapon_state_push < _WEAPON_STATE_PUSH_INTERVAL:

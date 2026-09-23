@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5Infobots
+from ..data.planets import INFOBOT_ITEM_TO_PLANET as INFOBOT_ITEM_TO_PLANET
 from .address_maps import (
     CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
@@ -102,18 +102,6 @@ PLANET_UNLOCKS: dict[str, PlanetUnlock] = {
 
 INFOBOT_UNLOCK_VALUE = 3
 
-# Display name -> planet key used in PLANET_STATE_ADDRESSES
-INFOBOT_ITEM_TO_PLANET: dict[str, str] = {
-    Rac5Infobots.POKITARU:     "pokitaru",
-    Rac5Infobots.RYLLUS:       "ryllus",
-    Rac5Infobots.KALIDON:      "kalidon",
-    Rac5Infobots.METALIS:      "metalis",
-    Rac5Infobots.OUTPOST_OMEGA: "outpost_omega",
-    Rac5Infobots.CHALLAX:      "challax",
-    Rac5Infobots.DAYNI_MOON:   "dayni_moon",
-    Rac5Infobots.QUODRONA:     "quodrona",
-}
-
 PLANET_STATE_ADDRESSES: dict[str, int] = {
     "pokitaru":          PLANET_UNLOCK_ADDRESSES["POKITARU"],
     "ryllus":            PLANET_UNLOCK_ADDRESSES["RYLLUS"],
@@ -130,7 +118,6 @@ PLANET_STATE_ADDRESSES: dict[str, int] = {
 # Planet unlock addresses always forced to INFOBOT_UNLOCK_VALUE because
 # these planets have no collectible infobot in the AP item pool.
 AUTO_UNLOCK_ADDRESSES: list[int] = [
-    PLANET_UNLOCK_ADDRESSES["POKITARU"],
     PLANET_UNLOCK_ADDRESSES["DREAMTIME"],
 ]
 
@@ -421,7 +408,6 @@ class PlanetLockValue(IntEnum):
 PLANET_UNLOCK_ORDER: list[str] = list(PlanetProgressStruct.PLANET_NAME_ORDER)
 
 _AUTO_UNLOCK_NAMES: frozenset[str] = frozenset({
-    "POKITARU",
     "DREAMTIME",
 })
 
@@ -452,6 +438,8 @@ class PlanetUnlockState(BaseState):
         self._enforce_active: bool     = True
         self._ryllus_released: bool    = False
         self._infobot_planets: set[str] = set()
+        self.split_infobots: bool = False
+        self._random_start: bool = False
 
     def _read_struct(self) -> PlanetProgressStruct:
         raw = self.pine.read_bytes(PlanetProgressStruct.BASE_ADDRESS, PlanetProgressStruct.size())
@@ -513,22 +501,26 @@ class PlanetUnlockState(BaseState):
                 state_val = max(int(unlock_val), pu.default_state)
                 self.pine.write_int8(pu.state_addr, state_val)
 
+    def set_random_start(self, enabled: bool) -> None:
+        self._random_start = enabled
+        self.set_unlocked_planets(self._infobot_planets)
+
     def set_unlocked_planets(self, planets: set[str]) -> None:
         self._infobot_planets = set(planets)
         for name in PLANET_UNLOCK_ORDER:
             self._desired[name] = name in planets or name in _AUTO_UNLOCK_NAMES
-        if not self._ryllus_released:
+        if not self.split_infobots and not self._random_start and not self._ryllus_released:
             self._desired["RYLLUS"] = True
 
     def on_ryllus_cutscene_ended(self) -> None:
-        if self._ryllus_released:
+        if self.split_infobots or self._random_start or self._ryllus_released:
             return
         self._ryllus_released = True
         self._desired["RYLLUS"] = "RYLLUS" in self._infobot_planets
 
     def reset_session(self) -> None:
         self._ryllus_released = False
-        self._desired["RYLLUS"] = True
+        self.set_unlocked_planets(self._infobot_planets)
 
     def unlock(self, planet: str) -> None:
         self._desired[planet] = True

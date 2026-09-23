@@ -38,12 +38,10 @@ class EventsHandlerMixin:
         reliably stick; firing on every transition gives it a free retry."""
         asyncio.create_task(self._apply_received_items())
         asyncio.create_task(self._grant_starting_items())
-        # Retry weapon-state restore here too, in case the "Retrieved"/"SetReply"
-        # handler in context.py ran before the planet was ready.
-        self._try_restore_weapon_state()
+        # Inventory reconciliation restores the saved loadout under the PSP lock.
 
     async def _grant_starting_items(self) -> None:
-        if (self._starting_items_sent or not self.psp_connected
+        if (not self._server_state_ready or self._starting_items_sent or not self.psp_connected
                 or not self._starting_checkpoint_synced or not self._wiring.planet.is_ready):
             return
         # Claim the grant synchronously, before any await point — this can be
@@ -58,7 +56,7 @@ class EventsHandlerMixin:
             return
         async with self._psp_lock:
             try:
-                if not self.psp_connected or not self._wiring.planet.is_ready:
+                if not self._server_state_ready or not self._game_memory_ready():
                     self._starting_items_sent = False
                     return
                 self.pine.validate_session()

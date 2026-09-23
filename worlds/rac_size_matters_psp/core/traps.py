@@ -1,139 +1,104 @@
+"""PSP trap effects serviced by the locked gameplay poll, never timer callbacks."""
 from __future__ import annotations
 
-import asyncio
-from typing import TYPE_CHECKING
+import math
+import time
+from dataclasses import dataclass, field
+from weakref import WeakKeyDictionary
 
 from ..constants import Rac5Traps
+from ..data.traps import TRAP_DURATIONS as _DEFAULT_DURATIONS
 from .address_maps import CHEATS
+from .structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
 
-if TYPE_CHECKING:
-    from ..pypsp import Psp
-
-# TRAP_RESET_LEVEL is intentionally absent below — not functional yet.
-# TRAP_FEVERDREAMTIME / TRAP_BRIGHTNESS removed for now — their PS2 addresses
-# (DREAMTIME_EFFECT/BRIGHTNESS_ADDRESS) were in the same unreliable offset
-# family as the controller/player-state fields and a test write had no
-# visible effect on PSP. Need fresh discovery before re-adding.
-
-# Direct memory-flag traps: write 1 to activate, write 0 to revert.
-_DIRECT_ADDRESSES: dict[str, int] = {}
-
-# Cheat-flag traps: bits OR'd into CHEATS (see address_maps/psp.py) so
-# multiple cheat traps can be active at once; reverted by clearing only this
-# trap's bit.
-MIRROR_LEVEL_CHEAT_BIT:     int = 0x10
-REVERSE_CONTROLS_CHEAT_BIT: int = 0x40
-WEAPON_SWITCHING_CHEAT_BIT: int = 0x80
-
-_CHEAT_BITS: dict[str, int] = {
-    Rac5Traps.TRAP_MIRROR_LEVEL:     MIRROR_LEVEL_CHEAT_BIT,
+MIRROR_LEVEL_CHEAT_BIT = 0x10
+REVERSE_CONTROLS_CHEAT_BIT = 0x40
+WEAPON_SWITCHING_CHEAT_BIT = 0x80
+_CHEAT_BITS = {
+    Rac5Traps.TRAP_MIRROR_LEVEL: MIRROR_LEVEL_CHEAT_BIT,
     Rac5Traps.TRAP_REVERSE_CONTROLS: REVERSE_CONTROLS_CHEAT_BIT,
     Rac5Traps.TRAP_WEAPON_SWITCHING: WEAPON_SWITCHING_CHEAT_BIT,
 }
-
-# Default seconds each trap stays active before automatically reverting —
-# also the TrapDuration option's own default (options.py). Never mutated;
-# _trap_durations (below) is the live, possibly-slot_data-overridden copy
-# activate_trap() actually reads from.
-TRAP_DURATIONS: dict[str, float] = {
-    Rac5Traps.TRAP_MIRROR_LEVEL:     70,
-    Rac5Traps.TRAP_REVERSE_CONTROLS: 70,
-    Rac5Traps.TRAP_WEAPON_SWITCHING: 70,
-}
-
-ALL_TRAPS: frozenset[str] = frozenset(TRAP_DURATIONS)
-
-# Live durations activate_trap() actually uses — starts as a copy of the
-# defaults above, overwritten once by the client from slot_data's
-# TrapDuration option on connect (see set_trap_durations()).
-_trap_durations: dict[str, float] = dict(TRAP_DURATIONS)
+# The remaining PS2 effects need independently verified PSP addresses/hooks.
+TRAP_DURATIONS = {name: _DEFAULT_DURATIONS[name] for name in _CHEAT_BITS}
+ALL_TRAPS = frozenset(TRAP_DURATIONS)
+_MASK = sum(_CHEAT_BITS.values())
 
 
-def set_trap_durations(overrides: dict[str, float]) -> None:
-    """Apply the TrapDuration option's per-trap seconds, called once by the
-    client right after connecting. Only overwrites known trap names —
-    anything absent/unrecognized keeps its existing (default) duration."""
-    for trap_name, seconds in overrides.items():
-        if trap_name in _trap_durations:
-            _trap_durations[trap_name] = seconds
-
-# Per-trap-name bookkeeping so repeated activations of the same trap stack
-# (extend the revert deadline) instead of racing independent timers, where
-# the first trap's revert would fire early and cancel the effect while a
-# later-activated copy is still supposed to be running.
-_active_deadlines: dict[str, float] = {}
-_revert_handles: dict[str, asyncio.TimerHandle] = {}
+@dataclass
+class _TrapState:
+    durations: dict[str, float] = field(default_factory=lambda: dict(TRAP_DURATIONS))
+    deadlines: dict[str, float] = field(default_factory=dict)
 
 
-def activate_trap(pine: Psp, trap_name: str) -> None:
-    """Activate a trap by name and schedule it to automatically revert.
-
-    A trap activated again while still active extends its revert deadline by
-    another full duration (e.g. two Feverdream traps in a row keep the effect
-    active for 140s total) rather than reverting at the first trap's deadline.
-
-    Unknown/unimplemented traps (e.g. Reset Level) are silently ignored.
-    """
-    duration = _trap_durations.get(trap_name)
-    if duration is None:
-        return
-
-    loop = asyncio.get_event_loop()
-    now = loop.time()
-    new_deadline = max(_active_deadlines.get(trap_name, now), now) + duration
-    _active_deadlines[trap_name] = new_deadline
-
-    existing_handle = _revert_handles.pop(trap_name, None)
-    if existing_handle is not None:
-        existing_handle.cancel()
-
-    if trap_name in _DIRECT_ADDRESSES:
-        address = _DIRECT_ADDRESSES[trap_name]
-        pine.write_int8(address, 1)
-
-        def _revert() -> None:
-            _active_deadlines.pop(trap_name, None)
-            _revert_handles.pop(trap_name, None)
-            pine.write_int8(address, 0)
-
-        _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
-        return
-
-    bit = _CHEAT_BITS.get(trap_name)
-    if bit is None:
-        return
-    current = pine.read_int8(CHEATS)
-    pine.write_int8(CHEATS, current | bit)
-
-    def _revert() -> None:
-        _active_deadlines.pop(trap_name, None)
-        _revert_handles.pop(trap_name, None)
-        latest = pine.read_int8(CHEATS)
-        pine.write_int8(CHEATS, latest & ~bit)
-
-    _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
+_states = WeakKeyDictionary()
+_default_durations = dict(TRAP_DURATIONS)
 
 
-def reconcile_traps(pine: Psp) -> None:
-    """Clear any trap effect active in game memory that this client process
-    has no record of (not in _active_deadlines) — called once whenever PINE
-    (re)connects. _active_deadlines is in-memory only, so a client restart
-    (or a drop/reconnect racing a revert timer's write) can leave a trap bit
-    stuck in memory with nothing left to ever revert it; this cleans that up.
-    Traps with a live deadline are left alone since their timer is still running.
-    """
-    for trap_name, address in _DIRECT_ADDRESSES.items():
-        if trap_name in _active_deadlines:
+def _state(memory):
+    if memory not in _states:
+        _states[memory] = _TrapState(dict(_default_durations))
+    return _states[memory]
+
+
+def set_trap_durations(overrides, memory=None):
+    """Use the PS2 option defaults; reset omitted values for every new seed."""
+    durations = dict(TRAP_DURATIONS)
+    for name, value in overrides.items():
+        if name not in durations:
             continue
-        if pine.read_int8(address):
-            pine.write_int8(address, 0)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+            raise ValueError(f'Invalid duration for {name}')
+        durations[name] = float(value)
+    if memory is None:
+        _default_durations.clear()
+        _default_durations.update(durations)
+    else:
+        state = _state(memory)
+        state.durations = durations
+        state.deadlines.clear()
 
-    clear_mask = 0
-    for trap_name, bit in _CHEAT_BITS.items():
-        if trap_name not in _active_deadlines:
-            clear_mask |= bit
-    if clear_mask:
-        current = pine.read_int8(CHEATS)
-        cleared = current & ~clear_mask
-        if cleared != current:
-            pine.write_int8(CHEATS, cleared)
+
+def activate_trap(memory, trap_name):
+    """Apply before acknowledging receipt; a failed write leaves the item retryable."""
+    if trap_name not in ALL_TRAPS:
+        return
+    state = _state(memory)
+    duration = state.durations[trap_name]
+    if duration == 0:
+        return
+    memory.validate_session()
+    if memory.read_int32(TransitionGateStruct.BASE_ADDRESS) != TRANSITION_GATE_IDLE:
+        raise RuntimeError('Trap delivery deferred until the planet finishes loading')
+    now = time.monotonic()
+    deadline = max(state.deadlines.get(trap_name, now), now) + duration
+    current = memory.read_int8(CHEATS)
+    memory.write_int8(CHEATS, current | _CHEAT_BITS[trap_name])
+    state.deadlines[trap_name] = deadline
+
+
+def reconcile_traps(memory):
+    """Call only with the PSP lock held and a loaded gameplay session.
+
+    Timers continue across loading/disconnection, but no memory writes occur
+    until polling resumes. Reapply live effects after a level/save reload and
+    clear expired effects without touching unrelated cheat flags.
+    """
+    state = _state(memory)
+    if memory.read_int32(TransitionGateStruct.BASE_ADDRESS) != TRANSITION_GATE_IDLE:
+        return
+    now = time.monotonic()
+    active = {name: deadline for name, deadline in state.deadlines.items() if deadline > now}
+    flags = sum(_CHEAT_BITS[name] for name in active)
+    current = memory.read_int8(CHEATS)
+    desired = (current & ~_MASK) | flags
+    if current != desired:
+        memory.write_int8(CHEATS, desired)
+    state.deadlines = active
+
+
+def suspend_traps(memory):
+    """Clear effects on a clean disconnect, retaining deadlines for reconnect."""
+    current = memory.read_int8(CHEATS)
+    if current & _MASK:
+        memory.write_int8(CHEATS, current & ~_MASK)

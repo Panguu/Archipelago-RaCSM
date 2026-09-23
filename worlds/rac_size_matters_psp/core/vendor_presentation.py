@@ -6,6 +6,7 @@ from importlib.resources import files
 from .address_maps import CURRENT_PLANET_ADDRESS, WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS, WEAPON_ARRAY_BASE_BY_PLANET
 from .patches import Patch, Plan
 from .structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
+from .vendor_profiles import VendorProfile, resolve
 
 
 class VendorPresentation:
@@ -22,6 +23,7 @@ class VendorPresentation:
         self.plan = None
         self.failed = False
         self.reward_for_id = lambda identity: None
+        self._resolved_profiles = {}
 
     def _original(self, address, size):
         data = bytearray(self.memory.read_bytes(address, size))
@@ -31,9 +33,9 @@ class VendorPresentation:
                 data[left-address:right-address] = edit.original[left-edit.address:right-edit.address]
         return bytes(data)
 
-    def _text_edits(self, spec, reward):
+    def _text_edits(self, spec, reward, state_address=0x094A0EC0):
         # Live-verified localization state: pointer, flags, count, TDEF tag flag.
-        state = self.memory.read_bytes(0x094A0EC0, 24)
+        state = self.memory.read_bytes(state_address, 24)
         pointer, count = struct.unpack_from('<I', state)[0], struct.unpack_from('<I', state, 16)[0]
         if state[8] != 1 or state[20:22] != b'\x01\x00' or not 0 < count < 20000:
             return []
@@ -65,6 +67,16 @@ class VendorPresentation:
         """A loader owns this RAM now; never write an old overlay snapshot."""
         self.plan = None
         self.failed = False
+        self._resolved_profiles.clear()
+
+    def _profile(self, planet_id):
+        if planet_id in self.PROFILES:
+            return VendorProfile(*self.PROFILES[planet_id], text=0x094A0EC0)
+        if planet_id not in self._resolved_profiles:
+            profile = resolve(self.memory, planet_id)
+            self._resolved_profiles[planet_id] = profile
+            return profile
+        return self._resolved_profiles[planet_id]
 
     def restore(self):
         if self.plan is None:
@@ -78,7 +90,10 @@ class VendorPresentation:
         self.plan = None
 
     def _edits(self, planet_id):
-        rows, icons, textures, menu = self.PROFILES[planet_id]
+        profile = self._profile(planet_id)
+        if profile is None:
+            return None
+        rows, icons, textures, menu = profile.rows, profile.icons, profile.textures, profile.menu
         if self.memory.read_int32(menu) != 9:
             return None
         count = self.memory.read_int32(WEAPON_VENDOR_SLOTS)
@@ -106,7 +121,7 @@ class VendorPresentation:
                         icon_ids.add(preview)
                     reward = self.reward_for_id(identity)
                     if reward is not None:
-                        for edit in self._text_edits(spec, reward):
+                        for edit in self._text_edits(spec, reward, profile.text):
                             edits[edit.address] = edit
         for icon_id in icon_ids:
             resource = self.memory.read_int32(icons + icon_id * 4)
@@ -127,9 +142,10 @@ class VendorPresentation:
             self.abandon()
             return
         try:
-            if not enabled or planet_id not in self.PROFILES:
+            if not enabled:
                 self.restore()
                 self.failed = False
+                self._resolved_profiles.clear()
                 return
             if self.failed:
                 return

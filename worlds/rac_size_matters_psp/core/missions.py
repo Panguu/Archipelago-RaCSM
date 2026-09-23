@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .locations.mission_locations import PRESET_MISSION_BITS, VALIDATED_MISSION_MAP
+from .address_maps import CURRENT_PLANET_ADDRESS
 
 if TYPE_CHECKING:
     from ..pypsp import Psp
@@ -67,13 +68,28 @@ class MissionInventory:
             raw = self.pine.read_int16(addr)
             self.pine.write_int16(addr, raw | mask)
 
-    def check(self) -> list[str]:
-        """Read every tracked bit and return newly completed AP location names for this call."""
+    def check(self, planet_id: int | None = None) -> list[str]:
+        """Only accept mission flags on their planet, as in the PS2 tracker.
+
+        Outpost Omega's two overlays share its save word. Read each word once
+        so checks backed by the same word see a consistent value this poll.
+        """
+        from ..locations import ALL_LOCATIONS
+
+        if planet_id is None:
+            planet_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
+        mission_planet = 6 if planet_id == 0x17 else planet_id
+        raw_by_address: dict[int, int] = {}
         newly: list[str] = []
         for name, slot in self._slots.items():
             if name in self.completed:
                 continue
-            if slot.__get__(self, type(self)):
+            completion = ALL_LOCATIONS[name].completed
+            if completion.planet_id is not None and completion.planet_id != mission_planet:
+                continue
+            if slot.address not in raw_by_address:
+                raw_by_address[slot.address] = self.pine.read_int16(slot.address)
+            if raw_by_address[slot.address] & slot.mask:
                 self.completed.add(name)
                 newly.append(name)
         return newly

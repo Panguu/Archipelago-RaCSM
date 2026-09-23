@@ -118,8 +118,10 @@ class InventoryMixin:
                 armour_prog_counts[display] = armour_prog_counts.get(display, 0) + 1
                 continue
 
-            if item_name in INFOBOT_ITEM_TO_PLANET:
-                infobot_planets.add(INFOBOT_ITEM_TO_PLANET[item_name].upper())
+            if item_name == "Infobot: Pokitaru and Ryllus":
+                infobot_planets.update({"POKITARU", "RYLLUS"})
+            elif item_name in INFOBOT_ITEM_TO_PLANET:
+                infobot_planets.update(planet.upper() for planet in INFOBOT_ITEM_TO_PLANET[item_name])
             elif item_name in WEAPON_DISPLAY_TO_INTERNAL:
                 weapon_unlocked[WEAPON_DISPLAY_TO_INTERNAL[item_name]] = True
             elif item_name in GADGET_DISPLAY_TO_INTERNAL:
@@ -186,38 +188,49 @@ class InventoryMixin:
         rather than topped up. Skipped if the planet isn't ready or a vendor menu
         owns the display (it has its own zero/restore cycle already).
         """
-        if not self.psp_connected:
+        if not self.psp_connected or not self._server_state_ready:
             return
         inventory = self._parse_inventory()
         checked   = self._checked_location_names()
         async with self._psp_lock:
             wiring = self._wiring
+            if not self.psp_connected or not self._server_state_ready or not self._game_memory_ready():
+                return
+            self.pine.validate_session()
+            wiring.apply_inventory(**inventory, write_memory=False)
+            self._restore_server_loadout()
             if wiring.planet.is_ready and not wiring.vendor_active:
+                experience = wiring.planet.weapons.level_experience_snapshot()
                 wiring.planet.weapons.wipe()
+                wiring.planet.weapons.restore_level_experience(experience)
             wiring.apply_inventory(**inventory)
             wiring.restore_world_states(checked)
             wiring.restore_armour_from_locations(checked)
         self._pending_item_apply = False
 
     async def _apply_received_items(self) -> None:
-        if not self.psp_connected:
+        if not self.psp_connected or not self._server_state_ready:
             self._pending_item_apply = True
             return
         inventory = self._parse_inventory()
         async with self._psp_lock:
-            if not self.psp_connected:
+            if not self.psp_connected or not self._server_state_ready:
                 return
             self.pine.validate_session()
-            self._wiring.apply_inventory(**inventory)
+            self._wiring.apply_inventory(**inventory, write_memory=False)
+            self._restore_server_loadout()
+            memory_ready = self._game_memory_ready()
+            self._wiring.apply_inventory(**inventory, write_memory=memory_ready)
             # Global addresses are still overwritten by save/level loading.
             # Consume rewards only after gameplay and server state are ready.
-            if self._filler_checkpoint_synced and self._wiring.planet.is_ready:
+            if self._filler_checkpoint_synced and memory_ready:
                 try:
                     self._grant_pending_filler()
                 finally:
                     await self._persist_filler_checkpoint()
         self._show_new_item_notifications()
         self._pending_item_apply = False
+        await self._grant_starting_items()
 
     def _grant_pending_filler(self) -> None:
         """One ordered cursor: a failed write must not acknowledge later items."""
