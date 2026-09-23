@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from ..constants.shrink_ray import (
-    OUTPOST_OMEGA_GRINDRAIL_BIT, SHRINK_RAY_PUZZLE_BITS, SHRINK_RAY_LOCATION_PLANETS,
+    SHRINK_RAY_PUZZLE_BITS, SHRINK_RAY_LOCATION_PLANETS,
 )
 from . import address_maps
 from .address_maps import SHRINK_RAY_GATE_ADDRESS
@@ -39,11 +39,6 @@ class ShrinkRaySkipInventory:
 
     def _read(self) -> int:
         return self.pine.read_int16(address_maps.SHRINK_RAY_GATE_ADDRESS) or 0
-
-    def force_outpost_omega_open(self) -> None:
-        raw = self._read()
-        if not raw & OUTPOST_OMEGA_GRINDRAIL_BIT:
-            self.pine.write_int16(address_maps.SHRINK_RAY_GATE_ADDRESS, raw | OUTPOST_OMEGA_GRINDRAIL_BIT)
 
     def check(self, planet: int) -> list[str]:
         raw = self._read()

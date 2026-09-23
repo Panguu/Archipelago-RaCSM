@@ -575,11 +575,10 @@ class WeaponInventory:
             titan_ceiling, titan_floor = self._titan_bound(name) if titan_active else (None, None)
 
             if mode == PROGRESSIVE_OFF:
+                # Buying the AP Titan location lifts the level ceiling; it does
+                # not grant levels (including to weapons not yet received).
                 if titan_ceiling is not None and addr.level > titan_ceiling:
                     addr.level = titan_ceiling
-                    addr.experience = 0
-                elif titan_floor is not None and addr.level < titan_floor:
-                    addr.level = titan_floor
                     addr.experience = 0
                 continue
 

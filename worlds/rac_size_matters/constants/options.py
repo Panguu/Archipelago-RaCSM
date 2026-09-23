@@ -3,6 +3,7 @@ class Rac5Options:
 
     START_INVENTORY_FROM_POOL = "start_inventory_from_pool"
     PROGRESSIVE_WEAPONS = "progressive_weapons"
+    CLANK_PACK = "clank_pack"
     PROGRESSIVE_MODS = "progressive_mods"
     PROGRESSIVE_ARMOUR = "progressive_armour"
     ENABLED_WEAPONS = "enabled_weapons"

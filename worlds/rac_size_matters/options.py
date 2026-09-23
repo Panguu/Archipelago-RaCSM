@@ -26,6 +26,15 @@ from .data.traps import TRAP_DURATIONS
 from .items import DEFAULT_ENABLED_WEAPONS, WEAPON_DISPLAY_TO_INTERNAL
 
 
+class ClankPack(Toggle):
+    """Start without Clank on Ratchet's back and add one Clank Pack item to the pool.
+    Receiving it unlocks Clank's backpack abilities, including high and long jumps.
+    The No Clank trap can still temporarily disable the pack after it is unlocked.
+    Playable Clank sections are unaffected. Disabled by default."""
+
+    display_name = "Clank Pack"
+
+
 class ProgressiveWeapons(Choice):
     """Replace each weapon's individual unlock item with a single Progressive Weapon
     item per weapon: the first copy unlocks the weapon, each subsequent copy grants
@@ -76,7 +85,8 @@ class EnabledWeapons(ItemDict):
     remove it entirely: its own item(s) (including its Progressive Weapon/Mod items),
     its vendor/collectible location, its mod-vendor locations, and its Weapon Level
     Checks locations are all excluded from the pool, exactly as if the weapon didn't
-    exist in this seed. Default 1 includes every weapon."""
+    exist in this seed. Default 1 includes every weapon. At least one projectile
+    weapon must remain available after applying NG+ Items."""
 
     display_name = "Enabled Weapons"
     verify_item_name = False
@@ -291,7 +301,8 @@ class EnableSkyboardChallengeSkillPoints(Toggle):
 
 
 class StartingWeapons(Range):
-    """Number of random weapons the player begins the game with."""
+    """Number of random weapons the player begins the game with, capped at the
+    number of enabled weapons available with NG+ Items applied."""
 
     display_name = "Starting Weapons"
     range_start = 0
@@ -494,6 +505,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
     __annotations__ = {
         Rac5Options.START_INVENTORY_FROM_POOL: StartInventoryPool,
         Rac5Options.PROGRESSIVE_WEAPONS: ProgressiveWeapons,
+        Rac5Options.CLANK_PACK: ClankPack,
         Rac5Options.PROGRESSIVE_MODS: ProgressiveMods,
         Rac5Options.PROGRESSIVE_ARMOUR: ProgressiveArmour,
         Rac5Options.ENABLED_WEAPONS: EnabledWeapons,
@@ -558,6 +570,7 @@ racsm_option_groups = [
         [
             StartingWeapons,
             StartingGadgets,
+            ClankPack,
             RandomStartingPlanet,
             StartingBolts,
             ProgressiveWeapons,

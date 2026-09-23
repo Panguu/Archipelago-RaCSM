@@ -1,5 +1,5 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import HasAll, True_
+from rule_builder.rules import Has, HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets

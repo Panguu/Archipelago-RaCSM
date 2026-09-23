@@ -13,6 +13,7 @@ from .data.models import RACItem as RACItem, RACLocation as RACLocation
 from .data.weapons import WEAPON_DATA
 from .items import (
     ALL_ITEMS,
+    CLANK_PACK_NAME,
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_ITEM_TABLE,
     ARMOUR_PROGRESSIVE_ITEM_TABLE,
@@ -54,7 +55,6 @@ from .options import (
     ShrinkRayOptions,
     SkillPoints,
     SkyboardChallenges,
-    StartingWeapons,
     WeaponLevelChecks,
     racsm_option_groups,
 )
@@ -146,27 +146,16 @@ class RACSizeMatterWorld(World):
         self._validate_weapon_options()
 
     def _validate_weapon_options(self) -> None:
-        """EnabledWeapons/StartingWeapons combinations that make generation impossible or
-        silently drop starting weapons the player asked for: raise instead of failing later
-        with an opaque fill error, or quietly granting fewer starting weapons than requested."""
+        """Require a projectile weapon that will actually survive item-pool filtering."""
         enabled_weapons = enabled_weapon_names(dict(self.options.enabled_weapons.value))
+        if not self.options.ng_plus_items:
+            enabled_weapons -= NG_PLUS_WEAPONS
         player_name = self.multiworld.get_player_name(self.player)
-        if len(enabled_weapons) < 1:
-            raise OptionError(
-                f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} has only "
-                f"{len(enabled_weapons)} weapon(s) enabled; at least 1 is required."
-            )
         if not any(WEAPON_DATA[WEAPON_DISPLAY_TO_INTERNAL[name]].is_projectile for name in enabled_weapons):
             raise OptionError(
                 f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} must include at least "
-                "one projectile weapon - many locations are only reachable with one."
-            )
-        starting_weapons = self.options.starting_weapons.value
-        if starting_weapons > len(enabled_weapons):
-            raise OptionError(
-                f"{player_name}'s RAC Size Matters: {StartingWeapons.display_name} "
-                f"({starting_weapons}) is greater than the number of weapons enabled by "
-                f"{EnabledWeapons.display_name} ({len(enabled_weapons)})."
+                "one projectile weapon available with NG+ Items applied - many locations "
+                "are only reachable with one."
             )
 
     def create_regions(self) -> None:
@@ -251,6 +240,8 @@ class RACSizeMatterWorld(World):
             ]
 
         pool += list(GADGET_ITEM_TABLE)
+        if self.options.clank_pack:
+            pool.append(CLANK_PACK_NAME)
         pool += list(INFOBOT_ITEM_TABLE)
 
         if self.options.progressive_challenge_mode:
@@ -378,6 +369,7 @@ class RACSizeMatterWorld(World):
             Rac5Options.NG_PLUS_ITEMS: bool(self.options.ng_plus_items.value),
             Rac5Options.CHALLENGE_MODE: self.options.challenge_mode.value,
             Rac5Options.PROGRESSIVE_CHALLENGE_MODE: bool(self.options.progressive_challenge_mode.value),
+            Rac5Options.CLANK_PACK: bool(self.options.clank_pack.value),
             Rac5Options.STARTING_BOLTS: self.options.starting_bolts.value,
             Rac5Options.DEATH_AMNESTY: self.options.death_amnesty.value,
             Rac5Options.PROGRESSIVE_WEAPONS: self.options.progressive_weapons.value,

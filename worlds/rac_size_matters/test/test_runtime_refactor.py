@@ -4,12 +4,15 @@ import random
 import unittest
 from collections import defaultdict
 from pathlib import Path
+from types import SimpleNamespace
 
 from ..core.armour import ArmourPiece, ArmourSnapshot, ArmourStruct
 from ..core.memory import MemoryWindow
 from ..core.patches.asm import Patch
 from ..core.patches.plan import Plan
 from ..core.weapons import WEAPON_STRUCT_SIZE, WeaponInventory
+from ..core.vendor import VendorInventory
+from ..locations import TITAN_INTERNAL_TO_LOCATION
 from ..locations import ALL_LOCATIONS
 from ..locations.observation import LocationObservation
 
@@ -72,6 +75,44 @@ class TestRuntimeRefactor(unittest.TestCase):
         self.assertTrue(inventory.entries["lacerator"].raw_owned)
         self.assertTrue(inventory.entries["lacerator"].raw_mods.mod_slot_one)
         self.assertFalse(any(inventory.check().values()))
+
+    def test_nonprogressive_titan_purchase_preserves_inventory_and_progress(self):
+        for owned in (False, True):
+            for level in range(8):
+                with self.subTest(owned=owned, level=level):
+                    memory, inventory = self.inventory()
+                    inventory.challenge_mode = 1
+                    inventory.progressive_mode = 0
+                    inventory.set("lacerator", owned)
+                    inventory.set_level("lacerator", level)
+                    inventory.set_experience("lacerator", 123)
+                    inventory.sync_slots()
+                    vendor = VendorInventory(memory, SimpleNamespace(weapons=inventory), None, lambda _: None)
+                    vendor.record_native_purchase("titan", TITAN_INTERNAL_TO_LOCATION["lacerator"])
+                    for _ in range(2):
+                        inventory.update_progression()
+                        self.assertFalse(any(inventory.check().values()))
+                    self.assertEqual(inventory.get_level("lacerator"), level)
+                    self.assertEqual(inventory.get_experience("lacerator"), 123)
+                    self.assertEqual(inventory.get("lacerator"), owned)
+                    self.assertEqual(inventory.has_weapon("lacerator"), owned)
+
+    def test_nonprogressive_titan_reconnect_preserves_unreceived_weapon(self):
+        _, inventory = self.inventory()
+        inventory.challenge_mode = 1
+        inventory.sync_from_ap({TITAN_INTERNAL_TO_LOCATION["lacerator"]})
+        inventory.update_progression()
+        self.assertEqual(inventory.get_level("lacerator"), 0)
+        self.assertFalse(inventory.get("lacerator"))
+
+    def test_nonprogressive_weapon_still_capped_before_titan_purchase(self):
+        _, inventory = self.inventory()
+        inventory.challenge_mode = 1
+        inventory.set_level("lacerator", 4)
+        inventory.set_experience("lacerator", 123)
+        inventory.update_progression()
+        self.assertEqual(inventory.get_level("lacerator"), 3)
+        self.assertEqual(inventory.get_experience("lacerator"), 0)
 
     def test_memory_window_leaves_unrelated_game_changes_untouched(self):
         memory = Memory()

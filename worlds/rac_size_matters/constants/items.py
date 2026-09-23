@@ -87,3 +87,4 @@ class Rac5Traps:
     TRAP_MIRROR_LEVEL = "Trap: Mirror Level"
     TRAP_REVERSE_CONTROLS = "Trap: Reverse Controls"
     TRAP_WEAPON_SWITCHING = "Trap: Weapon Switching"
+    TRAP_NO_CLANK = "Trap: No Clank"

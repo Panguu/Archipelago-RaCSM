@@ -43,6 +43,7 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.using_ut = True
             world.passthrough = world.multiworld.re_gen_passthrough[world.game]
             world.options.all_missions.value = world.passthrough.get(Rac5Options.ALL_MISSIONS, True)
+            world.options.clank_pack.value = world.passthrough.get(Rac5Options.CLANK_PACK, False)
             world.options.all_cutscenes.value = world.passthrough.get(Rac5Options.ALL_CUTSCENES, False)
             world.options.giant_clank.value = world.passthrough.get(Rac5Options.GIANT_CLANK, False)
             world.options.progressive_weapons.value = world.passthrough[Rac5Options.PROGRESSIVE_WEAPONS]

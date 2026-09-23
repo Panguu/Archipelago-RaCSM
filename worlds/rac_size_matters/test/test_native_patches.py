@@ -222,6 +222,25 @@ class NativePatchTests(unittest.TestCase):
         self.assertEqual(p.read_int32(ownership), 1)
         self.assertEqual(p.read_int8(v.tables["titan"] + 2), 3)
 
+    def test_titan_purchase_only_updates_journal(self):
+        for owned in (0, 1):
+            with self.subTest(owned=owned):
+                p = Memory()
+                v, _, _ = plans(p)
+                v.install()
+                selection = 0x1800000
+                p.write_int32(selection + 0x14, 2)
+                p.write_int32(selection + 0x3C, 3)
+                p.write_int8(selection + 0x54, owned)
+                before = bytes(p.data)
+                cpu = CPU(p)
+                cpu.r[17] = selection
+                cpu.run(v.edits[1].address, stop=v.edits[0].address + 76)
+                expected = bytearray(before)
+                expected[v.tables["titan"] + 2] = 2
+                self.assertEqual(p.data, expected)
+                self.assertEqual(cpu.calls, [])
+
     def test_armour_gate_uses_physical_journal(self):
         p = Memory()
         _, _, a = plans(p)

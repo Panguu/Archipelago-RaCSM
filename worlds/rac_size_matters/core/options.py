@@ -5,6 +5,7 @@ from ..constants.options import Rac5Options
 
 @dataclass(slots=True)
 class ClientOptions:
+    clank_pack_enabled: bool = False
     clank_enabled: bool = True
     clank_all_challenges: bool = False
     skyboard_enabled: bool = False
@@ -22,6 +23,7 @@ class ClientOptions:
         clank = int(data.get(Rac5Options.CLANK_CHALLENGES, 1))
         shrink = int(data.get(Rac5Options.SHRINK_RAY_OPTIONS, 1))
         return cls(
+            clank_pack_enabled=bool(data.get(Rac5Options.CLANK_PACK, False)),
             clank_enabled=clank >= 1,
             clank_all_challenges=clank >= 2,
             skyboard_enabled=int(data.get(Rac5Options.SKYBOARD_CHALLENGES, 0)) >= 1,

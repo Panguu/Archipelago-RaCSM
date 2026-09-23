@@ -1,0 +1,31 @@
+# Fuzzer meta profile for 2+ Size Matters slots. Exercises common options that
+# fuzz.py leaves at defaults, while other world options remain randomized.
+"Ratchet & Clank: Size Matters":
+  enabled_weapons:
+    Lacerator: 1
+  starting_weapons:
+    0: 1
+    1: 1
+    13: 1
+  starting_gadgets: 0
+  all_missions: 1
+  all_cutscenes: 1
+  start_inventory:
+    Bolts: 1
+  start_inventory_from_pool:
+    Hypershot: 1
+  local_items:
+    - Polarizer
+  non_local_items:
+    - Sprout-O-Matic
+  exclude_locations:
+    - "Pokitaru: Wildfire Chestplate on bridge"
+  priority_locations:
+    - "Ryllus: Sludge Mk9 Boots behind breakable rock"
+  item_links:
+    - name: Shared Weapons
+      item_pool:
+        - Lacerator
+        - Progressive Lacerator
+      replacement_item: Bolts
+      link_replacement: false

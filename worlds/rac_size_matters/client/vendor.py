@@ -17,6 +17,7 @@ from ..items import (
     ARMOUR_PIECE_BITMASKS,
     ARMOUR_SET_DISPLAY_TO_INTERNAL,
     ARMOUR_SETS,
+    CLANK_PACK_NAME,
     GADGET_DISPLAY_TO_INTERNAL,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_ARMOUR_UNIFIED_NAME,
@@ -77,6 +78,7 @@ class InventoryMixin:
         armour_prog_counts:     dict[str, int] = {}
         unified_armour_count = 0
         challenge_mode_count = 0
+        clank_pack = False
         weapon_unlocked:  dict[str, bool]     = {}
         gadget_unlocked:  dict[str, bool]     = {}
         weapon_mod_slots: dict[str, set[str]] = {}
@@ -85,6 +87,9 @@ class InventoryMixin:
 
         for network_item in self.items_received:
             item_name = self.item_names[self.game].get(network_item.item, "")
+            if item_name == CLANK_PACK_NAME:
+                clank_pack = True
+                continue
             if item_name == "Infobot: Pokitaru and Ryllus":
                 infobot_planets.update(("POKITARU", "RYLLUS"))
                 continue
@@ -173,6 +178,7 @@ class InventoryMixin:
             "armour_unlocked": armour_unlocked,
             "infobot_planets": infobot_planets,
             "challenge_mode":  challenge_mode_count,
+            "clank_pack":      clank_pack,
         }
 
     async def force_sync(self) -> None:

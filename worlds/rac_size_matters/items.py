@@ -295,7 +295,13 @@ PROGRESSIVE_CHALLENGE_MODE_ITEM_TABLE: dict[str, RACItemData] = {
     PROGRESSIVE_CHALLENGE_MODE_NAME: RACItemData(BASE_ID + 378, ItemClassification.progression),
 }
 
+CLANK_PACK_NAME = "Clank Pack"
+CLANK_PACK_ITEM_TABLE = {
+    CLANK_PACK_NAME: RACItemData(BASE_ID + 109, ItemClassification.progression),
+}
+
 ALL_ITEMS: dict[str, RACItemData] = {
+    **CLANK_PACK_ITEM_TABLE,
     **WEAPON_ITEM_TABLE,
     **GADGET_ITEM_TABLE,
     **ARMOUR_ITEM_TABLE,

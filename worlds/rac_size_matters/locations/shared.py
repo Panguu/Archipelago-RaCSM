@@ -20,6 +20,8 @@ from .pokitaru import LOCATIONS as POKITARU_LOCATIONS
 from .quodrona import LOCATIONS as QUODRONA_LOCATIONS
 from .ryllus import LOCATIONS as RYLLUS_LOCATIONS
 from .weapon_levels import LOCATIONS as WEAPON_LEVEL_RECORDS
+# Allocate new location IDs only after all existing planet records.
+from .shrink_ray import LOCATIONS as ADDITIONAL_SHRINK_RAY_LOCATIONS
 
 LOCATIONS = tuple(
     sorted(
@@ -37,6 +39,7 @@ LOCATIONS = tuple(
             *MENU_LOCATIONS,
             *WEAPON_LEVEL_RECORDS,
             *ARMOUR_SET_RECORDS,
+            *ADDITIONAL_SHRINK_RAY_LOCATIONS,
         ),
         key=lambda location: location.definition_order,
     )

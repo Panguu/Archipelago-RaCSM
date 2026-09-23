@@ -1,5 +1,5 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import HasAll, True_
+from rule_builder.rules import Has, HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets
@@ -13,7 +13,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.OUTPOST_OMEGA_DREAM,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.BOLT_BITS, None, 1048576),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(6, 23),
@@ -22,7 +22,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.OUTPOST_OMEGA_BOOTS,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.ARMOUR, "crystallix", 16),
         categories=frozenset(("armour_pickup",)),
         definition_order=27,
@@ -30,7 +30,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.OUTPOST_OMEGA_CHAMELEON_GLOVES,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasChallengeMode(world, 2),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2),
         Completion(_S.ARMOUR, "chameleon", 4),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (2,), "in"),)),
         categories=frozenset(("armour_pickup", "challenge_mode_2_armour")),
@@ -49,7 +49,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
         Completion(_S.MISSIONS, 32814030, 128, 6),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -69,7 +69,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
         Completion(_S.MISSIONS, 32814030, 2, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -79,7 +79,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
         Completion(_S.MISSIONS, 32814030, 1, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),

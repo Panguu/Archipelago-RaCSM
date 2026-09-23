@@ -26,6 +26,7 @@ from .patches import (
 from .patches.loader_gate import LoaderGate
 from .patches.starting_planet import StartingPlanet
 from .vendor import WEAPON_VENDOR_IDS
+from .traps import close_no_clank_trap
 
 logger = logging.getLogger("CommonClient")
 
@@ -62,6 +63,7 @@ class NativeRuntime:
         if self.pine.get_game_id() != self.gate.game_id:
             return
         try:
+            close_no_clank_trap(self.pine)
             self.starting_planet.close()
             if (
                 self.connection_warning is not None

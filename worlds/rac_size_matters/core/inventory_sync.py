@@ -1,4 +1,5 @@
 from .address_maps import save_address
+from .traps import set_clank_pack_ownership
 from dataclasses import dataclass
 
 from ..constants import Rac5Locations
@@ -22,12 +23,16 @@ class InventorySync:
         armour_unlocked: dict[str, int],
         infobot_planets: set[str],
         challenge_mode: int = 0,
+        clank_pack: bool = False,
     ) -> None:
         """Write a fully-rebuilt AP inventory snapshot into game memory every tick."""
         core = self.core
         if core._refresh_main_menu_state():
             return
         core._ap_inventory_ready = True
+        set_clank_pack_ownership(
+            core.pine, enabled=core.options.clank_pack_enabled, owned=clank_pack
+        )
         core.planet_unlock.set_unlocked_planets(infobot_planets)
         if core.progressive_challenge_mode_enabled:
             core.planet.weapons.challenge_mode = challenge_mode

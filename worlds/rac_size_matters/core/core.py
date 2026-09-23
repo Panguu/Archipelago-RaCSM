@@ -27,6 +27,7 @@ from .shrink_ray import ShrinkRaySkipInventory
 from .skill_points import SkillPointInventory
 from .skins import SkinInventory
 from .titanium_bolts import TitaniumBoltInventory
+from .traps import service_traps
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
 
 if TYPE_CHECKING:
@@ -322,6 +323,7 @@ class Core:
     def tick(self) -> None:
         """One poll cycle, called once per tick by the client's poll loop. Doesn't
         manage its own timing or swallow errors, so connection problems surface to the caller."""
+        service_traps(self.pine)
         if self.native.tick():
             return
         if self._refresh_main_menu_state():
@@ -393,7 +395,6 @@ class Core:
 
         if self._planet_settled():
             LocationChecks(self).world()
-        self.shrink_ray.force_outpost_omega_open()
         self.shrink_ray.set_skip(
             self.planet.planet_id,
             self.shrink_ray_skips_enabled
