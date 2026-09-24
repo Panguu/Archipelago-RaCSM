@@ -1,6 +1,0 @@
-[submodule "worlds/dynamicpine/pypine"]
-	path = worlds/dynamicpine/pypine
-	url = https://github.com/evilwb/pypine.git
-[submodule "worlds/secret_agent_clank/pypine"]
-	path = worlds/secret_agent_clank/pypine
-	url = https://github.com/evilwb/pypine.git
