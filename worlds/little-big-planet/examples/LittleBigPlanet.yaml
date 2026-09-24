@@ -1,0 +1,22 @@
+name: Sackboy
+game: LittleBigPlanet
+LittleBigPlanet:
+  # All base-game levels are enabled unless excluded by name.
+  # DLC level names can also be selected here.
+  excluded_levels: []
+  # Pack selectors default to all catalogued packs when omitted.
+  # Override with only packs you own; [] disables all in that selector.
+  # dlc_level_packs: [Marvel Level Kit, Monsters Level Kit]
+  # dlc_item_packs: [Marvel Costumes, Sonic, Watchmen]
+  # DLC Costumes also defaults to all. Select only installed/owned packs.
+  # dlc_costumes: [Animal Costumes, Monster Costume Pack]
+  starting_level: random
+  # single_level (goal_level only), all_levels, or chapter_completion (every chapter's finale).
+  goal: single_level
+  goal_level: the_collector
+  # Also requires score_bubble_sanity: true in host.yaml, or this has no effect.
+  score_bubbles: true
+  # One "Progressive <Chapter>" item per story chapter instead of one item per level in it.
+  progressive_chapters: false
+  death_link: false
+  progression_balancing: 50

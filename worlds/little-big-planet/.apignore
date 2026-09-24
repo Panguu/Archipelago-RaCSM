@@ -1,0 +1,19 @@
+# Dev/research tooling and build outputs -- not needed for the apworld to run.
+/tools/
+/research/
+/output/
+/examples/
+
+# Source JSON for tools/generate_*.py and tools/freeze_data.py. Client and gen
+# logic never read these at runtime -- they import the frozen constants under
+# constants/data/ instead, which works whether the apworld is extracted or run
+# straight out of the zip.
+/data/
+
+# The generated static RPCS3 boot patch is a separate installable artifact (see
+# .github/workflows), not part of the apworld. patches/*.S stays: pine_inventory.py
+# reads and assembles them at runtime to verify installed hooks on v1.27.
+/patches/*.yml
+
+# Docs.
+*.md
