@@ -1,1 +1,0 @@
-pymem>=1.14,<2; sys_platform == "win32"

@@ -3,7 +3,6 @@ name: Fuzz RaC Worlds
 on:
   pull_request:
     paths:
-      - 'worlds/rac_size_matters/**'
       - 'worlds/rac_odd_couple/**'
       - 'fuzz.py'
       - 'hooks/**'
@@ -15,7 +14,6 @@ on:
         required: true
         type: choice
         options:
-          - rac_size_matters
           - rac_odd_couple
       runs:
         description: "Number of fuzz runs per hook"
@@ -58,11 +56,8 @@ jobs:
 
             # fuzz infrastructure changes affect all worlds
             if echo "$changed" | grep -qE '^(fuzz\.py|hooks/)'; then
-              worlds_arr=("rac_size_matters" "rac_odd_couple")
+              worlds_arr=("rac_odd_couple")
             else
-              if echo "$changed" | grep -q '^worlds/rac_size_matters/'; then
-                worlds_arr+=("rac_size_matters")
-              fi
               if echo "$changed" | grep -q '^worlds/rac_odd_couple/'; then
                 worlds_arr+=("rac_odd_couple")
               fi
