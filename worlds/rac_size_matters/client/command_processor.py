@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from CommonClient import logger
 
+from ..core import vendor_presentation
 from ..core.skins import Skin
 
 try:
@@ -80,6 +81,22 @@ class RACCommandProcessor(ClientCommandProcessor):
         asyncio.create_task(self.ctx._guarded_wiring_call(
             lambda: self.ctx._wiring.skin.set(selected)))
         logger.info("[RAC] Skin queued: %s. Applies when gameplay is ready.", selected.name)
+        return True
+
+    def _cmd_apicon(self, style: str = "") -> bool:
+        """Choose which Archipelago icon shows on vendor items: /apicon original (default) or /apicon purple.
+        No argument prints the current style. Applies next time a vendor item's icon is assigned."""
+        style = style.lower().strip()
+        if not style:
+            logger.info(f"[RAC] AP icon style: {vendor_presentation.get_icon_style()}. "
+                        f"Choices: {', '.join(vendor_presentation.ICON_STYLES)}")
+            return True
+        try:
+            vendor_presentation.set_icon_style(style)
+        except ValueError as e:
+            logger.info(f"[RAC] {e}")
+            return False
+        logger.info(f"[RAC] AP icon style set to {style}.")
         return True
 
     def _cmd_spawn_ghost(self) -> bool:

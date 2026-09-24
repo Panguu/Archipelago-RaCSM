@@ -283,6 +283,7 @@ class Core:
         armour_unlocked: dict[str, int],
         infobot_planets: set[str],
         challenge_mode: int = 0,
+        clank_pack: bool = False,
     ) -> None:
         return InventorySync(self).apply_inventory(
             weapons=weapons,
@@ -292,6 +293,7 @@ class Core:
             armour_unlocked=armour_unlocked,
             infobot_planets=infobot_planets,
             challenge_mode=challenge_mode,
+            clank_pack=clank_pack,
         )
 
     def _sync_weapon_gadget_ownership(self) -> None:

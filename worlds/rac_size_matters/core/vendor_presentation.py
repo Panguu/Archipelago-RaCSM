@@ -6,8 +6,33 @@ from .patches.asm import packed
 from .patches.plan import supported_game_id
 
 _ICON_ROOT = files(__package__.rsplit(".", 1)[0]).joinpath("images", "icons")
-_ICON_INDICES = _ICON_ROOT.joinpath("archipelago-icon.indices").read_bytes()
-_ICON_CLUT = _ICON_ROOT.joinpath("archipelago-icon.clut").read_bytes()
+ICON_STYLES = ("original", "purple", "blue")
+_icon_style = "original"
+_icon_cache: dict[str, tuple[bytes, bytes]] = {}
+
+
+def _load_icon(style):
+    cached = _icon_cache.get(style)
+    if cached is None:
+        folder = _ICON_ROOT.joinpath(style)
+        indices = folder.joinpath("archipelago-icon.indices").read_bytes()
+        clut = folder.joinpath("archipelago-icon.clut").read_bytes()
+        if len(indices) != 1024 or len(clut) != 1024:
+            raise RuntimeError(f"AP icon style {style!r} requires 32x32 indices and 256 RGBA palette entries")
+        _icon_cache[style] = cached = (indices, clut)
+    return cached
+
+
+def get_icon_style() -> str:
+    return _icon_style
+
+
+def set_icon_style(style: str) -> None:
+    global _icon_style
+    if style not in ICON_STYLES:
+        raise ValueError(f"Unknown icon style {style!r}; choices: {', '.join(ICON_STYLES)}")
+    _load_icon(style)
+    _icon_style = style
 
 RENDER_SIGNATURE = packed(0x27BDFC80, 0x3C04FFFF, 0xFFB00320, 0x3484FFFF, 0xFFB10328)
 
@@ -167,10 +192,9 @@ class VendorPresentation:
                 continue
             pixels = self._pointer(struct.unpack_from("<I", ih, 48)[0], 1024)
             colors = self._pointer(struct.unpack_from("<I", ph, 48)[0], 1024)
-            if len(_ICON_INDICES) != 1024 or len(_ICON_CLUT) != 1024:
-                raise RuntimeError("AP icon requires 32x32 indices and 256 RGBA palette entries")
-            self._change(self.icon_changes, pixels, _ICON_INDICES)
-            self._change(self.icon_changes, colors, _ICON_CLUT)
+            indices, clut = _load_icon(_icon_style)
+            self._change(self.icon_changes, pixels, indices)
+            self._change(self.icon_changes, colors, clut)
             self.icon_id = icon
             return
         raise RuntimeError("No compatible unused vendor icon texture")
