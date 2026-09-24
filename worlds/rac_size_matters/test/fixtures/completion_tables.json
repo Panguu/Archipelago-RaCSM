@@ -1,0 +1,2597 @@
+{
+  "TITANIUM_BOLTS": [
+    [
+      "Dreamtime: T-Bolt: To the left of Ratchet's Garage",
+      [
+        [
+          5
+        ],
+        17,
+        "Dreamtime"
+      ]
+    ],
+    [
+      "Challax: T-Bolt: Beside The Ultra Mech Pad",
+      [
+        [
+          7
+        ],
+        24,
+        "Challax"
+      ]
+    ],
+    [
+      "Challax: T-Bolt: Hidden Room",
+      [
+        [
+          7
+        ],
+        25,
+        "Challax"
+      ]
+    ],
+    [
+      "Challax: T-Bolt: Mimic Plant Lob",
+      [
+        [
+          7
+        ],
+        26,
+        "Challax"
+      ]
+    ],
+    [
+      "Dayni Moon: T-Bolt: Bounce on the Blue mimic",
+      [
+        [
+          8
+        ],
+        29,
+        "Dayni Moon"
+      ]
+    ],
+    [
+      "Dayni Moon: T-Bolt: Planting at the Barnyard",
+      [
+        [
+          8
+        ],
+        28,
+        "Dayni Moon"
+      ]
+    ],
+    [
+      "Dreamtime: T-Bolt: Apparition of the Scuttle Crab",
+      [
+        [
+          5
+        ],
+        18,
+        "Dreamtime"
+      ]
+    ],
+    [
+      "Dreamtime: T-Bolt: Atop the floating hat",
+      [
+        [
+          5
+        ],
+        16,
+        "Dreamtime"
+      ]
+    ],
+    [
+      "Inside Clank: T-Bolt: Walk behind the ladder",
+      [
+        [
+          9
+        ],
+        32,
+        "Inside Clank"
+      ]
+    ],
+    [
+      "Inside Clank: T-Bolt: Wall jumping Technomite",
+      [
+        [
+          9
+        ],
+        33,
+        "Inside Clank"
+      ]
+    ],
+    [
+      "Kalidon: T-Bolt: Behind Ship",
+      [
+        [
+          3
+        ],
+        8,
+        "Kalidon"
+      ]
+    ],
+    [
+      "Kalidon: T-Bolt: Grav-Ramps",
+      [
+        [
+          3
+        ],
+        9,
+        "Kalidon"
+      ]
+    ],
+    [
+      "Kalidon: T-Bolt: Side of Mechanoid Factory",
+      [
+        [
+          3
+        ],
+        10,
+        "Kalidon"
+      ]
+    ],
+    [
+      "Metalis: T-Bolt: Behind the Polarized Door",
+      [
+        [
+          4
+        ],
+        12,
+        "Metalis"
+      ]
+    ],
+    [
+      "Outpost Omega: T-Bolt: Near the Entrance to DreamTime",
+      [
+        [
+          6,
+          23
+        ],
+        20,
+        "Outpost Omega"
+      ]
+    ],
+    [
+      "Pokitaru: T-Bolt: Above Zipline",
+      [
+        [
+          1
+        ],
+        0,
+        "Pokitaru"
+      ]
+    ],
+    [
+      "Pokitaru: T-Bolt: Behind Hut",
+      [
+        [
+          1
+        ],
+        1,
+        "Pokitaru"
+      ]
+    ],
+    [
+      "Quodrona: T-Bolt: Ratchet Clones and Dummies",
+      [
+        [
+          10
+        ],
+        36,
+        "Quodrona"
+      ]
+    ],
+    [
+      "Ryllus: T-Bolt: After the Wall",
+      [
+        [
+          2
+        ],
+        5,
+        "Ryllus"
+      ]
+    ],
+    [
+      "Ryllus: T-Bolt: Down The Cliff",
+      [
+        [
+          2
+        ],
+        4,
+        "Ryllus"
+      ]
+    ]
+  ],
+  "BOLT_BY_PLANET_AND_DELTA": [
+    [
+      [
+        1,
+        1
+      ],
+      "Pokitaru: T-Bolt: Above Zipline"
+    ],
+    [
+      [
+        1,
+        2
+      ],
+      "Pokitaru: T-Bolt: Behind Hut"
+    ],
+    [
+      [
+        10,
+        68719476736
+      ],
+      "Quodrona: T-Bolt: Ratchet Clones and Dummies"
+    ],
+    [
+      [
+        2,
+        16
+      ],
+      "Ryllus: T-Bolt: Down The Cliff"
+    ],
+    [
+      [
+        2,
+        32
+      ],
+      "Ryllus: T-Bolt: After the Wall"
+    ],
+    [
+      [
+        23,
+        1048576
+      ],
+      "Outpost Omega: T-Bolt: Near the Entrance to DreamTime"
+    ],
+    [
+      [
+        3,
+        1024
+      ],
+      "Kalidon: T-Bolt: Side of Mechanoid Factory"
+    ],
+    [
+      [
+        3,
+        256
+      ],
+      "Kalidon: T-Bolt: Behind Ship"
+    ],
+    [
+      [
+        3,
+        512
+      ],
+      "Kalidon: T-Bolt: Grav-Ramps"
+    ],
+    [
+      [
+        4,
+        4096
+      ],
+      "Metalis: T-Bolt: Behind the Polarized Door"
+    ],
+    [
+      [
+        5,
+        131072
+      ],
+      "Dreamtime: T-Bolt: To the left of Ratchet's Garage"
+    ],
+    [
+      [
+        5,
+        262144
+      ],
+      "Dreamtime: T-Bolt: Apparition of the Scuttle Crab"
+    ],
+    [
+      [
+        5,
+        65536
+      ],
+      "Dreamtime: T-Bolt: Atop the floating hat"
+    ],
+    [
+      [
+        6,
+        1048576
+      ],
+      "Outpost Omega: T-Bolt: Near the Entrance to DreamTime"
+    ],
+    [
+      [
+        7,
+        16777216
+      ],
+      "Challax: T-Bolt: Beside The Ultra Mech Pad"
+    ],
+    [
+      [
+        7,
+        33554432
+      ],
+      "Challax: T-Bolt: Hidden Room"
+    ],
+    [
+      [
+        7,
+        67108864
+      ],
+      "Challax: T-Bolt: Mimic Plant Lob"
+    ],
+    [
+      [
+        8,
+        268435456
+      ],
+      "Dayni Moon: T-Bolt: Planting at the Barnyard"
+    ],
+    [
+      [
+        8,
+        536870912
+      ],
+      "Dayni Moon: T-Bolt: Bounce on the Blue mimic"
+    ],
+    [
+      [
+        9,
+        4294967296
+      ],
+      "Inside Clank: T-Bolt: Walk behind the ladder"
+    ],
+    [
+      [
+        9,
+        8589934592
+      ],
+      "Inside Clank: T-Bolt: Wall jumping Technomite"
+    ]
+  ],
+  "SKILL_POINTS": [
+    [
+      "Dreamtime: Skill Point: Friends Don't Hurt Friends",
+      [
+        [
+          "bit",
+          16
+        ],
+        [
+          "planet_id",
+          5
+        ],
+        [
+          "region",
+          "Dreamtime"
+        ]
+      ]
+    ],
+    [
+      "Pokitaru: Skill Point: Don't Rock the Boat",
+      [
+        [
+          "bit",
+          1
+        ],
+        [
+          "planet_id",
+          1
+        ],
+        [
+          "region",
+          "Pokitaru"
+        ]
+      ]
+    ],
+    [
+      "Challax: Skill Point: High Tech Weapons Master",
+      [
+        [
+          "bit",
+          25
+        ],
+        [
+          "planet_id",
+          7
+        ],
+        [
+          "region",
+          "Challax"
+        ]
+      ]
+    ],
+    [
+      "Challax: Skill Point: No More Varmints!",
+      [
+        [
+          "bit",
+          26
+        ],
+        [
+          "planet_id",
+          7
+        ],
+        [
+          "region",
+          "Challax"
+        ]
+      ]
+    ],
+    [
+      "Dayni Moon: Skill Point: Bouncy, Bouncy, Bouncy",
+      [
+        [
+          "bit",
+          30
+        ],
+        [
+          "planet_id",
+          8
+        ],
+        [
+          "region",
+          "Dayni Moon"
+        ]
+      ]
+    ],
+    [
+      "Dayni Moon: Skill Point: Ultimate Gladiator",
+      [
+        [
+          "bit",
+          28
+        ],
+        [
+          "planet_id",
+          8
+        ],
+        [
+          "region",
+          "Dayni Moon"
+        ]
+      ]
+    ],
+    [
+      "Dayni Moon: Skill Point: Wool Protest",
+      [
+        [
+          "bit",
+          29
+        ],
+        [
+          "planet_id",
+          8
+        ],
+        [
+          "region",
+          "Dayni Moon"
+        ]
+      ]
+    ],
+    [
+      "Dreamtime: Skill Point: Night Terrors",
+      [
+        [
+          "bit",
+          17
+        ],
+        [
+          "planet_id",
+          5
+        ],
+        [
+          "region",
+          "Dreamtime"
+        ]
+      ]
+    ],
+    [
+      "Inside Clank: Skill Point: Not the Shock of Me Now",
+      [
+        [
+          "bit",
+          32
+        ],
+        [
+          "planet_id",
+          9
+        ],
+        [
+          "region",
+          "Inside Clank"
+        ]
+      ]
+    ],
+    [
+      "Inside Clank: Skill Point: Ratchet... Just Ratchet",
+      [
+        [
+          "bit",
+          33
+        ],
+        [
+          "planet_id",
+          9
+        ],
+        [
+          "region",
+          "Inside Clank"
+        ]
+      ]
+    ],
+    [
+      "Kalidon: Skill Point: Be A Cool Skyboarder",
+      [
+        [
+          "bit",
+          10
+        ],
+        [
+          "planet_id",
+          3
+        ],
+        [
+          "region",
+          "Kalidon"
+        ]
+      ]
+    ],
+    [
+      "Kalidon: Skill Point: Explosive Ordnance Disposal",
+      [
+        [
+          "bit",
+          8
+        ],
+        [
+          "planet_id",
+          3
+        ],
+        [
+          "region",
+          "Kalidon"
+        ]
+      ]
+    ],
+    [
+      "Kalidon: Skill Point: Super Lombax",
+      [
+        [
+          "bit",
+          9
+        ],
+        [
+          "planet_id",
+          3
+        ],
+        [
+          "region",
+          "Kalidon"
+        ]
+      ]
+    ],
+    [
+      "Metalis: Skill Point: Shutout",
+      [
+        [
+          "bit",
+          12
+        ],
+        [
+          "planet_id",
+          4
+        ],
+        [
+          "region",
+          "Metalis"
+        ]
+      ]
+    ],
+    [
+      "Metalis: Skill Point: Terror of the Skies",
+      [
+        [
+          "bit",
+          13
+        ],
+        [
+          "planet_id",
+          4
+        ],
+        [
+          "region",
+          "Metalis"
+        ]
+      ]
+    ],
+    [
+      "Metalis: Skill Point: Ultimate Gladiator",
+      [
+        [
+          "bit",
+          14
+        ],
+        [
+          "planet_id",
+          4
+        ],
+        [
+          "region",
+          "Metalis"
+        ]
+      ]
+    ],
+    [
+      "Outpost Omega: Skill Point: Be An Awesome Skyboarder",
+      [
+        [
+          "bit",
+          20
+        ],
+        [
+          "planet_id",
+          23
+        ],
+        [
+          "region",
+          "Outpost Omega"
+        ]
+      ]
+    ],
+    [
+      "Pokitaru: Skill Point: Do Cows Get Crabby?",
+      [
+        [
+          "bit",
+          2
+        ],
+        [
+          "planet_id",
+          1
+        ],
+        [
+          "region",
+          "Pokitaru"
+        ]
+      ]
+    ],
+    [
+      "Pokitaru: Skill Point: Train Faster",
+      [
+        [
+          "bit",
+          0
+        ],
+        [
+          "planet_id",
+          1
+        ],
+        [
+          "region",
+          "Pokitaru"
+        ]
+      ]
+    ],
+    [
+      "Quodrona: Skill Point: Elite Annihilation",
+      [
+        [
+          "bit",
+          36
+        ],
+        [
+          "planet_id",
+          10
+        ],
+        [
+          "region",
+          "Quodrona"
+        ]
+      ]
+    ],
+    [
+      "Quodrona: Skill Point: Storm the Front",
+      [
+        [
+          "bit",
+          37
+        ],
+        [
+          "planet_id",
+          10
+        ],
+        [
+          "region",
+          "Quodrona"
+        ]
+      ]
+    ],
+    [
+      "Ryllus: Skill Point: Bury the Pygmies",
+      [
+        [
+          "bit",
+          4
+        ],
+        [
+          "planet_id",
+          2
+        ],
+        [
+          "region",
+          "Ryllus"
+        ]
+      ]
+    ],
+    [
+      "Ryllus: Skill Point: Lights, Camera, Action!",
+      [
+        [
+          "bit",
+          5
+        ],
+        [
+          "planet_id",
+          2
+        ],
+        [
+          "region",
+          "Ryllus"
+        ]
+      ]
+    ],
+    [
+      "Ryllus: Skill Point: Ship It",
+      [
+        [
+          "bit",
+          6
+        ],
+        [
+          "planet_id",
+          2
+        ],
+        [
+          "region",
+          "Ryllus"
+        ]
+      ]
+    ]
+  ],
+  "HARD_SKILL_POINTS": [
+    "Challax: Skill Point: High Tech Weapons Master",
+    "Dayni Moon: Skill Point: Wool Protest",
+    "Dreamtime: Skill Point: Friends Don't Hurt Friends",
+    "Dreamtime: Skill Point: Night Terrors",
+    "Inside Clank: Skill Point: Not the Shock of Me Now",
+    "Inside Clank: Skill Point: Ratchet... Just Ratchet",
+    "Kalidon: Skill Point: Super Lombax",
+    "Metalis: Skill Point: Terror of the Skies",
+    "Quodrona: Skill Point: Elite Annihilation",
+    "Quodrona: Skill Point: Storm the Front",
+    "Ryllus: Skill Point: Bury the Pygmies"
+  ],
+  "CLANK_CHALLENGE_SKILL_POINTS": [
+    "Dayni Moon: Skill Point: Ultimate Gladiator",
+    "Metalis: Skill Point: Shutout",
+    "Metalis: Skill Point: Ultimate Gladiator"
+  ],
+  "SKYBOARD_CHALLENGE_SKILL_POINTS": [
+    "Kalidon: Skill Point: Be A Cool Skyboarder",
+    "Outpost Omega: Skill Point: Be An Awesome Skyboarder"
+  ],
+  "SKILL_POINT_BY_PLANET_AND_MASK": [
+    [
+      [
+        1,
+        1
+      ],
+      "Pokitaru: Skill Point: Train Faster"
+    ],
+    [
+      [
+        1,
+        2
+      ],
+      "Pokitaru: Skill Point: Don't Rock the Boat"
+    ],
+    [
+      [
+        1,
+        4
+      ],
+      "Pokitaru: Skill Point: Do Cows Get Crabby?"
+    ],
+    [
+      [
+        10,
+        137438953472
+      ],
+      "Quodrona: Skill Point: Storm the Front"
+    ],
+    [
+      [
+        10,
+        68719476736
+      ],
+      "Quodrona: Skill Point: Elite Annihilation"
+    ],
+    [
+      [
+        2,
+        16
+      ],
+      "Ryllus: Skill Point: Bury the Pygmies"
+    ],
+    [
+      [
+        2,
+        32
+      ],
+      "Ryllus: Skill Point: Lights, Camera, Action!"
+    ],
+    [
+      [
+        2,
+        64
+      ],
+      "Ryllus: Skill Point: Ship It"
+    ],
+    [
+      [
+        23,
+        1048576
+      ],
+      "Outpost Omega: Skill Point: Be An Awesome Skyboarder"
+    ],
+    [
+      [
+        3,
+        1024
+      ],
+      "Kalidon: Skill Point: Be A Cool Skyboarder"
+    ],
+    [
+      [
+        3,
+        256
+      ],
+      "Kalidon: Skill Point: Explosive Ordnance Disposal"
+    ],
+    [
+      [
+        3,
+        512
+      ],
+      "Kalidon: Skill Point: Super Lombax"
+    ],
+    [
+      [
+        4,
+        16384
+      ],
+      "Metalis: Skill Point: Ultimate Gladiator"
+    ],
+    [
+      [
+        4,
+        4096
+      ],
+      "Metalis: Skill Point: Shutout"
+    ],
+    [
+      [
+        4,
+        8192
+      ],
+      "Metalis: Skill Point: Terror of the Skies"
+    ],
+    [
+      [
+        5,
+        131072
+      ],
+      "Dreamtime: Skill Point: Night Terrors"
+    ],
+    [
+      [
+        5,
+        65536
+      ],
+      "Dreamtime: Skill Point: Friends Don't Hurt Friends"
+    ],
+    [
+      [
+        7,
+        33554432
+      ],
+      "Challax: Skill Point: High Tech Weapons Master"
+    ],
+    [
+      [
+        7,
+        67108864
+      ],
+      "Challax: Skill Point: No More Varmints!"
+    ],
+    [
+      [
+        8,
+        1073741824
+      ],
+      "Dayni Moon: Skill Point: Bouncy, Bouncy, Bouncy"
+    ],
+    [
+      [
+        8,
+        268435456
+      ],
+      "Dayni Moon: Skill Point: Ultimate Gladiator"
+    ],
+    [
+      [
+        8,
+        536870912
+      ],
+      "Dayni Moon: Skill Point: Wool Protest"
+    ],
+    [
+      [
+        9,
+        4294967296
+      ],
+      "Inside Clank: Skill Point: Not the Shock of Me Now"
+    ],
+    [
+      [
+        9,
+        8589934592
+      ],
+      "Inside Clank: Skill Point: Ratchet... Just Ratchet"
+    ]
+  ],
+  "LOCATION_SKILL_POINTS": [
+    [
+      "Dreamtime: Skill Point: Friends Don't Hurt Friends",
+      65536
+    ],
+    [
+      "Pokitaru: Skill Point: Don't Rock the Boat",
+      2
+    ],
+    [
+      "Challax: Skill Point: High Tech Weapons Master",
+      33554432
+    ],
+    [
+      "Challax: Skill Point: No More Varmints!",
+      67108864
+    ],
+    [
+      "Dayni Moon: Skill Point: Bouncy, Bouncy, Bouncy",
+      1073741824
+    ],
+    [
+      "Dayni Moon: Skill Point: Ultimate Gladiator",
+      268435456
+    ],
+    [
+      "Dayni Moon: Skill Point: Wool Protest",
+      536870912
+    ],
+    [
+      "Dreamtime: Skill Point: Night Terrors",
+      131072
+    ],
+    [
+      "Inside Clank: Skill Point: Not the Shock of Me Now",
+      4294967296
+    ],
+    [
+      "Inside Clank: Skill Point: Ratchet... Just Ratchet",
+      8589934592
+    ],
+    [
+      "Kalidon: Skill Point: Be A Cool Skyboarder",
+      1024
+    ],
+    [
+      "Kalidon: Skill Point: Explosive Ordnance Disposal",
+      256
+    ],
+    [
+      "Kalidon: Skill Point: Super Lombax",
+      512
+    ],
+    [
+      "Metalis: Skill Point: Shutout",
+      4096
+    ],
+    [
+      "Metalis: Skill Point: Terror of the Skies",
+      8192
+    ],
+    [
+      "Metalis: Skill Point: Ultimate Gladiator",
+      16384
+    ],
+    [
+      "Outpost Omega: Skill Point: Be An Awesome Skyboarder",
+      1048576
+    ],
+    [
+      "Pokitaru: Skill Point: Do Cows Get Crabby?",
+      4
+    ],
+    [
+      "Pokitaru: Skill Point: Train Faster",
+      1
+    ],
+    [
+      "Quodrona: Skill Point: Elite Annihilation",
+      68719476736
+    ],
+    [
+      "Quodrona: Skill Point: Storm the Front",
+      137438953472
+    ],
+    [
+      "Ryllus: Skill Point: Bury the Pygmies",
+      16
+    ],
+    [
+      "Ryllus: Skill Point: Lights, Camera, Action!",
+      32
+    ],
+    [
+      "Ryllus: Skill Point: Ship It",
+      64
+    ]
+  ],
+  "STORY_MISSION_MAP": [
+    [
+      [
+        32814020,
+        2
+      ],
+      "Pokitaru: Fight some robots (Complete Luna's photoshoot)"
+    ],
+    [
+      [
+        32814020,
+        4
+      ],
+      "Pokitaru: Rescue the girl"
+    ],
+    [
+      [
+        32814022,
+        16
+      ],
+      "Ryllus: Unlock the temple"
+    ],
+    [
+      [
+        32814022,
+        8
+      ],
+      "Ryllus: Investigate the artifact (Reach the temple)"
+    ],
+    [
+      [
+        32814024,
+        16
+      ],
+      "Kalidon: Win the skyboard race (Complete Learner's Permit)"
+    ],
+    [
+      [
+        32814024,
+        4
+      ],
+      "Kalidon: Search the factory"
+    ],
+    [
+      [
+        32814026,
+        2
+      ],
+      "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)"
+    ],
+    [
+      [
+        32814028,
+        4
+      ],
+      "Dreamtime: Complete Dreamtime"
+    ],
+    [
+      [
+        32814030,
+        128
+      ],
+      "Outpost Omega: Escape the medical facility"
+    ],
+    [
+      [
+        32814030,
+        16
+      ],
+      "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)"
+    ],
+    [
+      [
+        32814032,
+        4
+      ],
+      "Challax: Explore the miniature city"
+    ],
+    [
+      [
+        32814034,
+        32
+      ],
+      "Inside Clank: Escape from Clank"
+    ],
+    [
+      [
+        32814034,
+        4
+      ],
+      "Dayni Moon: Defeat Luna"
+    ],
+    [
+      [
+        32814034,
+        8
+      ],
+      "Dayni Moon: Catch Luna"
+    ],
+    [
+      [
+        32814036,
+        2
+      ],
+      "Inside Clank: Defeat all Technomites"
+    ],
+    [
+      [
+        32814038,
+        320
+      ],
+      "Quodrona: Defeat Otto Destruct"
+    ],
+    [
+      [
+        32814038,
+        4
+      ],
+      "Quodrona: Find Otto Destruct"
+    ]
+  ],
+  "CUTSCENE_MAP": [
+    [
+      [
+        32814020,
+        1
+      ],
+      "Pokitaru: Enter Planet"
+    ],
+    [
+      [
+        32814022,
+        1
+      ],
+      "Ryllus: Enter Planet"
+    ],
+    [
+      [
+        32814022,
+        2
+      ],
+      "Ryllus: Buzzing Cameras"
+    ],
+    [
+      [
+        32814024,
+        1
+      ],
+      "Kalidon: Enter Planet"
+    ],
+    [
+      [
+        32814024,
+        8
+      ],
+      "Kalidon: Explore the planet"
+    ],
+    [
+      [
+        32814026,
+        1
+      ],
+      "Metalis: Enter Planet"
+    ],
+    [
+      [
+        32814028,
+        1
+      ],
+      "Dreamtime: Enter Planet"
+    ],
+    [
+      [
+        32814028,
+        2
+      ],
+      "Dreamtime: Clank finds sleeping Ratchet"
+    ],
+    [
+      [
+        32814030,
+        1
+      ],
+      "Outpost Omega: Enter Planet"
+    ],
+    [
+      [
+        32814030,
+        2
+      ],
+      "Outpost Omega: Escape from facility pt 1"
+    ],
+    [
+      [
+        32814032,
+        1
+      ],
+      "Challax: Enter Planet"
+    ],
+    [
+      [
+        32814034,
+        16
+      ],
+      "Dayni Moon: Luna fight pt 1"
+    ],
+    [
+      [
+        32814034,
+        2
+      ],
+      "Dayni Moon: Luna fight pt 2"
+    ],
+    [
+      [
+        32814036,
+        1
+      ],
+      "Inside Clank: Enter Planet"
+    ],
+    [
+      [
+        32814038,
+        16
+      ],
+      "Quodrona: Runnnn from Otto"
+    ],
+    [
+      [
+        32814038,
+        1
+      ],
+      "Quodrona: Enter Planet"
+    ],
+    [
+      [
+        32814038,
+        32
+      ],
+      "Quodrona: Defeat Mecha Otto"
+    ],
+    [
+      [
+        32814038,
+        8
+      ],
+      "Quodrona: Clone Wars (Fight the Ratchet Clones)"
+    ]
+  ],
+  "VALIDATED_MISSION_MAP": [
+    [
+      [
+        32814020,
+        1
+      ],
+      "Pokitaru: Enter Planet"
+    ],
+    [
+      [
+        32814020,
+        2
+      ],
+      "Pokitaru: Fight some robots (Complete Luna's photoshoot)"
+    ],
+    [
+      [
+        32814020,
+        4
+      ],
+      "Pokitaru: Rescue the girl"
+    ],
+    [
+      [
+        32814022,
+        16
+      ],
+      "Ryllus: Unlock the temple"
+    ],
+    [
+      [
+        32814022,
+        1
+      ],
+      "Ryllus: Enter Planet"
+    ],
+    [
+      [
+        32814022,
+        2
+      ],
+      "Ryllus: Buzzing Cameras"
+    ],
+    [
+      [
+        32814022,
+        8
+      ],
+      "Ryllus: Investigate the artifact (Reach the temple)"
+    ],
+    [
+      [
+        32814024,
+        16
+      ],
+      "Kalidon: Win the skyboard race (Complete Learner's Permit)"
+    ],
+    [
+      [
+        32814024,
+        1
+      ],
+      "Kalidon: Enter Planet"
+    ],
+    [
+      [
+        32814024,
+        4
+      ],
+      "Kalidon: Search the factory"
+    ],
+    [
+      [
+        32814024,
+        8
+      ],
+      "Kalidon: Explore the planet"
+    ],
+    [
+      [
+        32814026,
+        1
+      ],
+      "Metalis: Enter Planet"
+    ],
+    [
+      [
+        32814026,
+        2
+      ],
+      "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)"
+    ],
+    [
+      [
+        32814028,
+        1
+      ],
+      "Dreamtime: Enter Planet"
+    ],
+    [
+      [
+        32814028,
+        2
+      ],
+      "Dreamtime: Clank finds sleeping Ratchet"
+    ],
+    [
+      [
+        32814028,
+        4
+      ],
+      "Dreamtime: Complete Dreamtime"
+    ],
+    [
+      [
+        32814030,
+        128
+      ],
+      "Outpost Omega: Escape the medical facility"
+    ],
+    [
+      [
+        32814030,
+        16
+      ],
+      "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)"
+    ],
+    [
+      [
+        32814030,
+        1
+      ],
+      "Outpost Omega: Enter Planet"
+    ],
+    [
+      [
+        32814030,
+        2
+      ],
+      "Outpost Omega: Escape from facility pt 1"
+    ],
+    [
+      [
+        32814032,
+        1
+      ],
+      "Challax: Enter Planet"
+    ],
+    [
+      [
+        32814032,
+        4
+      ],
+      "Challax: Explore the miniature city"
+    ],
+    [
+      [
+        32814034,
+        16
+      ],
+      "Dayni Moon: Luna fight pt 1"
+    ],
+    [
+      [
+        32814034,
+        2
+      ],
+      "Dayni Moon: Luna fight pt 2"
+    ],
+    [
+      [
+        32814034,
+        32
+      ],
+      "Inside Clank: Escape from Clank"
+    ],
+    [
+      [
+        32814034,
+        4
+      ],
+      "Dayni Moon: Defeat Luna"
+    ],
+    [
+      [
+        32814034,
+        8
+      ],
+      "Dayni Moon: Catch Luna"
+    ],
+    [
+      [
+        32814036,
+        1
+      ],
+      "Inside Clank: Enter Planet"
+    ],
+    [
+      [
+        32814036,
+        2
+      ],
+      "Inside Clank: Defeat all Technomites"
+    ],
+    [
+      [
+        32814038,
+        16
+      ],
+      "Quodrona: Runnnn from Otto"
+    ],
+    [
+      [
+        32814038,
+        1
+      ],
+      "Quodrona: Enter Planet"
+    ],
+    [
+      [
+        32814038,
+        320
+      ],
+      "Quodrona: Defeat Otto Destruct"
+    ],
+    [
+      [
+        32814038,
+        32
+      ],
+      "Quodrona: Defeat Mecha Otto"
+    ],
+    [
+      [
+        32814038,
+        4
+      ],
+      "Quodrona: Find Otto Destruct"
+    ],
+    [
+      [
+        32814038,
+        8
+      ],
+      "Quodrona: Clone Wars (Fight the Ratchet Clones)"
+    ]
+  ],
+  "LOCATION_TO_PLANET_ID": [
+    [
+      "Kalidon: Win the skyboard race (Complete Learner's Permit)",
+      3
+    ],
+    [
+      "Pokitaru: Fight some robots (Complete Luna's photoshoot)",
+      1
+    ],
+    [
+      "Challax: Enter Planet",
+      7
+    ],
+    [
+      "Challax: Explore the miniature city",
+      7
+    ],
+    [
+      "Dayni Moon: Catch Luna",
+      8
+    ],
+    [
+      "Dayni Moon: Defeat Luna",
+      8
+    ],
+    [
+      "Dayni Moon: Luna fight pt 1",
+      8
+    ],
+    [
+      "Dayni Moon: Luna fight pt 2",
+      8
+    ],
+    [
+      "Dreamtime: Clank finds sleeping Ratchet",
+      5
+    ],
+    [
+      "Dreamtime: Complete Dreamtime",
+      5
+    ],
+    [
+      "Dreamtime: Enter Planet",
+      5
+    ],
+    [
+      "Inside Clank: Defeat all Technomites",
+      9
+    ],
+    [
+      "Inside Clank: Enter Planet",
+      9
+    ],
+    [
+      "Inside Clank: Escape from Clank",
+      8
+    ],
+    [
+      "Kalidon: Enter Planet",
+      3
+    ],
+    [
+      "Kalidon: Explore the planet",
+      3
+    ],
+    [
+      "Kalidon: Search the factory",
+      3
+    ],
+    [
+      "Metalis: Enter Planet",
+      4
+    ],
+    [
+      "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)",
+      4
+    ],
+    [
+      "Outpost Omega: Enter Planet",
+      6
+    ],
+    [
+      "Outpost Omega: Escape from facility pt 1",
+      6
+    ],
+    [
+      "Outpost Omega: Escape the medical facility",
+      6
+    ],
+    [
+      "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)",
+      6
+    ],
+    [
+      "Pokitaru: Enter Planet",
+      1
+    ],
+    [
+      "Pokitaru: Rescue the girl",
+      1
+    ],
+    [
+      "Quodrona: Clone Wars (Fight the Ratchet Clones)",
+      10
+    ],
+    [
+      "Quodrona: Defeat Mecha Otto",
+      10
+    ],
+    [
+      "Quodrona: Defeat Otto Destruct",
+      10
+    ],
+    [
+      "Quodrona: Enter Planet",
+      10
+    ],
+    [
+      "Quodrona: Find Otto Destruct",
+      10
+    ],
+    [
+      "Quodrona: Runnnn from Otto",
+      10
+    ],
+    [
+      "Ryllus: Buzzing Cameras",
+      2
+    ],
+    [
+      "Ryllus: Enter Planet",
+      2
+    ],
+    [
+      "Ryllus: Investigate the artifact (Reach the temple)",
+      2
+    ],
+    [
+      "Ryllus: Unlock the temple",
+      2
+    ]
+  ],
+  "ALL_CLANK_ADDRESS_MAP": [
+    [
+      32814046,
+      "Metalis: Clank Challenge: Buzzsaw Blitz"
+    ],
+    [
+      32814047,
+      "Metalis: Clank Challenge: CHARGE!"
+    ],
+    [
+      32814048,
+      "Metalis: Clank Challenge: Electric Boogaloo"
+    ],
+    [
+      32814049,
+      "Metalis: Clank Challenge: Showdown"
+    ],
+    [
+      32814050,
+      "Metalis: Clank Challenge: Smasherbot's Revenge"
+    ],
+    [
+      32814051,
+      "Metalis: Clank Challenge: Little League"
+    ],
+    [
+      32814052,
+      "Metalis: Clank Challenge: Varsity Bracket"
+    ],
+    [
+      32814053,
+      "Metalis: Clank Challenge: Collegiate Division"
+    ],
+    [
+      32814054,
+      "Metalis: Clank Challenge: Professional Level"
+    ],
+    [
+      32814055,
+      "Metalis: Clank Challenge: The Uber Finals"
+    ],
+    [
+      32814056,
+      "Metalis: Clank Challenge: Take Two For The Team"
+    ],
+    [
+      32814057,
+      "Metalis: Clank Challenge: Bridge The Gap"
+    ],
+    [
+      32814058,
+      "Metalis: Clank Challenge: Of Trapeze and Teleporters"
+    ],
+    [
+      32814059,
+      "Metalis: Clank Challenge: Brain Trip"
+    ],
+    [
+      32814060,
+      "Metalis: Clank Challenge: Night Impossible"
+    ],
+    [
+      32814070,
+      "Dayni Moon: Clank Challenge: Welcome to Dayni"
+    ],
+    [
+      32814071,
+      "Dayni Moon: Clank Challenge: Round Up!"
+    ],
+    [
+      32814072,
+      "Dayni Moon: Clank Challenge: Variety Is Shocking"
+    ],
+    [
+      32814073,
+      "Dayni Moon: Clank Challenge: Tom Sawyer"
+    ],
+    [
+      32814074,
+      "Dayni Moon: Clank Challenge: Smasherbot Returns!"
+    ],
+    [
+      32814075,
+      "Dayni Moon: Clank Challenge: HAY-re We Are!"
+    ],
+    [
+      32814076,
+      "Dayni Moon: Clank Challenge: Tri-bomb Tournament"
+    ],
+    [
+      32814077,
+      "Dayni Moon: Clank Challenge: A-rooouund the Bend"
+    ],
+    [
+      32814078,
+      "Dayni Moon: Clank Challenge: The Thin Bouncy Line"
+    ],
+    [
+      32814079,
+      "Dayni Moon: Clank Challenge: The Ultimate Showdown"
+    ],
+    [
+      32814080,
+      "Dayni Moon: Clank Challenge: Two's A Crowd"
+    ],
+    [
+      32814081,
+      "Dayni Moon: Clank Challenge: Reverse Into Victory"
+    ],
+    [
+      32814082,
+      "Dayni Moon: Clank Challenge: Emergency Bridge"
+    ],
+    [
+      32814083,
+      "Dayni Moon: Clank Challenge: Leap Of Faith"
+    ],
+    [
+      32814084,
+      "Dayni Moon: Clank Challenge: Infinite Improbability"
+    ]
+  ],
+  "CHALLENGE_ADDRESS_MAP": [
+    [
+      32814046,
+      "Metalis: Clank Challenge: Buzzsaw Blitz"
+    ],
+    [
+      32814050,
+      "Metalis: Clank Challenge: Smasherbot's Revenge"
+    ],
+    [
+      32814055,
+      "Metalis: Clank Challenge: The Uber Finals"
+    ],
+    [
+      32814060,
+      "Metalis: Clank Challenge: Night Impossible"
+    ],
+    [
+      32814079,
+      "Dayni Moon: Clank Challenge: The Ultimate Showdown"
+    ],
+    [
+      32814084,
+      "Dayni Moon: Clank Challenge: Infinite Improbability"
+    ]
+  ],
+  "COUNT_BASED_CHALLENGE_ADDRS": [
+    32814046,
+    32814047,
+    32814048,
+    32814049,
+    32814050,
+    32814051,
+    32814052,
+    32814053,
+    32814054,
+    32814055,
+    32814056,
+    32814057,
+    32814058,
+    32814059,
+    32814060,
+    32814070,
+    32814071,
+    32814072,
+    32814073,
+    32814074,
+    32814075,
+    32814076,
+    32814077,
+    32814078,
+    32814079,
+    32814080,
+    32814081,
+    32814082,
+    32814083,
+    32814084
+  ],
+  "METALIS_CHALLENGE_NAMES": [
+    "Metalis: Clank Challenge: Brain Trip",
+    "Metalis: Clank Challenge: Bridge The Gap",
+    "Metalis: Clank Challenge: Buzzsaw Blitz",
+    "Metalis: Clank Challenge: CHARGE!",
+    "Metalis: Clank Challenge: Collegiate Division",
+    "Metalis: Clank Challenge: Electric Boogaloo",
+    "Metalis: Clank Challenge: Little League",
+    "Metalis: Clank Challenge: Night Impossible",
+    "Metalis: Clank Challenge: Of Trapeze and Teleporters",
+    "Metalis: Clank Challenge: Professional Level",
+    "Metalis: Clank Challenge: Showdown",
+    "Metalis: Clank Challenge: Smasherbot's Revenge",
+    "Metalis: Clank Challenge: Take Two For The Team",
+    "Metalis: Clank Challenge: The Uber Finals",
+    "Metalis: Clank Challenge: Varsity Bracket"
+  ],
+  "DAYNI_MOON_CHALLENGE_NAMES": [
+    "Dayni Moon: Clank Challenge: A-rooouund the Bend",
+    "Dayni Moon: Clank Challenge: Emergency Bridge",
+    "Dayni Moon: Clank Challenge: HAY-re We Are!",
+    "Dayni Moon: Clank Challenge: Infinite Improbability",
+    "Dayni Moon: Clank Challenge: Leap Of Faith",
+    "Dayni Moon: Clank Challenge: Reverse Into Victory",
+    "Dayni Moon: Clank Challenge: Round Up!",
+    "Dayni Moon: Clank Challenge: Smasherbot Returns!",
+    "Dayni Moon: Clank Challenge: The Thin Bouncy Line",
+    "Dayni Moon: Clank Challenge: The Ultimate Showdown",
+    "Dayni Moon: Clank Challenge: Tom Sawyer",
+    "Dayni Moon: Clank Challenge: Tri-bomb Tournament",
+    "Dayni Moon: Clank Challenge: Two's A Crowd",
+    "Dayni Moon: Clank Challenge: Variety Is Shocking",
+    "Dayni Moon: Clank Challenge: Welcome to Dayni"
+  ],
+  "GLADIATOR_FAILSAFE": [
+    [
+      "Dayni Moon",
+      "Dayni Moon: Skill Point: Ultimate Gladiator"
+    ],
+    [
+      "Metalis",
+      "Metalis: Skill Point: Ultimate Gladiator"
+    ]
+  ],
+  "CHALLENGE_NAME_TO_GROUP": [
+    [
+      "Dayni Moon: Clank Challenge: Two's A Crowd",
+      "Gadgetbot"
+    ],
+    [
+      "Metalis: Clank Challenge: Smasherbot's Revenge",
+      "Demolition Derby"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: A-rooouund the Bend",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Emergency Bridge",
+      "Gadgetbot"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: HAY-re We Are!",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Infinite Improbability",
+      "Gadgetbot"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Leap Of Faith",
+      "Gadgetbot"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Reverse Into Victory",
+      "Gadgetbot"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Round Up!",
+      "Demolition Derby"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Smasherbot Returns!",
+      "Demolition Derby"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: The Thin Bouncy Line",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: The Ultimate Showdown",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Tom Sawyer",
+      "Demolition Derby"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Tri-bomb Tournament",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Variety Is Shocking",
+      "Demolition Derby"
+    ],
+    [
+      "Dayni Moon: Clank Challenge: Welcome to Dayni",
+      "Demolition Derby"
+    ],
+    [
+      "Metalis: Clank Challenge: Brain Trip",
+      "Gadgetbot"
+    ],
+    [
+      "Metalis: Clank Challenge: Bridge The Gap",
+      "Gadgetbot"
+    ],
+    [
+      "Metalis: Clank Challenge: Buzzsaw Blitz",
+      "Demolition Derby"
+    ],
+    [
+      "Metalis: Clank Challenge: CHARGE!",
+      "Demolition Derby"
+    ],
+    [
+      "Metalis: Clank Challenge: Collegiate Division",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Metalis: Clank Challenge: Electric Boogaloo",
+      "Demolition Derby"
+    ],
+    [
+      "Metalis: Clank Challenge: Little League",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Metalis: Clank Challenge: Night Impossible",
+      "Gadgetbot"
+    ],
+    [
+      "Metalis: Clank Challenge: Of Trapeze and Teleporters",
+      "Gadgetbot"
+    ],
+    [
+      "Metalis: Clank Challenge: Professional Level",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Metalis: Clank Challenge: Showdown",
+      "Demolition Derby"
+    ],
+    [
+      "Metalis: Clank Challenge: Take Two For The Team",
+      "Gadgetbot"
+    ],
+    [
+      "Metalis: Clank Challenge: The Uber Finals",
+      "Gadgetbot Toss"
+    ],
+    [
+      "Metalis: Clank Challenge: Varsity Bracket",
+      "Gadgetbot Toss"
+    ]
+  ],
+  "SKYBOARD_ADDRESS_MASK_MAP": [
+    [
+      [
+        32814088,
+        16
+      ],
+      "Kalidon: Skyboard Challenge: Tricky Air"
+    ],
+    [
+      [
+        32814088,
+        1
+      ],
+      "Kalidon: Skyboard Challenge: Learner's Challenge"
+    ],
+    [
+      [
+        32814088,
+        4
+      ],
+      "Kalidon: Skyboard Challenge: Speeding Ticket"
+    ],
+    [
+      [
+        32814088,
+        64
+      ],
+      "Kalidon: Skyboard Challenge: Master's Challenge"
+    ],
+    [
+      [
+        32814090,
+        16
+      ],
+      "Outpost Omega: Skyboard Challenge: The Vortex"
+    ],
+    [
+      [
+        32814090,
+        1
+      ],
+      "Outpost Omega: Skyboard Challenge: Interior Decorating"
+    ],
+    [
+      [
+        32814090,
+        4
+      ],
+      "Outpost Omega: Skyboard Challenge: Danger, High Voltage"
+    ],
+    [
+      [
+        32814090,
+        64
+      ],
+      "Outpost Omega: Skyboard Challenge: Vertigo"
+    ]
+  ],
+  "SKYBOARD_UNLOCK_MASK": [
+    [
+      32814087,
+      85
+    ],
+    [
+      32814089,
+      85
+    ]
+  ],
+  "ARMOUR_SET_CHECKS": [
+    [
+      "Armor Set: Equip Chameleon Armor Set",
+      [
+        [
+          "boots",
+          7
+        ],
+        [
+          "chestplate",
+          7
+        ],
+        [
+          "gloves",
+          7
+        ],
+        [
+          "helmet",
+          7
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Crystallix Armor Set",
+      [
+        [
+          "boots",
+          3
+        ],
+        [
+          "chestplate",
+          3
+        ],
+        [
+          "gloves",
+          3
+        ],
+        [
+          "helmet",
+          3
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Electroshock Armor Set",
+      [
+        [
+          "boots",
+          4
+        ],
+        [
+          "chestplate",
+          4
+        ],
+        [
+          "gloves",
+          4
+        ],
+        [
+          "helmet",
+          4
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Fire-Bomb Armor Set",
+      [
+        [
+          "boots",
+          5
+        ],
+        [
+          "chestplate",
+          5
+        ],
+        [
+          "gloves",
+          1
+        ],
+        [
+          "helmet",
+          5
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Hyperborean Armor Set",
+      [
+        [
+          "boots",
+          6
+        ],
+        [
+          "chestplate",
+          6
+        ],
+        [
+          "gloves",
+          6
+        ],
+        [
+          "helmet",
+          6
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Ice II Armor Set",
+      [
+        [
+          "boots",
+          6
+        ],
+        [
+          "chestplate",
+          6
+        ],
+        [
+          "gloves",
+          6
+        ],
+        [
+          "helmet",
+          3
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Mega Bomb Armor Set",
+      [
+        [
+          "boots",
+          5
+        ],
+        [
+          "chestplate",
+          5
+        ],
+        [
+          "gloves",
+          5
+        ],
+        [
+          "helmet",
+          5
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Shock Crystal Armor Set",
+      [
+        [
+          "boots",
+          4
+        ],
+        [
+          "chestplate",
+          3
+        ],
+        [
+          "gloves",
+          3
+        ],
+        [
+          "helmet",
+          4
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Sludge Mk9 Armor Set",
+      [
+        [
+          "boots",
+          2
+        ],
+        [
+          "chestplate",
+          2
+        ],
+        [
+          "gloves",
+          2
+        ],
+        [
+          "helmet",
+          2
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Stalker Armor Set",
+      [
+        [
+          "boots",
+          7
+        ],
+        [
+          "chestplate",
+          7
+        ],
+        [
+          "gloves",
+          2
+        ],
+        [
+          "helmet",
+          1
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Triple Wave Armor Set",
+      [
+        [
+          "boots",
+          4
+        ],
+        [
+          "chestplate",
+          4
+        ],
+        [
+          "gloves",
+          2
+        ],
+        [
+          "helmet",
+          1
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Wildburst Armor Set",
+      [
+        [
+          "boots",
+          1
+        ],
+        [
+          "chestplate",
+          1
+        ],
+        [
+          "gloves",
+          1
+        ],
+        [
+          "helmet",
+          2
+        ]
+      ]
+    ],
+    [
+      "Armor Set: Equip Wildfire Armor Set",
+      [
+        [
+          "boots",
+          1
+        ],
+        [
+          "chestplate",
+          1
+        ],
+        [
+          "gloves",
+          1
+        ],
+        [
+          "helmet",
+          1
+        ]
+      ]
+    ]
+  ],
+  "VALIDATED_MISSION_MAP_order": [
+    [
+      32814020,
+      4
+    ],
+    [
+      32814024,
+      4
+    ],
+    [
+      32814032,
+      4
+    ],
+    [
+      32814020,
+      2
+    ],
+    [
+      32814022,
+      8
+    ],
+    [
+      32814022,
+      16
+    ],
+    [
+      32814024,
+      16
+    ],
+    [
+      32814026,
+      2
+    ],
+    [
+      32814028,
+      4
+    ],
+    [
+      32814030,
+      128
+    ],
+    [
+      32814030,
+      16
+    ],
+    [
+      32814034,
+      8
+    ],
+    [
+      32814034,
+      4
+    ],
+    [
+      32814034,
+      32
+    ],
+    [
+      32814036,
+      2
+    ],
+    [
+      32814038,
+      4
+    ],
+    [
+      32814038,
+      320
+    ],
+    [
+      32814020,
+      1
+    ],
+    [
+      32814022,
+      1
+    ],
+    [
+      32814024,
+      1
+    ],
+    [
+      32814026,
+      1
+    ],
+    [
+      32814028,
+      1
+    ],
+    [
+      32814030,
+      1
+    ],
+    [
+      32814032,
+      1
+    ],
+    [
+      32814036,
+      1
+    ],
+    [
+      32814038,
+      1
+    ],
+    [
+      32814022,
+      2
+    ],
+    [
+      32814024,
+      8
+    ],
+    [
+      32814030,
+      2
+    ],
+    [
+      32814034,
+      16
+    ],
+    [
+      32814034,
+      2
+    ],
+    [
+      32814028,
+      2
+    ],
+    [
+      32814038,
+      8
+    ],
+    [
+      32814038,
+      16
+    ],
+    [
+      32814038,
+      32
+    ]
+  ],
+  "ALL_CLANK_ADDRESS_MAP_order": [
+    32814046,
+    32814050,
+    32814055,
+    32814060,
+    32814079,
+    32814084,
+    32814047,
+    32814048,
+    32814049,
+    32814070,
+    32814071,
+    32814072,
+    32814073,
+    32814074,
+    32814051,
+    32814052,
+    32814053,
+    32814054,
+    32814075,
+    32814076,
+    32814077,
+    32814078,
+    32814056,
+    32814057,
+    32814058,
+    32814059,
+    32814080,
+    32814081,
+    32814082,
+    32814083
+  ],
+  "CHALLENGE_ADDRESS_MAP_order": [
+    32814046,
+    32814050,
+    32814055,
+    32814060,
+    32814079,
+    32814084
+  ],
+  "SKYBOARD_ADDRESS_MASK_MAP_order": [
+    [
+      32814088,
+      1
+    ],
+    [
+      32814088,
+      4
+    ],
+    [
+      32814088,
+      16
+    ],
+    [
+      32814088,
+      64
+    ],
+    [
+      32814090,
+      1
+    ],
+    [
+      32814090,
+      4
+    ],
+    [
+      32814090,
+      16
+    ],
+    [
+      32814090,
+      64
+    ]
+  ]
+}

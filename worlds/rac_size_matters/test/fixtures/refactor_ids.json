@@ -1,0 +1,1982 @@
+{
+  "locations": {
+    "Pokitaru: T-Bolt: Above Zipline": [
+      77700001,
+      "Pokitaru"
+    ],
+    "Pokitaru: T-Bolt: Behind Hut": [
+      77700002,
+      "Pokitaru"
+    ],
+    "Ryllus: T-Bolt: Down The Cliff": [
+      77700301,
+      "Ryllus"
+    ],
+    "Ryllus: T-Bolt: After the Wall": [
+      77700302,
+      "Ryllus"
+    ],
+    "Kalidon: T-Bolt: Behind Ship": [
+      77700601,
+      "Kalidon"
+    ],
+    "Kalidon: T-Bolt: Side of Mechanoid Factory": [
+      77700602,
+      "Kalidon"
+    ],
+    "Kalidon: T-Bolt: Grav-Ramps": [
+      77700603,
+      "Kalidon"
+    ],
+    "Metalis: T-Bolt: Behind the Polarized Door": [
+      77700901,
+      "Metalis"
+    ],
+    "Dreamtime: T-Bolt: Atop the floating hat": [
+      77701201,
+      "Dreamtime"
+    ],
+    "Dreamtime: T-Bolt: To the left of Ratchet's Garage": [
+      77701202,
+      "Dreamtime"
+    ],
+    "Dreamtime: T-Bolt: Apparition of the Scuttle Crab": [
+      77701203,
+      "Dreamtime"
+    ],
+    "Outpost Omega: T-Bolt: Near the Entrance to DreamTime": [
+      77701501,
+      "Outpost Omega"
+    ],
+    "Challax: T-Bolt: Beside The Ultra Mech Pad": [
+      77701801,
+      "Challax"
+    ],
+    "Challax: T-Bolt: Hidden Room": [
+      77701802,
+      "Challax"
+    ],
+    "Challax: T-Bolt: Mimic Plant Lob": [
+      77701803,
+      "Challax"
+    ],
+    "Dayni Moon: T-Bolt: Planting at the Barnyard": [
+      77702101,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: T-Bolt: Bounce on the Blue mimic": [
+      77702102,
+      "Dayni Moon"
+    ],
+    "Inside Clank: T-Bolt: Walk behind the ladder": [
+      77702401,
+      "Inside Clank"
+    ],
+    "Inside Clank: T-Bolt: Wall jumping Technomite": [
+      77702402,
+      "Inside Clank"
+    ],
+    "Quodrona: T-Bolt: Ratchet Clones and Dummies": [
+      77702701,
+      "Quodrona"
+    ],
+    "Pokitaru: Wildfire Chestplate on bridge": [
+      77700003,
+      "Pokitaru"
+    ],
+    "Pokitaru: Wildfire Gloves in the skuttle crab cave": [
+      77700004,
+      "Pokitaru"
+    ],
+    "Ryllus: Sludge Mk9 Boots behind breakable rock": [
+      77700303,
+      "Ryllus"
+    ],
+    "Ryllus: Wildfire Helmet before temple entrance": [
+      77700304,
+      "Ryllus"
+    ],
+    "Kalidon: Sludge Mk9 Chestplate from Mundo Fight": [
+      77700604,
+      "Kalidon"
+    ],
+    "Kalidon: Wildfire Boots inside factory": [
+      77700605,
+      "Kalidon"
+    ],
+    "Dreamtime: Crystallix Chestplate after Giant Clank chase": [
+      77701204,
+      "Dreamtime"
+    ],
+    "Outpost Omega: Crystallix Boots during escape": [
+      77701502,
+      "Outpost Omega"
+    ],
+    "Challax: Electroshock Helmet after Dropship fight": [
+      77701804,
+      "Challax"
+    ],
+    "Dayni Moon: Mega Bomb Helmet before Luna fight": [
+      77702103,
+      "Dayni Moon"
+    ],
+    "Inside Clank: Mega Bomb Chestplate": [
+      77702403,
+      "Inside Clank"
+    ],
+    "Metalis: Electroshock Gloves from Giant Clank": [
+      77700902,
+      "Metalis"
+    ],
+    "Challax: Electroshock Chestplate": [
+      77701805,
+      "Challax"
+    ],
+    "Pokitaru: Hyperborean Gloves": [
+      77700005,
+      "Pokitaru"
+    ],
+    "Ryllus: Hyperborean Boots": [
+      77700305,
+      "Ryllus"
+    ],
+    "Dreamtime: Hyperborean Chestplate": [
+      77701205,
+      "Dreamtime"
+    ],
+    "Challax: Hyperborean Helmet": [
+      77701806,
+      "Challax"
+    ],
+    "Pokitaru: Chameleon Boots": [
+      77700006,
+      "Pokitaru"
+    ],
+    "Kalidon: Chameleon Chestplate": [
+      77700606,
+      "Kalidon"
+    ],
+    "Outpost Omega: Chameleon Gloves": [
+      77701503,
+      "Outpost Omega"
+    ],
+    "Inside Clank: Chameleon Helmet": [
+      77702404,
+      "Inside Clank"
+    ],
+    "Quodrona: Defeat Otto Destruct": [
+      77702702,
+      "Quodrona"
+    ],
+    "Ryllus: Receive Sprout-O-Matic": [
+      77700311,
+      "Ryllus"
+    ],
+    "Kalidon: Receive Shrink Ray": [
+      77700619,
+      "Kalidon"
+    ],
+    "Pokitaru: Skill Point: Train Faster": [
+      77700015,
+      "Pokitaru"
+    ],
+    "Pokitaru: Skill Point: Don't Rock the Boat": [
+      77700016,
+      "Pokitaru"
+    ],
+    "Pokitaru: Skill Point: Do Cows Get Crabby?": [
+      77700017,
+      "Pokitaru"
+    ],
+    "Ryllus: Skill Point: Bury the Pygmies": [
+      77700308,
+      "Ryllus"
+    ],
+    "Ryllus: Skill Point: Lights, Camera, Action!": [
+      77700309,
+      "Ryllus"
+    ],
+    "Ryllus: Skill Point: Ship It": [
+      77700310,
+      "Ryllus"
+    ],
+    "Kalidon: Skill Point: Explosive Ordnance Disposal": [
+      77700616,
+      "Kalidon"
+    ],
+    "Kalidon: Skill Point: Super Lombax": [
+      77700617,
+      "Kalidon"
+    ],
+    "Kalidon: Skill Point: Be A Cool Skyboarder": [
+      77700618,
+      "Kalidon"
+    ],
+    "Metalis: Skill Point: Shutout": [
+      77700903,
+      "Metalis"
+    ],
+    "Metalis: Skill Point: Ultimate Gladiator": [
+      77700904,
+      "Metalis"
+    ],
+    "Dreamtime: Skill Point: Friends Don't Hurt Friends": [
+      77701208,
+      "Dreamtime"
+    ],
+    "Dreamtime: Skill Point: Night Terrors": [
+      77701209,
+      "Dreamtime"
+    ],
+    "Outpost Omega: Skill Point: Be An Awesome Skyboarder": [
+      77701507,
+      "Outpost Omega"
+    ],
+    "Challax: Skill Point: High Tech Weapons Master": [
+      77701820,
+      "Challax"
+    ],
+    "Dayni Moon: Skill Point: Ultimate Gladiator": [
+      77702108,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Skill Point: Wool Protest": [
+      77702109,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Skill Point: Bouncy, Bouncy, Bouncy": [
+      77702110,
+      "Dayni Moon"
+    ],
+    "Inside Clank: Skill Point: Not the Shock of Me Now": [
+      77702407,
+      "Inside Clank"
+    ],
+    "Inside Clank: Skill Point: Ratchet... Just Ratchet": [
+      77702408,
+      "Inside Clank"
+    ],
+    "Quodrona: Skill Point: Elite Annihilation": [
+      77702712,
+      "Quodrona"
+    ],
+    "Quodrona: Skill Point: Storm the Front": [
+      77702713,
+      "Quodrona"
+    ],
+    "Metalis: Skill Point: Terror of the Skies": [
+      77700905,
+      "Metalis"
+    ],
+    "Challax: Skill Point: No More Varmints!": [
+      77701821,
+      "Challax"
+    ],
+    "Pokitaru: Fight some robots (Complete Luna's photoshoot)": [
+      77700018,
+      "Pokitaru"
+    ],
+    "Ryllus: Investigate the artifact (Reach the temple)": [
+      77700313,
+      "Ryllus"
+    ],
+    "Ryllus: Unlock the temple": [
+      77700314,
+      "Ryllus"
+    ],
+    "Kalidon: Win the skyboard race (Complete Learner's Permit)": [
+      77700627,
+      "Kalidon"
+    ],
+    "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)": [
+      77700921,
+      "Metalis"
+    ],
+    "Dreamtime: Complete Dreamtime": [
+      77701210,
+      "Dreamtime"
+    ],
+    "Outpost Omega: Escape the medical facility": [
+      77701513,
+      "Outpost Omega"
+    ],
+    "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)": [
+      77701514,
+      "Outpost Omega"
+    ],
+    "Dayni Moon: Catch Luna": [
+      77702127,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Defeat Luna": [
+      77702130,
+      "Dayni Moon"
+    ],
+    "Inside Clank: Escape from Clank": [
+      77702410,
+      "Inside Clank"
+    ],
+    "Inside Clank: Defeat all Technomites": [
+      77702411,
+      "Inside Clank"
+    ],
+    "Quodrona: Find Otto Destruct": [
+      77702719,
+      "Quodrona"
+    ],
+    "Metalis: Escape the planet (Giant Clank)": [
+      77700923,
+      "Metalis"
+    ],
+    "Challax: Destroy the space fortress (Giant Clank)": [
+      77701824,
+      "Challax"
+    ],
+    "Pokitaru: Rescue the girl": [
+      77700020,
+      "Pokitaru"
+    ],
+    "Kalidon: Search the factory": [
+      77700629,
+      "Kalidon"
+    ],
+    "Challax: Explore the miniature city": [
+      77701825,
+      "Challax"
+    ],
+    "Ryllus: Buzzing Cameras": [
+      77700312,
+      "Ryllus"
+    ],
+    "Kalidon: Explore the planet": [
+      77700626,
+      "Kalidon"
+    ],
+    "Outpost Omega: Escape from facility pt 1": [
+      77701512,
+      "Outpost Omega"
+    ],
+    "Dayni Moon: Luna fight pt 1": [
+      77702128,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Luna fight pt 2": [
+      77702129,
+      "Dayni Moon"
+    ],
+    "Quodrona: Clone Wars (Fight the Ratchet Clones)": [
+      77702716,
+      "Quodrona"
+    ],
+    "Quodrona: Runnnn from Otto": [
+      77702717,
+      "Quodrona"
+    ],
+    "Quodrona: Defeat Mecha Otto": [
+      77702718,
+      "Quodrona"
+    ],
+    "Pokitaru: Enter Planet": [
+      77700019,
+      "Pokitaru"
+    ],
+    "Ryllus: Enter Planet": [
+      77700315,
+      "Ryllus"
+    ],
+    "Kalidon: Enter Planet": [
+      77700628,
+      "Kalidon"
+    ],
+    "Metalis: Enter Planet": [
+      77700922,
+      "Metalis"
+    ],
+    "Dreamtime: Enter Planet": [
+      77701211,
+      "Dreamtime"
+    ],
+    "Outpost Omega: Enter Planet": [
+      77701515,
+      "Outpost Omega"
+    ],
+    "Challax: Enter Planet": [
+      77701823,
+      "Challax"
+    ],
+    "Inside Clank: Enter Planet": [
+      77702412,
+      "Inside Clank"
+    ],
+    "Quodrona: Enter Planet": [
+      77702720,
+      "Quodrona"
+    ],
+    "Dreamtime: Clank finds sleeping Ratchet": [
+      77701212,
+      "Dreamtime"
+    ],
+    "Pokitaru: Gadgetron Vendor: Lacerator - 0": [
+      77700007,
+      "Pokitaru"
+    ],
+    "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 0": [
+      77700008,
+      "Pokitaru"
+    ],
+    "Pokitaru: Gadgetron Vendor: Concussion Gun - 10,000": [
+      77700009,
+      "Pokitaru"
+    ],
+    "Ryllus: Gadgetron Vendor: Agents of Doom - 25,000": [
+      77700306,
+      "Ryllus"
+    ],
+    "Kalidon: Gadgetron Vendor: Scorcher - 20,000": [
+      77700607,
+      "Kalidon"
+    ],
+    "Dreamtime: Gadgetron Vendor: Suck Cannon - 30,000": [
+      77701206,
+      "Dreamtime"
+    ],
+    "Outpost Omega: Gadgetron Vendor: Bee Mine Glove - 50,000": [
+      77701504,
+      "Outpost Omega"
+    ],
+    "Challax: Gadgetron Vendor: Sniper Mine - 50,000": [
+      77701807,
+      "Challax"
+    ],
+    "Dayni Moon: Gadgetron Vendor: Shock Rocket - 55,000": [
+      77702104,
+      "Dayni Moon"
+    ],
+    "Inside Clank: Gadgetron Vendor: Static Barrier - 65,000": [
+      77702405,
+      "Inside Clank"
+    ],
+    "Quodrona: Gadgetron Vendor: Laser Tracer - 85,000": [
+      77702703,
+      "Quodrona"
+    ],
+    "Pokitaru: Gadgetron Vendor: RYNO - 9,990,000": [
+      77700010,
+      "Pokitaru"
+    ],
+    "Pokitaru: Gadgetron Vendor: Hypershot - 5,000": [
+      77700011,
+      "Pokitaru"
+    ],
+    "Challax: Gadgetron Vendor: PDA - 50,000": [
+      77701808,
+      "Challax"
+    ],
+    "Dayni Moon: Gadgetron Vendor: Map-O-Matic - 50,000": [
+      77702105,
+      "Dayni Moon"
+    ],
+    "Challax: Gadgetron Vendor: Bolt Grabber - 5,000": [
+      77701809,
+      "Challax"
+    ],
+    "Outpost Omega: Gadgetron Vendor: Box Breaker - 20,000": [
+      77701505,
+      "Outpost Omega"
+    ],
+    "Kalidon: Slim Cognito: Lacerator Lock On Mod - 5,000": [
+      77700608,
+      "Kalidon"
+    ],
+    "Kalidon: Slim Cognito: Concussion Gun Split Barrel Mod - 15,000": [
+      77700609,
+      "Kalidon"
+    ],
+    "Challax: Slim Cognito: Lacerator Double Barrel Mod - 30,000": [
+      77701810,
+      "Challax"
+    ],
+    "Challax: Slim Cognito: Acid Bomb Acid Burn Mod - 30,000": [
+      77701811,
+      "Challax"
+    ],
+    "Challax: Slim Cognito: Acid Bomb Epoxy Mod - 50,000": [
+      77701812,
+      "Challax"
+    ],
+    "Challax: Slim Cognito: Concussion Gun Lock On Mod - 5,000": [
+      77701813,
+      "Challax"
+    ],
+    "Challax: Slim Cognito: Concussion Gun Charge Up Mod - 50,000": [
+      77701814,
+      "Challax"
+    ],
+    "Challax: Slim Cognito: Bee Mine Glove Worker Mod - 5,000": [
+      77701815,
+      "Challax"
+    ],
+    "Quodrona: Slim Cognito: Agents of Doom Launcher Mod - 20,000": [
+      77702704,
+      "Quodrona"
+    ],
+    "Quodrona: Slim Cognito: Scorcher Spitfire Mod - 15,000": [
+      77702705,
+      "Quodrona"
+    ],
+    "Quodrona: Slim Cognito: Sniper Mine Split Beam Mod - 25,000": [
+      77702706,
+      "Quodrona"
+    ],
+    "Quodrona: Slim Cognito: Shock Rocket Lock On Mod - 5,000": [
+      77702707,
+      "Quodrona"
+    ],
+    "Quodrona: Slim Cognito: Shock Rocket After Shock Mod - 25,000": [
+      77702708,
+      "Quodrona"
+    ],
+    "Kalidon: Slim Cognito: Agents of Doom Explosive Mod - 450,000": [
+      77700610,
+      "Kalidon"
+    ],
+    "Kalidon: Slim Cognito: Scorcher Sunflare Mod - 200,000": [
+      77700611,
+      "Kalidon"
+    ],
+    "Kalidon: Slim Cognito: Suck Cannon Bounce Mod - 600,000": [
+      77700612,
+      "Kalidon"
+    ],
+    "Kalidon: Slim Cognito: Bee Mine Glove Hive Bomb Mod - 300,000": [
+      77700613,
+      "Kalidon"
+    ],
+    "Challax: Slim Cognito: Sniper Mine Smart Reflector Mod - 750,000": [
+      77701816,
+      "Challax"
+    ],
+    "Challax: Slim Cognito: Shock Rocket Multi Launcher Mod - 2,000,000": [
+      77701817,
+      "Challax"
+    ],
+    "Kalidon: Slim Cognito: Static Barrier Reflection Mod - 250,000": [
+      77700614,
+      "Kalidon"
+    ],
+    "Quodrona: Slim Cognito: Static Barrier Mirage Mod - 1,250,000": [
+      77702709,
+      "Quodrona"
+    ],
+    "Challax: Slim Cognito: Laser Tracer Pierce Mod - 1,250,000": [
+      77701818,
+      "Challax"
+    ],
+    "Quodrona: Slim Cognito: Laser Tracer Ricochet Mod - 500,000": [
+      77702710,
+      "Quodrona"
+    ],
+    "Pokitaru: Gadgetron Vendor: Lacerator Titan - 250,000": [
+      77700012,
+      "Pokitaru"
+    ],
+    "Pokitaru: Gadgetron Vendor: Acid Bomb Glove Titan - 250,000": [
+      77700013,
+      "Pokitaru"
+    ],
+    "Pokitaru: Gadgetron Vendor: Concussion Gun Titan - 250,000": [
+      77700014,
+      "Pokitaru"
+    ],
+    "Ryllus: Gadgetron Vendor: Agents of Doom Titan - 250,000": [
+      77700307,
+      "Ryllus"
+    ],
+    "Kalidon: Gadgetron Vendor: Scorcher Titan - 250,000": [
+      77700615,
+      "Kalidon"
+    ],
+    "Dreamtime: Gadgetron Vendor: Suck Cannon Titan - 300,000": [
+      77701207,
+      "Dreamtime"
+    ],
+    "Outpost Omega: Gadgetron Vendor: Bee Mine Glove Titan - 250,000": [
+      77701506,
+      "Outpost Omega"
+    ],
+    "Challax: Gadgetron Vendor: Sniper Mine Titan - 500,000": [
+      77701819,
+      "Challax"
+    ],
+    "Dayni Moon: Gadgetron Vendor: Mootator Titan - 1,500,000": [
+      77702106,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Gadgetron Vendor: Shock Rocket Titan - 1,250,000": [
+      77702107,
+      "Dayni Moon"
+    ],
+    "Inside Clank: Gadgetron Vendor: Static Barrier Titan - 2,500,000": [
+      77702406,
+      "Inside Clank"
+    ],
+    "Quodrona: Gadgetron Vendor: Laser Tracer Titan - 250,000": [
+      77702711,
+      "Quodrona"
+    ],
+    "Weapon Level: Lacerator V2": [
+      77703001,
+      "Pokitaru"
+    ],
+    "Weapon Level: Lacerator V3": [
+      77703002,
+      "Pokitaru"
+    ],
+    "Weapon Level: Lacerator V4": [
+      77703003,
+      "Pokitaru"
+    ],
+    "Weapon Level: Lacerator V5": [
+      77703004,
+      "Pokitaru"
+    ],
+    "Weapon Level: Lacerator V6": [
+      77703005,
+      "Pokitaru"
+    ],
+    "Weapon Level: Lacerator V7": [
+      77703006,
+      "Pokitaru"
+    ],
+    "Weapon Level: Lacerator V8": [
+      77703007,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V2": [
+      77703008,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V3": [
+      77703009,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V4": [
+      77703010,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V5": [
+      77703011,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V6": [
+      77703012,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V7": [
+      77703013,
+      "Pokitaru"
+    ],
+    "Weapon Level: Concussion Gun V8": [
+      77703014,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V2": [
+      77703015,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V3": [
+      77703016,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V4": [
+      77703017,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V5": [
+      77703018,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V6": [
+      77703019,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V7": [
+      77703020,
+      "Pokitaru"
+    ],
+    "Weapon Level: Acid Bomb Glove V8": [
+      77703021,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V2": [
+      77703022,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V3": [
+      77703023,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V4": [
+      77703024,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V5": [
+      77703025,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V6": [
+      77703026,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V7": [
+      77703027,
+      "Pokitaru"
+    ],
+    "Weapon Level: Agents of Doom V8": [
+      77703028,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V2": [
+      77703029,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V3": [
+      77703030,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V4": [
+      77703031,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V5": [
+      77703032,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V6": [
+      77703033,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V7": [
+      77703034,
+      "Pokitaru"
+    ],
+    "Weapon Level: Bee Mine Glove V8": [
+      77703035,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V2": [
+      77703036,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V3": [
+      77703037,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V4": [
+      77703038,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V5": [
+      77703039,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V6": [
+      77703040,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V7": [
+      77703041,
+      "Pokitaru"
+    ],
+    "Weapon Level: Static Barrier V8": [
+      77703042,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V2": [
+      77703043,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V3": [
+      77703044,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V4": [
+      77703045,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V5": [
+      77703046,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V6": [
+      77703047,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V7": [
+      77703048,
+      "Pokitaru"
+    ],
+    "Weapon Level: Shock Rocket V8": [
+      77703049,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V2": [
+      77703050,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V3": [
+      77703051,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V4": [
+      77703052,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V5": [
+      77703053,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V6": [
+      77703054,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V7": [
+      77703055,
+      "Pokitaru"
+    ],
+    "Weapon Level: Sniper Mine V8": [
+      77703056,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V2": [
+      77703057,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V3": [
+      77703058,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V4": [
+      77703059,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V5": [
+      77703060,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V6": [
+      77703061,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V7": [
+      77703062,
+      "Pokitaru"
+    ],
+    "Weapon Level: Scorcher V8": [
+      77703063,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V2": [
+      77703064,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V3": [
+      77703065,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V4": [
+      77703066,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V5": [
+      77703067,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V6": [
+      77703068,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V7": [
+      77703069,
+      "Pokitaru"
+    ],
+    "Weapon Level: Laser Tracer V8": [
+      77703070,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V2": [
+      77703071,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V3": [
+      77703072,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V4": [
+      77703073,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V5": [
+      77703074,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V6": [
+      77703075,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V7": [
+      77703076,
+      "Pokitaru"
+    ],
+    "Weapon Level: Suck Cannon V8": [
+      77703077,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V2": [
+      77703078,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V3": [
+      77703079,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V4": [
+      77703080,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V5": [
+      77703081,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V6": [
+      77703082,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V7": [
+      77703083,
+      "Pokitaru"
+    ],
+    "Weapon Level: Mootator V8": [
+      77703084,
+      "Pokitaru"
+    ],
+    "Weapon Level: RYNO V2": [
+      77703085,
+      "Pokitaru"
+    ],
+    "Weapon Level: RYNO V3": [
+      77703086,
+      "Pokitaru"
+    ],
+    "Weapon Level: RYNO V4": [
+      77703087,
+      "Pokitaru"
+    ],
+    "Nanotech Level: 6": [
+      77703088,
+      "Menu"
+    ],
+    "Nanotech Level: 7": [
+      77703089,
+      "Menu"
+    ],
+    "Nanotech Level: 8": [
+      77703090,
+      "Menu"
+    ],
+    "Nanotech Level: 9": [
+      77703091,
+      "Menu"
+    ],
+    "Nanotech Level: 10": [
+      77703092,
+      "Menu"
+    ],
+    "Nanotech Level: 11": [
+      77703093,
+      "Menu"
+    ],
+    "Nanotech Level: 12": [
+      77703094,
+      "Menu"
+    ],
+    "Nanotech Level: 13": [
+      77703095,
+      "Menu"
+    ],
+    "Nanotech Level: 14": [
+      77703096,
+      "Menu"
+    ],
+    "Nanotech Level: 15": [
+      77703097,
+      "Menu"
+    ],
+    "Nanotech Level: 16": [
+      77703098,
+      "Menu"
+    ],
+    "Nanotech Level: 17": [
+      77703099,
+      "Menu"
+    ],
+    "Nanotech Level: 18": [
+      77703100,
+      "Menu"
+    ],
+    "Nanotech Level: 19": [
+      77703101,
+      "Menu"
+    ],
+    "Nanotech Level: 20": [
+      77703102,
+      "Menu"
+    ],
+    "Nanotech Level: 21": [
+      77703103,
+      "Menu"
+    ],
+    "Nanotech Level: 22": [
+      77703104,
+      "Menu"
+    ],
+    "Nanotech Level: 23": [
+      77703105,
+      "Menu"
+    ],
+    "Nanotech Level: 24": [
+      77703106,
+      "Menu"
+    ],
+    "Nanotech Level: 25": [
+      77703107,
+      "Menu"
+    ],
+    "Nanotech Level: 26": [
+      77703108,
+      "Menu"
+    ],
+    "Nanotech Level: 27": [
+      77703109,
+      "Menu"
+    ],
+    "Nanotech Level: 28": [
+      77703110,
+      "Menu"
+    ],
+    "Nanotech Level: 29": [
+      77703111,
+      "Menu"
+    ],
+    "Nanotech Level: 30": [
+      77703112,
+      "Menu"
+    ],
+    "Nanotech Level: 31": [
+      77703113,
+      "Menu"
+    ],
+    "Nanotech Level: 32": [
+      77703114,
+      "Menu"
+    ],
+    "Nanotech Level: 33": [
+      77703115,
+      "Menu"
+    ],
+    "Nanotech Level: 34": [
+      77703116,
+      "Menu"
+    ],
+    "Nanotech Level: 35": [
+      77703117,
+      "Menu"
+    ],
+    "Nanotech Level: 36": [
+      77703118,
+      "Menu"
+    ],
+    "Nanotech Level: 37": [
+      77703119,
+      "Menu"
+    ],
+    "Nanotech Level: 38": [
+      77703120,
+      "Menu"
+    ],
+    "Nanotech Level: 39": [
+      77703121,
+      "Menu"
+    ],
+    "Nanotech Level: 40": [
+      77703122,
+      "Menu"
+    ],
+    "Nanotech Level: 41": [
+      77703123,
+      "Menu"
+    ],
+    "Nanotech Level: 42": [
+      77703124,
+      "Menu"
+    ],
+    "Nanotech Level: 43": [
+      77703125,
+      "Menu"
+    ],
+    "Nanotech Level: 44": [
+      77703126,
+      "Menu"
+    ],
+    "Nanotech Level: 45": [
+      77703127,
+      "Menu"
+    ],
+    "Nanotech Level: 46": [
+      77703128,
+      "Menu"
+    ],
+    "Nanotech Level: 47": [
+      77703129,
+      "Menu"
+    ],
+    "Nanotech Level: 48": [
+      77703130,
+      "Menu"
+    ],
+    "Nanotech Level: 49": [
+      77703131,
+      "Menu"
+    ],
+    "Nanotech Level: 50": [
+      77703132,
+      "Menu"
+    ],
+    "Nanotech Level: 51": [
+      77703133,
+      "Menu"
+    ],
+    "Nanotech Level: 52": [
+      77703134,
+      "Menu"
+    ],
+    "Nanotech Level: 53": [
+      77703135,
+      "Menu"
+    ],
+    "Nanotech Level: 54": [
+      77703136,
+      "Menu"
+    ],
+    "Nanotech Level: 55": [
+      77703137,
+      "Menu"
+    ],
+    "Nanotech Level: 56": [
+      77703138,
+      "Menu"
+    ],
+    "Nanotech Level: 57": [
+      77703139,
+      "Menu"
+    ],
+    "Nanotech Level: 58": [
+      77703140,
+      "Menu"
+    ],
+    "Nanotech Level: 59": [
+      77703141,
+      "Menu"
+    ],
+    "Nanotech Level: 60": [
+      77703142,
+      "Menu"
+    ],
+    "Nanotech Level: 61": [
+      77703143,
+      "Menu"
+    ],
+    "Nanotech Level: 62": [
+      77703144,
+      "Menu"
+    ],
+    "Nanotech Level: 63": [
+      77703145,
+      "Menu"
+    ],
+    "Nanotech Level: 64": [
+      77703146,
+      "Menu"
+    ],
+    "Nanotech Level: 65": [
+      77703147,
+      "Menu"
+    ],
+    "Nanotech Level: 66": [
+      77703148,
+      "Menu"
+    ],
+    "Nanotech Level: 67": [
+      77703149,
+      "Menu"
+    ],
+    "Nanotech Level: 68": [
+      77703150,
+      "Menu"
+    ],
+    "Nanotech Level: 69": [
+      77703151,
+      "Menu"
+    ],
+    "Nanotech Level: 70": [
+      77703152,
+      "Menu"
+    ],
+    "Nanotech Level: 71": [
+      77703153,
+      "Menu"
+    ],
+    "Nanotech Level: 72": [
+      77703154,
+      "Menu"
+    ],
+    "Nanotech Level: 73": [
+      77703155,
+      "Menu"
+    ],
+    "Nanotech Level: 74": [
+      77703156,
+      "Menu"
+    ],
+    "Nanotech Level: 75": [
+      77703157,
+      "Menu"
+    ],
+    "Armor Set: Equip Wildfire Armor Set": [
+      77703158,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Wildburst Armor Set": [
+      77703159,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Sludge Mk9 Armor Set": [
+      77703160,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Crystallix Armor Set": [
+      77703161,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Triple Wave Armor Set": [
+      77703162,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Shock Crystal Armor Set": [
+      77703163,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Electroshock Armor Set": [
+      77703164,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Mega Bomb Armor Set": [
+      77703165,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Fire-Bomb Armor Set": [
+      77703166,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Hyperborean Armor Set": [
+      77703167,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Ice II Armor Set": [
+      77703168,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Chameleon Armor Set": [
+      77703169,
+      "Pokitaru"
+    ],
+    "Armor Set: Equip Stalker Armor Set": [
+      77703170,
+      "Pokitaru"
+    ],
+    "Metalis: Clank Challenge: Buzzsaw Blitz": [
+      77700906,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Smasherbot's Revenge": [
+      77700907,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: The Uber Finals": [
+      77700908,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Night Impossible": [
+      77700909,
+      "Metalis"
+    ],
+    "Dayni Moon: Clank Challenge: The Ultimate Showdown": [
+      77702112,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Infinite Improbability": [
+      77702113,
+      "Dayni Moon"
+    ],
+    "Metalis: Clank Challenge: CHARGE!": [
+      77700910,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Electric Boogaloo": [
+      77700911,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Showdown": [
+      77700912,
+      "Metalis"
+    ],
+    "Dayni Moon: Clank Challenge: Welcome to Dayni": [
+      77702114,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Round Up!": [
+      77702115,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Variety Is Shocking": [
+      77702116,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Tom Sawyer": [
+      77702117,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Smasherbot Returns!": [
+      77702118,
+      "Dayni Moon"
+    ],
+    "Metalis: Clank Challenge: Little League": [
+      77700913,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Varsity Bracket": [
+      77700914,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Collegiate Division": [
+      77700915,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Professional Level": [
+      77700916,
+      "Metalis"
+    ],
+    "Dayni Moon: Clank Challenge: HAY-re We Are!": [
+      77702119,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Tri-bomb Tournament": [
+      77702120,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: A-rooouund the Bend": [
+      77702121,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: The Thin Bouncy Line": [
+      77702122,
+      "Dayni Moon"
+    ],
+    "Metalis: Clank Challenge: Take Two For The Team": [
+      77700917,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Bridge The Gap": [
+      77700918,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Of Trapeze and Teleporters": [
+      77700919,
+      "Metalis"
+    ],
+    "Metalis: Clank Challenge: Brain Trip": [
+      77700920,
+      "Metalis"
+    ],
+    "Dayni Moon: Clank Challenge: Two's A Crowd": [
+      77702123,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Reverse Into Victory": [
+      77702124,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Emergency Bridge": [
+      77702125,
+      "Dayni Moon"
+    ],
+    "Dayni Moon: Clank Challenge: Leap Of Faith": [
+      77702126,
+      "Dayni Moon"
+    ],
+    "Kalidon: Skyboard Challenge: Learner's Challenge": [
+      77700620,
+      "Kalidon"
+    ],
+    "Kalidon: Skyboard Challenge: Master's Challenge": [
+      77700621,
+      "Kalidon"
+    ],
+    "Outpost Omega: Skyboard Challenge: Vertigo": [
+      77701508,
+      "Outpost Omega"
+    ],
+    "Outpost Omega: Skyboard Challenge: Interior Decorating": [
+      77701509,
+      "Outpost Omega"
+    ],
+    "Kalidon: Skyboard Challenge: Speeding Ticket": [
+      77700622,
+      "Kalidon"
+    ],
+    "Kalidon: Skyboard Challenge: Tricky Air": [
+      77700623,
+      "Kalidon"
+    ],
+    "Outpost Omega: Skyboard Challenge: Danger, High Voltage": [
+      77701510,
+      "Outpost Omega"
+    ],
+    "Outpost Omega: Skyboard Challenge: The Vortex": [
+      77701511,
+      "Outpost Omega"
+    ],
+    "Kalidon: Shrink Ray Enter the Factory": [
+      77700624,
+      "Kalidon"
+    ],
+    "Kalidon: Shrink Ray Inside the Factory": [
+      77700625,
+      "Kalidon"
+    ],
+    "Challax: Shrink Ray Grindrail": [
+      77701822,
+      "Challax"
+    ],
+    "Dayni Moon: Shrink Ray Titanium bolt entrance": [
+      77702111,
+      "Dayni Moon"
+    ],
+    "Inside Clank: Shrink Ray Grindrail": [
+      77702409,
+      "Inside Clank"
+    ],
+    "Quodrona: Shrink Ray Entrance": [
+      77702714,
+      "Quodrona"
+    ],
+    "Quodrona: Shrink Ray Clone Training Room": [
+      77702715,
+      "Quodrona"
+    ]
+  },
+  "items": {
+    "Lacerator": [
+      77700001,
+      1
+    ],
+    "Concussion Gun": [
+      77700002,
+      1
+    ],
+    "Acid Bomb Glove": [
+      77700003,
+      1
+    ],
+    "Agents of Doom": [
+      77700004,
+      1
+    ],
+    "Bee Mine Glove": [
+      77700005,
+      1
+    ],
+    "Static Barrier": [
+      77700006,
+      2
+    ],
+    "Shock Rocket": [
+      77700007,
+      1
+    ],
+    "Sniper Mine": [
+      77700008,
+      1
+    ],
+    "Scorcher": [
+      77700009,
+      1
+    ],
+    "Laser Tracer": [
+      77700010,
+      1
+    ],
+    "Suck Cannon": [
+      77700011,
+      2
+    ],
+    "Mootator": [
+      77700012,
+      1
+    ],
+    "RYNO": [
+      77700013,
+      1
+    ],
+    "Hypershot": [
+      77700101,
+      1
+    ],
+    "Sprout-O-Matic": [
+      77700102,
+      1
+    ],
+    "Polarizer": [
+      77700103,
+      1
+    ],
+    "PDA": [
+      77700104,
+      2
+    ],
+    "Shrink Ray": [
+      77700105,
+      1
+    ],
+    "Bolt Grabber": [
+      77700106,
+      2
+    ],
+    "Map-O-Matic": [
+      77700107,
+      2
+    ],
+    "Box Breaker": [
+      77700108,
+      2
+    ],
+    "Wildfire Chestplate": [
+      77700201,
+      2
+    ],
+    "Wildfire Helmet": [
+      77700202,
+      2
+    ],
+    "Wildfire Gloves": [
+      77700203,
+      2
+    ],
+    "Wildfire Boots": [
+      77700204,
+      2
+    ],
+    "Sludge Mk9 Chestplate": [
+      77700205,
+      2
+    ],
+    "Sludge Mk9 Helmet": [
+      77700206,
+      2
+    ],
+    "Sludge Mk9 Gloves": [
+      77700207,
+      2
+    ],
+    "Sludge Mk9 Boots": [
+      77700208,
+      2
+    ],
+    "Crystallix Chestplate": [
+      77700209,
+      2
+    ],
+    "Crystallix Helmet": [
+      77700210,
+      2
+    ],
+    "Crystallix Gloves": [
+      77700211,
+      2
+    ],
+    "Crystallix Boots": [
+      77700212,
+      2
+    ],
+    "Electroshock Chestplate": [
+      77700213,
+      2
+    ],
+    "Electroshock Helmet": [
+      77700214,
+      2
+    ],
+    "Electroshock Gloves": [
+      77700215,
+      2
+    ],
+    "Electroshock Boots": [
+      77700216,
+      2
+    ],
+    "Mega Bomb Chestplate": [
+      77700217,
+      2
+    ],
+    "Mega Bomb Helmet": [
+      77700218,
+      2
+    ],
+    "Mega Bomb Gloves": [
+      77700219,
+      2
+    ],
+    "Mega Bomb Boots": [
+      77700220,
+      2
+    ],
+    "Hyperborean Chestplate": [
+      77700221,
+      2
+    ],
+    "Hyperborean Helmet": [
+      77700222,
+      2
+    ],
+    "Hyperborean Gloves": [
+      77700223,
+      2
+    ],
+    "Hyperborean Boots": [
+      77700224,
+      2
+    ],
+    "Chameleon Chestplate": [
+      77700225,
+      2
+    ],
+    "Chameleon Helmet": [
+      77700226,
+      2
+    ],
+    "Chameleon Gloves": [
+      77700227,
+      2
+    ],
+    "Chameleon Boots": [
+      77700228,
+      2
+    ],
+    "Progressive Lacerator": [
+      77700350,
+      1
+    ],
+    "Progressive Concussion Gun": [
+      77700351,
+      1
+    ],
+    "Progressive Acid Bomb Glove": [
+      77700352,
+      1
+    ],
+    "Progressive Agents of Doom": [
+      77700353,
+      1
+    ],
+    "Progressive Bee Mine Glove": [
+      77700354,
+      1
+    ],
+    "Progressive Static Barrier": [
+      77700355,
+      1
+    ],
+    "Progressive Shock Rocket": [
+      77700356,
+      1
+    ],
+    "Progressive Sniper Mine": [
+      77700357,
+      1
+    ],
+    "Progressive Scorcher": [
+      77700358,
+      1
+    ],
+    "Progressive Laser Tracer": [
+      77700359,
+      1
+    ],
+    "Progressive Suck Cannon": [
+      77700360,
+      1
+    ],
+    "Progressive Mootator": [
+      77700361,
+      1
+    ],
+    "Progressive RYNO": [
+      77700362,
+      1
+    ],
+    "Progressive Lacerator Mod": [
+      77700380,
+      2
+    ],
+    "Progressive Concussion Gun Mod": [
+      77700381,
+      2
+    ],
+    "Progressive Acid Bomb Glove Mod": [
+      77700382,
+      2
+    ],
+    "Progressive Agents of Doom Mod": [
+      77700383,
+      2
+    ],
+    "Progressive Bee Mine Glove Mod": [
+      77700384,
+      2
+    ],
+    "Progressive Static Barrier Mod": [
+      77700385,
+      2
+    ],
+    "Progressive Shock Rocket Mod": [
+      77700386,
+      2
+    ],
+    "Progressive Sniper Mine Mod": [
+      77700387,
+      2
+    ],
+    "Progressive Scorcher Mod": [
+      77700388,
+      2
+    ],
+    "Progressive Laser Tracer Mod": [
+      77700389,
+      2
+    ],
+    "Progressive Suck Cannon Mod": [
+      77700390,
+      2
+    ],
+    "Lacerator: Lock On Mod": [
+      77700700,
+      2
+    ],
+    "Lacerator: Double Barrel Mod": [
+      77700701,
+      2
+    ],
+    "Concussion Gun: Wide Barrel Mod": [
+      77700702,
+      2
+    ],
+    "Concussion Gun: Lock On Mod": [
+      77700703,
+      2
+    ],
+    "Concussion Gun: Charge Up Mod": [
+      77700704,
+      2
+    ],
+    "Acid Bomb Glove: Acid Bomb Mod": [
+      77700705,
+      2
+    ],
+    "Acid Bomb Glove: Epoxy Mod": [
+      77700706,
+      2
+    ],
+    "Agents of Doom: Launcher Mod": [
+      77700707,
+      2
+    ],
+    "Agents of Doom: Explosive Mod": [
+      77700708,
+      2
+    ],
+    "Bee Mine Glove: Worker Mod": [
+      77700709,
+      2
+    ],
+    "Bee Mine Glove: Hive Bomb Mod": [
+      77700710,
+      2
+    ],
+    "Static Barrier: Reflection Mod": [
+      77700711,
+      2
+    ],
+    "Static Barrier: Mirage Mod": [
+      77700712,
+      2
+    ],
+    "Shock Rocket: After Shock Mod": [
+      77700713,
+      2
+    ],
+    "Shock Rocket: Multi Launcher Mod": [
+      77700714,
+      2
+    ],
+    "Shock Rocket: Lock On Mod": [
+      77700715,
+      2
+    ],
+    "Sniper Mine: Split Beam Mod": [
+      77700716,
+      2
+    ],
+    "Sniper Mine: Smart Reflector Mod": [
+      77700717,
+      2
+    ],
+    "Scorcher: Split Fire Mod": [
+      77700718,
+      2
+    ],
+    "Scorcher: Sunflare Mod": [
+      77700719,
+      2
+    ],
+    "Laser Tracer: Pierce Mod": [
+      77700720,
+      2
+    ],
+    "Laser Tracer: Ricochet Mod": [
+      77700721,
+      2
+    ],
+    "Suck Cannon: Bounce Mod": [
+      77700722,
+      2
+    ],
+    "Progressive Wildfire Armor": [
+      77700370,
+      2
+    ],
+    "Progressive Sludge Mk9 Armor": [
+      77700371,
+      2
+    ],
+    "Progressive Crystallix Armor": [
+      77700372,
+      2
+    ],
+    "Progressive Electroshock Armor": [
+      77700373,
+      2
+    ],
+    "Progressive Mega Bomb Armor": [
+      77700374,
+      2
+    ],
+    "Progressive Hyperborean Armor": [
+      77700375,
+      2
+    ],
+    "Progressive Chameleon Armor": [
+      77700376,
+      2
+    ],
+    "Progressive Armour": [
+      77700377,
+      2
+    ],
+    "Progressive Challenge Mode": [
+      77700378,
+      1
+    ],
+    "Infobot: Pokitaru": [
+      77700501,
+      1
+    ],
+    "Infobot: Kalidon": [
+      77700502,
+      1
+    ],
+    "Infobot: Metalis": [
+      77700503,
+      1
+    ],
+    "Infobot: Outpost Omega": [
+      77700504,
+      1
+    ],
+    "Infobot: Challax": [
+      77700505,
+      1
+    ],
+    "Infobot: Dayni Moon": [
+      77700506,
+      1
+    ],
+    "Infobot: Quodrona": [
+      77700507,
+      1
+    ],
+    "Infobot: Ryllus": [
+      77700508,
+      1
+    ],
+    "Bolts": [
+      77700400,
+      0
+    ],
+    "Trap: Feverdream": [
+      77700601,
+      4
+    ],
+    "Trap: Whats Gamma?": [
+      77700602,
+      4
+    ],
+    "Trap: Mirror Level": [
+      77700603,
+      4
+    ],
+    "Trap: Reverse Controls": [
+      77700604,
+      4
+    ],
+    "Trap: Weapon Switching": [
+      77700605,
+      4
+    ],
+    "Trap: Reset Level": [
+      77700606,
+      4
+    ],
+    "Trap: No Clank": [
+      77700607,
+      4
+    ],
+    "Clank Pack": [
+      77700109,
+      1
+    ],
+    "Glitches": [
+      77700900,
+      1
+    ]
+  }
+}
