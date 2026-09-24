@@ -2,7 +2,7 @@
     "version": 7,
     "compatible_version": 7,
     "game": "Dynamic Pine",
-    "world_version": "99.0.3",
+    "world_version": "99.0.4",
     "minimum_ap_version": "0.6.7",
     "authors": [
         "Pangu"
