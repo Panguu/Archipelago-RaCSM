@@ -1,56 +1,78 @@
-"""Widgets for the Dynamic Pine hub's "Dynamic Pine" tab: one group of
-controls per installed game, plus the shared BIOS row. Kept out of context.py
-since it's pure kvui/kivymd layout code with no CommonContext concerns of its
-own - context.py just calls build_game_group/build_bios_row per game."""
-from __future__ import annotations
-
 from typing import Callable
 
 from kivy.clock import Clock
 from kivy.metrics import dp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.button import MDButton, MDButtonText
+from kivymd.uix.dropdownitem import MDDropDownItem, MDDropDownItemText
+from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from kvui import MDLabel
 
+from CommonClient import logger
 from Utils import open_filename
 
-from .api import DynamicPineGame, get_bios_path, get_iso_path
-from .launcher import list_instances, prompt_for_bios, prompt_for_iso
+from .api import (DynamicPineGame, get_bios_path, get_iso_options, get_selected_iso_name, remove_iso,
+                  set_selected_iso)
+from .context import _LAUNCH_ERRORS, launch_game_client, launch_simple
+from .launcher import clear_unused_instances, launch_pcsx2, list_instances, prompt_for_bios, prompt_for_iso
 
 
 def _build_iso_row(game_name: str, spec: DynamicPineGame) -> MDBoxLayout:
-    """Status label, plus a locate button while the game's ISO isn't detected -
-    choosing one persists to host.yaml and the button disappears."""
-    row = MDBoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None, height=dp(40))
-    iso = get_iso_path(spec)
-    iso_detected = iso is not None and iso.exists()
-    label = MDLabel(
-        text=f"ISO: {iso}" if iso_detected else
-             (f"ISO: configured but not found at {iso}" if iso else "ISO: not found"),
-        shorten=True, shorten_from="left")
-    row.add_widget(label)
+    row = MDBoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None, height=dp(48))
 
-    if not iso_detected:
-        locate_button = MDButton(MDButtonText(text="Locate ISO..."))
+    selected_text = MDDropDownItemText(text="")
+    dropdown = MDDropDownItem(selected_text, size_hint_x=None, width=dp(160))
+    path_label = MDLabel(text="", shorten=True, shorten_from="left")
+    add_button = MDButton(MDButtonText(text="Add ISO..."))
+    remove_button = MDButton(MDButtonText(text="Remove"))
 
-        def on_locate(_btn):
-            chosen = prompt_for_iso(game_name, spec)
-            if chosen is not None:
-                label.text = f"ISO: {chosen}"
-                row.remove_widget(locate_button)
+    def refresh() -> None:
+        options = get_iso_options(spec)
+        selected = get_selected_iso_name(spec)
+        selected_text.text = selected or "No ISO"
+        remove_button.disabled = selected is None
+        if selected is None:
+            path_label.text = "ISO: not found - add one"
+        elif options[selected].exists():
+            path_label.text = str(options[selected])
+        else:
+            path_label.text = f"Not found at {options[selected]}"
 
-        locate_button.bind(on_release=on_locate)
-        row.add_widget(locate_button)
+    def on_open(_item) -> None:
+        def on_select(name: str) -> None:
+            menu.dismiss()
+            set_selected_iso(spec, name)
+            refresh()
+
+        items = [{"text": name, "on_release": lambda n=name: on_select(n)} for name in get_iso_options(spec)]
+        if items:
+            menu = MDDropdownMenu(caller=dropdown, items=items)
+            menu.open()
+
+    def on_add(_btn) -> None:
+        if prompt_for_iso(game_name, spec) is not None:
+            refresh()
+
+    def on_remove(_btn) -> None:
+        selected = get_selected_iso_name(spec)
+        if selected is not None:
+            remove_iso(spec, selected)
+            refresh()
+
+    dropdown.bind(on_release=on_open)
+    add_button.bind(on_release=on_add)
+    remove_button.bind(on_release=on_remove)
+
+    row.add_widget(dropdown)
+    row.add_widget(path_label)
+    row.add_widget(add_button)
+    row.add_widget(remove_button)
+    refresh()
     return row
 
 
 def _build_instances_label(spec: DynamicPineGame) -> tuple[MDLabel, Callable[[], None]]:
-    """A label that lists this game's PCSX2 instances and their running
-    status, refreshing itself every few seconds so a client started outside
-    the hub still shows up as "running" shortly after - plus the refresh
-    callback itself, so launch/clear button handlers can force an immediate
-    update instead of waiting for the next tick."""
     label = MDLabel(text="Instances: checking...", size_hint_y=None, height=dp(24))
 
     def refresh(_dt=None) -> None:
@@ -70,17 +92,6 @@ def _build_instances_label(spec: DynamicPineGame) -> tuple[MDLabel, Callable[[],
 
 def _build_launch_controls(game_name: str, spec: DynamicPineGame,
                            instance_field: MDTextField, on_refresh) -> MDBoxLayout:
-    """The row of action buttons: one combined "Launch" button ('simple'
-    launcher_options), separate "Launch PCSX2"/"Launch Client" buttons
-    ('full', the default), just "Launch Client" and nothing PCSX2-related
-    ('client', for games whose client launches PCSX2 itself), or a
-    "Patch & Launch" button that prompts for a patch_file_suffix file first
-    ('patch', same as 'client' plus that per-launch file) - plus "Clear
-    Unused" in every case."""
-    from .context import _LAUNCH_ERRORS, launch_game_client, launch_simple
-    from .launcher import launch_pcsx2, clear_unused_instances
-    from CommonClient import logger
-
     controls = MDBoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None, height=dp(56))
     controls.add_widget(instance_field)
 
@@ -121,24 +132,17 @@ def _build_launch_controls(game_name: str, spec: DynamicPineGame,
         on_refresh()
 
     if spec.launcher_options == "simple" and spec.client_component:
-        # One button: launches PCSX2 with this game's configured settings and
-        # starts the client together, marking the spawned client so it
-        # doesn't redundantly launch PCSX2 again itself (see launch_simple's
-        # docstring).
+        # One button that launches PCSX2 and the client together
         launch_button = MDButton(MDButtonText(text="Launch"))
         launch_button.bind(on_release=on_launch_simple)
         controls.add_widget(launch_button)
     elif spec.launcher_options == "patch" and spec.client_component:
-        # Like "client" below, but this game's client also needs a per-seed
-        # patch file path before it can patch-and-launch itself - prompt for
-        # one and forward it, the same way double-clicking that file would.
+        # Like "client", but prompts for the per-seed patch file and passes it to the client
         patch_button = MDButton(MDButtonText(text="Patch & Launch"))
         patch_button.bind(on_release=on_patch_and_launch)
         controls.add_widget(patch_button)
     elif spec.launcher_options == "client" and spec.client_component:
-        # Nothing PCSX2-related here at all - this game's client launches
-        # PCSX2 itself (typically via launch_pcsx2 directly, e.g. once it's
-        # finished patching a per-seed ISO), so the hub only starts it.
+        # The client launches PCSX2 itself, so the hub only starts the client
         client_button = MDButton(MDButtonText(text="Launch Client"))
         client_button.bind(on_release=on_launch_client)
         controls.add_widget(client_button)
@@ -159,8 +163,6 @@ def _build_launch_controls(game_name: str, spec: DynamicPineGame,
 
 
 def build_game_group(game_name: str, spec: DynamicPineGame) -> MDBoxLayout:
-    """One game's whole control block: header, ISO row, instance/launch
-    controls, and a live instances status label."""
     group = MDBoxLayout(orientation="vertical", spacing=dp(6), adaptive_height=True)
 
     header = MDLabel(text=f"{game_name}  [{'/'.join(spec.game_ids)}]", bold=True, size_hint_y=None, height=dp(24))
@@ -178,11 +180,6 @@ def build_game_group(game_name: str, spec: DynamicPineGame) -> MDBoxLayout:
 
 
 def build_bios_row() -> MDBoxLayout:
-    """Shared across every game/instance Dynamic Pine launches, so one control
-    here rather than duplicating it per game group. Always shows a
-    "Change..." button (not just while unset, unlike the per-game ISO row)
-    since re-pointing it is a reasonable thing to want to do later, not just a
-    one-time setup step."""
     row = MDBoxLayout(orientation="horizontal", spacing=dp(8), size_hint_y=None, height=dp(40))
     bios = get_bios_path()
     label = MDLabel(

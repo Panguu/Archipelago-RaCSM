@@ -1,15 +1,8 @@
-"""Dynamic Pine hub context: the CommonContext subclass and its command
-processor, plus the launch helpers they both call into. Split out of
-client.py (which is just the process entry point) to keep that file down to
-"how the process starts", with everything about what the hub actually does
-living here."""
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from CommonClient import ClientCommandProcessor, CommonContext, logger
+from worlds.LauncherComponents import components, launch
 
-from . import DYNAMIC_PINE_VERSION
 from .api import (
     DynamicPineGame,
     discover_games,
@@ -29,6 +22,7 @@ from .launcher import (
     list_instances,
     prompt_for_bios,
 )
+from .world import DYNAMIC_PINE_VERSION
 
 if TYPE_CHECKING:
     from kvui import GameManager
@@ -39,9 +33,6 @@ _LAUNCH_ERRORS = (InstanceAlreadyRunningError, NoPCSX2Executable, NoIsoConfigure
 
 
 def _match_game(query: str) -> tuple[str, DynamicPineGame] | None:
-    """Finds a single installed Dynamic Pine game by exact name, serial, or
-    unambiguous case-insensitive substring - None if nothing (or more than one
-    thing) matches."""
     games = discover_games()
     if query in games:
         return query, games[query][1]
@@ -55,25 +46,6 @@ def _match_game(query: str) -> tuple[str, DynamicPineGame] | None:
 
 def launch_game_client(spec: DynamicPineGame, game_name: str, instance: str | None = None,
                        patch_file: str | None = None) -> bool:
-    """Starts the game's own registered client component. Nothing about that
-    client changes from here onwards - it connects, resolves its slot name, and
-    calls back into Dynamic Pine itself for its PCSX2/PINE port.
-
-    patch_file is forwarded as the component's launch arg (component.func is
-    called with it, same as Launcher.py does for a double-clicked file) - for
-    launcher_options="patch" games whose client needs a per-seed patch file
-    path to patch-and-launch itself, see gui.py's patch-and-launch button.
-
-    Prepares this instance's PCSX2 config (ensure_instance_config) before
-    starting the client, even though the client isn't launched here -
-    previously that only happened as a side effect of the "Launch PCSX2"
-    button, so a client started on its own had no instance settings to pick up
-    until it made its own launch_pcsx2 call later.
-
-    Also records `instance` via mark_pending_auth() when given, so the
-    client can pre-fill its own auth instead of prompting the player to
-    retype the same slot name they already gave the hub - see
-    get_pending_auth()."""
     if not spec.client_component:
         logger.warning(f"[DynamicPine] {game_name} does not declare a client_component to launch.")
         return False
@@ -86,29 +58,20 @@ def launch_game_client(spec: DynamicPineGame, game_name: str, instance: str | No
     except Exception as exc:
         logger.warning(f"[DynamicPine] Could not prepare instance config for {game_name}: {exc}")
 
-    from worlds.LauncherComponents import components, launch
     for component in components:
         if component.display_name == spec.client_component and component.func is not None:
             launch(component.func, name=component.display_name,
-                  args=(patch_file,) if patch_file else ())
+                   args=(patch_file,) if patch_file else ())
             return True
     logger.warning(f"[DynamicPine] No launchable component named {spec.client_component!r} found.")
     return False
 
 
 def launch_simple(spec: DynamicPineGame, game_name: str, instance: str | None = None) -> bool:
-    """The 'simple' launcher_options combined Launch button: launches PCSX2
-    for this instance, marks the env var that tells the about-to-be-spawned
-    client it doesn't need to launch PCSX2 itself (see
-    mark_pcsx2_already_launched), then starts the client.
-
-    An already-running instance (InstanceAlreadyRunningError) is not a
-    failure here - it just means PCSX2 doesn't need relaunching, so the
-    client is still started against it."""
     try:
         launch_pcsx2(game_name, instance)
     except InstanceAlreadyRunningError:
-        pass
+        pass  # already running is fine, the client just connects to it
     except Exception as exc:
         logger.warning(f"[DynamicPine] Could not launch PCSX2 for {game_name}: {exc}")
         return False
@@ -117,7 +80,7 @@ def launch_simple(spec: DynamicPineGame, game_name: str, instance: str | None = 
 
 
 class DynamicPineCommandProcessor(ClientCommandProcessor):
-    ctx: DynamicPineContext
+    ctx: "DynamicPineContext"
 
     def _cmd_games(self) -> bool:
         """List installed Dynamic Pine games, their configured ISOs, and running PCSX2 instances."""
@@ -135,9 +98,8 @@ class DynamicPineCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_launch(self, game_name: str = "", instance: str = "", patch_file: str = "") -> bool:
-        """Launch a Dynamic Pine game's own client (which handles PCSX2 itself once connected).
-        patch_file is only needed for launcher_options="patch" games - the path to that seed's
-        per-seed patch file, forwarded to the client the same way double-clicking it would."""
+        """Launch a Dynamic Pine game's own client.
+        patch_file is only needed for launcher_options="patch" games."""
         match = _match_game(game_name)
         if match is None:
             self.output(f"Unknown or ambiguous game {game_name!r} - see /games for the list.")
@@ -158,9 +120,7 @@ class DynamicPineCommandProcessor(ClientCommandProcessor):
             return False
 
     def _cmd_clear(self, game_name: str = "") -> bool:
-        """Remove every stopped (not currently running) Dynamic Pine instance
-        for a game, freeing up their disk space/ports. Running instances are
-        left untouched."""
+        """Remove every stopped Dynamic Pine instance for a game. Running instances are left alone."""
         match = _match_game(game_name)
         if match is None:
             self.output(f"Unknown or ambiguous game {game_name!r} - see /games for the list.")
@@ -184,15 +144,11 @@ class DynamicPineCommandProcessor(ClientCommandProcessor):
 
 
 class DynamicPineContext(CommonContext):
-    """The hub never connects to an AP server itself - it only launches PCSX2
-    instances and other games' clients (which do their own connecting). It's
-    still a CommonContext so kvui's GameManager machinery (tabs, log pane,
-    /command input) works unchanged underneath; the server/hints parts of that
-    GUI are stripped in make_gui and no server loop is ever started."""
+    # Never connects to a server - only a CommonContext so kvui's GameManager works
     command_processor = DynamicPineCommandProcessor
-    game = ""  # the hub is not tied to any one game
+    game = ""
 
-    def make_gui(self) -> type[GameManager]:
+    def make_gui(self) -> "type[GameManager]":
         ui = super().make_gui()  # before the kivy imports so kvui gets loaded first
 
         class DynamicPineManager(ui):
@@ -200,11 +156,7 @@ class DynamicPineContext(CommonContext):
 
             def build(self):
                 container = super().build()
-                # No server connection or hints here - drop the connect bar, its
-                # progress indicator, and the Hints tab that GameManager builds
-                # for regular clients. Defensive try/excepts so a kvui layout
-                # change degrades to showing the stock widgets rather than
-                # killing the hub.
+                # Drop the server bar and Hints tab; ignore failures if kvui's layout changes
                 try:
                     self.grid.remove_widget(self.connect_layout)
                     self.grid.remove_widget(self.progressbar)
@@ -222,10 +174,8 @@ class DynamicPineContext(CommonContext):
 
         return DynamicPineManager
 
-    def build_gui(self, manager: GameManager) -> None:
-        """Adds one "Dynamic Pine" tab (same add_client_tab mechanism Universal
-        Tracker uses for its Tracker/Map pages) containing a scrollable column
-        with a group of controls for each installed Dynamic Pine game."""
+    def build_gui(self, manager: "GameManager") -> None:
+        # kivy must only be imported after make_gui has loaded kvui
         from kivy.metrics import dp
         from kivymd.uix.boxlayout import MDBoxLayout
         from kivymd.uix.scrollview import MDScrollView

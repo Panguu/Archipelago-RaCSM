@@ -1,13 +1,6 @@
-"""Builds per-instance PINE-enabled PCSX2 configs and launches PCSX2 for any
-Dynamic Pine game, driven by the shared dynamic_pine_options host.yaml settings
-(see DynamicPineSettings in __init__.py). Generalized from
-rac_size_matters/client/launcher.py."""
-from __future__ import annotations
-
 import dataclasses
 import logging
 import os
-import re
 import shutil
 import stat
 import subprocess
@@ -15,42 +8,35 @@ from pathlib import Path
 
 from Utils import open_directory, open_filename
 
-from .api import (DynamicPineGame, dynamic_pine_settings, get_iso_path, launched_via_hub,
-                  mark_pine_port, resolve_game, set_bios_path, set_iso_path)
+from .api import (DynamicPineGame, dynamic_pine_settings, get_bios_path, get_iso_path, instance_id_for,
+                  launched_via_hub, mark_pine_port, resolve_game, set_bios_path, set_iso_path)
 from .config import DynamicPineConfig
 from .types import WorldOrGame
 
-_UNSAFE_PATH_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 _PID_FILENAME = "dynamicpine_pcsx2.pid"
 
 
 class InstanceAlreadyRunningError(RuntimeError):
-    """Raised by launch_pcsx2 when the target game+slot instance already has a
-    live Dynamic-Pine-launched PCSX2 process - callers should surface this to
-    the user rather than silently reusing or relaunching it."""
+    """This game+slot already has a live Dynamic-Pine-launched PCSX2 process."""
+
+
 class NoPCSX2Executable(RuntimeError):
-    """Raised by launch_pcsx2 when the PCSX2 executable could not be found."""
+    """The PCSX2 executable could not be found."""
+
+
 class NoIsoConfigured(RuntimeError):
-    """Raised by launch_pcsx2 when no ISO is configured (or found) for the game."""
+    """No ISO is configured (or found) for the game."""
+
+
 class NoBiosConfigured(RuntimeError):
-    """Raised by launch_pcsx2 when no shared BIOS folder is configured (or found)."""
+    """No shared BIOS folder is configured (or found)."""
+
 
 logger = logging.getLogger("Client")
 
 
-def instance_id_for(slot_name: str | None) -> str:
-    """Derives a filesystem-safe per-instance folder name from the connecting
-    slot name, so each simultaneously-running client/PCSX2 pair gets its own
-    ini/port/memcard instead of colliding on a shared one. Falls back to a fixed
-    name if no slot name is known yet (e.g. launched before entering one)."""
-    if not slot_name:
-        return "default"
-    return _UNSAFE_PATH_CHARS.sub("_", slot_name).strip(" .") or "default"
-
-
 def _pid_is_our_pcsx2(pid_file: Path, pcsx2_exe_name: str) -> int | None:
-    """The recorded pid, if it's still a live process running the configured
-    PCSX2 executable - None if dead, unreadable, or reused by something else."""
+    # psutil comes from this apworld's requirements.txt, so it may not be installed at import time
     import psutil
 
     try:
@@ -61,22 +47,14 @@ def _pid_is_our_pcsx2(pid_file: Path, pcsx2_exe_name: str) -> int | None:
         return None
     try:
         if psutil.Process(pid).name().lower() != pcsx2_exe_name.lower():
-            return None  # pid was reused by an unrelated process since we recorded it
+            return None  # pid was reused by an unrelated process
     except psutil.Error:
         return None
     return pid
 
 
 def _running_port_for(datapath: Path, config_path: Path, pcsx2_exe_name: str) -> int | None:
-    """Returns the port our own previously-launched PCSX2 for this exact instance
-    is listening on, if that specific process is still alive - or None if it's
-    not running (or was never launched), meaning a fresh launch is needed.
-
-    Process liveness via pid file rather than port probing on purpose: two
-    instances can have the same port recorded in their stale inis (both
-    defaulting to the same starting port when first configured), and a pure
-    port-liveness check would wrongly conclude instance B is "already running"
-    just because instance A's unrelated PCSX2 is listening on that port."""
+    # Checked by pid rather than port, since stale inis of different instances can share a port
     pid_file = datapath / _PID_FILENAME
     if not config_path.exists() or not pid_file.exists():
         return None
@@ -85,11 +63,7 @@ def _running_port_for(datapath: Path, config_path: Path, pcsx2_exe_name: str) ->
     return DynamicPineConfig.read_existing_port(config_path)
 
 
-def prompt_for_iso(game_name: str, spec: DynamicPineGame) -> Path | None:
-    """Asks the user to locate the game's ISO with a native file dialog and
-    remembers the choice in host.yaml (via set_iso_path), so this only ever
-    happens once per game. Returns None if they cancel or no dialog could be
-    shown (e.g. headless)."""
+def prompt_for_iso(game_name: str, spec: DynamicPineGame, name: str | None = None) -> Path | None:
     try:
         chosen = open_filename(
             f"Locate ISO for {game_name} [{'/'.join(spec.game_ids)}]",
@@ -100,17 +74,12 @@ def prompt_for_iso(game_name: str, spec: DynamicPineGame) -> Path | None:
         return None
     if not chosen:
         return None
-    set_iso_path(spec, chosen)
-    logger.info(f"[DynamicPine] Saved ISO for {game_name}: {chosen}")
+    name = set_iso_path(spec, chosen, name)
+    logger.info(f"[DynamicPine] Saved ISO '{name}' for {game_name}: {chosen}")
     return Path(chosen)
 
 
 def prompt_for_bios() -> Path | None:
-    """Asks the user to locate their shared PCSX2 BIOS folder with a native
-    folder dialog and remembers the choice in host.yaml (via set_bios_path), so
-    this only ever needs doing once for every game/instance Dynamic Pine
-    manages. Returns None if they cancel or no dialog could be shown (e.g.
-    headless)."""
     try:
         chosen = open_directory("Locate your PCSX2 BIOS folder")
     except Exception as exc:
@@ -123,16 +92,10 @@ def prompt_for_bios() -> Path | None:
     return Path(chosen)
 
 
-def _reserved_ports(data_root: Path, pcsx2_exe_name: str) -> "set[int]":
-    """Ports already promised to live Dynamic-Pine-launched PCSX2 instances,
-    across every game under data_root (all games share one port space).
-
-    This exists because a just-launched PCSX2 takes several seconds to actually
-    bind its PINE port, so config-time is_pine_port_open probes can't see it
-    yet - two launches in quick succession would both conclude the port is free
-    and write the same PINESlot into their inis. pid files are written the
-    moment a launch happens, so pid-liveness has no boot-time blind spot."""
-    reserved: "set[int]" = set()
+def _reserved_ports(data_root: Path, pcsx2_exe_name: str) -> set[int]:
+    # Ports of live instances across every game - a booting PCSX2 hasn't bound its port yet,
+    # so a port probe alone would hand the same port out twice
+    reserved: set[int] = set()
     if not data_root.is_dir():
         return reserved
     for game_dir in data_root.iterdir():
@@ -151,18 +114,13 @@ def _reserved_ports(data_root: Path, pcsx2_exe_name: str) -> "set[int]":
 
 @dataclasses.dataclass
 class InstanceInfo:
-    """One Dynamic-Pine-configured instance of a game, for the hub client's
-    status display - whether or not its PCSX2 is currently running."""
     instance_id: str
     port: int
     running: bool
-    pid: "int | None" = None
+    pid: int | None = None
 
 
 def list_instances(spec: DynamicPineGame) -> list[InstanceInfo]:
-    """Every instance of this game that has ever been configured (has an ini
-    under its data folder), whether or not its Dynamic-Pine-launched PCSX2
-    process is still alive."""
     settings = dynamic_pine_settings()
     game_dir = Path(settings.pcsx2_data_path.resolve()) / spec.game_ids[0]
     pcsx2_name = Path(settings.pcsx2_path.resolve()).name
@@ -184,25 +142,16 @@ def list_instances(spec: DynamicPineGame) -> list[InstanceInfo]:
 
 
 def list_running_instances(spec: DynamicPineGame) -> list[InstanceInfo]:
-    """The subset of list_instances() whose PCSX2 process is still alive."""
     return [inst for inst in list_instances(spec) if inst.running]
 
 
 def _rmtree_onerror(func, path, exc_info):
-    """shutil.rmtree error hook: some files PCSX2 itself writes (e.g. under
-    inis/debuggerlayouts) end up read-only, which blocks deletion on Windows
-    with a plain PermissionError - clear the read-only attribute and retry
-    the failed operation once before giving up."""
+    # PCSX2 leaves some files read-only, which blocks deletion on Windows
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
 
 def remove_instance(spec: DynamicPineGame, instance_id: str) -> bool:
-    """Deletes one instance's whole datapath (ini, memcard, pid file, save
-    states - everything under it), freeing its port/instance_id for reuse.
-    Refuses (raising InstanceAlreadyRunningError) if that instance's PCSX2 is
-    currently running - stop it first. Returns False if there was nothing to
-    remove."""
     settings = dynamic_pine_settings()
     data_root = Path(settings.pcsx2_data_path.resolve())
     pcsx2_name = Path(settings.pcsx2_path.resolve()).name
@@ -218,12 +167,6 @@ def remove_instance(spec: DynamicPineGame, instance_id: str) -> bool:
 
 
 def clear_unused_instances(spec: DynamicPineGame) -> list[str]:
-    """Removes every configured instance of this game that isn't currently
-    running, so leftover per-slot PCSX2 data (old test/one-off slot names,
-    stale ports) doesn't accumulate forever. Running instances are left alone.
-    An instance that fails to fully delete (e.g. a file still locked by
-    another process) is logged and skipped rather than aborting the rest.
-    Returns the instance_ids that were removed."""
     removed: list[str] = []
     for inst in list_instances(spec):
         if inst.running:
@@ -237,16 +180,7 @@ def clear_unused_instances(spec: DynamicPineGame) -> list[str]:
 
 
 def ensure_instance_config(world_or_game: WorldOrGame,
-                           slot_name: str | None = None) -> "DynamicPineConfig | None":
-    """Builds (or reuses) this instance's PINE-enabled PCSX2 config - without
-    launching PCSX2 itself - and records its port via mark_pine_port. Lets a
-    client started through "Launch Client" alone (without also pressing
-    "Launch PCSX2") still pick up its instance's ini/port/memcard immediately,
-    the same way it would if launch_pcsx2 had already run for it.
-
-    Does nothing (and returns None) if pcsx2_data_path isn't configured in
-    host.yaml - that's the one setting this needs that launch_pcsx2 itself
-    would otherwise be the first to check."""
+                           slot_name: str | None = None) -> DynamicPineConfig | None:
     game_name, spec = resolve_game(world_or_game)
     settings = dynamic_pine_settings()
 
@@ -258,13 +192,21 @@ def ensure_instance_config(world_or_game: WorldOrGame,
             "in host.yaml - the instance's PCSX2 config was not prepared."
         )
         return None
-    bios_path = Path(settings.bios_path.resolve()) if settings.bios_path else None
+    bios_path = get_bios_path()
     try:
         pcsx2_exe = Path(settings.pcsx2_path.resolve())
     except Exception:
         pcsx2_exe = None
 
     instance_id = instance_id_for(slot_name)
+    if pcsx2_exe is not None:
+        # Already running (e.g. just launched) - keep its ini and port rather than moving it
+        datapath, config_path = DynamicPineConfig.paths_for(data_root, spec.game_ids[0], instance_id)
+        running_port = _running_port_for(datapath, config_path, pcsx2_exe.name)
+        if running_port is not None:
+            mark_pine_port(running_port)
+            return DynamicPineConfig(config_path, port=running_port, memcard_name=spec.memcard_name,
+                                     datapath=datapath)
     reserved = _reserved_ports(data_root, pcsx2_exe.name) if pcsx2_exe is not None else None
     pine_config = DynamicPineConfig.for_dynamic_pine_game(
         data_root, spec.game_ids[0], instance_id=instance_id, memcard_name=spec.memcard_name,
@@ -276,14 +218,10 @@ def ensure_instance_config(world_or_game: WorldOrGame,
                 f"(PINE port {pine_config.port}).")
     return pine_config
 
+
 def launch_pcsx2(world_or_game: WorldOrGame,
                  slot_name: str | None = None, iso: Path | None = None) -> int | None:
-    """iso overrides the game's configured dynamic_pine_options.game_files
-    entry for this one launch - for games that patch their ISO per-seed and
-    want PCSX2 launched against that patched copy instead of the user's
-    vanilla one. Must point at an existing file; raises NoIsoConfigured
-    immediately (no prompt, unlike the unconfigured-game_files case below) if
-    it doesn't."""
+    # iso overrides the configured game file, e.g. for a per-seed patched ISO
     if not launched_via_hub():
         logger.info(
             "[DynamicPine] Not launched through the Dynamic Pine hub client - "
@@ -296,7 +234,7 @@ def launch_pcsx2(world_or_game: WorldOrGame,
 
     pcsx2_exe = Path(settings.pcsx2_path.resolve())
     data_root = Path(settings.pcsx2_data_path.resolve())
-    bios_path = Path(settings.bios_path.resolve()) if settings.bios_path else None
+    bios_path = get_bios_path()
     iso_file = iso if iso is not None else get_iso_path(spec)
 
     if not pcsx2_exe.exists():
@@ -305,8 +243,6 @@ def launch_pcsx2(world_or_game: WorldOrGame,
             "in host.yaml - start PCSX2 manually instead."
         )
     if bios_path is None or not bios_path.exists():
-        # BIOS folder not detected - prompt the user to find it once, then it's
-        # remembered in host.yaml for every future launch (shared by every game).
         bios_path = prompt_for_bios()
         if bios_path is None or not bios_path.exists():
             raise NoBiosConfigured(
@@ -317,8 +253,6 @@ def launch_pcsx2(world_or_game: WorldOrGame,
         if not iso_file.exists():
             raise NoIsoConfigured(f"ISO override for {game_name} not found: {iso_file}")
     elif iso_file is None or not iso_file.exists():
-        # Game file not detected - prompt the user to find it once, then it's
-        # remembered in host.yaml for every future launch.
         iso_file = prompt_for_iso(game_name, spec)
         if iso_file is None or not iso_file.exists():
             raise NoIsoConfigured(
@@ -343,8 +277,10 @@ def launch_pcsx2(world_or_game: WorldOrGame,
             bios_path=str(bios_path) if bios_path else None, ini_overrides=spec.ini_overrides,
             reserved_ports=_reserved_ports(data_root, pcsx2_exe.name),
         )
+        # -gamecfg must be followed by the ISO; -datapath keeps memcards/savestates per-instance
         proc = subprocess.Popen(
-            [str(pcsx2_exe), str(iso_file), "-batch", "-datapath", str(pine_config.datapath)],
+            [str(pcsx2_exe), "-batch", "-datapath", str(pine_config.datapath),
+             "-gamecfg", str(pine_config.config_file_path), str(iso_file)],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         (pine_config.datapath / _PID_FILENAME).write_text(str(proc.pid))
