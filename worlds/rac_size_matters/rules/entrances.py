@@ -25,7 +25,7 @@ def set_entrance_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(mw.get_entrance("To Dayni Moon", player), Has(Rac5Infobots.DAYNI_MOON))
     world.set_rule(
         mw.get_entrance("To Inside Clank", player),
-        HasAll(Rac5Infobots.DAYNI_MOON, Rac5Gadgets.SPROUT_O_MATIC, Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT)
+        HasAll(Rac5Infobots.DAYNI_MOON, Rac5Gadgets.SPROUT_O_MATIC)
         & HasProjectileWeapon(),
     )
     world.set_rule(mw.get_entrance("To Quodrona", player), Has(Rac5Infobots.QUODRONA))
