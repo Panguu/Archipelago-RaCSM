@@ -16,6 +16,7 @@ from ..options import (
     GiantClank,
     SkillPoints,
 )
+from ..rules._helpers import HasClankPack
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
@@ -24,7 +25,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.METALIS_DOOR,
         C.Rac5Planets.METALIS,
-        lambda world: HasAll(Rac5Gadgets.POLARIZER, Rac5Gadgets.HYPERSHOT),
+        lambda world: HasAll(Rac5Gadgets.POLARIZER, Rac5Gadgets.HYPERSHOT) &  HasClankPack(world),
         Completion(_S.BOLT_BITS, None, 4096),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(4,),

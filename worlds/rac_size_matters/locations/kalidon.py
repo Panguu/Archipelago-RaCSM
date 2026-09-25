@@ -13,7 +13,7 @@ from ..options import (
     SkillPoints,
     SkyboardChallenges,
 )
-from ..rules._helpers import HasChallengeMode
+from ..rules._helpers import HasChallengeMode,  HasClankPack
 from .model import Completion, LocationOptions, Rac5Categories, Rac5CompletionSources, Rac5Locations
 
 _C = Rac5Categories
@@ -41,7 +41,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.KALIDON_RAMP,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world),
         Completion(_S.BOLT_BITS, None, 512),
         categories=frozenset((_C.TITANIUM_BOLT,)),
         native_planets=(3,),
@@ -50,7 +50,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.KALIDON_CHESTPLATE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world),
         Completion(_S.ARMOUR, "sludge", 1),
         categories=frozenset((_C.ARMOUR_PICKUP,)),
         definition_order=24,
@@ -69,7 +69,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.KALIDON_CHAMELEON_CHESTPLATE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2) & HasClankPack(world),
         Completion(_S.ARMOUR, "chameleon", 1),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (2,), "in"),)),
         categories=frozenset((_C.ARMOUR_PICKUP, _C.CHALLENGE_MODE_2_ARMOUR)),
@@ -86,7 +86,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.KALIDON_EXPLOSIVE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) &  HasClankPack(world),
         Completion(_S.SKILL_BITS, None, 256),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset((_C.SKILL_POINT, _C.EASY_SKILL_POINT)),
@@ -96,7 +96,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world),
         Completion(_S.SKILL_BITS, None, 512),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset((_C.SKILL_POINT, _C.HARD_SKILL_POINT)),

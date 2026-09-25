@@ -69,7 +69,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.MISSIONS, 32814030, 2, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -79,7 +79,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: True_(),
         Completion(_S.MISSIONS, 32814030, 1, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -89,7 +89,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.OUTPOST_OMEGA_BEE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5VendorLocations.OUTPOST_OMEGA_BEE),
         options=LocationOptions(weapon=C.Rac5Weapons.BEE_MINE_GLOVE),
         categories=frozenset(("weapon_vendor",)),
@@ -99,7 +99,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER),
         categories=frozenset(("gadget_vendor",)),
         gadget="box_breaker",
@@ -108,7 +108,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasChallengeMode(world, 1),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY) and HasChallengeMode(world, 1),
         Completion(_S.EVENTS, C.Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.BEE_MINE_GLOVE

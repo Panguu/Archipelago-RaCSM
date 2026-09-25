@@ -6,6 +6,7 @@ from ..constants import Rac5Gadgets, Rac5Infobots
 from ..data.weapons import WEAPON_DATA
 from ..items import (
     ARMOUR_SETS,
+    CLANK_PACK_NAME,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_ARMOUR_UNIFIED_NAME,
     PROGRESSIVE_CHALLENGE_MODE_NAME,
@@ -62,6 +63,13 @@ def HasChallengeMode(world: "RACSizeMatterWorld", tier: int) -> Has | True_:
     if not world.options.progressive_challenge_mode:
         return True_()
     return Has(PROGRESSIVE_CHALLENGE_MODE_NAME, tier)
+
+
+def HasClankPack(world: "RACSizeMatterWorld") -> Has | True_:
+    """Clank Pack gate for checks that need the backpack; free when the ClankPack option leaves it vanilla."""
+    if not world.options.clank_pack:
+        return True_()
+    return Has(CLANK_PACK_NAME)
 
 
 def HasGoodExpPlanet() -> Or:

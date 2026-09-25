@@ -12,7 +12,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_GRINDRAIL,
         Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
         Completion(Rac5CompletionSources.EVENTS, Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_GRINDRAIL),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset(("shrink_ray_skip",)),
@@ -30,7 +30,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_SECOND_GRINDRAIL,
         Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
         Completion(Rac5CompletionSources.EVENTS, Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_SECOND_GRINDRAIL),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset(("shrink_ray_skip",)),

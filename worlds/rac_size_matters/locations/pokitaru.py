@@ -1,16 +1,17 @@
 from rule_builder.options import OptionFilter
 from rule_builder.rules import Has, HasAny, True_
+from worlds.rac_size_matters import world
 
 from .. import constants as C
 from ..constants import Rac5Weapons
 from ..items import GLITCHES_ITEM_NAME, PROGRESSIVE_WEAPON_NAME
 from ..options import AllCutscenes, AllMissions, ChallengeMode, SkillPoints
-from ..rules._helpers import HasChallengeMode, HasProjectileWeapon
+from ..rules._helpers import HasChallengeMode, HasProjectileWeapon, HasClankPack
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
 
-_GLITCH = Has(GLITCHES_ITEM_NAME)
+_GLITCH = Has(GLITCHES_ITEM_NAME) and HasClankPack(world)
 LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.POKITARU_ZIPLINE,

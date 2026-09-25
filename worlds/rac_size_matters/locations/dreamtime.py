@@ -4,7 +4,7 @@ from rule_builder.rules import HasAll, True_
 from .. import constants as C
 from ..constants import Rac5Gadgets
 from ..options import AllCutscenes, AllMissions, ChallengeMode, SkillPoints
-from ..rules._helpers import HasChallengeMode, HasProjectileWeapon
+from ..rules._helpers import HasChallengeMode, HasProjectileWeapon, HasClankPack
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
@@ -31,7 +31,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.DREAMTIME_CRAB,
         C.Rac5Planets.DREAMTIME,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon(),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
         Completion(_S.BOLT_BITS, None, 262144),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(5,),
@@ -107,7 +107,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.DREAMTIME_SUCK,
         C.Rac5Planets.DREAMTIME,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: True_(),
         Completion(_S.EVENTS, C.Rac5VendorLocations.DREAMTIME_SUCK),
         options=LocationOptions(weapon=C.Rac5Weapons.SUCK_CANNON),
         categories=frozenset(("weapon_vendor",)),
@@ -117,7 +117,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN,
         C.Rac5Planets.DREAMTIME,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC) & HasChallengeMode(world, 1),
+        lambda world: HasChallengeMode(world, 1),
         Completion(_S.EVENTS, C.Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SUCK_CANNON
