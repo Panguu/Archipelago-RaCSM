@@ -901,7 +901,7 @@ jobs:
 
               # Replace only requires.version.
               text, count = re.subn(
-                  r"(?m)^(\s+version:\s*)[^#\r\n]+",
+                  r"(?m)^(\s+version:\s*)[^#\r\n]*?(?=[ \t]*(?:#|$))",
                   rf"\g<1>{ap_version}",
                   text,
                   count=1,
@@ -928,8 +928,18 @@ jobs:
               requires = requires_match.group(0)
 
               # Replace only requires.game.<GAME>.
+              # The template writes the key with yaml_dump, which quotes
+              # names like "Ratchet & Clank: Size Matters".
+              game_keys = "|".join(
+                  re.escape(key)
+                  for key in (
+                      game,
+                      "'" + game.replace("'", "''") + "'",
+                      '"' + game.replace("\\", "\\\\").replace('"', '\\"') + '"',
+                  )
+              )
               game_pattern = (
-                  rf"(?m)^(\s+{re.escape(game)}:\s*)[^#\r\n]+"
+                  rf"(?m)^(\s+(?:{game_keys}):\s*)[^#\r\n]*?(?=[ \t]*(?:#|$))"
               )
 
               requires_new, count = re.subn(
