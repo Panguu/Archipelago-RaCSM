@@ -108,7 +108,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY) and HasChallengeMode(world, 1),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 1),
         Completion(_S.EVENTS, C.Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.BEE_MINE_GLOVE
