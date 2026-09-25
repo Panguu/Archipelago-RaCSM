@@ -12,6 +12,10 @@ _PACK_FREE_CATEGORIES = frozenset((
     "armour_set_check", "challenge", "all_clank", "clank_challenge_skill_point",
 ))
 
+# Set completions need all four pieces, so progression placed there lets fill
+# lock a missing piece behind its own set and dead-end the seed.
+_NO_PROGRESSION_CATEGORIES = frozenset(("armour_set_check",))
+
 
 def set_rules(world) -> None:
     from ..locations import LOCATIONS
@@ -20,6 +24,10 @@ def set_rules(world) -> None:
         definition.name for definition in LOCATIONS
         if definition.categories & _PACK_FREE_CATEGORIES
     }
+    no_progression_locations = {
+        definition.name for definition in LOCATIONS
+        if definition.categories & _NO_PROGRESSION_CATEGORIES
+    }
     world.multiworld.completion_condition[world.player] = lambda state: state.has("Victory", world.player)
     set_entrance_rules(world)
     for location in world.multiworld.get_locations(world.player):
@@ -27,3 +35,5 @@ def set_rules(world) -> None:
         if world.options.clank_pack and location.name not in pack_free_locations:
             rule = rule & Has(CLANK_PACK_NAME)
         world.set_rule(location, rule)
+        if location.name in no_progression_locations:
+            location.item_rule = lambda item: not item.advancement

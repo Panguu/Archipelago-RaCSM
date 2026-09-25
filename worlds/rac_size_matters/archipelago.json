@@ -2,10 +2,10 @@
   "compatible_version": 7,
   "version": 7,
   "game": "Ratchet & Clank: Size Matters",
-  "world_version": "0.3.2",
+  "world_version": "0.4.22",
   "authors": [
     "Pangu",
-	"Amondo",
+	  "Amondo",
     "ImJustATester"
   ]
   
