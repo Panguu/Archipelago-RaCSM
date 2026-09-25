@@ -30,9 +30,8 @@ class LevelReader:
         0x85F74: bytes.fromhex('8523007c800300047d2b4b78'),
     }
 
-    def __init__(self, pine, catalogue):
+    def __init__(self, pine):
         self.pine = pine
-        self.catalogue = catalogue
 
     def word(self, address):
         return u32(self.pine.read(address, 4))
@@ -49,48 +48,7 @@ class LevelReader:
                 raise RuntimeError(f'Executable signature mismatch at {address:#x}')
         return info
 
-    def snapshot(self):
-        """Diagnostic snapshot for the dev CLI; not used by the live client."""
-        info = self.validate()
-        global_address = self.word(self.ROOT_TOC_SLOT)
-        if not global_address:
-            raise RuntimeError('Game context unavailable')
-        context = self.word(global_address)
-        if not context:
-            raise RuntimeError('No active game context')
-        header = self.pine.read(context + 0x7c, 12)
-        address, count, capacity = struct.unpack('>III', header)
-        if not 0 <= count <= capacity <= 100000 or (count and not address):
-            raise RuntimeError('Invalid reward array; level may be loading')
-        records = parse_rewards(self.pine.read(address, count * self.build['reward_size']), self.build['reward_size']) if count else []
-        if self.word(global_address) != context or self.pine.read(context + 0x7c, 12) != header:
-            raise RuntimeError('Level changed during read; retry')
-        prizes = [r for r in records if r['source'] == 0]
-        # Match the complete reward multiset, not a single GUID or a guessed level pointer.
-        plans = sorted(r['plan_guid'] for r in prizes)
-        matches = []
-        if plans:
-            for level in self.catalogue['levels']:
-                authored = [b for b in level['bubbles'] if b['kind'] == 'prize']
-                if any(not str(b['prize_plan']).startswith('g') for b in authored):
-                    continue
-                if sorted(int(b['prize_plan'][1:]) for b in authored) == plans:
-                    matches.append(level)
-        result = {
-            'game': info, 'level_match_method': 'exact prize-plan multiset; not a live level-ID field',
-            'matching_level_guids': [l['guid'] for l in matches],
-            'live_prize_total': len(prizes), 'live_reward_total_including_awards': len(records),
-            'collected_prizes': None, 'collected_score_bubbles': None,
-            'collection_status': 'unknown: reward array lists available rewards, not pickups',
-            'rewards': records,
-        }
-        if len(matches) == 1:
-            level = matches[0]
-            result['level'] = {k:v for k,v in level.items() if k != 'bubbles'}
-            result['prize_locations'] = [b for b in level['bubbles'] if b['kind'] == 'prize']
-        return result
-
-    def completion_prizes(self, level, expected_slot=None):
+    def completion_prizes(self, prize_plans, expected_slot=None):
         """Match the live prize multiset to the authored level before using its total."""
         context = self.word(self.word(self.ROOT_TOC_SLOT))
         if not context:
@@ -111,11 +69,10 @@ class LevelReader:
                 or self.pine.read(context+self.build['slot'], 8) != slot
                 or self.pine.read(context+0x7c, 12) != header):
             raise RuntimeError('Level changed while reading completion rewards')
-        expected = [loc.get('plan') for loc in level['locations'] if loc['kind'] == 'prize']
         actual = sorted(f'g{r["plan_guid"]}' for r in records if r['source'] == 0)
-        if not expected or any(not p or not p.startswith('g') for p in expected):
+        if not prize_plans or any(not p or not p.startswith("g") for p in prize_plans):
             return None, None
-        if sorted(expected) != actual:
+        if sorted(prize_plans) != actual:
             return None, None
         return collected, len(actual)
 

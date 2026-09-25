@@ -16,7 +16,7 @@ class PineDeathAdapter:
 
     def __init__(self, pine):
         self.pine = pine
-        self.reader = LevelReader(pine, {})
+        self.reader = LevelReader(pine)
         self.last_result = None
 
     def snapshot(self):

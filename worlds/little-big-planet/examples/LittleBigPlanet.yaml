@@ -17,6 +17,6 @@ LittleBigPlanet:
   # Also requires score_bubble_sanity: true in host.yaml, or this has no effect.
   score_bubbles: true
   # One "Progressive <Chapter>" item per story chapter instead of one item per level in it.
-  progressive_chapters: false
+  progressive_curators: false
   death_link: false
   progression_balancing: 50

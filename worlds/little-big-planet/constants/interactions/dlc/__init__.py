@@ -1,6 +1,0 @@
-"""Generated. Re-exports every DLC level's interaction constants, grouped by kit."""
-from .goty_bonus import StoneInteractions, TaklamakanGoAndNeverComeBackInteractions, UntilTheCowsComeHomeInteractions
-from .marvel_kit import MarvelIssue1DowntownDoomInteractions, MarvelIssue3MadLabInteractions
-from .metal_gear_solid_kit import MetalGearSolidAct1IntroductionInteractions, MetalGearSolidAct2VrTrainingInteractions, MetalGearSolidAct3TheMissionInteractions, MetalGearSolidAct4TheLevelFactoryInteractions
-from .monster_kit import GhostTrainInteractions
-from .pirates_of_the_caribbean_kit import ANavyFrigateInteractions, CursedBayInteractions, PirateTownInteractions, PortRoyalInteractions

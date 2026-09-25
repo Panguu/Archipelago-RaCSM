@@ -1,13 +1,13 @@
-from dataclasses import dataclass
-from Options import PerGameCommonOptions, OptionSet, DefaultOnToggle, Toggle, Choice, DeathLink, Range
-from .locations import LEVELS
-from .chapters import DLC_PACKS
-from .dlc import ADDON_PACKS
-from .content_packs import PACK_BY_NAME
-
-
-# Duplicate display names receive a readable suffix, never a resource GUID.
 from collections import Counter
+from dataclasses import dataclass
+
+from Options import PerGameCommonOptions, OptionSet, Toggle, Choice, DeathLink, Range
+
+from .chapters import DLC_PACKS
+from .content_packs import PACK_BY_NAME
+from .dlc import ADDON_PACKS
+from .levels import LEVELS
+
 _name_counts = Counter(level['name'] for level in LEVELS.values())
 LEVEL_LABELS = {guid: (level['name'] if _name_counts[level['name']] == 1
                       else level['name'] + ' (' + level['constant'].replace('_', ' ').title() + ')')
@@ -106,7 +106,7 @@ StartingLevel = type('StartingLevel', (StartingLevelChoice,), {
 })
 
 
-class ScoreBubbles(DefaultOnToggle):
+class ScoreBubbles(Toggle):
     """Include authored score bubbles as individual checks (Score Bubble Sanity). The host must
     also enable score_bubble_sanity in their host.yaml, or this option has no effect: exact
     pickup detection is still experimental and defaults off until verified."""
@@ -125,13 +125,13 @@ class KeySanity(Toggle):
     display_name = 'Key Sanity'
 
 
-class ProgressiveChapters(Toggle):
+class ProgressiveCurators(Toggle):
     """Replace each story chapter's individual level-unlock items with a single
     'Progressive <Chapter>' item (one per chapter: The Gardens, The Savannah, The Wedding,
     The Canyons, The Metropolis, The Islands, The Temples, The Wilderness) that unlocks that
     chapter's levels one at a time, in the game's own story order, as copies are received.
     DLC kits, the GOTY bonus levels, and Introduction are unaffected."""
-    display_name = 'Progressive Chapters'
+    display_name = 'Progressive Curators'
 
 
 class Players(Range):
@@ -182,7 +182,7 @@ class LBPOptions(PerGameCommonOptions):
     score_bubbles: ScoreBubbles
     sticker_sanity: StickerSanity
     key_sanity: KeySanity
-    progressive_chapters: ProgressiveChapters
+    progressive_curators: ProgressiveCurators
     players: Players
     death_link: DeathLink
     trap_percentage: TrapPercentage

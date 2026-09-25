@@ -1,20 +1,5 @@
-"""Level groupings derived from data/levels.json.
-
-LBP1's eight story chapters, named per the LittleBigPlanet wiki, plus its six DLC
-level kits and the GOTY edition's bundled community levels. Chapter order (and each
-chapter's finale/boss level) is derived from the game's own SlotID primary_link
-chain rather than guessed: developer levels on the main story path link forward to
-the next main-path level (even across chapter/world boundaries, since the path is
-one continuous chain from Introduction to The Collector); side/bonus levels link to
-nothing. For each chapter, the longest chain of its own members is that chapter's
-main path, and its last level is the chapter's finale.
-"""
-import re
-from collections import defaultdict
-if __package__:
-    from .locations import LEVELS
-else:
-    from locations import LEVELS
+"""Story chapters, DLC packs and each chapter's level order, from the game's own primary_link chain."""
+from .levels import LEVELS, parse_slot
 
 _FOLDER_CHAPTER = {
     'introduction': 'Introduction',
@@ -42,7 +27,7 @@ GOTY_BONUS = 'GOTY Edition Community Levels'
 DLC_PACKS = tuple(_FOLDER_DLC_PACK.values()) + (GOTY_BONUS,)
 
 
-def _chapter_for(level):
+def _chapter(level):
     parts = level['path'].split('/')
     folder, sub = parts[2], (parts[3] if len(parts) > 3 else None)
     if folder == '00_developer_levels_episode_1':
@@ -52,45 +37,36 @@ def _chapter_for(level):
     return _FOLDER_DLC_PACK[sub]
 
 
-LEVEL_CHAPTER = {guid: _chapter_for(level) for guid, level in LEVELS.items()}
-
-
-def _primary_link(level):
+def _next_level(level):
     for slot in level['slots']:
-        match = re.fullmatch(r'SlotID\{(?:DEVELOPER|DLC_LEVEL), (\d+)\}', slot.get('primary_link') or '')
-        if match and match[1] != '0' and f'g{match[1]}' in LEVELS:
-            return f'g{match[1]}'
+        link = parse_slot(slot.get('primary_link'))
+        if link and f'g{link[1]}' in LEVELS:
+            return f'g{link[1]}'
     return None
 
 
-_NEXT = {guid: _primary_link(level) for guid, level in LEVELS.items()}
-
-
-def _order_chapter(members):
-    """Longest intra-chapter link chain first (the main path), then any other
-    chains, then fully isolated levels; returns (ordered_guids, finale_guid)."""
+def _order(members):
+    """Longest linked chain first (the main path, whose last level is the finale), then the rest."""
     members = set(members)
-    intra_next = {guid: _NEXT[guid] for guid in members if _NEXT.get(guid) in members}
-    has_incoming = set(intra_next.values())
+    links = {guid: NEXT_LEVEL[guid] for guid in members if NEXT_LEVEL.get(guid) in members}
     chains, used = [], set()
-    for start in [g for g in members if g not in has_incoming]:
+    for start in sorted(members - set(links.values()), key=lambda g: int(g[1:])):
         chain, guid = [], start
         while guid and guid not in used:
-            chain.append(guid); used.add(guid)
-            guid = intra_next.get(guid)
+            chain.append(guid)
+            used.add(guid)
+            guid = links.get(guid)
         chains.append(chain)
     chains.sort(key=len, reverse=True)
-    leftover = sorted(members - used, key=lambda g: int(g[1:]))
-    ordered = [guid for chain in chains for guid in chain] + leftover
+    ordered = [guid for chain in chains for guid in chain] + sorted(members - used, key=lambda g: int(g[1:]))
     finale = chains[0][-1] if chains and chains[0] else ordered[-1]
     return tuple(ordered), finale
 
 
-_MEMBERS = defaultdict(list)
-for _guid, _chapter in LEVEL_CHAPTER.items():
-    _MEMBERS[_chapter].append(_guid)
-
+LEVEL_CHAPTER = {guid: _chapter(level) for guid, level in LEVELS.items()}
+NEXT_LEVEL = {guid: _next_level(level) for guid, level in LEVELS.items()}
 CHAPTER_LEVELS = {}
 CHAPTER_FINALE = {}
-for _chapter, _members in _MEMBERS.items():
-    CHAPTER_LEVELS[_chapter], CHAPTER_FINALE[_chapter] = _order_chapter(_members)
+for _chapter_name in dict.fromkeys(LEVEL_CHAPTER.values()):
+    CHAPTER_LEVELS[_chapter_name], CHAPTER_FINALE[_chapter_name] = _order(
+        guid for guid, chapter in LEVEL_CHAPTER.items() if chapter == _chapter_name)

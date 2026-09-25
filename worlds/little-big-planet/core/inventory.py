@@ -60,7 +60,7 @@ def delivery_lock(path):
 class InventoryDelivery:
     def __init__(self, pine, save_directory=None, output=None):
         self.pine = pine
-        self.reader = LevelReader(pine, {})
+        self.reader = LevelReader(pine)
         self.output = Path(output or ROOT / 'output/inventory_delivery')
         self.save_directory = Path(save_directory) if save_directory else None
         self.backed_up = set()

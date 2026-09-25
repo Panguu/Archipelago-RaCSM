@@ -1,0 +1,35 @@
+from ..model import Kind, LBPLocationData
+
+LEVEL = 'g67169'
+
+LOCATIONS = (
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 1 - Black Chicken', LEVEL, Kind.PRIZE, uid=12758752, plan='g65690'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 2 - Green Crocodile', LEVEL, Kind.PRIZE, uid=12758755, plan='g65707'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 3 - Brown Centipede', LEVEL, Kind.PRIZE, uid=12758756, plan='g65706'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 4 - Yellow Bird', LEVEL, Kind.PRIZE, uid=12758757, plan='g65705'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 5 - Camouflage Mixed', LEVEL, Kind.PRIZE, uid=12758764, plan='g66615'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 6 - METAL GEAR SOLID® Codec', LEVEL, Kind.PRIZE, uid=12758765, plan='g66613'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 7 - Danger Chevron', LEVEL, Kind.PRIZE, uid=12758766, plan='g66614'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 8 - Gekko Back', LEVEL, Kind.PRIZE, uid=12758767, plan='g66600'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 9 - Gekko Looking', LEVEL, Kind.PRIZE, uid=12758768, plan='g66599'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 10 - Gekko Back 2', LEVEL, Kind.PRIZE, uid=12758770, plan='g66598'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 11 - Gekko Crouching 2', LEVEL, Kind.PRIZE, uid=12758771, plan='g66603'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 12 - Gekko Standing 2', LEVEL, Kind.PRIZE, uid=12758772, plan='g66604'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 13 - Paintinator Powerup', LEVEL, Kind.PRIZE, uid=12767399, plan='g67385'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 14 - VR Grid Blue', LEVEL, Kind.PRIZE, uid=12768659, plan='g66492'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 15 - Paintinator Switch', LEVEL, Kind.PRIZE, uid=12769068, plan='g66217'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 16 - Isometric Crate', LEVEL, Kind.PRIZE, uid=12769197, plan='g65779'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 17 - Energy Drink', LEVEL, Kind.PRIZE, uid=12769217, plan='g65702'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Prize Bubble 18 - Plasma Ball', LEVEL, Kind.PRIZE, uid=12769443, plan='g67174'),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Level Complete', LEVEL, Kind.COMPLETE),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - All Prize Bubbles', LEVEL, Kind.ALL_PRIZES),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Ace (No Deaths)', LEVEL, Kind.ACE),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Completion Reward 1 - Otacon Face', LEVEL, Kind.REWARD, plan='g65788', condition=Kind.COMPLETE),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Completion Reward 2 - Otacon Body', LEVEL, Kind.REWARD, plan='g66595', condition=Kind.COMPLETE),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - Completion Reward 3 - Kojima Foxhound', LEVEL, Kind.REWARD, plan='g65782', condition=Kind.COMPLETE),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - All Prizes Reward 1 - Practice Target', LEVEL, Kind.REWARD, plan='g67451', condition=Kind.ALL_PRIZES),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - All Prizes Reward 2 - VR Grid Red', LEVEL, Kind.REWARD, plan='g67424', condition=Kind.ALL_PRIZES),
+    LBPLocationData('METAL GEAR SOLID® Act 2: VR Training - All Prizes Reward 3 - VR Grid Green', LEVEL, Kind.REWARD, plan='g66776', condition=Kind.ALL_PRIZES),
+    LBPLocationData("METAL GEAR SOLID® Act 2: VR Training - Ace Reward 1 - MGS4 'The Hunted'", LEVEL, Kind.REWARD, plan='g66381', condition=Kind.ACE),
+    LBPLocationData('METAL GEAR SOLIDÂ® Act 2: VR Training - Sticker Switch 1 - Kojima Foxhound', LEVEL, Kind.STICKER_SWITCH, uid=10572588, plan='g65782'),
+)

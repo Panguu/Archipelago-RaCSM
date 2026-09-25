@@ -4,35 +4,19 @@ Full randomizer readiness also requires vanilla reward suppression. Individual
 pickup checks use exact captured identities; unmatched evidence stays in the journal.
 """
 import asyncio
-from pathlib import Path
-import sys
 import time
 
-if __package__:
-    from .core.pine import Pine
-    from .core.reader import LevelReader
-    from .core.death import PineDeathAdapter
-    from .core.inventory import InventoryDelivery
-    from .core.pickups import PickupReader
-    from .core.level_access import LevelAccess, access_rows
-    from .core.inventory_policy import InventoryPolicy
-    from .core.switches import active_switches
-    from .locations import LEVELS, LOCATIONS
-    from .tracker import CheckTracker
-    from .interactions import INTERACTION_LOCATIONS
-else:
-    sys.path.insert(0, str(Path(__file__).resolve().parent/'tools'))
-    from pine_probe import Pine
-    from lbp_reader import LevelReader
-    from pine_death import PineDeathAdapter
-    from pine_inventory import InventoryDelivery
-    from pine_pickups import PickupReader
-    from pine_level_access import LevelAccess, access_rows
-    from pine_inventory_policy import InventoryPolicy
-    from pine_switches import active_switches
-    from locations import LEVELS, LOCATIONS
-    from tracker import CheckTracker
-    from interactions import INTERACTION_LOCATIONS
+from .core.pine import Pine
+from .core.reader import LevelReader
+from .core.death import PineDeathAdapter
+from .core.inventory import InventoryDelivery
+from .core.pickups import PickupReader
+from .core.level_access import LevelAccess, access_rows
+from .core.inventory_policy import InventoryPolicy
+from .core.switches import active_switches
+from .levels import LEVELS, SLOT_LEVELS
+from .locations import LOCATIONS_BY_LEVEL, Kind
+from .tracker import CheckTracker
 
 
 class PineGameAdapter:
@@ -40,10 +24,7 @@ class PineGameAdapter:
     can_detect_checks = True
 
     def __init__(self, port=28011, save_directory=None, rpcs3_directory=None):
-        if __package__:
-            from .dlc_validation import ContentPackValidator
-        else:
-            from dlc_validation import ContentPackValidator
+        from .dlc_validation import ContentPackValidator
         self.content_validator = ContentPackValidator(rpcs3_directory, save_directory)
         self.port = port
         self.pine = self.reader = self.death = None
@@ -62,18 +43,10 @@ class PineGameAdapter:
         self.next_connect = 0
         self.status = f'PINE: waiting for RPCS3 on 127.0.0.1:{port}'
         self.probe_status = 'prize diagnostic not loaded'
-        self.tracker = CheckTracker(LOCATIONS)
+        self.tracker = CheckTracker()
         self.progress_profile = None
         self.seed_identity = None
         self.tracked_seed = None
-        self.slots = {}
-        import re
-        for guid, level in LEVELS.items():
-            for slot in level['slots']:
-                match = re.fullmatch(r'SlotID\{(DEVELOPER|DLC_LEVEL), (\d+)\}',slot['slot'])
-                if match:
-                    key = (0 if match[1]=='DEVELOPER' else 8, int(match[2]))
-                    self.slots.setdefault(key,set()).add(guid)
 
     def set_seed(self, identity):
         # Applied by the serialized poller, never in the middle of a PINE read.
@@ -93,10 +66,7 @@ class PineGameAdapter:
         return await self.death.apply_death() if self.death else False
 
     async def grant(self, state):
-        if __package__:
-            from .constants.traps import GAMEPLAY_EFFECTS
-        else:
-            from constants.traps import GAMEPLAY_EFFECTS
+        from .constants.traps import GAMEPLAY_EFFECTS
         if state['kind'] in GAMEPLAY_EFFECTS:
             return bool(self.policy_ready and self.inventory and
                         await asyncio.to_thread(self.inventory.gameplay_effect, state['kind']))
@@ -122,10 +92,7 @@ class PineGameAdapter:
     async def sync_inventory(self, slot_data, received_items):
         if not self.policy:
             return False
-        if __package__:
-            from .inventory_policy import allowed_plans
-        else:
-            from inventory_policy import allowed_plans
+        from .inventory_policy import allowed_plans
         self.policy_ready = False
         self.policy_ready = await asyncio.to_thread(self.policy.publish, allowed_plans(slot_data, received_items))
         return self.policy_ready
@@ -136,12 +103,8 @@ class PineGameAdapter:
     async def sync_level_access(self, slot_data, received_items):
         if not self.access or not self.last_progress:
             return False
-        if __package__:
-            from .items import ITEM_ID_TO_DATA
-            from .dlc import accessible_levels, owned_kit_keys
-        else:
-            from items import ITEM_ID_TO_DATA
-            from dlc import accessible_levels, owned_kit_keys
+        from .items import ITEM_ID_TO_DATA
+        from .dlc import accessible_levels, owned_kit_keys
         received = {ITEM_ID_TO_DATA[item.item]['level_guid'] for item in received_items
                     if item.item in ITEM_ID_TO_DATA and ITEM_ID_TO_DATA[item.item]['state']['kind']=='level_unlock'}
         item_ids = [item.item for item in received_items]
@@ -155,10 +118,7 @@ class PineGameAdapter:
         rows = access_rows(LEVELS, slot_data['levels'], received,
                            slot_data['starting_level'], self.last_progress['played_levels'], accessible)
         if 'costume_packs' in slot_data:
-            if __package__:
-                from .content_packs import access_rows as content_rows
-            else:
-                from content_packs import access_rows as content_rows
+            from .content_packs import access_rows as content_rows
             packs = {ITEM_ID_TO_DATA[i]['state']['slot_number'] for i in item_ids
                      if i in ITEM_ID_TO_DATA and ITEM_ID_TO_DATA[i]['state']['kind']=='content_pack_unlock'}
             rows += content_rows(slot_data['costume_packs'],packs)
@@ -190,17 +150,17 @@ class PineGameAdapter:
             return empty
         try:
             if self.tracked_seed != self.seed_identity:
-                self.tracker = CheckTracker(LOCATIONS)
+                self.tracker = CheckTracker()
                 self.pending_checks.clear()
                 self.progress_profile = None
                 self.tracked_seed = self.seed_identity
             if not self.pine:
                 self.pine = Pine(self.port)
-                self.reader = LevelReader(self.pine,{})
+                self.reader = LevelReader(self.pine)
                 self.death = PineDeathAdapter(self.pine)
                 self.inventory = InventoryDelivery(self.pine, self.save_directory)
                 self.policy = InventoryPolicy(self.pine, self.inventory)
-                self.pickups = PickupReader(self.pine, LEVELS, INTERACTION_LOCATIONS.values())
+                self.pickups = PickupReader(self.pine)
                 self.access = LevelAccess(self.pine)
             q = self.reader.progress()
             self.last_progress = q
@@ -208,23 +168,24 @@ class PineGameAdapter:
             inventory_changed = profile != self.last_profile
             self.last_profile = profile
             if self.progress_profile != profile:
-                self.tracker = CheckTracker(LOCATIONS)
+                self.tracker = CheckTracker()
                 self.progress_profile = profile
             slot = (q['slot_type'], q['slot_number'])
-            candidates = self.slots.get(slot, set())
+            candidates = SLOT_LEVELS.get(slot, set())
             guid = next(iter(candidates)) if len(candidates) == 1 else None
             old_run = self.tracker.run
             collected = total = None
             if guid and self.tracker.progress_initialized:
                 completions = sum(r['completion_count'] for r in q['played_levels']
-                                  if guid in self.slots.get((r['slot_type'], r['slot_number']), set()))
+                                  if guid in SLOT_LEVELS.get((r['slot_type'], r['slot_number']), set()))
                 old_count = self.tracker.counters.get(guid, (0, 0))[0]
                 if completions > old_count or guid in self.tracker.awaiting_collection:
                     try:
-                        collected, total = self.reader.completion_prizes(LEVELS[guid], slot)
+                        prize_plans = [loc.plan for loc in LOCATIONS_BY_LEVEL[guid] if loc.kind == Kind.PRIZE]
+                        collected, total = self.reader.completion_prizes(prize_plans, slot)
                     except (ValueError, RuntimeError):
                         pass  # Keep completion/ace checks; retry collection evidence next poll.
-            events = self.tracker.update_progress(q['played_levels'], self.slots, guid,
+            events = self.tracker.update_progress(q['played_levels'], SLOT_LEVELS, guid,
                                                  q['world_address'], q['world_death_count'],
                                                  collected, total)
             self.pending_checks.update(events['location_ids'])
@@ -244,7 +205,7 @@ class PineGameAdapter:
                             local_death=False, level_changed=True, inventory_changed=inventory_changed)
             guid = next(iter(candidates))
             try:
-                self.pending_checks.update(active_switches(self.reader,q,guid,INTERACTION_LOCATIONS))
+                self.pending_checks.update(active_switches(self.reader, q, guid))
             except (ValueError,RuntimeError):
                 pass  # Unstable loads must never become checks; retry next poll.
             rec = next((r for r in q['played_levels'] if (r['slot_type'],r['slot_number'])==slot),None)

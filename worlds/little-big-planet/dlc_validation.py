@@ -8,16 +8,10 @@ from pathlib import Path
 import re
 import time
 
-if __package__:
-    from .content_packs import PACKS
-    from .dlc import DLC_KITS, LEVEL_DLC, ADDON_PACKS, addon_for_item
-    from .items import ITEM_ID_TO_DATA
-    from .constants.data.dlc_inventory import DATA as PLAN_CONTENT
-else:
-    from content_packs import PACKS
-    from dlc import DLC_KITS, LEVEL_DLC, ADDON_PACKS, addon_for_item
-    from items import ITEM_ID_TO_DATA
-    from constants.data.dlc_inventory import DATA as PLAN_CONTENT
+from .content_packs import PACKS
+from .dlc import DLC_KITS, LEVEL_DLC, ADDON_PACKS, addon_for_item
+from .items import ITEM_ID_TO_DATA
+from .constants.data.dlc_inventory import DATA as PLAN_CONTENT
 
 ROOT = Path(__file__).resolve().parent
 KIT_CONTENT = {

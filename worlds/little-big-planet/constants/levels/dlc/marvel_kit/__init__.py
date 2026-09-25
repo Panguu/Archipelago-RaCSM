@@ -1,5 +1,0 @@
-"""Generated. Re-exports marvel_kit's level location constants."""
-from .marvel_issue_1_downtown_doom import MarvelIssue1DowntownDoomLocations
-from .marvel_issue_2_freeway_frenzy import MarvelIssue2FreewayFrenzyLocations
-from .marvel_issue_3_mad_lab import MarvelIssue3MadLabLocations
-from .marvel_issue_4_rocket_rampage import MarvelIssue4RocketRampageLocations

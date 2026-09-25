@@ -1,8 +1,5 @@
 """Stable DLC identities shared by generation, constants and runtime access."""
-if __package__:
-    from .chapters import LEVEL_CHAPTER
-else:
-    from chapters import LEVEL_CHAPTER
+from .chapters import LEVEL_CHAPTER
 
 # Explicit IDs must not change when packs are reordered or new DLC is added.
 DLC_KITS = {

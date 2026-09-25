@@ -1,7 +1,0 @@
-"""Generated. Re-exports metal_gear_solid_kit's level location constants."""
-from .metal_gear_solid_act_1_introduction import MetalGearSolidAct1IntroductionLocations
-from .metal_gear_solid_act_2_vr_training import MetalGearSolidAct2VrTrainingLocations
-from .metal_gear_solid_act_3_the_mission import MetalGearSolidAct3TheMissionLocations
-from .metal_gear_solid_act_4_the_level_factory import MetalGearSolidAct4TheLevelFactoryLocations
-from .metal_gear_solid_act_5_the_boss import MetalGearSolidAct5TheBossLocations
-from .metal_gear_solid_vr_survival_challenge import MetalGearSolidVrSurvivalChallengeLocations

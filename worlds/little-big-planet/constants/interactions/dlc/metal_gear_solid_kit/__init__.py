@@ -1,5 +1,0 @@
-"""Generated. Re-exports metal_gear_solid_kit's level interaction constants."""
-from .metal_gear_solid_act_1_introduction import MetalGearSolidAct1IntroductionInteractions
-from .metal_gear_solid_act_2_vr_training import MetalGearSolidAct2VrTrainingInteractions
-from .metal_gear_solid_act_3_the_mission import MetalGearSolidAct3TheMissionInteractions
-from .metal_gear_solid_act_4_the_level_factory import MetalGearSolidAct4TheLevelFactoryInteractions

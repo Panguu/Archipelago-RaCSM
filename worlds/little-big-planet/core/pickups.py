@@ -1,47 +1,36 @@
 """Read committed physical pickup events. Never infer a pickup from inventory/score."""
-import re
 import struct
+
+from ..levels import SLOT_LEVELS, parse_slot
+from ..locations import LOCATIONS, Kind
 
 BUFFER = 0x03000000
 MAGIC = 0x4c425032
 CAPACITY = 256
 STRIDE = 160
+EVENT_KINDS = {1: Kind.PRIZE, 2: Kind.SCORE, 3: Kind.KEY}
 
 
 class PickupReader:
-    def __init__(self, pine, levels, interactions=()):
+    def __init__(self, pine):
         self.pine = pine
-        self.slots = {}
-        self.locations = {}
-        for guid, level in levels.items():
-            for slot in level['slots']:
-                match = re.fullmatch(r'SlotID\{(DEVELOPER|DLC_LEVEL), (\d+)\}', slot['slot'])
-                if match:
-                    self.slots.setdefault((0 if match[1] == 'DEVELOPER' else 8,
-                                           int(match[2])), set()).add(guid)
-            for location in level['locations']:
-                if location['kind'] in ('prize', 'score'):
-                    self.locations[(guid, location['kind'], location['uid'])] = location
-        for location in interactions:
-            if location['kind']=='key':
-                self.locations[(location['level_guid'],'key',location['uid'])]=location
+        self.locations = {(location.level, location.kind, location.uid): location for location in LOCATIONS
+                          if location.kind in EVENT_KINDS.values()}
 
     def map_event(self, event):
-        levels = self.slots.get((event['slot_type'], event['slot_number']), set())
+        levels = SLOT_LEVELS.get((event['slot_type'], event['slot_number']), set())
         if len(levels) != 1:
             return None
-        kind = {1: 'prize', 2: 'score', 3: 'key'}.get(event['type'])
-        location = self.locations.get((next(iter(levels)), kind, event['uid']))
+        location = self.locations.get((next(iter(levels)), EVENT_KINDS.get(event['type']), event['uid']))
         if not location:
             return None
-        if kind == 'prize' and location.get('plan') is not None and location['plan'] != f'g{event["plan_guid"]}':
+        if location.kind == Kind.PRIZE and location.plan is not None and location.plan != f'g{event["plan_guid"]}':
             return None
-        if kind == 'key':
-            slot_type=event.get('target_slot_type')
-            if slot_type not in (0,8): return None
-            target='SlotID{%s, %d}' % ('DEVELOPER' if slot_type==0 else 'DLC_LEVEL',event['plan_guid'])
-            if location['target_slot']!=target: return None
-        return location['id']
+        if location.kind == Kind.KEY:
+            target = (event.get('target_slot_type'), event['plan_guid'])
+            if parse_slot(location.target_slot) != target:
+                return None
+        return location.code
 
     def read(self):
         magic, producer, consumer, dropped = struct.unpack('>4I', self.pine.read(BUFFER, 16))

@@ -1,12 +1,13 @@
 """Read actual v1.30 sticker activation, never inventory ownership or object removal."""
 import struct
 
+from ..locations import LOCATIONS_BY_LEVEL, Kind
 
-def active_switches(reader, progress, guid, locations):
+
+def active_switches(reader, progress, level):
     if reader.build['version'] != '01.30':
         return []
-    wanted = {loc['uid']:loc for loc in locations.values()
-              if loc['level_guid']==guid and loc['kind']=='sticker_switch'}
+    wanted = {loc.uid: loc for loc in LOCATIONS_BY_LEVEL.get(level, ()) if loc.kind == Kind.STICKER_SWITCH}
     if not wanted: return []
     pine=reader.pine
     world=progress['world_address']
@@ -22,11 +23,11 @@ def active_switches(reader, progress, guid, locations):
         if not thing or reader.word(thing+0x70)!=part: continue
         loc=wanted.get(reader.word(thing+0xb8))
         if not loc or reader.word(part+0x160)!=5: continue
-        if reader.word(part+0x4c)!=int(loc['sticker_plan'][1:]): continue
+        if reader.word(part+0x4c)!=int(loc.plan[1:]): continue
         # Native PSwitch::Refresh uses this manual-activation value for STICKER.
         # Tested 0 -> 1 on Get a Grip's Tea Pot switch, UID 824392.
         if pine.read(part+0x168,4)==b'\x3f\x80\x00\x00':
-            checks.append(loc['id'])
+            checks.append(loc.code)
     after=reader.progress()
     if pine.read(address,12)!=header or any(after[k]!=progress[k]
             for k in ('slot_type','slot_number','world_address','active_user','inventory_address')):

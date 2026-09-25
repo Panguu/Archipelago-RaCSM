@@ -8,17 +8,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-if __package__:
-    from .delivery_state import DeliveryState
-    from .deathlink import DeathLinkBridge, UnverifiedPineDeathAdapter
-    from .items import ITEM_ID_TO_DATA
-    from .dlc_validation import ContentOptionsError
-else:
-    sys.path.insert(0, str(ROOT.parents[1]))
-    from delivery_state import DeliveryState
-    from deathlink import DeathLinkBridge, UnverifiedPineDeathAdapter
-    from items import ITEM_ID_TO_DATA
-    from dlc_validation import ContentOptionsError
+from .delivery_state import DeliveryState
+from .deathlink import DeathLinkBridge, UnverifiedPineDeathAdapter
+from .items import ITEM_ID_TO_DATA
+from .dlc_validation import ContentOptionsError
 tracker_loaded = False
 try:
     from worlds.tracker.TrackerClient import TrackerGameContext as SuperContext
@@ -50,10 +43,7 @@ class LBPCommandProcessor(ClientCommandProcessor):
         return True
 
     async def _export_patch(self):
-        if __package__:
-            from .core.patch_export import export_patch
-        else:
-            from core.patch_export import export_patch
+        from .core.patch_export import export_patch
         self.output('Checking AP code compatibility in the running game...')
         try:
             async with self.ctx.game_lock:
@@ -82,10 +72,7 @@ class LBPCommandProcessor(ClientCommandProcessor):
         return True
 
     async def _reset_progress(self, apply, directory):
-        if __package__:
-            from .core.progress_reset import ProgressReset
-        else:
-            from core.progress_reset import ProgressReset
+        from .core.progress_reset import ProgressReset
         if not self.ctx.slot_data:
             self.output('Connect to your AP seed first; only its enabled levels will be reset.')
             return
@@ -258,10 +245,7 @@ class LBPContext(SuperContext):
             if hasattr(self.game_adapter, 'acknowledge_events'):
                 await self.game_adapter.acknowledge_events(events)
         # Delivery capability is independent of pickup/suppression readiness.
-        if __package__:
-            from .constants.traps import ONE_SHOT_KINDS, RETIRED_EFFECT_IDS
-        else:
-            from constants.traps import ONE_SHOT_KINDS, RETIRED_EFFECT_IDS
+        from .constants.traps import ONE_SHOT_KINDS, RETIRED_EFFECT_IDS
         can_deliver = getattr(self.game_adapter, 'can_deliver_items', self.game_adapter.ready)
         deliveries = self.journal.pending_items() if can_deliver else []
         if deliveries and hasattr(self.game_adapter, 'active_command_kind'):
@@ -282,10 +266,7 @@ class LBPContext(SuperContext):
             if await self.game_adapter.grant(ITEM_ID_TO_DATA[item_id]['state']):
                 state = ITEM_ID_TO_DATA[item_id]['state']
                 if state['kind'] == 'content_pack_unlock':
-                    if __package__:
-                        from .content_packs import PACK_LOCATIONS
-                    else:
-                        from content_packs import PACK_LOCATIONS
+                    from .content_packs import PACK_LOCATIONS
                     location = PACK_LOCATIONS[state['slot_number']]['id']
                     self.journal.queue_checks({location} & enabled)
                 self.journal.applied(index, one_shot=state['kind'] in ONE_SHOT_KINDS)
@@ -324,10 +305,7 @@ async def game_loop(ctx):
 
 
 async def main(args):
-    if __package__:
-        from .pine_game import PineGameAdapter
-    else:
-        from pine_game import PineGameAdapter
+    from .pine_game import PineGameAdapter
     ctx = LBPContext(args.connect, args.password, args.state_dir,
                      PineGameAdapter(args.pine_port, args.save_dir, getattr(args, 'rpcs3_dir', None)))
     ctx.auth = args.name

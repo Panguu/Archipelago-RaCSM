@@ -1,8 +1,5 @@
 """Actual My Content costume entries, with stable slot-derived AP identities."""
-if __package__:
-    from .constants.data.my_content_packs import DATA
-else:
-    from constants.data.my_content_packs import DATA
+from .constants.data.my_content_packs import DATA
 
 PACKS = {p['slot_number']: p for p in DATA['packs']}
 PACK_BY_NAME = {p['name']: slot for slot, p in PACKS.items()}

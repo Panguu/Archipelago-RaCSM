@@ -12,7 +12,7 @@ class ProgressReset:
     def __init__(self, pine, slots):
         self.pine = pine
         self.slots = set(slots)
-        self.reader = LevelReader(pine, {})
+        self.reader = LevelReader(pine)
 
     def snapshot(self):
         info = self.reader.validate()
