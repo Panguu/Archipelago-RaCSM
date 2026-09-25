@@ -84,7 +84,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_apicon(self, style: str = "") -> bool:
-        """Choose which Archipelago icon shows on vendor items: /apicon original (default) or /apicon purple.
+        """Choose which Archipelago icon shows on vendor items: /apicon original (default), purple, blue, grey.
         No argument prints the current style. Applies next time a vendor item's icon is assigned."""
         style = style.lower().strip()
         if not style:
@@ -96,7 +96,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         except ValueError as e:
             logger.info(f"[RAC] {e}")
             return False
-        logger.info(f"[RAC] AP icon style set to {style}.")
+        logger.info(f"[RAC] AP icon style set to {vendor_presentation.get_icon_style()}.")
         return True
 
     def _cmd_spawn_ghost(self) -> bool:

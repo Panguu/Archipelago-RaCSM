@@ -6,7 +6,7 @@ from .patches.asm import packed
 from .patches.plan import supported_game_id
 
 _ICON_ROOT = files(__package__.rsplit(".", 1)[0]).joinpath("images", "icons")
-ICON_STYLES = ("original", "purple", "blue")
+ICON_STYLES = ("original", "purple", "blue", "grey")
 _icon_style = "original"
 _icon_cache: dict[str, tuple[bytes, bytes]] = {}
 
@@ -29,6 +29,7 @@ def get_icon_style() -> str:
 
 def set_icon_style(style: str) -> None:
     global _icon_style
+    style = next((s for s in ICON_STYLES if s.lower() == style.lower()), None) or style
     if style not in ICON_STYLES:
         raise ValueError(f"Unknown icon style {style!r}; choices: {', '.join(ICON_STYLES)}")
     _load_icon(style)
