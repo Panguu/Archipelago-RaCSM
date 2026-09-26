@@ -818,6 +818,24 @@ jobs:
           PY
 
       ######################################################################
+      # Sync updated manifest into the staged build copy
+      ######################################################################
+
+      - name: Sync manifest into build environment
+        if: inputs.build_environment != 'local'
+        env:
+          BUILD_ROOT: ${{ steps.build_root.outputs.build_root }}
+          WORLD: ${{ steps.world.outputs.world }}
+          MANIFEST_PATH: ${{ steps.manifest.outputs.manifest_path }}
+        run: |
+          DESTINATION="$BUILD_ROOT/worlds/$WORLD/archipelago.json"
+
+          cp "$MANIFEST_PATH" "$DESTINATION"
+
+          echo "Synced $MANIFEST_PATH -> $DESTINATION"
+          cat "$DESTINATION"
+
+      ######################################################################
       # Generate player templates
       ######################################################################
 
@@ -1333,6 +1351,41 @@ jobs:
           fi
 
           ls -lh "$APWORLD"
+
+      - name: Verify APWorld manifest
+        env:
+          BUILD_ROOT: ${{ steps.build_root.outputs.build_root }}
+          WORLD: ${{ steps.world.outputs.world }}
+          GAME: ${{ steps.manifest.outputs.game }}
+          VERSION: ${{ steps.manifest.outputs.world_version }}
+        run: |
+          python <<'PY'
+          import json
+          import os
+          import zipfile
+
+          world = os.environ["WORLD"]
+          apworld = f"{os.environ['BUILD_ROOT']}/build/apworlds/{world}.apworld"
+          entry = f"{world}/archipelago.json"
+
+          with zipfile.ZipFile(apworld) as zf:
+              names = zf.namelist()
+              if entry not in names:
+                  raise SystemExit(f"{apworld} is missing {entry}")
+              if names.count(entry) != 1:
+                  raise SystemExit(f"{apworld} contains {entry} {names.count(entry)} times")
+              manifest = json.loads(zf.read(entry))
+
+          print(json.dumps(manifest, indent=4))
+
+          for key, expected in (("game", os.environ["GAME"]), ("world_version", os.environ["VERSION"])):
+              if manifest.get(key) != expected:
+                  raise SystemExit(
+                      f"{entry} has {key}={manifest.get(key)!r}, expected {expected!r}"
+                  )
+
+          print(f"{entry} is bundled with world_version {os.environ['VERSION']}.")
+          PY
 
       ######################################################################
       # Find previous release for this APWorld
