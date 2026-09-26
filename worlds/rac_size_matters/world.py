@@ -144,6 +144,12 @@ class RACSizeMatterWorld(World):
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
         self._validate_weapon_options()
+        self._clamp_nanotech_level_max()
+
+    def _clamp_nanotech_level_max(self) -> None:
+        """Nanotech Levels 51-75 only exist in Challenge Mode, so cap the max at 50 without it."""
+        if self.options.challenge_mode.value < 1 and self.options.nanotech_level_max.value > 50:
+            self.options.nanotech_level_max.value = 50
 
     def _validate_weapon_options(self) -> None:
         """Require a projectile weapon that will actually survive item-pool filtering."""

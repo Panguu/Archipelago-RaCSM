@@ -35,7 +35,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.DAYNI_MOON_MIMIC,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.SPROUT_O_MATIC, Rac5Gadgets.SHRINK_RAY) & HasProjectileWeapon() & HasClankPack(world),
         Completion(_S.BOLT_BITS, None, 536870912),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(8,),

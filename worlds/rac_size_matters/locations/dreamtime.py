@@ -4,7 +4,7 @@ from rule_builder.rules import HasAll, True_
 from .. import constants as C
 from ..constants import Rac5Gadgets
 from ..options import AllCutscenes, AllMissions, ChallengeMode, SkillPoints
-from ..rules._helpers import HasChallengeMode, HasProjectileWeapon, HasClankPack
+from ..rules._helpers import HasChallengeMode, HasProjectileWeapon
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
@@ -31,7 +31,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.DREAMTIME_CRAB,
         C.Rac5Planets.DREAMTIME,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon(),
         Completion(_S.BOLT_BITS, None, 262144),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(5,),

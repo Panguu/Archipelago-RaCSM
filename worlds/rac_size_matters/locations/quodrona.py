@@ -6,19 +6,21 @@ from ..constants import Rac5Gadgets, Rac5Infobots
 from ..options import AllCutscenes, AllMissions, ChallengeMode, ShrinkRayOptions, SkillPoints
 from ..rules._helpers import HasChallengeMode, HasClankPack
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
-
+from ..items import GLITCHES_ITEM_NAME
 _S = Rac5CompletionSources
 
 
 def victory_rule(world):
     return HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Infobots.QUODRONA)
 
+def _glitch(world):
+    return HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, GLITCHES_ITEM_NAME)
 
 LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.QUODRONA_DUMMIES,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.BOLT_BITS, None, 68719476736),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(10,),
@@ -27,7 +29,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.QUODRONA_GOAL,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814038, 320, 10),
         categories=frozenset(("boss",)),
         check_order=16,
@@ -36,7 +38,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.QUODRONA_ELITE,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.SKILL_BITS, None, 68719476736),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -46,7 +48,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.QUODRONA_STORM,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.SKILL_BITS, None, 137438953472),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -56,7 +58,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.QUODRONA_FIND,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814038, 4, 10),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -66,7 +68,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.QUODRONA_CLONE,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814038, 8, 10),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -76,7 +78,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.QUODRONA_CHASE,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814038, 16, 10),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -86,7 +88,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.QUODRONA_MECHA,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814038, 32, 10),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),

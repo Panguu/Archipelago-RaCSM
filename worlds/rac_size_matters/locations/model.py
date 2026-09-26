@@ -27,6 +27,7 @@ class Rac5Categories:
     CHALLENGE_MODE_2_ARMOUR_SET = "challenge_mode_2_armour_set"
     CHALLENGE_MODE_MAX_LEVEL = "challenge_mode_max_level"
     CHALLENGE_MODE_MOD = "challenge_mode_mod"
+    CHALLENGE_MODE_NANOTECH_LEVEL = "challenge_mode_nanotech_level"
     CHALLENGE_MODE_RYNO = "challenge_mode_ryno"
     CHALLENGE_MODE_SUB_MAX_LEVEL = "challenge_mode_sub_max_level"
     CHALLENGE_MODE_WEAPON_LEVEL = "challenge_mode_weapon_level"

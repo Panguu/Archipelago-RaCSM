@@ -109,8 +109,7 @@ LOCATIONS = (
         C.Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN,
         C.Rac5Planets.INSIDE_CLANK,
         lambda world: (
-            HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER)
-            & Has(Rac5Gadgets.SHRINK_RAY)
+            HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY)
             & HasChallengeMode(world, 1)
         ),
         Completion(_S.EVENTS, C.Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN),

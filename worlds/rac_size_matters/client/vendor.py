@@ -29,8 +29,6 @@ from ..items import (
 )
 from ..locations import GADGET_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION
 
-_OUTPOST_OMEGA_1_PLANET_ID = 0x06
-
 PROGRESSIVE_WEAPON_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_WEAPON_NAME.items()}
 PROGRESSIVE_ARMOUR_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_ARMOUR_NAME.items()}
 PROGRESSIVE_MOD_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_MOD_NAME.items()}
@@ -166,9 +164,6 @@ class InventoryMixin:
                 continue
             slots = {_SLOT_ATTR[i] for i in range(1, count + 1) if i in _SLOT_ATTR}
             weapon_mod_slots.setdefault(internal, set()).update(slots)
-
-        if self._wiring.planet.planet_id == _OUTPOST_OMEGA_1_PLANET_ID:
-            gadget_unlocked["shrink_ray"] = True
 
         return {
             "weapons":         weapon_unlocked,
