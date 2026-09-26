@@ -1,6 +1,5 @@
 from rule_builder.options import OptionFilter
 from rule_builder.rules import Has, HasAny, True_
-from worlds.rac_size_matters import world
 
 from .. import constants as C
 from ..constants import Rac5Weapons
@@ -11,12 +10,16 @@ from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locat
 
 _S = Rac5CompletionSources
 
-_GLITCH = Has(GLITCHES_ITEM_NAME) and HasClankPack(world)
+
+def _glitch(world):
+    return Has(GLITCHES_ITEM_NAME) & HasClankPack(world)
+
+
 LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.POKITARU_ZIPLINE,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.BOLT_BITS, None, 1),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(1,),
@@ -25,7 +28,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.POKITARU_HUT,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.BOLT_BITS, None, 2),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(1,),
@@ -34,7 +37,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.POKITARU_CHESTPLATE,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.ARMOUR, "wildfire", 1),
         categories=frozenset(("armour_pickup",)),
         definition_order=20,
@@ -42,7 +45,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.POKITARU_GLOVES,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.ARMOUR, "wildfire", 4),
         categories=frozenset(("armour_pickup",)),
         definition_order=21,
@@ -50,7 +53,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.POKITARU_HYPERBOREAN_GLOVES,
         C.Rac5Planets.POKITARU,
-        lambda world: (HasProjectileWeapon() | _GLITCH) & HasChallengeMode(world, 1),
+        lambda world: (HasProjectileWeapon() | _glitch(world)) & HasChallengeMode(world, 1),
         Completion(_S.ARMOUR, "hyperborean", 4),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),)),
         categories=frozenset(("armour_pickup", "challenge_mode_1_armour")),
@@ -68,7 +71,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.POKITARU_TRAIN,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.SKILL_BITS, None, 1),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset(("skill_point", "easy_skill_point")),
@@ -78,7 +81,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.POKITARU_BOAT,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.SKILL_BITS, None, 2),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset(("skill_point", "easy_skill_point")),
@@ -103,7 +106,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.POKITARU_FIGHT,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.MISSIONS, 32814020, 2, 1),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -113,7 +116,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.POKITARU_RESCUE,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _GLITCH,
+        lambda world: HasProjectileWeapon() | _glitch(world),
         Completion(_S.MISSIONS, 32814020, 4, 1),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
