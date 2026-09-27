@@ -9,3 +9,4 @@ ruff.toml
 test
 .ruff_cache
 poptracker
+tools

@@ -1308,6 +1308,27 @@ jobs:
       # Build APWorld
       ######################################################################
 
+      - name: Apply apworld.ignore
+        env:
+          BUILD_ROOT: ${{ steps.build_root.outputs.build_root }}
+          WORLD: ${{ steps.world.outputs.world }}
+        run: |
+          # "Build APWorlds" only reads a world's .apignore (gitignore syntax), so append apworld.ignore to it.
+          WORLD_DIR="$BUILD_ROOT/worlds/$WORLD"
+          if [ ! -f "$WORLD_DIR/apworld.ignore" ]; then
+            echo "No apworld.ignore in $WORLD_DIR"
+            exit 0
+          fi
+          {
+            [ -f "$WORLD_DIR/.apignore" ] && cat "$WORLD_DIR/.apignore" && echo ""
+            cat "$WORLD_DIR/apworld.ignore"
+            echo ""
+            echo "/apworld.ignore"
+          } > "$WORLD_DIR/.apignore.tmp"
+          mv "$WORLD_DIR/.apignore.tmp" "$WORLD_DIR/.apignore"
+          echo "Effective .apignore:"
+          cat "$WORLD_DIR/.apignore"
+
       - name: Build APWorld
         env:
           BUILD_ROOT: ${{ steps.build_root.outputs.build_root }}
