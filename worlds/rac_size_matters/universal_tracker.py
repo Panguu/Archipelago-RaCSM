@@ -77,6 +77,11 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.starting_weapons.value = world.passthrough[Rac5Options.STARTING_WEAPONS]
             world.options.starting_gadgets.value = world.passthrough[Rac5Options.STARTING_GADGETS]
             world.options.starting_bolts.value = world.passthrough[Rac5Options.STARTING_BOLTS]
+            world.options.experimental_skins.value = world.passthrough.get(Rac5Options.EXPERIMENTAL_SKINS, False)
+            world.options.starting_skin.value = world.passthrough.get(Rac5Options.STARTING_SKIN, 0)
+            world.options.ap_icon.value = world.options.ap_icon.options.get(
+                world.passthrough.get(Rac5Options.AP_ICON, "original"), 0
+            )
             world.options.death_amnesty.value = world.passthrough[Rac5Options.DEATH_AMNESTY]
             world.options.weapon_level_checks.value = world.passthrough.get(Rac5Options.WEAPON_LEVEL_CHECKS, 0)
             world.options.nanotech_level_interval.value = world.passthrough.get(Rac5Options.NANOTECH_LEVEL_INTERVAL, 0)

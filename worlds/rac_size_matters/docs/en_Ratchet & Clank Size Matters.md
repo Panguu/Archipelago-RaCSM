@@ -105,7 +105,7 @@ changes. The client must be connected to enforce these effects.
 
 ### Game Links
 
-Cross-player options, each with a matching client-side toggle you also need to turn on (`/enable_ammolink`, `/enable_boltlink`, `/enable_ghostlink` — see the [setup guide](setup_en.md#client-commands)) before they actually do anything — enabling the YAML option alone auto-enables the toggle on connect, but you can flip any of them on/off per-session from the client too, same as Death Link.
+Cross-player options, each with a matching client-side toggle you also need to turn on (`/toggle_ammolink`, `/toggle_boltlink`, `/toggle_ghostlink` — see the [setup guide](setup_en.md#client-commands)) before they actually do anything — enabling the YAML option alone auto-enables the toggle on connect, but you can flip any of them on/off per-session from the client too, same as Death Link.
 
 **These only ever link you with other Ratchet & Clank: Size Matters players** — never with players of other games, even ones on your same team. Ghost Link picks its candidate peers by explicitly matching game, and Ammo/Bolt Link's underlying sync data is keyed under this game's own namespace, so another game's client never sees or touches it.
 

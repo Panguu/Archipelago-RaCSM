@@ -191,7 +191,7 @@ class Rac5Locations:
     planet: str
     rule: Callable
     completed: Callable
-    code: int = field(init=False, default_factory=lambda: next(_LOCATION_IDS))
+    code: int | None = None  # None takes the next sequential ID; pass one to pin a location added after the originals.
     options: LocationOptions | None = None
     categories: frozenset[str] = frozenset()
     weapon: str | None = None
@@ -203,6 +203,10 @@ class Rac5Locations:
     native_planets: tuple[int, ...] = ()
     check_order: int = 0
     definition_order: int = 0  # Preserve generation and reporting order when grouping records by planet.
+
+    def __post_init__(self) -> None:
+        if self.code is None:
+            object.__setattr__(self, "code", next(_LOCATION_IDS))
 
     @property
     def region(self) -> str:

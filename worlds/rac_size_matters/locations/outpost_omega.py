@@ -3,9 +3,16 @@ from rule_builder.rules import Has, HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets
-from ..options import AllCutscenes, AllMissions, ChallengeMode, EnableSkyboardChallengeSkillPoints, SkyboardChallenges
+from ..options import (
+    AllCutscenes,
+    AllMissions,
+    ChallengeMode,
+    EnableSkyboardChallengeSkillPoints,
+    ShrinkRayOptions,
+    SkyboardChallenges,
+)
 from ..rules._helpers import HasChallengeMode
-from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
+from .model import BASE_ID, Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
 
@@ -156,5 +163,25 @@ LOCATIONS = (
         categories=frozenset(("extra_skyboard",)),
         check_order=6,
         definition_order=363,
+    ),
+    Rac5Locations(
+        C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_GRINDRAIL,
+        C.Rac5Planets.OUTPOST_OMEGA,
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_GRINDRAIL),
+        code=BASE_ID + 372,
+        options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
+        categories=frozenset(("shrink_ray_skip",)),
+        definition_order=371,
+    ),
+    Rac5Locations(
+        C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_SECOND_GRINDRAIL,
+        C.Rac5Planets.OUTPOST_OMEGA,
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_SECOND_GRINDRAIL),
+        code=BASE_ID + 374,
+        options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
+        categories=frozenset(("shrink_ray_skip",)),
+        definition_order=373,
     ),
 )

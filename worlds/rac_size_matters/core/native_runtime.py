@@ -144,16 +144,17 @@ class NativeRuntime:
         box = PLANET_ADDRESSES[target].small_text_box
         if box is not None and plan is not None and options.skins:
             has_hero_buffer = p.read_int32(multiplayer_skins.mcp_address(self.gate.game_id) + 0x2DC) != 0
+            extended = has_hero_buffer and options.multiplayer_skins
             self.skin = skins.prepare(
                 p,
                 code_start=base,
                 code=code,
                 arena=plan.arena,
                 menu=PLANET_ADDRESSES[target].menu,
-                model_count=multiplayer_skins.COUNT if has_hero_buffer else 7,
+                model_count=multiplayer_skins.COUNT if extended else 7,
             )
             self.plans.append(self.skin)
-            if has_hero_buffer and options.multiplayer_skins:
+            if extended:
                 self.plans.append(multiplayer_skins.prepare(p, code_start=base, code=code, skin=self.skin))
             if options.item_toast:
                 self.toast = item_toast.prepare(

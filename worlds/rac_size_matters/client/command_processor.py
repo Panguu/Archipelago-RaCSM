@@ -78,6 +78,9 @@ class RACCommandProcessor(ClientCommandProcessor):
         if not self.ctx.pine_connected or self.ctx._wiring is None:
             logger.info("[RAC] Connect to PCSX2 before changing skins.")
             return False
+        if selected.unlock_mask is None and not self.ctx._wiring.native.patch_options.multiplayer_skins:
+            logger.info("[RAC] Multiplayer skins need Experimental Skins enabled in your YAML.")
+            return False
         asyncio.create_task(self.ctx._guarded_wiring_call(
             lambda: self.ctx._wiring.skin.set(selected)))
         logger.info("[RAC] Skin queued: %s. Applies when gameplay is ready.", selected.name)
@@ -96,6 +99,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         except ValueError as e:
             logger.info(f"[RAC] {e}")
             return False
+        self.ctx._ap_icon_chosen_by_command = True
         logger.info(f"[RAC] AP icon style set to {vendor_presentation.get_icon_style()}.")
         return True
 
@@ -116,44 +120,24 @@ class RACCommandProcessor(ClientCommandProcessor):
         logger.info(f"[RAC] Debug messages {state}.")
         return True
 
-    def _cmd_enable_deathlink(self) -> bool:
-        """Enable DeathLink for this session."""
-        asyncio.create_task(self.ctx._set_death_link_enabled(True))
+    def _cmd_toggle_deathlink(self) -> bool:
+        """Toggle DeathLink on or off for this session."""
+        asyncio.create_task(self.ctx._set_death_link_enabled(not self.ctx._death_link_enabled))
         return True
 
-    def _cmd_disable_deathlink(self) -> bool:
-        """Disable DeathLink for this session."""
-        asyncio.create_task(self.ctx._set_death_link_enabled(False))
+    def _cmd_toggle_ammolink(self) -> bool:
+        """Toggle AmmoLink on or off for this session."""
+        asyncio.create_task(self.ctx._set_ammo_link_enabled(not self.ctx._ammo_link_enabled))
         return True
 
-    def _cmd_enable_ammolink(self) -> bool:
-        """Enable AmmoLink for this session."""
-        asyncio.create_task(self.ctx._set_ammo_link_enabled(True))
+    def _cmd_toggle_boltlink(self) -> bool:
+        """Toggle BoltLink on or off for this session."""
+        asyncio.create_task(self.ctx._set_bolt_link_enabled(not self.ctx._bolt_link_enabled))
         return True
 
-    def _cmd_disable_ammolink(self) -> bool:
-        """Disable AmmoLink for this session."""
-        asyncio.create_task(self.ctx._set_ammo_link_enabled(False))
-        return True
-
-    def _cmd_enable_boltlink(self) -> bool:
-        """Enable BoltLink for this session."""
-        asyncio.create_task(self.ctx._set_bolt_link_enabled(True))
-        return True
-
-    def _cmd_disable_boltlink(self) -> bool:
-        """Disable BoltLink for this session."""
-        asyncio.create_task(self.ctx._set_bolt_link_enabled(False))
-        return True
-
-    def _cmd_enable_ghostlink(self) -> bool:
-        """Enable GhostLink for this session."""
-        asyncio.create_task(self.ctx._set_ghost_link_enabled(True))
-        return True
-
-    def _cmd_disable_ghostlink(self) -> bool:
-        """Disable GhostLink for this session."""
-        asyncio.create_task(self.ctx._set_ghost_link_enabled(False))
+    def _cmd_toggle_ghostlink(self) -> bool:
+        """Toggle GhostLink on or off for this session."""
+        asyncio.create_task(self.ctx._set_ghost_link_enabled(not self.ctx._ghost_link_enabled))
         return True
 
     def _cmd_ghost_link_interval(self, seconds: str = "") -> bool:

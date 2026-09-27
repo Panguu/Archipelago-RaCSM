@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from dataclasses import replace
 from typing import Any
 
 from ..constants.options import Rac5Options
@@ -24,6 +25,7 @@ from CommonClient import logger
 
 from ..core import RAC5SaveData, TextColour, colored_text, set_trap_durations
 from ..core.core import Core
+from ..core import vendor_presentation
 from ..core.options import ClientOptions
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
@@ -91,6 +93,7 @@ class RACContext(
         self._items_received_ready = False
         self._connection_sync_pending = True
         self._starting_skin_option = 0
+        self._ap_icon_chosen_by_command = False
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
@@ -318,6 +321,15 @@ class RACContext(
             if isinstance(trap_duration, dict):
                 set_trap_durations(trap_duration)
             self._starting_skin_option = int(self.slot_data.get(Rac5Options.STARTING_SKIN, 0))
+            self._wiring.native.patch_options = replace(
+                self._wiring.native.patch_options,
+                multiplayer_skins=bool(self.slot_data.get(Rac5Options.EXPERIMENTAL_SKINS, False)),
+            )
+            if not self._ap_icon_chosen_by_command:
+                try:
+                    vendor_presentation.set_icon_style(str(self.slot_data.get(Rac5Options.AP_ICON, "original")))
+                except ValueError as e:
+                    logger.info(f"[RAC] {e}")
             link_tags = [
                 tag
                 for tag, enabled in (

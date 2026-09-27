@@ -235,9 +235,10 @@ class NgPlusItems(DefaultOnToggle):
 
 
 class ChallengeMode(Range):
-    """Enables the game's Challenge Mode (New Game Plus) and controls how far
-    into it generation reaches. Also written to game memory at connect so the
-    game itself enters the matching Challenge Mode tier.
+    """Max Challenge Mode tier (New Game Plus) and how far into it generation reaches.
+    With Progressive Challenge Mode on, this is the maximum tier the Progressive
+    Challenge Mode items can raise you to. Otherwise it is the Challenge Mode tier
+    the game starts in, written to game memory at connect.
     0: vanilla — no Challenge Mode content.
     1: Challenge Mode 1 — adds the RYNO vendor purchase, 10 Challenge-Mode-only
     weapon mod purchases, and the 4 Hyperborean armour pieces as real pickups.
@@ -247,7 +248,7 @@ class ChallengeMode(Range):
     with that option off, none of them are placed in the pool at all, so this
     option alone has no effect."""
 
-    display_name = "Challenge Mode"
+    display_name = "Max Challenge Mode"
     range_start = 0
     range_end = 2
     default = 0
@@ -255,17 +256,17 @@ class ChallengeMode(Range):
 
 class ProgressiveChallengeMode(Toggle):
     """Gates Challenge Mode content behind a "Progressive Challenge Mode" item instead
-    of it being unconditionally accessible as soon as the Challenge Mode option enables
-    it. Challenge Mode still controls the ceiling — how many copies end up in the pool,
+    of it being unconditionally accessible as soon as the Max Challenge Mode option enables
+    it. Max Challenge Mode still controls the ceiling — how many copies end up in the pool,
     and how far generation reaches — this only changes when that content becomes
     logically reachable.
     off (default): Challenge Mode content (RYNO, Titan variants, Challenge-Mode-only
     mods, Hyperborean/Chameleon pickups) is reachable as soon as its planet is, same as
     today.
-    on: one "Progressive Challenge Mode" item per tier is added to the pool (so Challenge
+    on: one "Progressive Challenge Mode" item per tier is added to the pool (so Max Challenge
     Mode 2 adds 2 copies); tier-1 content requires 1 copy received, tier-2 content
     requires 2. The in-game Challenge Mode tier itself now rises as copies come in,
-    instead of being fixed at connect."""
+    up to Max Challenge Mode, instead of being fixed at connect."""
 
     display_name = "Progressive Challenge Mode"
 
@@ -471,9 +472,18 @@ class WeaponLevelChecks(Choice):
     default = 0
 
 
+class ExperimentalSkins(Toggle):
+    """Patches the thirteen red multiplayer skins into the single-player skin menu.
+    Experimental. When off, the multiplayer skins aren't patched in at all, and
+    Starting Skin can't be set to one of them."""
+
+    display_name = "Experimental Skins"
+
+
 class StartingSkin(Choice):
     """Cosmetic skin for Ratchet. Applied automatically on each planet load.
-    Includes the thirteen red multiplayer skins; blue variants are excluded.
+    Includes the thirteen red multiplayer skins (MP Ratchet onwards), which need
+    Experimental Skins on; blue variants are excluded.
     All skins are unlocked in-game regardless of this choice."""
 
     display_name = "Starting Skin"
@@ -497,6 +507,18 @@ class StartingSkin(Choice):
     option_samurai_ratchet = 17
     option_kangaroo_ratchet = 18
     option_tuxedo_ratchet = 19
+    default = 0
+
+
+class ApIcon(Choice):
+    """Default Archipelago icon shown on vendor items. Can still be changed while
+    playing with the /apicon client command."""
+
+    display_name = "AP Icon"
+    option_original = 0
+    option_purple = 1
+    option_grey = 2
+    option_blue = 3
     default = 0
 
 
@@ -526,14 +548,16 @@ class RACSizeMatterOptions(PerGameCommonOptions):
         Rac5Options.SHRINK_RAY_OPTIONS: ShrinkRayOptions,
         Rac5Options.ARMOUR_SET_CHECKS: ArmourSetChecks,
         Rac5Options.NG_PLUS_ITEMS: NgPlusItems,
-        Rac5Options.CHALLENGE_MODE: ChallengeMode,
         Rac5Options.PROGRESSIVE_CHALLENGE_MODE: ProgressiveChallengeMode,
+        Rac5Options.CHALLENGE_MODE: ChallengeMode,
         Rac5Options.SKILL_POINTS: SkillPoints,
         Rac5Options.STARTING_WEAPONS: StartingWeapons,
         Rac5Options.STARTING_GADGETS: StartingGadgets,
         Rac5Options.RANDOM_STARTING_PLANET: RandomStartingPlanet,
         Rac5Options.STARTING_BOLTS: StartingBolts,
+        Rac5Options.EXPERIMENTAL_SKINS: ExperimentalSkins,
         Rac5Options.STARTING_SKIN: StartingSkin,
+        Rac5Options.AP_ICON: ApIcon,
         Rac5Options.TRAP_CHANCE: TrapChance,
         Rac5Options.TRAP_WEIGHT: TrapWeight,
         Rac5Options.TRAP_DURATION: TrapDuration,
@@ -608,14 +632,16 @@ racsm_option_groups = [
             NanotechLevelInterval,
             NanotechLevelMax,
             NgPlusItems,
-            ChallengeMode,
             ProgressiveChallengeMode,
+            ChallengeMode,
         ],
     ),
     OptionGroup(
         "RACSM Cosmetic Options",
         [
+            ExperimentalSkins,
             StartingSkin,
+            ApIcon,
         ],
     ),
 ]

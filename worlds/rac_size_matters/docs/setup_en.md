@@ -75,10 +75,10 @@ The weapon/gadget array's memory location is resolved directly from the loaded p
 | `/vendor_refresh` | Force-rewrite the vendor's item list immediately, instead of waiting for the next menu open/close. |
 | `/debug` | Toggle verbose per-tick state-change logging in the client console. |
 | `/spawn_ghost` | Spawn a static ghost clone of yourself at your current position (only on planets with confirmed Ghost Ratchet addresses) — debug tool, unrelated to Ghost Link. |
-| `/enable_deathlink` / `/disable_deathlink` | Toggle DeathLink for this session. |
-| `/enable_ammolink` / `/disable_ammolink` | Toggle Ammo Link for this session. |
-| `/enable_boltlink` / `/disable_boltlink` | Toggle Bolt Link for this session. |
-| `/enable_ghostlink` / `/disable_ghostlink` | Toggle Ghost Link for this session. |
+| `/toggle_deathlink` | Toggle DeathLink on or off for this session. |
+| `/toggle_ammolink` | Toggle Ammo Link on or off for this session. |
+| `/toggle_boltlink` | Toggle Bolt Link on or off for this session. |
+| `/toggle_ghostlink` | Toggle Ghost Link on or off for this session. |
 | `/ghost_link_interval [seconds]` | Show (no argument) or override how often your position is broadcast to other Ghost Link players — overrides the Ghost Link Update Interval YAML option without regenerating. |
 
 Toggling a Link on/off client-side is only half the picture — the matching YAML option (Ammo Link, Bolt Link, Ghost Link) must also be enabled at generation time. See the game info page's "What options are available?" section for details.

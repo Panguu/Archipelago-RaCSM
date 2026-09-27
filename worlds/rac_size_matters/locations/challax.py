@@ -1,12 +1,12 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import Has, True_
+from rule_builder.rules import Has, HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets, Rac5Infobots
 from ..constants.options import Rac5Options
 from ..options import AllCutscenes, AllMissions, ChallengeMode, GiantClank, ShrinkRayOptions, SkillPoints
 from ..rules._helpers import HasChallengeMode
-from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
+from .model import BASE_ID, Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
 
@@ -285,5 +285,15 @@ LOCATIONS = (
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset(("shrink_ray_skip",)),
         definition_order=366,
+    ),
+    Rac5Locations(
+        C.Rac5ShrinkRayGrindrail.CHALLAX_SECOND_PUZZLE,
+        C.Rac5Planets.CHALLAX,
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.POLARIZER, Rac5Gadgets.SPROUT_O_MATIC),
+        Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.CHALLAX_SECOND_PUZZLE),
+        code=BASE_ID + 373,
+        options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
+        categories=frozenset(("shrink_ray_skip",)),
+        definition_order=372,
     ),
 )

@@ -79,3 +79,12 @@ def HasGoodExpPlanet() -> Or:
         HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         HasAll(Rac5Infobots.OUTPOST_OMEGA, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
     )
+
+def HasExpAccess() -> Or:
+    return Or(
+        HasAll(Rac5Infobots.QUODRONA, Rac5Gadgets.SHRINK_RAY),
+        HasAll(Rac5Infobots.DAYNI_MOON, Rac5Gadgets.SPROUT_O_MATIC),
+        HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
+        HasAll(Rac5Infobots.METALIS, Rac5Gadgets.POLARIZER),
+        HasAny(Rac5Infobots.POKITARU,Rac5Infobots.RYLLUS, Rac5Infobots.KALIDON, Rac5Infobots.OUTPOST_OMEGA),
+    )

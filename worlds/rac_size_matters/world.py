@@ -39,7 +39,7 @@ from .items import (
     WEAPON_PROGRESSIVE_STEPS,
     enabled_weapon_names,
 )
-from .locations import ALL_LOCATIONS
+from .locations import ALL_LOCATIONS, ARMOUR_SET_CHECK_LOCATIONS
 from .options import (
     AllCutscenes,
     AllMissions,
@@ -48,6 +48,7 @@ from .options import (
     EnabledWeapons,
     EnableClankChallengeSkillPoints,
     EnableSkyboardChallengeSkillPoints,
+    ExperimentalSkins,
     ProgressiveArmour,
     ProgressiveWeapons,
     RACSizeMatterOptions,
@@ -55,6 +56,7 @@ from .options import (
     ShrinkRayOptions,
     SkillPoints,
     SkyboardChallenges,
+    StartingSkin,
     WeaponLevelChecks,
     racsm_option_groups,
 )
@@ -144,12 +146,24 @@ class RACSizeMatterWorld(World):
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
         self._validate_weapon_options()
+        self._validate_skin_options()
         self._clamp_nanotech_level_max()
 
     def _clamp_nanotech_level_max(self) -> None:
         """Nanotech Levels 51-75 only exist in Challenge Mode, so cap the max at 50 without it."""
         if self.options.challenge_mode.value < 1 and self.options.nanotech_level_max.value > 50:
             self.options.nanotech_level_max.value = 50
+
+    def _validate_skin_options(self) -> None:
+        """Multiplayer skins only exist in-game when Experimental Skins patches them in."""
+        if self.options.experimental_skins or self.options.starting_skin.value < StartingSkin.option_mp_ratchet:
+            return
+        player_name = self.multiworld.get_player_name(self.player)
+        raise OptionError(
+            f"{player_name}'s RAC Size Matters: {StartingSkin.display_name} "
+            f"'{self.options.starting_skin.current_key}' is a multiplayer skin and needs "
+            f"{ExperimentalSkins.display_name} enabled."
+        )
 
     def _validate_weapon_options(self) -> None:
         """Require a projectile weapon that will actually survive item-pool filtering."""
@@ -295,6 +309,19 @@ class RACSizeMatterWorld(World):
 
         if deficit > 0:
             self.handle_not_enough_locations(deficit)
+
+        # Armour set checks need most of the armour, so they're only reachable at the very end of
+        # fill; progression that can only go there fails on some seeds instead of every seed.
+        if self.multiworld.players == 1:
+            armour_set_checks = sum(
+                1 for location in self.multiworld.get_unfilled_locations(self.player)
+                if location.name in ARMOUR_SET_CHECK_LOCATIONS
+            )
+            progression_count = sum(1 for name in pool if self.create_item(name).advancement)
+            progression_deficit = progression_count - (unfilled - armour_set_checks)
+            if progression_deficit > 0:
+                self.handle_not_enough_locations(progression_deficit)
+
         pool += [self.get_filler_item_name() for _ in range(max(0, filler_count))]
 
         for name in pool:
@@ -335,7 +362,7 @@ class RACSizeMatterWorld(World):
         player_name = self.multiworld.get_player_name(self.player)
         message = (
             f"{player_name}'s RAC Size Matters: Not enough location options enabled! "
-            f"{count} items have nowhere to be placed."
+            f"{count} items have nowhere to be placed. "
         )
         if count >= 20:
             message += (
@@ -386,7 +413,9 @@ class RACSizeMatterWorld(World):
             Rac5Options.STARTING_GADGETS: self.options.starting_gadgets.value,
             Rac5Options.RANDOM_STARTING_PLANET: self.options.random_starting_planet.value,
             "starting_planet_id": self.starting_planet_id,
+            Rac5Options.EXPERIMENTAL_SKINS: bool(self.options.experimental_skins.value),
             Rac5Options.STARTING_SKIN: self.options.starting_skin.value,
+            Rac5Options.AP_ICON: self.options.ap_icon.current_key,
             Rac5Options.WEAPON_EXPERIENCE_MULTIPLIER: self.options.weapon_experience_multiplier.value,
             Rac5Options.BOLT_MULTIPLIER: self.options.bolt_multiplier.value,
             Rac5Options.NANOTECH_EXPERIENCE_MULTIPLIER: self.options.nanotech_experience_multiplier.value,

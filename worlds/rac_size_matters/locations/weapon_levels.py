@@ -7,7 +7,7 @@ from .. import constants as C
 from ..constants import Rac5Weapons
 from ..items import PROGRESSIVE_WEAPON_NAME
 from ..options import ChallengeMode, NgPlusItems, WeaponLevelChecks
-from ..rules._helpers import HasChallengeMode, HasGoodExpPlanet
+from ..rules._helpers import HasChallengeMode, HasExpAccess, HasGoodExpPlanet
 from .model import Completion, LocationOptions, Rac5Categories, Rac5CompletionSources, Rac5Locations
 
 _C = Rac5Categories
@@ -21,7 +21,7 @@ def access_rule(world, *, weapon, level):
         Has(PROGRESSIVE_WEAPON_NAME[weapon], level)
         if world.options.progressive_weapons
         else HasAny(weapon, PROGRESSIVE_WEAPON_NAME[weapon])
-    )
+    ) & HasExpAccess()
     if level >= 5:
         rule = rule & HasChallengeMode(world, 1)
     if weapon in _NEEDS_GOOD_EXP_PLANET:
