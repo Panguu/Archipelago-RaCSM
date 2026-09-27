@@ -35,7 +35,7 @@ class LBPCommandProcessor(ClientCommandProcessor):
         return super()._cmd_connect(address)
 
     def _cmd_patch(self):
-        """Verify the running Union-patched LBP and export its personal AP RPCS3 patch."""
+        """Verify the running LBP v1.30 (original or Union-patched) and install its AP RPCS3 patch."""
         if getattr(self, '_patch_task', None) and not self._patch_task.done():
             self.output('Patch verification is already running.')
             return False
@@ -43,20 +43,40 @@ class LBPCommandProcessor(ClientCommandProcessor):
         return True
 
     async def _export_patch(self):
-        from .core.patch_export import export_patch
+        from .core.patch_export import export_patch, install_patch
         self.output('Checking AP code compatibility in the running game...')
+        adapter = self.ctx.game_adapter
+        port, pine = getattr(adapter, 'port', 28011), getattr(adapter, 'pine', None)
+        validator = getattr(adapter, 'content_validator', None)
+        root = None
+        if validator:
+            try:
+                root = (await asyncio.to_thread(validator.game_directory)).parent.parent
+            except ContentOptionsError as exc:
+                self.output(f'Cannot locate RPCS3 ({exc}); exporting the patch file instead.')
         try:
             async with self.ctx.game_lock:
-                path = await asyncio.to_thread(export_patch, self.ctx.state_dir / 'patches',
-                                              getattr(self.ctx.game_adapter, 'port', 28011),
-                                              getattr(self.ctx.game_adapter, 'pine', None))
+                if root:
+                    executable, path = await asyncio.to_thread(install_patch, root, port, pine)
+                else:
+                    path = await asyncio.to_thread(export_patch, self.ctx.state_dir / 'patches', port, pine)
+        except (ConnectionRefusedError, TimeoutError):
+            # The patch is keyed by the running executable's hash, so the game must be booted.
+            self.output(f'Patch install failed: RPCS3 is not answering on PINE port {port}. '
+                        'Boot LittleBigPlanet in RPCS3 with IPC/PINE enabled '
+                        '(Configuration > IPC), then run /patch again.')
+            return
         except (OSError, RuntimeError, ValueError) as exc:
-            self.output(f'Patch export failed: {exc}')
+            self.output(f'Patch install failed: {exc}')
+            return
+        if root:
+            self.output(f'AP patch installed and enabled for {executable}: {path.resolve()}')
+            self.output('Restart the game in RPCS3 to apply it. Run /patch again after changing EBOOT.')
             return
         self.output(f'AP patch exported: {path.resolve()}')
         self.output('Import this file in RPCS3 Manage > Game Patches, enable '
                     'Archipelago LittleBigPlanet v1.30, then restart the game. '
-                    'Keep your Union-patched EBOOT. Run /patch again after repatching online settings.')
+                    'Run /patch again after changing EBOOT. Restart the client and pick your RPCS3 folder to install automatically.')
 
     @mark_raw
     def _cmd_reset_progress(self, arguments: str = ''):
@@ -327,6 +347,22 @@ async def main(args):
             ctx.journal.close()
 
 
+def saved_rpcs3_directory():
+    """RPCS3 folder from host.yaml, asking for it (and saving it) when missing or invalid."""
+    import settings
+    from .world import LittleBigPlanetWorld
+    options = LittleBigPlanetWorld.settings
+    path = options.rpcs3_directory
+    while not (Path(path.resolve())/'dev_hdd0').is_dir():
+        path = path.browse()
+        if path is None:
+            logger.warning('No RPCS3 folder selected; /patch will export a file to import manually.')
+            return None
+        options.rpcs3_directory = path
+        settings.get_settings().save()
+    return Path(path.resolve())
+
+
 def launch(*argv):
     parser = get_base_parser(description=__doc__)
     parser.add_argument('--name', help='Archipelago slot name')
@@ -334,12 +370,14 @@ def launch(*argv):
     parser.add_argument('url', nargs='?', help='Archipelago connection URL')
     parser.add_argument('--state-dir', type=Path, default=ROOT/'output/client')
     parser.add_argument('--save-dir', type=Path, help='Active LBP USRDIR save folder for pre-delivery backups; defaults to installed hook configuration')
-    parser.add_argument('--rpcs3-dir', type=Path, help='Active RPCS3 folder for checking required DLC installation')
+    parser.add_argument('--rpcs3-dir', type=Path, help='Active RPCS3 folder for DLC checks and /patch; defaults to host.yaml, asked for on first launch')
     logging.basicConfig(level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
     # websockets logs every PING/PONG frame at DEBUG; keep only warnings and above.
     logging.getLogger('websockets').setLevel(logging.WARNING)
     args = handle_url_arg(parser.parse_args(argv), parser=parser)
+    if args.rpcs3_dir is None:
+        args.rpcs3_dir = saved_rpcs3_directory()
     asyncio.run(main(args))
 
 
