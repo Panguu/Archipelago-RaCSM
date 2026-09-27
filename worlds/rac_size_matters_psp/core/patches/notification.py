@@ -105,6 +105,22 @@ class NotificationHook:
                              name='Independent AP notification', planet_id=self.planet)
         self.storage.retain(self)
         self.plan.install()
+        self.memory._notification_hook = self
+
+    def original_prologue(self, frame, planet):
+        if (self.plan is None or not self.plan.installed
+                or frame != self.profile.frame or planet != self.planet):
+            return None
+        edit = self.plan.edits[0]
+        if self.memory.read_bytes(frame, len(edit.replacement)) != edit.replacement:
+            return None
+        return edit.original
+
+    def abandon(self):
+        # Caller has verified that a new overlay replaced the entry jump.
+        self.storage.release(self)
+        if getattr(self.memory, '_notification_hook', None) is self:
+            self.memory._notification_hook = None
 
     def show(self, text, frames=180):
         self.storage.write(self.text.name, text.encode('ascii')+b'\0')
@@ -114,4 +130,4 @@ class NotificationHook:
         if self.plan is not None:
             self.plan.restore()
             self.plan.validate(False)
-            self.storage.release(self)
+            self.abandon()

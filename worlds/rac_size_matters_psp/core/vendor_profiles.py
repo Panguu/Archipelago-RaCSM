@@ -66,8 +66,16 @@ def resolve(memory, planet_id):
         frame = base + profile['renderer']['code']
         expected = struct.pack('<3I', 0x27BDFFA0, 0x3C040000 | ((timer+0x8000)>>16),
                                0x8C840000 | (timer&65535))
-        if memory.read_bytes(frame, 12) != expected:
-            return None
+        actual = memory.read_bytes(frame, 12)
+        if actual != expected:
+            # Only a hook owned by this memory session may supply displaced
+            # instructions. Unknown jumps and modified hooks remain rejected.
+            hook = getattr(memory, '_notification_hook', None)
+            if hook is None:
+                return None
+            original = hook.original_prologue(frame, planet_id)
+            if original is None or original + actual[8:] != expected:
+                return None
         panel_calls = []
         for call in profile['panel_calls']:
             address = frame+call['offset']

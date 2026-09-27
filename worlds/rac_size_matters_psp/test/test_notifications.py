@@ -34,82 +34,76 @@ class TestNotifications(unittest.TestCase):
         self.memory.paused = lambda **kwargs: nullcontext()
         self.memory.invalidate_code = Mock()
         self.memory.get_game_id = lambda: 'UCUS98633'
-        calls = tuple((0x09101000+i*16, bytes.fromhex('0040400c00000000')) for i in range(3))
-        for address, code in calls:
-            self.memory.write_bytes(address, code)
-        self.profile = SimpleNamespace(timer=0x09300000, panel_calls=calls)
+        self.profile = SimpleNamespace(timer=0x09300000, frame=0x09100000)
+        self.original = bytes.fromhex('a0ffbd272c09043c')
+        self.memory.write_bytes(self.profile.frame, self.original)
         self.kernel = Kernel()
-        self.resolve = patch('worlds.rac_size_matters_psp.core.notifications.resolve', return_value=self.profile)
-        self.bridge = patch('worlds.rac_size_matters_psp.core.notifications.KernelBridge', return_value=self.kernel)
-        self.resolve.start()
-        self.bridge.start()
-        self.addCleanup(self.resolve.stop)
-        self.addCleanup(self.bridge.stop)
+        from ..core.patches.notification import Font
+        for name, value in (
+            ('notifications.resolve', self.profile),
+            ('notifications.KernelBridge', self.kernel),
+            ('patches.notification.resolve_font', Font(0x09110000, 0x09120000, 0x09310000, 0x09310004))):
+            context = patch('worlds.rac_size_matters_psp.core.'+name, return_value=value)
+            context.start()
+            self.addCleanup(context.stop)
         self.hud = HudNotifications(self.memory)
 
-    def test_text_only_message_restores_code_and_hud_then_frees_storage(self):
-        self.memory.write_int32(self.profile.timer+20, 0x09800000)
-        self.memory.write_int32(self.profile.timer+28, 99)
+    def test_native_prompt_untouched_during_notification_and_after_close(self):
+        original = bytes(range(64))
+        self.memory.write_bytes(self.profile.timer, original)
         self.hud.enqueue('Received Lacerator from Player Two')
         self.hud.tick(1, True)
         self.assertFalse(self.hud.failed)
-        self.assertEqual(self.memory.read_int32(self.profile.timer), 180)
-        self.assertEqual(self.memory.read_int32(self.profile.timer+20), self.hud.buffer.address)
-        for address, code in self.profile.panel_calls:
-            self.assertEqual(self.memory.read_bytes(address, 8), b'\0'*4+code[4:])
-        self.memory.write_int32(self.profile.timer, 0)
-        self.hud.tick(1, True)
-        self.assertEqual(self.memory.read_int32(self.profile.timer+20), 0x09800000)
-        self.assertEqual(self.memory.read_int32(self.profile.timer+28), 99)
-        for address, code in self.profile.panel_calls:
-            self.assertEqual(self.memory.read_bytes(address, 8), code)
+        self.assertEqual(self.memory.read_int32(self.hud.hook.state.address), 180)
+        self.assertEqual(self.memory.read_bytes(self.profile.timer, 64), original)
         self.hud.close()
+        self.assertEqual(self.memory.read_bytes(self.profile.timer, 64), original)
+        self.assertEqual(self.memory.read_bytes(self.profile.frame, 8), self.original)
         self.assertEqual(self.kernel.freed, [12])
 
-    def test_defers_while_native_message_or_transition_is_active(self):
+    def test_transition_defers_without_writing(self):
         self.hud.enqueue('AP message')
-        self.memory.write_int32(self.profile.timer, 7)
-        before = bytes(self.memory.data)
-        self.hud.tick(1, True)
-        self.assertIsNone(self.hud.storage)
-        self.assertEqual(bytes(self.memory.data), before)
-        self.memory.write_int32(self.profile.timer, 0)
         self.memory.write_int32(TransitionGateStruct.BASE_ADDRESS, 0)
         before = bytes(self.memory.data)
         self.hud.tick(1, True)
         self.assertEqual(bytes(self.memory.data), before)
+        self.assertIsNone(self.hud.storage)
 
-    def test_native_message_can_take_over_without_being_cleared(self):
-        self.hud.enqueue('AP message')
+    def test_messages_wait_for_own_countdown_not_native_prompt(self):
+        self.hud.enqueue('First')
+        self.hud.enqueue('Second')
         self.hud.tick(1, True)
-        self.memory.write_int32(self.profile.timer+20, 0x09801100)
-        self.memory.write_int32(self.profile.timer+28, 180)
-        self.memory.write_int32(self.profile.timer, 20)
         self.hud.tick(1, True)
-        self.assertEqual(self.memory.read_int32(self.profile.timer+20), 0x09801100)
-        self.assertEqual(self.memory.read_int32(self.profile.timer), 20)
+        self.assertEqual(list(self.hud.pending), ['Second'])
+        self.memory.write_int32(self.hud.hook.state.address, 0)
+        self.memory.write_int32(self.profile.timer, 100)
+        self.hud.tick(1, True)
+        self.assertEqual(list(self.hud.pending), [])
+        self.assertEqual(self.memory.read_bytes(self.hud.hook.text.address, 7), b'Second\0')
+        self.assertEqual(self.memory.read_int32(self.profile.timer), 100)
         self.hud.close()
-
-    def test_close_restores_active_message_before_free(self):
-        self.hud.enqueue('AP message')
-        self.hud.tick(1, True)
-        self.hud.close()
-        self.assertEqual(self.memory.read_int32(self.profile.timer), 0)
-        for address, code in self.profile.panel_calls:
-            self.assertEqual(self.memory.read_bytes(address, 8), code)
-        self.assertEqual(self.kernel.freed, [12])
 
     def test_queue_is_bounded_and_text_is_safe(self):
         for _ in range(30):
-            self.hud.enqueue('X'*80+'\0é')
+            self.hud.enqueue('X'*80+'\0\u00e9')
         self.assertEqual(len(self.hud.pending), 12)
         self.assertEqual(self.hud.pending[0], 'X'*60)
 
-    def test_departed_overlay_is_not_restored(self):
+    def test_retains_allocation_if_old_hook_still_reachable(self):
         self.hud.enqueue('AP message')
         self.hud.tick(1, True)
         self.memory.write_int8(CURRENT_PLANET_ADDRESS, 3)
-        before = bytes(self.memory.data)
+        with self.assertLogs('CommonClient', level='ERROR'):
+            self.hud.tick(3, True)
+        self.assertTrue(self.hud.failed)
+        self.assertEqual(self.kernel.freed, [])
+
+    def test_departed_overlay_code_is_not_restored(self):
+        self.hud.enqueue('AP message')
+        self.hud.tick(1, True)
+        self.memory.write_int8(CURRENT_PLANET_ADDRESS, 3)
+        self.memory.write_bytes(self.profile.frame, b'new code')
         self.hud.tick(3, True)
-        self.assertEqual(bytes(self.memory.data), before)
-        self.assertIsNone(self.hud.active)
+        self.assertEqual(self.memory.read_bytes(self.profile.frame, 8), b'new code')
+        self.assertEqual(self.kernel.freed, [12])
+        self.assertIsNone(self.hud.storage)

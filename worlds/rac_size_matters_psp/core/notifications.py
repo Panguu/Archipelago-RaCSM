@@ -44,15 +44,15 @@ class HudNotifications:
                     edit = self.hook.plan.edits[0]
                     if self.memory.read_bytes(edit.address, 8) == edit.replacement:
                         raise RuntimeError('Old notification hook is still reachable')
-                    self.storage.release(self.hook)
+                    self.hook.abandon()
             self.storage.close()
         self.storage = self.kernel = self.hook = None
         self.profile = self.planet = None
 
     def tick(self, planet, ready):
-        if not ready or not self._ready(planet) or self.failed:
-            return
         if not self.pending and self.storage is None:
+            return
+        if not ready or not self._ready(planet) or self.failed:
             return
         try:
             if self.planet is not None and self.planet != planet:
@@ -84,6 +84,9 @@ class HudNotifications:
                 'PSP notifications stopped after validation failure; messages remain in client log')
 
     def close(self):
+        if self.storage is None:
+            self.failed = False
+            return
         planet = self.memory.read_int8(CURRENT_PLANET_ADDRESS)
         if self.storage is not None and not self._ready(planet):
             raise RuntimeError('Cannot release notification storage during loading')

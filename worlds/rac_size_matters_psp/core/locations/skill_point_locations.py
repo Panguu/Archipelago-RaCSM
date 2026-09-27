@@ -42,7 +42,7 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     Rac5SkillPoints.KALIDON_SUPER_LOMBAX:    SkillPoint(0x03,  9, Rac5Planets.KALIDON),
     Rac5SkillPoints.KALIDON_SKYBOARDER:      SkillPoint(0x03, 10, Rac5Planets.KALIDON),
     Rac5SkillPoints.METALIS_SHUTOUT:         SkillPoint(0x04, 12, Rac5Planets.METALIS),
-    # Rac5SkillPoints.METALIS_TERROR: SkillPoint(0x04, 13, Rac5Planets.METALIS)
+    Rac5SkillPoints.METALIS_TERROR: SkillPoint(0x0F, 13, Rac5Planets.METALIS),
     # Giant Clank disabled — unreachable.
     Rac5SkillPoints.METALIS_GLADIATOR:       SkillPoint(0x04, 14, Rac5Planets.METALIS),
     Rac5SkillPoints.DREAMTIME_FRIENDS:       SkillPoint(0x05, 16, Rac5Planets.DREAMTIME),
@@ -51,7 +51,7 @@ SKILL_POINTS: dict[str, SkillPoint] = {
     # Rac5SkillPoints.CHALLAX_SHOCK: SkillPoint(0x07, 24, Rac5Planets.CHALLAX)
     # Excluded: only one opportunity to complete this in the whole game (bit 24).
     Rac5SkillPoints.CHALLAX_MASTER:          SkillPoint(0x07, 25, Rac5Planets.CHALLAX),
-    # Rac5SkillPoints.CHALLAX_VARMINTS: SkillPoint(0x07, 26, Rac5Planets.CHALLAX)
+    Rac5SkillPoints.CHALLAX_VARMINTS: SkillPoint(0x15, 26, Rac5Planets.CHALLAX),
     # Giant Clank disabled — unreachable.
     Rac5SkillPoints.DAYNI_MOON_GLADIATOR:    SkillPoint(0x08, 28, Rac5Planets.DAYNI_MOON),
     Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST: SkillPoint(0x08, 29, Rac5Planets.DAYNI_MOON),

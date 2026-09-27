@@ -24,6 +24,7 @@ class VendorPresentation:
         self.failed = False
         self.reward_for_id = lambda identity: None
         self._resolved_profiles = {}
+        self._planet_id = None
 
     def _original(self, address, size):
         data = bytearray(self.memory.read_bytes(address, size))
@@ -68,6 +69,7 @@ class VendorPresentation:
         self.plan = None
         self.failed = False
         self._resolved_profiles.clear()
+        self._planet_id = None
 
     def _profile(self, planet_id):
         if planet_id in self.PROFILES:
@@ -141,6 +143,11 @@ class VendorPresentation:
         if not ready:
             self.abandon()
             return
+        if self._planet_id != planet_id:
+            # A poll can miss the loading interval. Never carry saved texture
+            # bytes or a failed profile lookup into another planet's overlay.
+            self.abandon()
+            self._planet_id = planet_id
         try:
             if not enabled:
                 self.restore()

@@ -104,3 +104,26 @@ class TestVendorPresentation(unittest.TestCase):
         self.assertIn(b'Progressive Armour', self.memory.read_bytes(0x09903000, 100))
         self.view.restore()
         self.assertEqual(bytes(self.memory.data), before)
+
+    def test_planet_change_without_loading_poll_discards_old_snapshot(self):
+        from unittest.mock import Mock
+        self.view.update(1, True, True)
+        self.view._resolved_profiles[3] = None
+        self.memory.write_int32(CURRENT_PLANET_ADDRESS, 3)
+        before = bytes(self.memory.data)
+        self.view._edits = Mock(return_value=None)
+        self.view.update(3, True, True)
+        self.assertIsNone(self.view.plan)
+        self.assertEqual(self.view._resolved_profiles, {})
+        self.assertEqual(bytes(self.memory.data), before)
+        self.assertFalse(self.view.failed)
+
+    def test_profile_failure_does_not_follow_player_to_next_planet(self):
+        from unittest.mock import Mock
+        self.view.update(1, True, True)
+        self.view.failed = True
+        self.memory.write_int32(CURRENT_PLANET_ADDRESS, 3)
+        self.view._edits = Mock(return_value=None)
+        self.view.update(3, True, True)
+        self.view._edits.assert_called_once_with(3)
+        self.assertFalse(self.view.failed)

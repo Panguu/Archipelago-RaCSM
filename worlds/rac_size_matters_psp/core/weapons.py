@@ -27,86 +27,12 @@ PROGRESSIVE_OFF       = 0
 PROGRESSIVE_MANUAL    = 1
 PROGRESSIVE_AUTOMATIC = 2
 
-class WeaponData(NamedTuple):
-    is_projectile: bool
-    classification: ItemClassification
-    max_level: int
-    mod_count: int
-    # Experience required to reach each level, 1-indexed (exp_thresholds[0]
-    # is the experience needed for level 2, etc. — level 1 needs none).
-    # Length is always max_level - 1.
-    exp_thresholds: tuple[int, ...] = ()
+from ..data.weapons import (
+    WeaponData, WEAPON_DATA, WEAPON_MAX_LEVELS, WEAPON_MOD_COUNTS,
+    WEAPON_EXP_THRESHOLDS,
+)
 
-
-# Single source of truth per weapon (keyed by internal Rac5WeaponKeys).
-# WEAPON_MAX_LEVELS/WEAPON_MOD_COUNTS/WEAPON_EXP_THRESHOLDS below are derived
-# from this; items.py and rules/_helpers.py derive projectile/classification
-# membership from it too.
-WEAPON_DATA: dict[str, WeaponData] = {
-    Rac5WeaponKeys.LACERATOR: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(3000, 9000, 15000),
-    ),
-    Rac5WeaponKeys.CONCUSSION_GUN: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=3,
-        exp_thresholds=(6000, 9000, 12000),
-    ),
-    Rac5WeaponKeys.ACID_BOMB_GLOVE: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(3000, 6000, 9000),
-    ),
-    Rac5WeaponKeys.AGENTS_OF_DOOM: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(6000, 9000, 12000),
-    ),
-    Rac5WeaponKeys.BEE_MINE_GLOVE: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(6000, 7500, 9000),
-    ),
-    Rac5WeaponKeys.STATIC_BARRIER: WeaponData(
-        is_projectile=False, classification=ItemClassification.useful, max_level=4, mod_count=2,
-        exp_thresholds=(15000, 18000, 21000),
-    ),
-    Rac5WeaponKeys.SHOCK_ROCKET: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=3,
-        exp_thresholds=(15000, 19000, 42000),
-    ),
-    Rac5WeaponKeys.SNIPER_MINE: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(4000, 5500, 7000),
-    ),
-    Rac5WeaponKeys.SCORCHER: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(7000, 8500, 10000),
-    ),
-    Rac5WeaponKeys.LASER_TRACER: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=2,
-        exp_thresholds=(15000, 27000, 45000),
-    ),
-    Rac5WeaponKeys.SUCK_CANNON: WeaponData(
-        is_projectile=True, classification=ItemClassification.useful, max_level=4, mod_count=0,
-        exp_thresholds=(3500, 5000, 7000),
-    ),
-    Rac5WeaponKeys.MOOTATOR: WeaponData(
-        is_projectile=False, classification=ItemClassification.progression, max_level=4, mod_count=0,
-        exp_thresholds=(12000, 12000, 16000),
-    ),
-    Rac5WeaponKeys.RYNO: WeaponData(
-        is_projectile=True, classification=ItemClassification.progression, max_level=4, mod_count=0,
-        exp_thresholds=(85000, 350000, 999000),
-    ),
-}
-
-WEAPON_MOD_COUNTS: dict[str, int] = {key: data.mod_count for key, data in WEAPON_DATA.items()}
-
-WEAPON_MAX_LEVELS: dict[str, int] = {key: data.max_level for key, data in WEAPON_DATA.items()}
-
-# Per-weapon tuple of fixed experience thresholds, 1-indexed by level reached
-# (see WeaponData.exp_thresholds) — placeholder zeros until real values are
-# supplied.
-WEAPON_EXP_THRESHOLDS: dict[str, tuple[int, ...]] = {
-    key: data.exp_thresholds for key, data in WEAPON_DATA.items()
-}
+TITAN_ELIGIBLE_WEAPONS = frozenset(name for name in WEAPON_DATA if name != Rac5WeaponKeys.RYNO)
 
 
 def exp_threshold_for_level(weapon: str, level: int) -> int | None:
@@ -401,6 +327,8 @@ class WeaponInventory:
         # derived from Progressive Weapon copies received; kept current by
         # Core.apply_inventory(). Absent = zero copies, fully locked.
         self.level_caps: dict[str, int] = {}
+        self.challenge_mode = 0
+        self.titan_purchased = dict.fromkeys(TITAN_ELIGIBLE_WEAPONS, False)
         # manual mode only, weapons with zero copies received (cap < 0): the
         # experience value to keep rewriting so a fully-locked weapon's
         # experience never moves — captured on first observation, cleared
@@ -581,7 +509,7 @@ class WeaponInventory:
                 # multi-billion-iteration loop, freezing the client. A
                 # weapon's level can never legitimately exceed its own max,
                 # so clamp against that instead of trusting the raw read.
-                current_level = min(current_level, WEAPON_MAX_LEVELS.get(name, current_level))
+                current_level = min(current_level, WEAPON_MAX_LEVELS.get(name, 1) - 1)
                 if current_level > prev_level:
                     for idx in range(prev_level + 1, current_level + 1):
                         level = idx + 1
@@ -632,7 +560,7 @@ class WeaponInventory:
             if not bool(data[i + addr._OFFSETS["unlocked"]]):
                 continue
             current_level, = _struct.unpack_from("<i", data, i + addr._OFFSETS["level"])
-            self._raw_level[name] = min(current_level, WEAPON_MAX_LEVELS.get(name, current_level))
+            self._raw_level[name] = min(current_level, WEAPON_MAX_LEVELS.get(name, 1) - 1)
 
     def apply_experience_boost(self) -> None:
         """Inflate each weapon's experience gain by experience_multiplier,
@@ -661,96 +589,84 @@ class WeaponInventory:
                 self._prev_experience[name] = current
                 continue
             level, = _struct.unpack_from("<i", data, i + addr._OFFSETS["level"])
-            if multiplier > 1 and level < 4:
+            if multiplier > 1 and level < WEAPON_MAX_LEVELS.get(name, 1) - 1:
                 boosted = previous + diff * multiplier
                 addr.experience = boosted
                 self._prev_experience[name] = boosted
             else:
                 self._prev_experience[name] = current
 
+    def _titan_bound(self, name: str) -> tuple[int | None, int | None]:
+        """(ceiling, floor) Challenge Mode Titan bounds for `name`: (3, None) before its
+        Titan variant is bought, (None, 4) after, (None, None) if not applicable."""
+        if self.challenge_mode < 1 or name not in TITAN_ELIGIBLE_WEAPONS:
+            return None, None
+        if self.titan_purchased.get(name, False):
+            return None, 4
+        return 3, None
+
     def apply_progressive_leveling(self) -> None:
-        """Gate weapon leveling behind Progressive Weapon items received,
-        every tick. No-op when progressive_mode is PROGRESSIVE_OFF.
-
-        automatic: level is fully dictated by level_caps — pinned to the
-        received count, experience zeroed continuously.
-
-        manual: the player levels up by playing normally, but only within
-        the window AP has opened. A weapon with no cap yet is fully locked —
-        experience is captured on first observation and rewritten every tick
-        until a first copy arrives. Below cap, experience is capped every
-        tick at the fixed WEAPON_EXP_THRESHOLDS ceiling for the next
-        not-yet-permitted level — every tick, not just once level reaches
-        cap, because apply_experience_boost() runs first and can, under a
-        high multiplier, inflate a single tick's gain past the ceiling in
-        one jump, letting the game's leveling logic skip past a level it
-        wasn't supposed to reach yet.
-
-        The instant level reaches cap, the game resets experience to 0 —
-        it's locked there, not at the ceiling, so organic play can't rack up
-        "practice" progress toward an unopened level. Receiving another
-        Progressive copy raises cap, lifting the 0-lock and the ceiling
-        together.
-        """
+        """Gate weapon leveling behind Progressive Weapon items and/or Challenge Mode Titan purchase every tick."""
         mode = self.progressive_mode
-        if mode == PROGRESSIVE_OFF:
-            return
-
-        data = self._read_array()
-        if data is None:
+        titan_active = self.challenge_mode >= 1
+        if mode == PROGRESSIVE_OFF and not titan_active:
             return
 
         for name, addr in self._weapon_addrs.items():
-            i = addr.base - self._array_base
-            level, = _struct.unpack_from("<i", data, i + addr._OFFSETS["level"])
-            experience, = _struct.unpack_from("<i", data, i + addr._OFFSETS["experience"])
-            cap = self.level_caps.get(name, -1)
+            titan_ceiling, titan_floor = self._titan_bound(name) if titan_active else (None, None)
 
-            if mode == PROGRESSIVE_AUTOMATIC:
-                target_level = max(cap, 0)
-                # Only write what's out of place — avoids a steady stream of
-                # no-op writes once a weapon is already pinned at its cap.
-                if level != target_level:
-                    addr.level = target_level
-                if experience != 0:
+            if mode == PROGRESSIVE_OFF:
+                # Buying the AP Titan location lifts the level ceiling; it does
+                # not grant levels (including to weapons not yet received).
+                if titan_ceiling is not None and addr.level > titan_ceiling:
+                    addr.level = titan_ceiling
                     addr.experience = 0
                 continue
 
-            # manual
+            cap = self.level_caps.get(name, -1)
+
+            if mode == PROGRESSIVE_AUTOMATIC:
+                addr.level = max(cap, 0)
+                addr.experience = 0
+                continue
+
+            if titan_floor is not None:
+                cap = max(cap, titan_floor)
+            elif titan_ceiling is not None and cap > titan_ceiling:
+                if addr.level < titan_ceiling:
+                    cap = titan_ceiling
+            elif titan_ceiling is not None:
+                cap = min(cap, titan_ceiling)
+
             if cap < 0:
-                # No Progressive copies received yet — fully locked.
                 pinned = self._pinned_experience.get(name)
                 if pinned is None:
-                    self._pinned_experience[name] = experience
-                elif experience != pinned:
+                    self._pinned_experience[name] = addr.experience
+                else:
                     addr.experience = pinned
                 continue
             self._pinned_experience.pop(name, None)
 
-            if level > cap:
-                # Shouldn't normally happen (caps only rise), but pull back
-                # down defensively rather than leave it over-leveled.
+            if addr.level > cap:
                 addr.level = cap
-                level = cap
 
             max_level_idx = WEAPON_MAX_LEVELS.get(name, cap + 1) - 1
             if cap >= max_level_idx:
                 continue
 
-            if level == cap:
-                # Already at the max permitted level — keep experience at 0
-                # (the game's own level-up already did this) rather than
-                # letting it climb toward a ceiling with no level to reach.
-                if experience != 0:
+            if addr.level == cap:
+                if addr.experience != 0:
                     addr.experience = 0
                 continue
 
-            # level < cap: room to grow naturally, but never let a single
-            # boosted tick's gain carry past the ceiling for the next
-            # not-yet-permitted level (cap + 1, same 0-indexing as addr.level).
-            ceiling = exp_threshold_for_level(name, cap + 1)
-            if ceiling is not None and experience > ceiling:
-                addr.experience = ceiling
+            next_threshold = exp_threshold_for_level(name, addr.level + 2)
+            if next_threshold is None:
+                addr.level += 1
+                addr.experience = 0
+            else:
+                ceiling = exp_threshold_for_level(name, cap + 1)
+                if ceiling is not None and addr.experience > ceiling:
+                    addr.experience = ceiling
 
     def wipe(self) -> None:
         """Zero every weapon/gadget/mod unlock bit, level and experience in
@@ -891,6 +807,10 @@ class WeaponInventory:
                     setattr(addr, slot, False)
 
     def sync_from_ap(self, checked_locations: set[str]) -> None:
+        from ..locations import TITAN_INTERNAL_TO_LOCATION
+        for name, location in TITAN_INTERNAL_TO_LOCATION.items():
+            if location in checked_locations:
+                self.titan_purchased[name] = True
         for loc in checked_locations:
             if loc in self.vendor_locations:
                 self.vendor_locations[loc] = True

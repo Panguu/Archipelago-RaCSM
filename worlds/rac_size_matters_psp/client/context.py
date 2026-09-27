@@ -27,12 +27,13 @@ from .deathlink import DeathLinkMixin
 from .handlers import CutsceneHandlerMixin, EventsHandlerMixin
 from .psp_mixin import PspMixin
 from .links import ResourceLinkMixin
+from .ghost_link import GhostLinkMixin
 from .server_sync import ServerSyncMixin
 from .vendor import InventoryMixin, VendorHandlerMixin
 
 
 class RACContext(
-    ServerSyncMixin, ResourceLinkMixin, PspMixin, CutsceneHandlerMixin, EventsHandlerMixin,
+    ServerSyncMixin, ResourceLinkMixin, GhostLinkMixin, PspMixin, CutsceneHandlerMixin, EventsHandlerMixin,
     DeathLinkMixin, VendorHandlerMixin, InventoryMixin, CommonContext,
 ):
     game = GAME_NAME
@@ -45,6 +46,7 @@ class RACContext(
         super().__init__(server_address, password)
 
         self._init_resource_links()
+        self._init_ghost_link()
         self.memory = ProcMemTransport()
         self.pine = self.memory  # Compatibility name used by the existing PSP inventory accessors.
         self.native = NativeRuntime(self.memory)
@@ -88,9 +90,8 @@ class RACContext(
 
     def _vendor_reward_for_id(self, identity):
         from ..core.vendor import WEAPON_VENDOR_IDS
-        from ..locations import WEAPON_INTERNAL_TO_LOCATION, GADGET_INTERNAL_TO_LOCATION
         name = next((name for name, value in WEAPON_VENDOR_IDS.items() if value == identity), None)
-        location = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
+        location = self._wiring.vendor.purchase_location(name)
         info = self.locations_info.get(self._location_name_to_id.get(location))
         if info is None:
             return None
@@ -208,12 +209,23 @@ class RACContext(
         super().on_package(cmd, args)
         if cmd in ("Retrieved", "SetReply"):
             self._resource_link_packet(cmd, args)
+            self._ghost_link_packet(cmd, args)
 
         if cmd == "Connected":
             self._reset_server_sync()
             self._death_link_pending = False
             self._death_link_applied = False
             self.slot_data = args.get("slot_data", {})
+            self._ghost_link_interval = max(0.0, float(self.slot_data.get("ghost_link_update_interval", 5)))
+            asyncio.create_task(self._set_ghost_link_enabled(bool(self.slot_data.get("ghost_link", False))))
+            self._wiring.challenge_mode.configure(
+                int(self.slot_data.get("challenge_mode", 0)),
+                bool(self.slot_data.get("progressive_challenge_mode", False)),
+            )
+            self.native.starting_planet.configure(
+                self.slot_data.get("starting_planet_id")
+                if int(self.slot_data.get("random_starting_planet", 0)) != 0 else None
+            )
             self._wiring.planet_unlock.split_infobots = bool(self.slot_data.get("split_infobots", False))
             self._wiring.planet_unlock.set_random_start(
                 int(self.slot_data.get("random_starting_planet", 0)) != 0
@@ -250,6 +262,10 @@ class RACContext(
             )
             trap_duration = self.slot_data.get("trap_duration")
             set_trap_durations(trap_duration if isinstance(trap_duration, dict) else {}, self.pine)
+            self.native.giant_clank_enabled = bool(self.slot_data.get("giant_clank", False))
+            self._wiring.planet.giant_clank_allowed = bool(self.slot_data.get("giant_clank", False))
+            self._wiring.shrink_ray_options = int(self.slot_data.get("shrink_ray_options", 0))
+            self._wiring.player_health_exp.multiplier = int(self.slot_data.get("nanotech_experience_multiplier", 1)) or 1
             self._starting_skin_option = int(self.slot_data.get("starting_skin", 0))
             self.tags = self.tags - {"DeathLink", "AmmoLink", "BoltLink"}
             if self._death_link_enabled:
@@ -336,6 +352,13 @@ class RACContext(
         super().on_connection_closed()
         self._reset_server_sync()
         self._init_resource_links()
+        self._ghost_link_peers.clear()
+        self._ghost_link_enabled = False
+        if self.psp_connected:
+            try:
+                self._wiring.ghost_ratchet.stop_following()
+            except Exception as exc:
+                logger.warning(f"[RAC] Ghost cleanup after server disconnect failed: {exc}")
         self._write_notification_text(colored_text(
             "Disconnected from ", TextColour.YELLOW, "Archipelago", TextColour.WHITE,
         ))

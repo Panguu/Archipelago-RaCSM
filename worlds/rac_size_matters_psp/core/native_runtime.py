@@ -1,11 +1,16 @@
 """Lifecycle for checked PSP patches and owned HUD notification storage."""
 from .notifications import HudNotifications
+from .patches.starting_planet import StartingPlanet
+from .patches.giant_clank import GiantClankReturn
 
 class NativeRuntime:
     def __init__(self, memory):
         self.memory = memory
         self.plans = []
         self.notifications = HudNotifications(memory)
+        self.starting_planet = StartingPlanet(memory)
+        self.giant_clank = GiantClankReturn(memory)
+        self.giant_clank_enabled = False
 
     def notify(self, text):
         self.notifications.enqueue(text)
@@ -25,6 +30,8 @@ class NativeRuntime:
         self.plans.append(plan)
 
     def tick(self, planet_id, ready):
+        self.starting_planet.service()
+        self.giant_clank.tick(planet_id,self.giant_clank_enabled)
         self.notifications.tick(planet_id, ready)
         for plan in self.plans:
             active = ready and (plan.planet_id is None or plan.planet_id == planet_id)
@@ -34,6 +41,8 @@ class NativeRuntime:
                 plan.restore()
 
     def restore(self):
+        self.giant_clank.restore()
+        self.starting_planet.close()
         self.notifications.close()
         for plan in reversed(self.plans):
             plan.restore()

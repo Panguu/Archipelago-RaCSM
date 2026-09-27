@@ -18,6 +18,7 @@ from ..items import (
     ARMOUR_SET_DISPLAY_TO_INTERNAL,
     ARMOUR_SETS,
     PROGRESSIVE_ARMOUR_UNIFIED_NAME,
+    PROGRESSIVE_CHALLENGE_MODE_NAME,
     GADGET_DISPLAY_TO_INTERNAL,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_MOD_NAME,
@@ -87,6 +88,7 @@ class InventoryMixin:
         weapon_mod_prog_counts: dict[str, int] = {}
         armour_prog_counts:     dict[str, int] = {}
         unified_armour_count = 0
+        challenge_mode_count = 0
         weapon_unlocked:  dict[str, bool]     = {}
         gadget_unlocked:  dict[str, bool]     = {}
         weapon_mod_slots: dict[str, set[str]] = {}
@@ -96,6 +98,9 @@ class InventoryMixin:
         for network_item in self.items_received:
             item_name = self.item_names[self.game].get(network_item.item, "")
 
+            if item_name == PROGRESSIVE_CHALLENGE_MODE_NAME:
+                challenge_mode_count += 1
+                continue
             if item_name in PROGRESSIVE_WEAPON_NAME_REVERSE:
                 display = PROGRESSIVE_WEAPON_NAME_REVERSE[item_name]
                 weapon_prog_counts[display] = weapon_prog_counts.get(display, 0) + 1
@@ -177,6 +182,7 @@ class InventoryMixin:
             "weapon_mods":     weapon_mod_slots,
             "armour_unlocked": armour_unlocked,
             "infobot_planets": infobot_planets,
+            "challenge_mode": challenge_mode_count,
         }
 
     async def force_sync(self) -> None:

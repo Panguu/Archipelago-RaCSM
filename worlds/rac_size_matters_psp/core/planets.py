@@ -167,6 +167,7 @@ class PlanetInventory:
         # while a planet transition is in flight — every read/write below
         # is gated on this, since addresses are stale/unbound until then.
         self.is_ready: bool = False
+        self.giant_clank_allowed = False
         self._prev_gate: int = TRANSITION_GATE_IDLE
         # Quick select starts frozen; zeroed the first time a planet becomes
         # ready (fresh boot), restored from the in-memory snapshot every time after.
@@ -262,7 +263,7 @@ class PlanetInventory:
         # whatever was already loaded (via QuickSelectState.load()), not
         # just later transitions.
         self.quick_select.restore()
-        if planet_id == _METALIS_ID:
+        if planet_id == _METALIS_ID and not self.giant_clank_allowed:
             self._suppress_giant_clank()
 
     def _suppress_giant_clank(self) -> None:

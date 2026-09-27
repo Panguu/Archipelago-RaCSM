@@ -9,10 +9,12 @@ from ..locations import (
     MOD_INTERNAL_TO_LOCATION,
     WEAPON_INTERNAL_TO_LOCATION,
     WEAPON_LEVEL_LOOKUP,
+    TITAN_INTERNAL_TO_LOCATION,
 )
 from .address_maps import PLANET_ADDRESSES, WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS
 from .controller import GlobalButtonState, PauseSelectButtons
 from .menu import MenuStateValue
+from .weapons import TITAN_ELIGIBLE_WEAPONS
 
 if TYPE_CHECKING:
     from ..pypsp import Psp
@@ -59,8 +61,7 @@ WEAPON_VENDOR_IDS: dict[str, int] = {
 
 # internal weapon/gadget name -> PlanetUnlockState key, for deciding which
 # items are currently purchasable (their vendor planet is AP-accessible).
-# Ryno/mootator/sprout_o_matic/polarizer/shrink_ray aren't sold at any
-# weapons vendor, so they're absent here.
+# RYNO is offered on Pokitaru only once Challenge Mode tier 1 is active.
 _WEAPON_TO_PLANET_KEY: dict[str, str] = {
     "lacerator":       "POKITARU",
     "acid_bomb_glove": "POKITARU",
@@ -73,6 +74,7 @@ _WEAPON_TO_PLANET_KEY: dict[str, str] = {
     "shock_rocket":    "DAYNI_MOON",
     "static_barrier":  "INSIDE_CLANK",
     "laser_tracer":    "QUODRONA",
+    "ryno":            "POKITARU",
 }
 
 _GADGET_TO_PLANET_KEY: dict[str, str] = {
@@ -99,7 +101,30 @@ _MOD_LOCATION_TO_PLANET_KEY: dict[str, str] = {
     Rac5ModVendorLocations.QUODRONA_SNIPER_SPLIT:      "QUODRONA",
     Rac5ModVendorLocations.QUODRONA_SHOCK_LOCK:        "QUODRONA",
     Rac5ModVendorLocations.QUODRONA_SHOCK_AFTER:       "QUODRONA",
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE:       "KALIDON",
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE:      "KALIDON",
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE:     "KALIDON",
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB:          "KALIDON",
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR: "CHALLAX",
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER:   "CHALLAX",
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION:      "KALIDON",
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE:         "QUODRONA",
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE:           "CHALLAX",
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET:        "QUODRONA",
 }
+
+_CHALLENGE_MODE_MOD_LOCATIONS: frozenset[str] = frozenset({
+    Rac5ModVendorLocations.KALIDON_AGENTS_EXPLOSIVE,
+    Rac5ModVendorLocations.KALIDON_SCORCHER_SUNFLARE,
+    Rac5ModVendorLocations.KALIDON_SUCK_CANNON_BOUNCE,
+    Rac5ModVendorLocations.KALIDON_BEE_HIVE_BOMB,
+    Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR,
+    Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER,
+    Rac5ModVendorLocations.KALIDON_STATIC_REFLECTION,
+    Rac5ModVendorLocations.QUODRONA_STATIC_MIRAGE,
+    Rac5ModVendorLocations.CHALLAX_LASER_PIERCE,
+    Rac5ModVendorLocations.QUODRONA_LASER_RICOCHET,
+})
 
 # Planets whose mod vendor requires extra gadgets beyond the planet itself
 # being AP-accessible (mirrors rules/challax.py's _base rule: Shrink Ray +
@@ -182,6 +207,7 @@ class VendorInventory:
         self._is_weapon_level_checks_enabled = is_weapon_level_checks_enabled or (lambda: False)
         self.weapons: WeaponInventory = planet.weapons
         self._items: list[str] = []
+        self.challenge_mode = 0
 
         # State that must survive between per-tick weapon_vendor()/mod_vendor() calls.
         self._weapon_vendor_open:      bool = False
@@ -190,6 +216,7 @@ class VendorInventory:
         # Weapon levels snapshotted while the weapons vendor is open — see
         # weapon_vendor()'s open block / close() below.
         self._level_snapshot: dict[str, int] = {}
+        self._experience_snapshot: dict[str, int] = {}
 
     def controller(self) -> GlobalButtonState | None:
         """Current controller/pause-select button state, or None if no planet
@@ -223,13 +250,55 @@ class VendorInventory:
         loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
         return bool(loc and self.weapons.vendor_locations.get(loc, False))
 
+    def _is_titan_eligible(self, name: str) -> bool:
+        return (self.challenge_mode >= 1 and name in TITAN_ELIGIBLE_WEAPONS
+                and not self.weapons.titan_purchased.get(name, False))
+
+    def _is_titan_pending(self, name: str) -> bool:
+        if not self._is_titan_eligible(name):
+            return False
+        if name == "mootator":
+            return self._level_snapshot.get(name, self.weapons.get_level(name)) >= 3
+        return self._is_purchased(name)
+
+    def purchase_location(self, name: str) -> str | None:
+        if self._is_titan_pending(name):
+            return TITAN_INTERNAL_TO_LOCATION.get(name)
+        return WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
+
+    def _prepare_purchase_view(self) -> None:
+        # Reuse the native buy-new path at the Titan level (zero-based 4).
+        # These are display values; preserve real progression across purchases.
+        self.weapons.apply_vendor_locations()
+        for name in self._purchasable_names():
+            self.weapons.set(name, False)
+            if name in self.weapons.weapons:
+                level = 4 if self._is_titan_pending(name) else 0
+                self.weapons.set_level(name, level)
+                self.weapons._raw_level[name] = level
+        for name in self.weapons.weapons:
+            self.weapons._raw_weapons[name] = self.weapons.get(name)
+        for name in self.weapons.gadgets:
+            self.weapons._raw_gadgets[name] = self.weapons.get(name)
+
+    def _restore_progression(self) -> None:
+        self.weapons.restore_levels(self._level_snapshot)
+        for name, experience in self._experience_snapshot.items():
+            self.weapons.set_experience(name, experience)
+            self.weapons._prev_experience[name] = experience
+        self.weapons._raw_level.update(self._level_snapshot)
+
     def _purchasable_names(self) -> list[str]:
         """Weapons/gadgets whose vendor planet is currently AP-accessible and
         haven't been bought yet — the default (left) view's item list."""
         names: list[str] = []
         for name, planet_key in _WEAPON_TO_PLANET_KEY.items():
-            if self.planet_unlock.is_vendor_accessible(planet_key) and not self._is_purchased(name):
+            if name == "ryno" and self.challenge_mode < 1:
+                continue
+            if self.planet_unlock.is_vendor_accessible(planet_key) and (not self._is_purchased(name) or self._is_titan_eligible(name)):
                 names.append(name)
+        if self._is_titan_pending("mootator") and self.planet_unlock.is_vendor_accessible("DAYNI_MOON"):
+            names.append("mootator")
         for name, planet_key in _GADGET_TO_PLANET_KEY.items():
             if self.planet_unlock.is_vendor_accessible(planet_key) and not self._is_purchased(name):
                 names.append(name)
@@ -242,7 +311,7 @@ class VendorInventory:
         the player has to browse for it."""
         locations: list[str] = []
         for name in self._purchasable_names():
-            loc = WEAPON_INTERNAL_TO_LOCATION.get(name) or GADGET_INTERNAL_TO_LOCATION.get(name)
+            loc = self.purchase_location(name)
             if loc:
                 locations.append(loc)
         return locations
@@ -260,6 +329,8 @@ class VendorInventory:
         """Whether the mod vendor selling this location's planet is reachable
         — planet accessibility alone isn't enough where an extra gadget
         check gates the vendor's area (see _MOD_VENDOR_EXTRA_GADGETS)."""
+        if loc in _CHALLENGE_MODE_MOD_LOCATIONS and self.challenge_mode < 1:
+            return False
         planet_key = _MOD_LOCATION_TO_PLANET_KEY.get(loc)
         if not planet_key or not self.planet_unlock.is_vendor_accessible(planet_key):
             return False
@@ -324,19 +395,20 @@ class VendorInventory:
             # re-derived on left/right toggle. Core.tick() skips
             # apply_progressive_leveling() while this menu is open so it
             # can't fight this zero-out back mid-tick.
+            self._experience_snapshot = {name: self.weapons.get_experience(name) for name in self.weapons.weapons}
             self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
             purchasable = self._purchasable_names()
             if purchasable:
                 # Default (left) view.
                 self.show_purchasable_weapons = True
-                self.weapons.apply_vendor_locations()
+                self._prepare_purchase_view()
                 self._set_items(purchasable)
             else:
                 # Nothing left to buy — open straight into the owned-inventory
                 # (ammo) view instead of showing an empty left list.
                 self.show_purchasable_weapons = False
                 self.weapons.apply_vendor_locations(self._owned_names())
-                self.weapons.restore_levels(self._level_snapshot)
+                self._restore_progression()
                 self._set_items(list(self._owned_names()))
             self.refresh(MenuStateValue.WEAPONS_VENDOR)
             self._log(
@@ -351,7 +423,7 @@ class VendorInventory:
                 self.show_purchasable_weapons = False
                 # Right-hand (ammo) view needs the real level for correct
                 # price/capacity; re-zeroed once the player flips back left.
-                self.weapons.restore_levels(self._level_snapshot)
+                self._restore_progression()
                 self._set_items(list(self._owned_names()))
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
@@ -360,9 +432,8 @@ class VendorInventory:
             # the owned-inventory view for the rest of this visit.
             if (controller.pressed(PauseSelectButtons.D_PAD_LEFT) and not self.show_purchasable_weapons
                     and self._purchasable_names()):
-                self.weapons.apply_vendor_locations()
+                self._prepare_purchase_view()
                 self.show_purchasable_weapons = True
-                self._level_snapshot = self.weapons.zero_levels_for_vendor(self._weapons_to_zero_for_vendor())
                 self._set_items(self._purchasable_names())
                 self.refresh(MenuStateValue.WEAPONS_VENDOR)
 
@@ -394,9 +465,11 @@ class VendorInventory:
 
         newly_purchased = False
         for name in changed["weapons"]:
-            loc = WEAPON_INTERNAL_TO_LOCATION.get(name)
+            loc = self.purchase_location(name)
             self._log(f"[RAC][vendor-debug] weapon {name!r} newly unlocked -> loc={loc!r}")
             if report_as_purchase and loc:
+                if self._is_titan_pending(name):
+                    self.weapons.titan_purchased[name] = True
                 self.weapons.vendor_locations[loc] = True
                 self.send_location(loc)
                 newly_purchased = True
@@ -424,12 +497,13 @@ class VendorInventory:
             # Refresh right away so the just-bought item drops off the list.
             purchasable = self._purchasable_names()
             if purchasable:
+                self._prepare_purchase_view()
                 self._set_items(purchasable)
             else:
                 # Nothing left to show on the left — drop into owned-inventory view.
                 self.show_purchasable_weapons = False
                 self.weapons.apply_vendor_locations(self._owned_names())
-                self.weapons.restore_levels(self._level_snapshot)
+                self._restore_progression()
                 self._set_items(list(self._owned_names()))
             self.refresh(MenuStateValue.WEAPONS_VENDOR)
             self._log(
@@ -442,6 +516,7 @@ class VendorInventory:
         self._weapon_vendor_open = False
         self._mod_vendor_open = False
         self._level_snapshot = {}
+        self._experience_snapshot = {}
         self.show_purchasable_weapons = True
 
     def close(self) -> None:
@@ -452,8 +527,9 @@ class VendorInventory:
         self._mod_vendor_open         = False
         self.show_purchasable_weapons = True
         if self._level_snapshot:
-            self.weapons.restore_levels(self._level_snapshot)
+            self._restore_progression()
             self._level_snapshot = {}
+            self._experience_snapshot = {}
         if was_mod_vendor:
             # Undo _refresh_mod_vendor()'s temporary "give player the weapon"
             # display grant for anything not genuinely AP-owned.
@@ -497,7 +573,7 @@ class VendorInventory:
         # ownership dict back inline; memory itself must NOT be touched
         # (unlike weapon_vendor()'s equivalent) since the weapon needs to
         # stay unlocked in memory for the whole visit to render as selectable.
-        for name in changed["weapons"]:
+        for name in self.weapons.weapons:
             if not self._is_weapon_ap_owned(name):
                 self.weapons.weapons[name] = False
 

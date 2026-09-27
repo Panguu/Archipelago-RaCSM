@@ -78,7 +78,7 @@ class MissionInventory:
 
         if planet_id is None:
             planet_id = self.pine.read_int8(CURRENT_PLANET_ADDRESS)
-        mission_planet = 6 if planet_id == 0x17 else planet_id
+        mission_planet = {0x17: 6, 0x0F: 4, 0x15: 7}.get(planet_id, planet_id)
         raw_by_address: dict[int, int] = {}
         newly: list[str] = []
         for name, slot in self._slots.items():

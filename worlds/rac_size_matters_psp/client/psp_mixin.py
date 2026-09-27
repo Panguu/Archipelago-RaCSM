@@ -30,6 +30,8 @@ class PspMixin:
                 self.pine.validate_session()
                 if self.pine.read_int32(TransitionGateStruct.BASE_ADDRESS) == TRANSITION_GATE_IDLE:
                     suspend_traps(self.pine)
+                self._wiring.ghost_ratchet.stop_following()
+                self._wiring.shrink_ray.restore()
                 self._wiring.vendor_presentation.restore()
                 self.native.restore()
         except Exception:
@@ -180,6 +182,7 @@ class PspMixin:
                 reconcile_traps(self.pine)
             self.native.tick(self._wiring.planet.planet_id, self._wiring.planet.is_ready)
             self._poll_resource_links()
+            self._poll_ghost_link()
         self.current_planet = PLANET_ID_TO_REGION.get(self._wiring.planet.planet_id, "Galaxy")
         if self.current_planet != prev_planet:
             await self._send_map_page(self.current_planet)
@@ -197,7 +200,8 @@ class PspMixin:
         must be saved explicitly or a reconnect's wipe() loses it for good.
         """
         if (self.slot is None or not self.psp_connected or not self._wiring.planet.is_ready
-                or not self._server_state_ready or not self._weapon_state_restored):
+                or not self._server_state_ready or not self._weapon_state_restored
+                or self._wiring.vendor_active):
             return
         now = time.monotonic()
         if now - self._last_weapon_state_push < _WEAPON_STATE_PUSH_INTERVAL:

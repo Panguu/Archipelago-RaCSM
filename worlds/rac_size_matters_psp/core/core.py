@@ -6,12 +6,17 @@ from collections.abc import Callable
 from ..constants import Rac5CutsceneLocations, Rac5Locations
 from ..locations import WEAPON_LEVEL_LOOKUP
 from .armour import ARMOUR_FLAG_TO_LOCATION, ArmourInventory, ArmourPiece, ArmourUnlocks
+from .giant_clank import GiantClank
+from .challenge_mode import ChallengeModeState
 from .challenges import ChallengeInventory, SkyboardInventory
 from .menu import MenuStateValue
 from .missions import MissionInventory
 from .planets import AUTO_UNLOCK_ADDRESSES, INFOBOT_UNLOCK_VALUE, PlanetInventory, PlanetUnlockState
 from .player_bolts import PlayerBoltInventory
+from .ghost_ratchet import GhostRatchetInventory
+from .shrink_ray import ShrinkRaySkipInventory
 from .nanotech import NanotechChecks
+from .player_health_exp import PlayerHealthExpInventory
 from .quick_select import QuickSelectState
 from .skill_points import SkillPointInventory
 from .skins import SkinInventory
@@ -106,6 +111,7 @@ class Core:
 
     def __init__(self, pine: Psp, log: Callable[[str], None] | None = None) -> None:
         self.pine = pine
+        self.challenge_mode = ChallengeModeState(pine)
         self.vendor_presentation = VendorPresentation(pine)
         self._log = log or logger.info
         self.notification_sink = lambda text: None
@@ -120,6 +126,10 @@ class Core:
         self.bolts        = TitaniumBoltInventory(pine)
         self.player_bolts = PlayerBoltInventory(pine)
         self.nanotech = NanotechChecks()
+        self.player_health_exp = PlayerHealthExpInventory(pine)
+        self.shrink_ray = ShrinkRaySkipInventory(pine)
+        self.ghost_ratchet = GhostRatchetInventory(pine)
+        self.shrink_ray_options = 0
         self.nanotech_checks_enabled = False
         self.skill_points = SkillPointInventory(pine)
         self.missions     = MissionInventory(pine)
@@ -128,6 +138,7 @@ class Core:
         # PlanetInventory is planet-agnostic — one instance rebinds itself to
         # whichever planet is loaded via check_transition().
         self.planet = PlanetInventory(pine, self.armour, self.quick_select)
+        self.giant_clank = GiantClank(pine, self.planet)
         self.planet.on_death             = self._handle_death
         self.planet.on_respawn           = self._handle_respawn
         self.planet.on_equipped_armour_saved = lambda data: self.on_equipped_armour_saved(data)
@@ -251,6 +262,7 @@ class Core:
         armour_unlocked: dict[str, int],
         infobot_planets: set[str],
         write_memory: bool = True,
+        challenge_mode: int = 0,
     ) -> None:
         """Write a fully-rebuilt AP inventory snapshot into game memory.
 
@@ -270,6 +282,7 @@ class Core:
         are skipped while a planet transition is in flight or the vendor
         menu owns the weapon-display state.
         """
+        self.challenge_mode.set_received(challenge_mode)
         self.planet_unlock.set_unlocked_planets(infobot_planets)
         # Kept current regardless of whether the memory write below is
         # skipped — check_collected_armour()'s pickup-exit restore and
@@ -392,6 +405,8 @@ class Core:
         self.skill_points.sync_from_ap(checked_locations)
         self.missions.sync_from_ap(checked_locations)
         self.nanotech.sync_from_ap(checked_locations)
+        self.shrink_ray.sync_from_ap(checked_locations)
+        self.giant_clank.sync_from_ap(checked_locations)
         self.restore_armour_from_locations(checked_locations)
 
     # -- Notifications ---------------------------------------------------------
@@ -417,17 +432,32 @@ class Core:
         in flight, so nothing here needs to check that itself except the
         collections below that aren't part of PlanetInventory.
         """
+        for name in self.giant_clank.tick():
+            self.send_location(name)
         became_ready = self.planet.check_transition()
         self.planet.check_controller()
         self.planet.check_death()
         self.planet.check_equipped_armour()
         if not self.planet.is_ready:
+            self.player_health_exp.abandon()
+            self.shrink_ray.abandon()
             self.vendor_presentation.abandon()
+            if (self.giant_clank.active is not None and self.planet.giant_clank_allowed
+                        and self.planet._prev_gate == 0xFFFFFFFF):
+                if self.skill_points_enabled:
+                    for name in self.skill_points.check():
+                        self.send_location(name)
+                for name in self.missions.check(self.planet.planet_id):
+                    self.send_location(name)
             return
 
+        self.challenge_mode.apply(self.planet.planet_id, self.planet.is_ready)
+        self.vendor.challenge_mode = self.challenge_mode.tier
+        self.planet.weapons.challenge_mode = self.challenge_mode.tier
         self.planet_unlock.check()
 
         if became_ready:
+            self.player_health_exp.rebaseline()
             self.vendor.abandon()
             self.weapon_vendor.deactivate()
             self.mod_vendor.deactivate()
@@ -513,6 +543,11 @@ class Core:
         if not self.weapon_vendor.active:
             self.planet.weapons.apply_progressive_leveling()
         self.player_bolts.apply_boost()
+        self.player_health_exp.apply_boost()
+        self.shrink_ray.set_skip(self.planet.planet_id, self.shrink_ray_options == 2)
+        if self.shrink_ray_options == 1:
+            for name in self.shrink_ray.check(self.planet.planet_id):
+                self.send_location(name)
         if self.nanotech_checks_enabled:
             for name in self.nanotech.check(self.planet.player.max_health):
                 self.send_location(name)

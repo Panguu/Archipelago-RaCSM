@@ -93,3 +93,8 @@ class RACCommandProcessor(ClientCommandProcessor):
         """Toggle shared bolt counts with other Size Matters players."""
         asyncio.create_task(self.ctx._set_resource_link("bolt", not self.ctx._resource_links["bolt"]))
         return True
+
+    def _cmd_ghost_link(self) -> bool:
+        """Toggle sharing in-game position and displaying a linked player's ghost."""
+        asyncio.create_task(self.ctx._set_ghost_link_enabled(not self.ctx._ghost_link_enabled))
+        return True
