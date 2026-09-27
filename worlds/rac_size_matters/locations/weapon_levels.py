@@ -32,7 +32,7 @@ def access_rule(world, *, weapon, level):
 LOCATIONS = (
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 2)),
         options=LocationOptions(
@@ -45,7 +45,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 3)),
         options=LocationOptions(
@@ -58,7 +58,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 4)),
         options=LocationOptions(
@@ -71,7 +71,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 5)),
         options=LocationOptions(
@@ -88,7 +88,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 6)),
         options=LocationOptions(
@@ -105,7 +105,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 7)),
         options=LocationOptions(
@@ -122,7 +122,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LACERATOR_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LACERATOR, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LACERATOR, 8)),
         options=LocationOptions(
@@ -139,7 +139,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 2)),
         options=LocationOptions(
@@ -152,7 +152,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 3)),
         options=LocationOptions(
@@ -165,7 +165,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 4)),
         options=LocationOptions(
@@ -178,7 +178,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 5)),
         options=LocationOptions(
@@ -195,7 +195,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 6)),
         options=LocationOptions(
@@ -212,7 +212,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 7)),
         options=LocationOptions(
@@ -229,7 +229,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.CONCUSSION_GUN_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.CONCUSSION_GUN, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.CONCUSSION_GUN, 8)),
         options=LocationOptions(
@@ -246,7 +246,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 2)),
         options=LocationOptions(
@@ -259,7 +259,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 3)),
         options=LocationOptions(
@@ -272,7 +272,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 4)),
         options=LocationOptions(
@@ -285,7 +285,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 5)),
         options=LocationOptions(
@@ -302,7 +302,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 6)),
         options=LocationOptions(
@@ -319,7 +319,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 7)),
         options=LocationOptions(
@@ -336,7 +336,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.ACID_BOMB_GLOVE_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.ACID_BOMB_GLOVE, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.ACID_BOMB_GLOVE, 8)),
         options=LocationOptions(
@@ -353,7 +353,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 2)),
         options=LocationOptions(
@@ -366,7 +366,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 3)),
         options=LocationOptions(
@@ -379,7 +379,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 4)),
         options=LocationOptions(
@@ -392,7 +392,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 5)),
         options=LocationOptions(
@@ -409,7 +409,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 6)),
         options=LocationOptions(
@@ -426,7 +426,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 7)),
         options=LocationOptions(
@@ -443,7 +443,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.AGENTS_OF_DOOM_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.AGENTS_OF_DOOM, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.AGENTS_OF_DOOM, 8)),
         options=LocationOptions(
@@ -460,7 +460,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 2)),
         options=LocationOptions(
@@ -473,7 +473,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 3)),
         options=LocationOptions(
@@ -486,7 +486,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 4)),
         options=LocationOptions(
@@ -499,7 +499,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 5)),
         options=LocationOptions(
@@ -516,7 +516,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 6)),
         options=LocationOptions(
@@ -533,7 +533,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 7)),
         options=LocationOptions(
@@ -550,7 +550,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.BEE_MINE_GLOVE_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.BEE_MINE_GLOVE, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.BEE_MINE_GLOVE, 8)),
         options=LocationOptions(
@@ -567,7 +567,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 2)),
         options=LocationOptions(
@@ -580,7 +580,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 3)),
         options=LocationOptions(
@@ -593,7 +593,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 4)),
         options=LocationOptions(
@@ -606,7 +606,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 5)),
         options=LocationOptions(
@@ -623,7 +623,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 6)),
         options=LocationOptions(
@@ -640,7 +640,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 7)),
         options=LocationOptions(
@@ -657,7 +657,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.STATIC_BARRIER_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.STATIC_BARRIER, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.STATIC_BARRIER, 8)),
         options=LocationOptions(
@@ -674,7 +674,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 2)),
         options=LocationOptions(
@@ -687,7 +687,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 3)),
         options=LocationOptions(
@@ -700,7 +700,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 4)),
         options=LocationOptions(
@@ -713,7 +713,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 5)),
         options=LocationOptions(
@@ -730,7 +730,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 6)),
         options=LocationOptions(
@@ -747,7 +747,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 7)),
         options=LocationOptions(
@@ -764,7 +764,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SHOCK_ROCKET_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SHOCK_ROCKET, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SHOCK_ROCKET, 8)),
         options=LocationOptions(
@@ -781,7 +781,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 2)),
         options=LocationOptions(
@@ -794,7 +794,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 3)),
         options=LocationOptions(
@@ -807,7 +807,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 4)),
         options=LocationOptions(
@@ -820,7 +820,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 5)),
         options=LocationOptions(
@@ -837,7 +837,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 6)),
         options=LocationOptions(
@@ -854,7 +854,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 7)),
         options=LocationOptions(
@@ -871,7 +871,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SNIPER_MINE_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SNIPER_MINE, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SNIPER_MINE, 8)),
         options=LocationOptions(
@@ -888,7 +888,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 2)),
         options=LocationOptions(
@@ -901,7 +901,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 3)),
         options=LocationOptions(
@@ -914,7 +914,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 4)),
         options=LocationOptions(
@@ -927,7 +927,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 5)),
         options=LocationOptions(
@@ -944,7 +944,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 6)),
         options=LocationOptions(
@@ -961,7 +961,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 7)),
         options=LocationOptions(
@@ -978,7 +978,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SCORCHER_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SCORCHER, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SCORCHER, 8)),
         options=LocationOptions(
@@ -995,7 +995,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 2)),
         options=LocationOptions(
@@ -1008,7 +1008,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 3)),
         options=LocationOptions(
@@ -1021,7 +1021,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 4)),
         options=LocationOptions(
@@ -1034,7 +1034,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 5)),
         options=LocationOptions(
@@ -1051,7 +1051,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 6)),
         options=LocationOptions(
@@ -1068,7 +1068,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 7)),
         options=LocationOptions(
@@ -1085,7 +1085,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.LASER_TRACER_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.LASER_TRACER, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.LASER_TRACER, 8)),
         options=LocationOptions(
@@ -1102,7 +1102,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 2)),
         options=LocationOptions(
@@ -1115,7 +1115,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 3)),
         options=LocationOptions(
@@ -1128,7 +1128,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 4)),
         options=LocationOptions(
@@ -1141,7 +1141,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 5)),
         options=LocationOptions(
@@ -1158,7 +1158,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 6)),
         options=LocationOptions(
@@ -1175,7 +1175,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 7)),
         options=LocationOptions(
@@ -1192,7 +1192,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.SUCK_CANNON_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.SUCK_CANNON, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.SUCK_CANNON, 8)),
         options=LocationOptions(
@@ -1209,7 +1209,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 2)),
         options=LocationOptions(
@@ -1222,7 +1222,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 3)),
         options=LocationOptions(
@@ -1235,7 +1235,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 4)),
         options=LocationOptions(
@@ -1248,7 +1248,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_5,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=5),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 5)),
         options=LocationOptions(
@@ -1265,7 +1265,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_6,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=6),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 6)),
         options=LocationOptions(
@@ -1282,7 +1282,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_7,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=7),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 7)),
         options=LocationOptions(
@@ -1299,7 +1299,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.MOOTATOR_LEVEL_8,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.MOOTATOR, level=8),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.MOOTATOR, 8)),
         options=LocationOptions(
@@ -1316,7 +1316,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.RYNO_LEVEL_2,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.RYNO, level=2),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.RYNO, 2)),
         options=LocationOptions(
@@ -1333,7 +1333,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.RYNO_LEVEL_3,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.RYNO, level=3),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.RYNO, 3)),
         options=LocationOptions(
@@ -1350,7 +1350,7 @@ LOCATIONS = (
     ),
     Rac5Locations(
         C.Rac5WeaponLevels.RYNO_LEVEL_4,
-        C.Rac5Planets.POKITARU,
+        "Menu",
         partial(access_rule, weapon=C.Rac5Weapons.RYNO, level=4),
         Completion(_S.WEAPON_LEVELS, (C.Rac5WeaponKeys.RYNO, 4)),
         options=LocationOptions(
