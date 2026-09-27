@@ -13,7 +13,7 @@ from ..options import (
     SkillPoints,
     SkyboardChallenges,
 )
-from ..rules._helpers import HasChallengeMode, HasShrinkRayDoorAccess
+from ..rules._helpers import HasChallengeMode
 from .model import Completion, LocationOptions, Rac5Locations
 
 LOCATIONS = (
@@ -38,7 +38,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.KALIDON_RAMP,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("bolt_bits", None, 512),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(3,),
@@ -47,7 +47,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.KALIDON_CHESTPLATE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("armour", "sludge", 1),
         categories=frozenset(("armour_pickup",)),
         definition_order=24,
@@ -56,8 +56,8 @@ LOCATIONS = (
         C.Rac5Locations.KALIDON_BOOTS,
         C.Rac5Planets.KALIDON,
         lambda world: (
-            Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world)
-            | HasShrinkRayDoorAccess(world) & Has(GLITCHES_ITEM_NAME)
+            Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY)
+            | Has(Rac5Gadgets.SHRINK_RAY) & Has(GLITCHES_ITEM_NAME)
         ),
         Completion("armour", "wildfire", 16),
         categories=frozenset(("armour_pickup",)),
@@ -66,7 +66,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.KALIDON_CHAMELEON_CHESTPLATE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world) & HasChallengeMode(world, 2),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2),
         Completion("armour", "chameleon", 1),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (2,), "in"),)),
         categories=frozenset(("armour_pickup", "challenge_mode_2_armour")),
@@ -77,13 +77,14 @@ LOCATIONS = (
         C.Rac5Planets.KALIDON,
         lambda world: True_(),
         Completion("events", C.Rac5Locations.KALIDON_SHRINK),
+        options=LocationOptions(requirements=(OptionFilter(SkyboardChallenges, (1,), "in"),)),
         categories=frozenset(("gadget_pickup",)),
         definition_order=43,
     ),
     Rac5Locations(
         C.Rac5SkillPoints.KALIDON_EXPLOSIVE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("skill_bits", None, 256),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset(("skill_point", "easy_skill_point")),
@@ -93,7 +94,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("skill_bits", None, 512),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -105,7 +106,7 @@ LOCATIONS = (
         C.Rac5Planets.KALIDON,
         lambda world: True_(),
         Completion("skill_bits", None, 1024),
-        options=LocationOptions(requirements=(OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"),)),
+        options=LocationOptions(requirements=(OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in"))),
         categories=frozenset(("skill_point", "skyboard_challenge_skill_point")),
         native_planets=(3,),
         definition_order=52,
@@ -115,15 +116,15 @@ LOCATIONS = (
         C.Rac5Planets.KALIDON,
         lambda world: True_(),
         Completion("missions", 0x088c1388, 16, 3),
-        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
-        categories=frozenset(("story_mission", "mission")),
+        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in"))),
+        categories=frozenset(("story_mission", "mission", "skyboard_item")),
         check_order=6,
         definition_order=71,
     ),
     Rac5Locations(
         C.Rac5CutsceneLocations.KALIDON_SEARCH,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("missions", 0x088c1388, 4, 3),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -134,10 +135,10 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.KALIDON_EXPLORE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("missions", 0x088c1388, 8, 3),
-        options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
-        categories=frozenset(("cutscene", "mission")),
+        options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in"))),
+        categories=frozenset(("cutscene", "mission", "skyboard_item")),
         grants_location=C.Rac5Locations.KALIDON_SHRINK,
         check_order=27,
         definition_order=87,
@@ -313,7 +314,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset(("shrink_ray_skip",)),

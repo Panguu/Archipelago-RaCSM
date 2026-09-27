@@ -69,9 +69,30 @@ class TestClientGameplay(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.ctx = ClientHarness()
 
+    async def test_inventory_resync_skips_unchanged_bytes_and_repairs_drift(self):
+        ctx = self.ctx
+        inventory = dict(weapons={'lacerator': True}, gadgets={'hypershot': True},
+                         weapon_levels={}, weapon_mods={'lacerator': {'mod_slot_one'}},
+                         armour_unlocked={'wildfire': 1}, infobot_planets={'POKITARU'})
+        ctx._wiring.apply_inventory(**inventory)
+        before = bytes(ctx.pine.data)
+        ctx.pine._write_raw = Mock(wraps=ctx.pine._write_raw)
+        ctx._wiring.apply_inventory(**inventory)
+        ctx.pine._write_raw.assert_not_called()
+        self.assertEqual(bytes(ctx.pine.data), before)
+        wi = ctx._wiring.planet.weapons
+        wi.set('lacerator', False)
+        wi.set('hypershot', False)
+        wi.set_mod('lacerator', 'mod_slot_one', False)
+        ctx._wiring.armour.sync_unlocked({'wildfire': 0})
+        ctx.pine._write_raw.reset_mock()
+        ctx._wiring.apply_inventory(**inventory)
+        self.assertEqual(bytes(ctx.pine.data), before)
+        self.assertEqual(ctx.pine._write_raw.call_count, 4)
+
     async def test_standard_client_help_does_not_require_tracker_context(self):
         from ..client.command_processor import RACCommandProcessor
-        help_text = RACCommandProcessor(SimpleNamespace()).get_help_text()
+        help_text = RACCommandProcessor(SimpleNamespace(get_help_text=lambda: "")).get_help_text()
         self.assertIn("reconnect", help_text)
 
     async def test_receipts_apply_through_real_core_without_false_pickups(self):

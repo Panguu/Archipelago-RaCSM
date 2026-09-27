@@ -13,6 +13,14 @@ class CodePlan(Plan):
             raise ValueError("Executable patches must cover whole PSP instructions")
 
     def install(self):
+        if self.installed:
+            try:
+                self.validate()
+                return
+            except RuntimeError:
+                # An emuhack marker still requires invalidation and exact
+                # validation; never accept changed executable instructions.
+                pass
         with self.memory.paused():
             self.memory.invalidate_code()
             # This preflight also rejects pending JIT emuhack opcodes when a

@@ -1,6 +1,7 @@
 """Queued AP messages rendered independently of native interaction prompts."""
 from collections import deque
 import logging
+import time
 
 from .address_maps import CURRENT_PLANET_ADDRESS
 from .structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
@@ -17,6 +18,8 @@ class HudNotifications:
         self.profile = self.planet = None
         self.kernel = self.storage = self.hook = None
         self.failed = False
+        self._resolve_planet = None
+        self._next_profile_attempt = 0.0
 
     def enqueue(self, text):
         text = ''.join(c if 32 <= ord(c) < 127 else '?' for c in str(text))
@@ -65,6 +68,12 @@ class HudNotifications:
             if not self.pending:
                 return
             if self.profile is None:
+                if self._resolve_planet != planet:
+                    self._resolve_planet = planet
+                    self._next_profile_attempt = 0.0
+                if time.monotonic() < self._next_profile_attempt:
+                    return
+                self._next_profile_attempt = time.monotonic() + 2.0
                 self.profile = resolve(self.memory, planet)
                 if self.profile is None:
                     return

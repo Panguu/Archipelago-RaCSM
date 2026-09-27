@@ -24,21 +24,40 @@ class KernelBridge:
         return self.profile.frame + (12 if self.interior else 0)
 
     @contextmanager
-    def frame(self):
+    def _validated_pause(self):
+        # A rejected read-only preflight must not strand a running game in
+        # the debugger. Exit the pause normally, then report the error.
+        # Errors after yielding may involve guest calls or partial patches
+        # and must retain the existing fail-paused behavior.
+        error = None
+        with self.memory.paused(resume_on_error=False):
+            try:
+                planet = self._validate_boundary()
+            except Exception as exc:
+                error = exc
+            else:
+                yield planet
+        if error is not None:
+            raise error
+
+    def _validate_boundary(self):
         from ..address_maps import CURRENT_PLANET_ADDRESS
         from ..structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
-        with self.memory.paused(resume_on_error=False):
-            planet = self.memory.read_int8(CURRENT_PLANET_ADDRESS)
-            if self.memory.read_int32(TransitionGateStruct.BASE_ADDRESS) != TRANSITION_GATE_IDLE:
-                raise RuntimeError('Cannot call SysMem during a transition')
+        planet = self.memory.read_int8(CURRENT_PLANET_ADDRESS)
+        if self.memory.read_int32(TransitionGateStruct.BASE_ADDRESS) != TRANSITION_GATE_IDLE:
+            raise RuntimeError('Cannot call SysMem during a transition')
+        timer = self.profile.timer
+        import struct
+        expected = struct.pack('<3I', 0x27BDFFA0, 0x3C040000 | ((timer+0x8000)>>16),
+                               0x8C840000 | (timer&65535))
+        if self.interior:
+            from ..vendor_profiles import ANCHOR
+            expected = ANCHOR
+        # Avoid a cache flush and its fixed pause when RAM already contains
+        # the exact retail instructions. Executable edits invalidate separately.
+        actual = self.memory.read_bytes(self.boundary, len(expected))
+        if actual != expected:
             self.memory.invalidate_code()
-            timer = self.profile.timer
-            import struct
-            expected = struct.pack('<3I', 0x27BDFFA0, 0x3C040000 | ((timer+0x8000)>>16),
-                                   0x8C840000 | (timer&65535))
-            if self.interior:
-                from ..vendor_profiles import ANCHOR
-                expected = ANCHOR
             # Invalidation is queued by PPSSPP's frame loop. Its fixed wait
             # can finish before the JIT has restored the retail instructions.
             # Keep the guest stopped and require an exact match before running
@@ -54,6 +73,13 @@ class KernelBridge:
                         f'expected {expected.hex()}, got {actual.hex()} '
                         '(JIT invalidation did not restore the expected instructions)')
                 time.sleep(0.05)
+        return planet
+
+    @contextmanager
+    def frame(self):
+        from ..address_maps import CURRENT_PLANET_ADDRESS
+        from ..structs.game import TransitionGateStruct, TRANSITION_GATE_IDLE
+        with self._validated_pause() as planet:
             control = self.memory._control
             if control._request('cpu.status')['pc'] != self.boundary:
                 control._request('cpu.runUntil', address=self.boundary, response_event='cpu.stepping')

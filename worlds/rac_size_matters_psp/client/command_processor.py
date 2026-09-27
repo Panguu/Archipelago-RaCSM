@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from CommonClient import logger
 
 from CommonClient import ClientCommandProcessor
-if os.environ.get("RACSM_PSP_TRACKER") == "1":
+if os.environ.get("RACSM_PSP_TRACKER") != "0":
     try:
         from worlds.tracker.TrackerClient import TrackerCommandProcessor as ClientCommandProcessor
     except ImportError:

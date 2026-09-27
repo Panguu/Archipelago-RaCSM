@@ -7,7 +7,7 @@ from typing import Any
 
 tracker_loaded: bool = False
 from CommonClient import CommonContext
-if os.environ.get("RACSM_PSP_TRACKER") == "1":
+if os.environ.get("RACSM_PSP_TRACKER") != "0":
     try:
         from worlds.tracker.TrackerClient import TrackerGameContext as CommonContext
         tracker_loaded = True

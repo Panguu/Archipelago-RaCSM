@@ -492,6 +492,7 @@ class VendorInventory:
         if not report_as_purchase:
             # Right-hand (AP inventory) view has nothing to report as a
             # fresh purchase; the refresh below only applies to the left view.
+            self.refresh(MenuStateValue.WEAPONS_VENDOR, force=False)
             return
         if newly_purchased:
             # Refresh right away so the just-bought item drops off the list.
@@ -510,6 +511,10 @@ class VendorInventory:
                 "[RAC][vendor-debug] post-purchase purchasable list="
                 + ", ".join(self._items)
             )
+        # Native first-open initialization can replace our list after the
+        # open edge. Repair drift without rebuilding an unchanged menu or
+        # resetting purchase baselines before observing genuine purchases.
+        self.refresh(MenuStateValue.WEAPONS_VENDOR, force=False)
 
     def abandon(self) -> None:
         """Discard a departed overlay's menu state without restoring into new RAM."""
@@ -620,19 +625,23 @@ class VendorInventory:
             self._set_items(self._mod_vendor_weapons())
             self.refresh(MenuStateValue.MOD_VENDOR)
 
-    def refresh(self, menu_value: MenuStateValue) -> None:
+    def refresh(self, menu_value: MenuStateValue, *, force=True) -> None:
         """Write the current item list into game memory, then poke the menu
         update field (the same address self.planet.menu.set() writes to
         request a menu change) so the game actually redraws the vendor with
         the new list instead of showing whatever it already had on screen."""
         item_ids = [WEAPON_VENDOR_IDS[name] for name in self._items]
-        self.pine.write_bytes(WEAPON_VENDOR_SLOTS, len(item_ids).to_bytes(4, "little"))
-        for i, item_id in enumerate(item_ids):
-            self.pine.write_bytes(WEAPON_VENDOR_ITEMS + i * 4, item_id.to_bytes(4, "little"))
-        # Zero every slot past the new count, up to the array's full capacity,
-        # so leftover IDs from a previous (longer) write don't linger in the menu.
-        for i in range(len(item_ids), MAX_VENDOR_SLOTS):
-            self.pine.write_bytes(WEAPON_VENDOR_ITEMS + i * 4, (0).to_bytes(4, "little"))
+        if len(item_ids) > MAX_VENDOR_SLOTS:
+            raise ValueError('Vendor item list exceeds native capacity')
+        payload = b''.join(identity.to_bytes(4, 'little') for identity in item_ids)
+        payload = payload.ljust(MAX_VENDOR_SLOTS * 4, b'\0')
+        count = len(item_ids).to_bytes(4, 'little')
+        if (not force and self.pine.read_bytes(WEAPON_VENDOR_ITEMS, len(payload)) == payload
+                and self.pine.read_bytes(WEAPON_VENDOR_SLOTS, 4) == count):
+            return
+        # Publish the complete list (including cleared tail) before its count.
+        self.pine.write_bytes(WEAPON_VENDOR_ITEMS, payload)
+        self.pine.write_bytes(WEAPON_VENDOR_SLOTS, count)
         self.planet.menu.set(menu_value)
 
     def __repr__(self) -> str:

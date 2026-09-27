@@ -105,7 +105,9 @@ class WeaponByteField:
     def __set__(self, instance, value: bool) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(self._address(instance), int(value))
+        address = self._address(instance)
+        if instance.pine.read_int8(address) != int(value):
+            instance.pine.write_int8(address, int(value))
 
     def __delete__(self, instance) -> None:
         if instance is None:

@@ -85,11 +85,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.POKITARU_COWS,
         C.Rac5Planets.POKITARU,
-        lambda world: (
-            HasAny(Rac5Weapons.MOOTATOR, PROGRESSIVE_WEAPON_NAME[Rac5Weapons.MOOTATOR])
-            if world.options.skill_points.value >= 2
-            else True_()
-        ),
+        lambda world: HasAny(Rac5Weapons.MOOTATOR, PROGRESSIVE_WEAPON_NAME[Rac5Weapons.MOOTATOR]),
         Completion("skill_bits", None, 4),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),), weapon=C.Rac5Weapons.MOOTATOR),
         categories=frozenset(("skill_point", "easy_skill_point")),

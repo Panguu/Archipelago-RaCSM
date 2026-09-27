@@ -5,7 +5,7 @@ from .. import constants as C
 from ..constants import Rac5Gadgets, Rac5Infobots
 from ..constants.options import Rac5Options
 from ..options import AllCutscenes, AllMissions, ChallengeMode, GiantClank, ShrinkRayOptions, SkillPoints
-from ..rules._helpers import HasChallengeMode, HasShrinkRayDoorAccess
+from ..rules._helpers import HasChallengeMode
 from .model import Completion, LocationOptions, Rac5Locations
 
 LOCATIONS = (
@@ -21,7 +21,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.CHALLAX_ROOM,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("bolt_bits", None, 33554432),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(7,),
@@ -30,7 +30,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.CHALLAX_PLANT,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC),
         Completion("bolt_bits", None, 67108864),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(7,),
@@ -40,7 +40,7 @@ LOCATIONS = (
         C.Rac5Locations.CHALLAX_HELMET,
         C.Rac5Planets.CHALLAX,
         lambda world: (
-            HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC)
+            Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC)
             | Has(Rac5Infobots.DAYNI_MOON)
         ),
         Completion("armour", "electroshock", 2),
@@ -60,7 +60,7 @@ LOCATIONS = (
         C.Rac5Locations.CHALLAX_HYPERBOREAN_HELMET,
         C.Rac5Planets.CHALLAX,
         lambda world: (
-            HasShrinkRayDoorAccess(world)
+            Has(Rac5Gadgets.SHRINK_RAY)
             & Has(Rac5Gadgets.POLARIZER)
             & Has(Rac5Gadgets.SPROUT_O_MATIC)
             & HasChallengeMode(world, 1)
@@ -73,7 +73,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.CHALLAX_MASTER,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC),
         Completion("skill_bits", None, 33554432),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -112,7 +112,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.CHALLAX_EXPLORE,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SPROUT_O_MATIC),
         Completion("missions", 0x088c1390, 4, 7),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -133,7 +133,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.CHALLAX_SNIPER,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5VendorLocations.CHALLAX_SNIPER),
         options=LocationOptions(weapon=C.Rac5Weapons.SNIPER_MINE),
         categories=frozenset(("weapon_vendor",)),
@@ -143,7 +143,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.CHALLAX_PDA,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5VendorLocations.CHALLAX_PDA),
         categories=frozenset(("gadget_vendor",)),
         gadget="pda",
@@ -161,7 +161,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_LACERATOR_DOUBLE),
         options=LocationOptions(weapon=C.Rac5Weapons.LACERATOR),
         categories=frozenset(("weapon_mod_vendor",)),
@@ -172,7 +172,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_ACID_BURN,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_ACID_BURN),
         options=LocationOptions(weapon=C.Rac5Weapons.ACID_BOMB_GLOVE),
         categories=frozenset(("weapon_mod_vendor",)),
@@ -183,7 +183,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_ACID_EPOXY,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_ACID_EPOXY),
         options=LocationOptions(weapon=C.Rac5Weapons.ACID_BOMB_GLOVE),
         categories=frozenset(("weapon_mod_vendor",)),
@@ -194,7 +194,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_CONCUSSION_LOCK),
         options=LocationOptions(weapon=C.Rac5Weapons.CONCUSSION_GUN),
         categories=frozenset(("weapon_mod_vendor",)),
@@ -205,7 +205,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_CONCUSSION_CHARGE),
         options=LocationOptions(weapon=C.Rac5Weapons.CONCUSSION_GUN),
         categories=frozenset(("weapon_mod_vendor",)),
@@ -216,7 +216,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_BEE_WORKER,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_BEE_WORKER),
         options=LocationOptions(weapon=C.Rac5Weapons.BEE_MINE_GLOVE),
         categories=frozenset(("weapon_mod_vendor",)),
@@ -227,7 +227,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & HasChallengeMode(world, 1),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & HasChallengeMode(world, 1),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_SNIPER_SMART_REFLECTOR),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SNIPER_MINE
@@ -240,7 +240,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & HasChallengeMode(world, 1),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & HasChallengeMode(world, 1),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_SHOCK_MULTI_LAUNCHER),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SHOCK_ROCKET
@@ -253,7 +253,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ModVendorLocations.CHALLAX_LASER_PIERCE,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & Has(Rac5Gadgets.POLARIZER) & HasChallengeMode(world, 1),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.POLARIZER) & HasChallengeMode(world, 1),
         Completion("events", C.Rac5ModVendorLocations.CHALLAX_LASER_PIERCE),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.LASER_TRACER
@@ -266,7 +266,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TitanVendorLocations.CHALLAX_SNIPER_TITAN,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world) & HasChallengeMode(world, 1),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 1),
         Completion("events", C.Rac5TitanVendorLocations.CHALLAX_SNIPER_TITAN),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SNIPER_MINE
@@ -278,7 +278,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.CHALLAX_GRINDRAIL,
         C.Rac5Planets.CHALLAX,
-        lambda world: HasShrinkRayDoorAccess(world),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5ShrinkRayGrindrail.CHALLAX_GRINDRAIL),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset(("shrink_ray_skip",)),

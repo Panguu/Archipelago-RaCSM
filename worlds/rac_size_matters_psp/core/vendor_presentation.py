@@ -1,6 +1,7 @@
 """Checked PSP T4 vendor icons. Addresses verified live on UCUS98633 Pokitaru."""
 import logging
 import struct
+import time
 from importlib.resources import files
 
 from .address_maps import CURRENT_PLANET_ADDRESS, WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS, WEAPON_ARRAY_BASE_BY_PLANET
@@ -25,6 +26,7 @@ class VendorPresentation:
         self.reward_for_id = lambda identity: None
         self._resolved_profiles = {}
         self._planet_id = None
+        self._next_profile_attempt = 0.0
 
     def _original(self, address, size):
         data = bytearray(self.memory.read_bytes(address, size))
@@ -70,13 +72,20 @@ class VendorPresentation:
         self.failed = False
         self._resolved_profiles.clear()
         self._planet_id = None
+        self._next_profile_attempt = 0.0
 
     def _profile(self, planet_id):
         if planet_id in self.PROFILES:
             return VendorProfile(*self.PROFILES[planet_id], text=0x094A0EC0)
         if planet_id not in self._resolved_profiles:
+            if time.monotonic() < self._next_profile_attempt:
+                return None
+            self._next_profile_attempt = time.monotonic() + 1.0
             profile = resolve(self.memory, planet_id)
-            self._resolved_profiles[planet_id] = profile
+            # A first-open lookup can race delayed JIT invalidation. Retry
+            # during this visit, without clearing the cache every poll.
+            if profile is not None:
+                self._resolved_profiles[planet_id] = profile
             return profile
         return self._resolved_profiles[planet_id]
 
@@ -152,7 +161,6 @@ class VendorPresentation:
             if not enabled:
                 self.restore()
                 self.failed = False
-                self._resolved_profiles.clear()
                 return
             if self.failed:
                 return

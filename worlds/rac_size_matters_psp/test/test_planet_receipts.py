@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock
 
 from ..client.vendor import InventoryMixin
 from ..core.core import Core
@@ -9,6 +10,20 @@ from .test_client_gameplay import GameMemory
 
 
 class TestPlanetReceipts(unittest.TestCase):
+    def test_unchanged_planet_sync_does_not_write_and_repairs_drift(self):
+        self.state.sync()
+        before = bytes(self.memory.data)
+        self.memory._write_raw = Mock(wraps=self.memory._write_raw)
+        self.state.sync()
+        self.memory._write_raw.assert_not_called()
+        record = PLANET_UNLOCKS['KALIDON']
+        self.memory.write_int8(record.unlock_addr, 3)
+        self.memory.write_int8(record.state_addr, 3)
+        self.memory._write_raw.reset_mock()
+        self.state.sync()
+        self.assertEqual(bytes(self.memory.data), before)
+        self.assertEqual(self.memory._write_raw.call_count, 2)
+
     def setUp(self):
         self.memory = GameMemory()
         self.state = PlanetUnlockState(self.memory)

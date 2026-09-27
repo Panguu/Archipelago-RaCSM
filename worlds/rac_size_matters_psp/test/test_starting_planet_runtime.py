@@ -9,6 +9,20 @@ from ..core.structs.game import TransitionGateStruct
 
 
 class TestStartingPlanetRuntime(unittest.TestCase):
+    def test_unchanged_frontend_does_not_pause_or_clear_jit_again(self):
+        self.runtime.configure(3)
+        self.runtime.service()
+        # Unrelated compiled entry markers must not trigger a global flush.
+        self.memory.write_int32(self.base+INIT, 0x682C90E2)
+        self.memory.invalidate_code.reset_mock()
+        self.memory.paused = Mock(side_effect=AssertionError('Unexpected pause'))
+        self.memory._write_raw = Mock(wraps=self.memory._write_raw)
+        for _ in range(10):
+            self.runtime.service()
+        self.memory.paused.assert_not_called()
+        self.memory.invalidate_code.assert_not_called()
+        self.memory._write_raw.assert_not_called()
+
     def setUp(self):
         self.memory = GameMemory()
         self.memory.paused = nullcontext

@@ -287,13 +287,21 @@ class PlanetInventory:
             self.on_respawn()
         return newly_dead
 
-    # Controller — force the planet menu open while the hotkey combo is held.
+    # Switch within native menu mode; a pending menu alone cannot enter it.
     def check_controller(self) -> None:
         if not self.is_ready or self.planet_id is None:
             return
+        current = self.menu.get()
+        if current not in (MenuStateValue.PAUSE_MENU, MenuStateValue.PLANET_MENU):
+            return
         buttons = GlobalButtonState.read(self.pine, self.planet_id)
-        if buttons.opens_planet_menu:
-            self.menu.set(MenuStateValue.PLANET_MENU)
+        target = None
+        if current == MenuStateValue.PAUSE_MENU and buttons.opens_planet_menu:
+            target = MenuStateValue.PLANET_MENU
+        elif current == MenuStateValue.PLANET_MENU and buttons.opens_pause_menu:
+            target = MenuStateValue.PAUSE_MENU
+        if target is not None and self.menu.update != target:
+            self.menu.set(target)
 
     # Quick select / traps
     def activate_trap(self, trap_name: str) -> None:
@@ -496,11 +504,14 @@ class PlanetUnlockState(BaseState):
             if name not in names:
                 continue
             unlock_val = PlanetLockValue.UNLOCKED if self._desired[name] else PlanetLockValue.LOCKED
-            self.pine.write_int8(PlanetProgressStruct.address_of(field), int(unlock_val))
+            address = PlanetProgressStruct.address_of(field)
+            if self.pine.read_int8(address) != int(unlock_val):
+                self.pine.write_int8(address, int(unlock_val))
             pu = PLANET_UNLOCKS.get(name)
             if pu is not None:
                 state_val = max(int(unlock_val), pu.default_state)
-                self.pine.write_int8(pu.state_addr, state_val)
+                if self.pine.read_int8(pu.state_addr) != state_val:
+                    self.pine.write_int8(pu.state_addr, state_val)
 
     def set_random_start(self, enabled: bool) -> None:
         self._random_start = enabled

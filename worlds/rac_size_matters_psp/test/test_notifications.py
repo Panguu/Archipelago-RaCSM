@@ -29,6 +29,22 @@ class Kernel:
 
 
 class TestNotifications(unittest.TestCase):
+    def test_unresolved_profile_does_not_retry_every_poll(self):
+        self.hud.enqueue('First message')
+        with patch('worlds.rac_size_matters_psp.core.notifications.resolve', return_value=None) as lookup, patch(
+                'worlds.rac_size_matters_psp.core.notifications.time.monotonic', return_value=10) as clock:
+            for _ in range(10):
+                self.hud.tick(1, True)
+            lookup.assert_called_once()
+            clock.return_value = 12
+            self.hud.tick(1, True)
+            self.assertEqual(lookup.call_count, 2)
+            self.memory.write_int8(CURRENT_PLANET_ADDRESS, 2)
+            self.hud.tick(2, True)
+            self.assertEqual(lookup.call_count, 3)
+        self.assertFalse(self.hud.failed)
+        self.assertEqual(list(self.hud.pending), ['First message'])
+
     def setUp(self):
         self.memory = GameMemory()
         self.memory.paused = lambda **kwargs: nullcontext()

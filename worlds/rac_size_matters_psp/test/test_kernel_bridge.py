@@ -18,13 +18,17 @@ class CPU:
         self.regs[0]['uintValues'][32] = frame
         self.original = copy.deepcopy(self.regs)
         self.fail = False
+        self.stepping = True
 
     def _request(self, event, **args):
         names = {'v0': 2, 'sp': 29, 'ra': 31, 'pc': 32}
         if event == 'cpu.getAllRegs':
             return {'categories': copy.deepcopy(self.regs)}
         if event == 'cpu.status':
-            return {'stepping': True, 'pc': self.regs[0]['uintValues'][32]}
+            return {'stepping': self.stepping, 'pc': self.regs[0]['uintValues'][32]}
+        if event in ('cpu.stepping', 'cpu.resume'):
+            self.stepping = event == 'cpu.stepping'
+            return {}
         if event == 'cpu.getReg':
             return {'uintValue': self.regs[0]['uintValues'][names[args['name']]]}
         if event == 'cpu.setReg':
@@ -98,7 +102,44 @@ class TestKernelBridge(unittest.TestCase):
             with bridge.frame():
                 self.assertTrue(bridge._active)
         sleep.assert_not_called()
-        memory.invalidate_code.assert_called_once()
+        memory.invalidate_code.assert_not_called()
+        self.assertFalse(bridge._active)
+
+    def test_preflight_failure_restores_previous_pause_state(self):
+        from ..procmem.transport import ProcMemTransport
+        from ..core.structs.game import TransitionGateStruct
+        for paused in (False, True):
+            for failure in ('boundary', 'transition', 'invalidation'):
+                with self.subTest(paused=paused, failure=failure):
+                    bridge, memory, _ = self.make_frame_bridge(True)
+                    memory.paused = ProcMemTransport.paused.__get__(memory)
+                    memory._control.stepping = paused
+                    memory.write_int32(bridge.boundary, 0)
+                    if failure == 'transition':
+                        memory.write_int32(TransitionGateStruct.BASE_ADDRESS, 0)
+                    elif failure == 'invalidation':
+                        memory.invalidate_code.side_effect = RuntimeError('Invalidation failed')
+                    before = bytes(memory.data)
+                    with patch('worlds.rac_size_matters_psp.core.patches.kernel.time.monotonic',
+                               side_effect=[0, 2]):
+                        with self.assertRaises(RuntimeError):
+                            with bridge.frame():
+                                self.fail('Invalid preflight was accepted')
+                    self.assertEqual(memory._control.stepping, paused)
+                    self.assertEqual(bytes(memory.data), before)
+                    events = [call.args[0] for call in memory._control._request.call_args_list]
+                    self.assertNotIn('cpu.runUntil', events)
+                    self.assertNotIn('cpu.setReg', events)
+
+    def test_failure_after_preflight_keeps_cpu_paused(self):
+        from ..procmem.transport import ProcMemTransport
+        bridge, memory, _ = self.make_frame_bridge(True)
+        memory.paused = ProcMemTransport.paused.__get__(memory)
+        memory._control.stepping = False
+        with self.assertRaisesRegex(RuntimeError, 'Patch failure'):
+            with bridge.frame():
+                raise RuntimeError('Patch failure')
+        self.assertTrue(memory._control.stepping)
         self.assertFalse(bridge._active)
 
     def make_bridge(self):

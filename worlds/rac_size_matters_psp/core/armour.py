@@ -103,7 +103,9 @@ class ArmourUnlockSlot:
     def __set__(self, instance, value) -> None:
         if instance is None:
             return
-        instance.pine.write_int8(self._address(instance), value)
+        address = self._address(instance)
+        if instance.pine.read_int8(address) != value:
+            instance.pine.write_int8(address, value)
 
     def __delete__(self, instance) -> None:
         if instance is None:

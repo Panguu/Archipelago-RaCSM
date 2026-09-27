@@ -1,5 +1,5 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import HasAll, True_
+from rule_builder.rules import Has, HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets
@@ -11,7 +11,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.OUTPOST_OMEGA_DREAM,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("bolt_bits", None, 1048576),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(6, 23),
@@ -20,7 +20,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.OUTPOST_OMEGA_BOOTS,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("armour", "crystallix", 16),
         categories=frozenset(("armour_pickup",)),
         definition_order=27,
@@ -28,7 +28,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.OUTPOST_OMEGA_CHAMELEON_GLOVES,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasChallengeMode(world, 2),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2),
         Completion("armour", "chameleon", 4),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (2,), "in"),)),
         categories=frozenset(("armour_pickup", "challenge_mode_2_armour")),
@@ -39,7 +39,7 @@ LOCATIONS = (
         C.Rac5Planets.OUTPOST_OMEGA,
         lambda world: True_(),
         Completion("skill_bits", None, 1048576),
-        options=LocationOptions(requirements=(OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"),)),
+        options=LocationOptions(requirements=(OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in"))),
         categories=frozenset(("skill_point", "skyboard_challenge_skill_point")),
         native_planets=(23,),
         definition_order=57,
@@ -47,7 +47,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
         Completion("missions", 0x088c138e, 128, 6),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -59,7 +59,7 @@ LOCATIONS = (
         C.Rac5Planets.OUTPOST_OMEGA,
         lambda world: True_(),
         Completion("missions", 0x088c138e, 16, 6),
-        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
+        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in"))),
         categories=frozenset(("story_mission", "mission")),
         check_order=10,
         definition_order=75,
@@ -67,7 +67,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("missions", 0x088c138e, 2, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -77,7 +77,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ENTER,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: True_(),
         Completion("missions", 0x088c138e, 1, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -87,7 +87,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.OUTPOST_OMEGA_BEE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5VendorLocations.OUTPOST_OMEGA_BEE),
         options=LocationOptions(weapon=C.Rac5Weapons.BEE_MINE_GLOVE),
         categories=frozenset(("weapon_vendor",)),
@@ -97,7 +97,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: True_(),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER),
         categories=frozenset(("gadget_vendor",)),
         gadget="box_breaker",
@@ -106,7 +106,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasChallengeMode(world, 1),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 1),
         Completion("events", C.Rac5TitanVendorLocations.OUTPOST_OMEGA_BEE_TITAN),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.BEE_MINE_GLOVE

@@ -10,6 +10,7 @@ from .constants.options import Rac5Options
 from .core.starting_planet import PLANET_TO_ID, PLANET_TO_INFOBOT, choose_starting_planets
 from .core.weapons import WEAPON_MOD_COUNTS
 from .data.models import RACItem as RACItem, RACLocation as RACLocation
+from .data.weapons import WEAPON_DATA
 from .items import (
     ALL_ITEMS,
     ARMOUR_DISPLAY_TO_INTERNAL,
@@ -37,12 +38,13 @@ from .items import (
     WEAPON_PROGRESSIVE_STEPS,
     enabled_weapon_names,
 )
-from .locations import ALL_LOCATIONS
+from .locations import ALL_LOCATIONS, ARMOUR_SET_CHECK_LOCATIONS
 from .options import (
     AllCutscenes,
     AllMissions,
     ArmourSetChecks,
     ClankChallenges,
+    EnabledWeapons,
     EnableClankChallengeSkillPoints,
     EnableSkyboardChallengeSkillPoints,
     ProgressiveArmour,
@@ -131,6 +133,26 @@ class RACSizeMatterWorld(World):
 
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
+        self._validate_weapon_options()
+        self._clamp_nanotech_level_max()
+
+    def _clamp_nanotech_level_max(self) -> None:
+        """Nanotech Levels 51-75 only exist in Challenge Mode, so cap the max at 50 without it."""
+        if self.options.challenge_mode.value < 1 and self.options.nanotech_level_max.value > 50:
+            self.options.nanotech_level_max.value = 50
+
+    def _validate_weapon_options(self) -> None:
+        """Require a projectile weapon that will actually survive item-pool filtering."""
+        enabled_weapons = enabled_weapon_names(dict(self.options.enabled_weapons.value))
+        if not self.options.ng_plus_items:
+            enabled_weapons -= NG_PLUS_WEAPONS
+        player_name = self.multiworld.get_player_name(self.player)
+        if not any(WEAPON_DATA[WEAPON_DISPLAY_TO_INTERNAL[name]].is_projectile for name in enabled_weapons):
+            raise OptionError(
+                f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} must include at least "
+                "one projectile weapon available with NG+ Items applied - many locations "
+                "are only reachable with one."
+            )
 
     def create_regions(self) -> None:
         create_regions(self)
@@ -261,6 +283,19 @@ class RACSizeMatterWorld(World):
 
         if deficit > 0:
             self.handle_not_enough_locations(deficit)
+
+        # Armour set checks need most of the armour, so they're only reachable at the very end of
+        # fill; progression that can only go there fails on some seeds instead of every seed.
+        if self.multiworld.players == 1:
+            armour_set_checks = sum(
+                1 for location in self.multiworld.get_unfilled_locations(self.player)
+                if location.name in ARMOUR_SET_CHECK_LOCATIONS
+            )
+            progression_count = sum(1 for name in pool if self.create_item(name).advancement)
+            progression_deficit = progression_count - (unfilled - armour_set_checks)
+            if progression_deficit > 0:
+                self.handle_not_enough_locations(progression_deficit)
+
         pool += [self.get_filler_item_name() for _ in range(max(0, filler_count))]
 
         for name in pool:

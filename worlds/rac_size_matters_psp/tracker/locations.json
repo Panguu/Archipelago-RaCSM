@@ -33,22 +33,12 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Pokitaru: Gadgetron Vendor: Lacerator - 5,000",
+            "name": "Pokitaru: Hyperborean Gloves",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 5,000",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Pokitaru: Gadgetron Vendor: Concussion Gun - 10,000",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Pokitaru: Gadgetron Vendor: Hypershot - 10,000",
+            "name": "Pokitaru: Chameleon Boots",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -69,6 +59,56 @@
           },
           {
             "name": "Pokitaru: Fight some robots (Complete Luna's photoshoot)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Rescue the girl",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Lacerator - 0",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 0",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Concussion Gun - 10,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: RYNO - 9,990,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Hypershot - 5,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Lacerator Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Acid Bomb Glove Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Concussion Gun Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -105,12 +145,12 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Ryllus: Receive Spout-O-Matic",
+            "name": "Ryllus: Hyperborean Boots",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Ryllus: Gadgetron Vendor: Agents of Doom - 25,000",
+            "name": "Ryllus: Receive Sprout-O-Matic",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -130,17 +170,32 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Ryllus: Buzzing Cameras",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Ryllus: Investigate the artifact (Reach the temple)",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
             "name": "Ryllus: Unlock the temple",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Buzzing Cameras",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Gadgetron Vendor: Agents of Doom - 25,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Gadgetron Vendor: Agents of Doom Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -172,7 +227,7 @@
             "icon": "icons/Titanium_bolt.png"
           },
           {
-            "name": "Kalidon: Sludge Mk9 Chestplate from Master's Challenge",
+            "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -182,17 +237,7 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Kalidon: Gadgetron Vendor: Scorcher - 20,000",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Kalidon: Slim Cognito: Lacerator Lock On Mod - 5,000",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Kalidon: Slim Cognito: Concussion Gun Split Barrel Mod - 15,000",
+            "name": "Kalidon: Chameleon Chestplate",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -214,11 +259,6 @@
           {
             "name": "Kalidon: Skill Point: Be A Cool Skyboarder",
             "item_count": 1,
-            "icon": "icons/Skyboard_Challanges.png"
-          },
-          {
-            "name": "Kalidon: Explore the planet",
-            "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
@@ -227,7 +267,72 @@
             "icon": "icons/Crate.png"
           },
           {
+            "name": "Kalidon: Search the factory",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Explore the planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Gadgetron Vendor: Scorcher - 20,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Lacerator Lock On Mod - 5,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Concussion Gun Split Barrel Mod - 15,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Agents of Doom Explosive Mod - 450,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Scorcher Sunflare Mod - 200,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Suck Cannon Bounce Mod - 600,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Bee Mine Glove Hive Bomb Mod - 300,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Static Barrier Reflection Mod - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Gadgetron Vendor: Scorcher Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
             "name": "Kalidon: Skyboard Challenge: Learner's Challenge",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Kalidon: Skyboard Challenge: Master's Challenge",
             "item_count": 1,
             "icon": "icons/Skyboard_Challanges.png"
           },
@@ -242,9 +347,14 @@
             "icon": "icons/Skyboard_Challanges.png"
           },
           {
-            "name": "Kalidon: Skyboard Challenge: Master's Challenge",
+            "name": "Kalidon: Shrink Ray Enter the Factory",
             "item_count": 1,
-            "icon": "icons/Skyboard_Challanges.png"
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Shrink Ray Inside the Factory",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -262,6 +372,41 @@
             "name": "Metalis: T-Bolt: Behind the Polarized Door",
             "item_count": 1,
             "icon": "icons/Titanium_bolt.png"
+          },
+          {
+            "name": "Metalis: Electroshock Gloves from Giant Clank",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Skill Point: Shutout",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Skill Point: Ultimate Gladiator",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Skill Point: Terror of the Skies",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Escape the planet (Giant Clank)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           },
           {
             "name": "Metalis: Clank Challenge: Buzzsaw Blitz",
@@ -284,34 +429,59 @@
             "icon": "icons/Clank_Challanges.png"
           },
           {
-            "name": "Metalis: Electroshock Gloves from Giant Clank",
+            "name": "Metalis: Clank Challenge: CHARGE!",
             "item_count": 1,
-            "icon": "icons/Crate.png"
+            "icon": "icons/Clank_Challanges.png"
           },
           {
-            "name": "Metalis: Skill Point: Shutout",
+            "name": "Metalis: Clank Challenge: Electric Boogaloo",
             "item_count": 1,
-            "icon": "icons/Crate.png"
+            "icon": "icons/Clank_Challanges.png"
           },
           {
-            "name": "Metalis: Skill Point: Terror of the Skies",
+            "name": "Metalis: Clank Challenge: Showdown",
             "item_count": 1,
-            "icon": "icons/Crate.png"
+            "icon": "icons/Clank_Challanges.png"
           },
           {
-            "name": "Metalis: Skill Point: Ultimate Gladiator",
+            "name": "Metalis: Clank Challenge: Little League",
             "item_count": 1,
-            "icon": "icons/Crate.png"
+            "icon": "icons/Clank_Challanges.png"
           },
           {
-            "name": "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)",
+            "name": "Metalis: Clank Challenge: Varsity Bracket",
             "item_count": 1,
-            "icon": "icons/Crate.png"
+            "icon": "icons/Clank_Challanges.png"
           },
           {
-            "name": "Metalis: Escape the planet (Giant Clank)",
+            "name": "Metalis: Clank Challenge: Collegiate Division",
             "item_count": 1,
-            "icon": "icons/Crate.png"
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Professional Level",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Take Two For The Team",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Bridge The Gap",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Of Trapeze and Teleporters",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Brain Trip",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
           }
         ]
       },
@@ -346,7 +516,7 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Dreamtime: Gadgetron Vendor: Suck Cannon - 30,000",
+            "name": "Dreamtime: Hyperborean Chestplate",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -362,6 +532,26 @@
           },
           {
             "name": "Dreamtime: Complete Dreamtime",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Clank finds sleeping Ratchet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Gadgetron Vendor: Suck Cannon - 30,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Gadgetron Vendor: Suck Cannon Titan - 300,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -383,27 +573,17 @@
             "icon": "icons/Titanium_bolt.png"
           },
           {
-            "name": "Outpost Omega: Skyboard Challenge: Vertigo",
-            "item_count": 1,
-            "icon": "icons/Clank_Challanges.png"
-          },
-          {
             "name": "Outpost Omega: Crystallix Boots during escape",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Outpost Omega: Gadgetron Vendor: Bee Mine Glove - 50,000",
+            "name": "Outpost Omega: Chameleon Gloves",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
             "name": "Outpost Omega: Skill Point: Be An Awesome Skyboarder",
-            "item_count": 1,
-            "icon": "icons/Skyboard_Challanges.png"
-          },
-          {
-            "name": "Outpost Omega: Escape from facility pt 1",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -416,6 +596,51 @@
             "name": "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Escape from facility pt 1",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Gadgetron Vendor: Bee Mine Glove - 50,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Gadgetron Vendor: Box Breaker - 20,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Gadgetron Vendor: Bee Mine Glove Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: Vertigo",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: Interior Decorating",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: Danger, High Voltage",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: The Vortex",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
           }
         ]
       },
@@ -446,6 +671,41 @@
           },
           {
             "name": "Challax: Electroshock Helmet after Dropship fight",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Electroshock Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Hyperborean Helmet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Skill Point: High Tech Weapons Master",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Skill Point: No More Varmints!",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Destroy the space fortress (Giant Clank)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Explore the miniature city",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Enter Planet",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -495,22 +755,27 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Skill Point: High Tech Weapons Master",
+            "name": "Challax: Slim Cognito: Sniper Mine Smart Reflector Mod - 750,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Skill Point: No More Varmints!",
+            "name": "Challax: Slim Cognito: Shock Rocket Multi Launcher Mod - 2,000,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Metalis: Start Giant Clank",
+            "name": "Challax: Slim Cognito: Laser Tracer Pierce Mod - 1,250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Destroy the space fortress (Giant Clank)",
+            "name": "Challax: Gadgetron Vendor: Sniper Mine Titan - 500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Shrink Ray Grindrail",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -537,27 +802,7 @@
             "icon": "icons/Titanium_bolt.png"
           },
           {
-            "name": "Dayni Moon: Clank Challenge: The Ultimate Showdown",
-            "item_count": 1,
-            "icon": "icons/Clank_Challanges.png"
-          },
-          {
-            "name": "Dayni Moon: Clank Challenge: Infinite Improbability",
-            "item_count": 1,
-            "icon": "icons/Clank_Challanges.png"
-          },
-          {
             "name": "Dayni Moon: Mega Bomb Helmet before Luna fight",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Dayni Moon: Gadgetron Vendor: Shock Rocket - 55,000",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Dayni Moon: Gadgetron Vendor: Map-O-Matic - 50,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -582,6 +827,11 @@
             "icon": "icons/Crate.png"
           },
           {
+            "name": "Dayni Moon: Defeat Luna",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
             "name": "Dayni Moon: Luna fight pt 1",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -592,7 +842,102 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Dayni Moon: Defeat Luna",
+            "name": "Dayni Moon: Gadgetron Vendor: Shock Rocket - 55,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Gadgetron Vendor: Map-O-Matic - 50,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Gadgetron Vendor: Mootator Titan - 1,500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Gadgetron Vendor: Shock Rocket Titan - 1,250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: The Ultimate Showdown",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Infinite Improbability",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Welcome to Dayni",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Round Up!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Variety Is Shocking",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Tom Sawyer",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Smasherbot Returns!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: HAY-re We Are!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Tri-bomb Tournament",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: A-rooouund the Bend",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: The Thin Bouncy Line",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Two's A Crowd",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Reverse Into Victory",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Emergency Bridge",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Leap Of Faith",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Shrink Ray Titanium bolt entrance",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -619,7 +964,12 @@
             "icon": "icons/Titanium_bolt.png"
           },
           {
-            "name": "Inside Clank: Gadgetron Vendor: Static Barrier - 65,000",
+            "name": "Inside Clank: Mega Bomb Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Chameleon Helmet",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -642,6 +992,26 @@
             "name": "Inside Clank: Defeat all Technomites",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Gadgetron Vendor: Static Barrier - 65,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Gadgetron Vendor: Static Barrier Titan - 2,500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Shrink Ray Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -662,6 +1032,41 @@
           },
           {
             "name": "Quodrona: Defeat Otto Destruct",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Skill Point: Elite Annihilation",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Skill Point: Storm the Front",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Find Otto Destruct",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Clone Wars (Fight the Ratchet Clones)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Runnnn from Otto",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Defeat Mecha Otto",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Enter Planet",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -696,32 +1101,913 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Quodrona: Skill Point: Elite Annihilation",
+            "name": "Quodrona: Slim Cognito: Static Barrier Mirage Mod - 1,250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Quodrona: Skill Point: Storm the Front",
+            "name": "Quodrona: Slim Cognito: Laser Tracer Ricochet Mod - 500,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Quodrona: Clone Wars (Fight the Ratchet Clones)",
+            "name": "Quodrona: Gadgetron Vendor: Laser Tracer Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Quodrona: Runnnn from Otto",
+            "name": "Quodrona: Shrink Ray Entrance",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Quodrona: Defeat Mecha Otto",
+            "name": "Quodrona: Shrink Ray Clone Training Room",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Weapon Levels",
+        "map_locations": [
+          {
+            "map": "Galaxy",
+            "x": 60,
+            "y": 330
+          }
+        ],
+        "sections": [
+          {
+            "name": "Weapon Level: Lacerator V2",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Quodrona: Find Otto Destruct",
+            "name": "Weapon Level: Lacerator V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Lacerator V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Lacerator V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Lacerator V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Lacerator V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Lacerator V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Concussion Gun V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Acid Bomb Glove V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Agents of Doom V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Bee Mine Glove V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Static Barrier V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Shock Rocket V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Sniper Mine V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Scorcher V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Laser Tracer V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Suck Cannon V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V5",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: Mootator V8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: RYNO V2",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: RYNO V3",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Weapon Level: RYNO V4",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Nanotech Levels",
+        "map_locations": [
+          {
+            "map": "Galaxy",
+            "x": 60,
+            "y": 380
+          }
+        ],
+        "sections": [
+          {
+            "name": "Nanotech Level: 6",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 7",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 8",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 9",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 10",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 11",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 12",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 13",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 14",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 15",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 16",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 17",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 18",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 19",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 20",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 21",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 22",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 23",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 24",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 25",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 26",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 27",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 28",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 29",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 30",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 31",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 32",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 33",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 34",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 35",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 36",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 37",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 38",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 39",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 40",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 41",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 42",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 43",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 44",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 45",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 46",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 47",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 48",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 49",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 50",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 51",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 52",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 53",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 54",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 55",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 56",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 57",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 58",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 59",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 60",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 61",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 62",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 63",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 64",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 65",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 66",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 67",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 68",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 69",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 70",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 71",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 72",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 73",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 74",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Nanotech Level: 75",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Armour Sets",
+        "map_locations": [
+          {
+            "map": "Galaxy",
+            "x": 120,
+            "y": 380
+          }
+        ],
+        "sections": [
+          {
+            "name": "Armor Set: Equip Wildfire Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Wildburst Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Sludge Mk9 Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Crystallix Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Triple Wave Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Shock Crystal Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Electroshock Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Mega Bomb Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Fire-Bomb Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Hyperborean Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Ice II Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Chameleon Armor Set",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Armor Set: Equip Stalker Armor Set",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -811,12 +2097,12 @@
         ],
         "sections": [
           {
-            "name": "Pokitaru: Gadgetron Vendor: Lacerator - 5,000",
+            "name": "Pokitaru: Gadgetron Vendor: Lacerator - 0",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 5,000",
+            "name": "Pokitaru: Gadgetron Vendor: Acid Bomb Glove - 0",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -826,7 +2112,7 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Pokitaru: Gadgetron Vendor: Hypershot - 10,000",
+            "name": "Pokitaru: Gadgetron Vendor: Hypershot - 5,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -847,6 +2133,46 @@
           },
           {
             "name": "Pokitaru: Fight some robots (Complete Luna's photoshoot)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Hyperborean Gloves",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Chameleon Boots",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Rescue the girl",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: RYNO - 9,990,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Lacerator Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Acid Bomb Glove Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Pokitaru: Gadgetron Vendor: Concussion Gun Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -875,7 +2201,7 @@
         ]
       },
       {
-        "name": "Ryllus: Receive Spout-O-Matic",
+        "name": "Ryllus: Receive Sprout-O-Matic",
         "map_locations": [
           {
             "map": "Ryllus",
@@ -885,7 +2211,7 @@
         ],
         "sections": [
           {
-            "name": "Ryllus: Receive Spout-O-Matic",
+            "name": "Ryllus: Receive Sprout-O-Matic",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -972,6 +2298,21 @@
           },
           {
             "name": "Ryllus: Unlock the temple",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Hyperborean Boots",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Gadgetron Vendor: Agents of Doom Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1066,7 +2407,7 @@
         ]
       },
       {
-        "name": "Kalidon: Sludge Mk9 Chestplate from Master's Challenge",
+        "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
         "map_locations": [
           {
             "map": "Kalidon",
@@ -1076,7 +2417,7 @@
         ],
         "sections": [
           {
-            "name": "Kalidon: Sludge Mk9 Chestplate from Master's Challenge",
+            "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1163,6 +2504,73 @@
           },
           {
             "name": "Kalidon: Win the skyboard race (Complete Learner's Permit)",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Kalidon Remaining Checks",
+        "map_locations": [
+          {
+            "map": "Kalidon",
+            "x": 110,
+            "y": 480
+          }
+        ],
+        "sections": [
+          {
+            "name": "Kalidon: Chameleon Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Search the factory",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Agents of Doom Explosive Mod - 450,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Scorcher Sunflare Mod - 200,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Suck Cannon Bounce Mod - 600,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Bee Mine Glove Hive Bomb Mod - 300,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Slim Cognito: Static Barrier Reflection Mod - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Gadgetron Vendor: Scorcher Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Shrink Ray Enter the Factory",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Shrink Ray Inside the Factory",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1261,6 +2669,66 @@
             "name": "Metalis: Escape the planet (Giant Clank)",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: CHARGE!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Electric Boogaloo",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Showdown",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Little League",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Varsity Bracket",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Collegiate Division",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Professional Level",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Take Two For The Team",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Bridge The Gap",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Of Trapeze and Teleporters",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Metalis: Clank Challenge: Brain Trip",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
           }
         ]
       }
@@ -1316,6 +2784,26 @@
           },
           {
             "name": "Dreamtime: Complete Dreamtime",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Hyperborean Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Clank finds sleeping Ratchet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dreamtime: Gadgetron Vendor: Suck Cannon Titan - 300,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1375,6 +2863,41 @@
             "name": "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Chameleon Gloves",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Gadgetron Vendor: Box Breaker - 20,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Gadgetron Vendor: Bee Mine Glove Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: Interior Decorating",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: Danger, High Voltage",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Outpost Omega: Skyboard Challenge: The Vortex",
+            "item_count": 1,
+            "icon": "icons/Skyboard_Challanges.png"
           }
         ]
       }
@@ -1505,12 +3028,52 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Metalis: Start Giant Clank",
+            "name": "Challax: Destroy the space fortress (Giant Clank)",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Destroy the space fortress (Giant Clank)",
+            "name": "Challax: Electroshock Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Hyperborean Helmet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Explore the miniature city",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Slim Cognito: Sniper Mine Smart Reflector Mod - 750,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Slim Cognito: Shock Rocket Multi Launcher Mod - 2,000,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Slim Cognito: Laser Tracer Pierce Mod - 1,250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Gadgetron Vendor: Sniper Mine Titan - 500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Shrink Ray Grindrail",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1636,6 +3199,86 @@
             "name": "Dayni Moon: Defeat Luna",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Gadgetron Vendor: Mootator Titan - 1,500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Gadgetron Vendor: Shock Rocket Titan - 1,250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Welcome to Dayni",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Round Up!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Variety Is Shocking",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Tom Sawyer",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Smasherbot Returns!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: HAY-re We Are!",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Tri-bomb Tournament",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: A-rooouund the Bend",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: The Thin Bouncy Line",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Two's A Crowd",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Reverse Into Victory",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Emergency Bridge",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Clank Challenge: Leap Of Faith",
+            "item_count": 1,
+            "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Shrink Ray Titanium bolt entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       }
@@ -1710,6 +3353,31 @@
           },
           {
             "name": "Inside Clank: Defeat all Technomites",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Mega Bomb Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Chameleon Helmet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Gadgetron Vendor: Static Barrier Titan - 2,500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Shrink Ray Grindrail",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1809,6 +3477,36 @@
           },
           {
             "name": "Quodrona: Find Otto Destruct",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Enter Planet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Slim Cognito: Static Barrier Mirage Mod - 1,250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Slim Cognito: Laser Tracer Ricochet Mod - 500,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Gadgetron Vendor: Laser Tracer Titan - 250,000",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Shrink Ray Entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Shrink Ray Clone Training Room",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }

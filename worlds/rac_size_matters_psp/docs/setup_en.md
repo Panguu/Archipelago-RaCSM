@@ -8,7 +8,7 @@ Use `examples/PSPPlayer.yaml` for the initial playtest. It starts on Pokitaru an
 
 For this checkout, `build/rac_size_matters_psp.apworld` is the installable package and `build/playtest/AP_63004146548060263751.zip` is a generated solo seed for slot **PSPPlayer**. Install the apworld in Archipelago, host the seed ZIP, launch **Ratchet & Clank: Size Matters PSP Client**, and connect as PSPPlayer. Load a new UCUS98633 game in PPSSPP with its remote debugger enabled. The startup grant is 45,000 bolts, two random weapons, and the Hypershot.
 
-The standard client runs without Universal Tracker. To opt into an installed and configured tracker, set `RACSM_PSP_TRACKER=1` before launching. In-game notification rendering and the newer native gameplay patches are not yet active; notifications appear in the client log.
+If Universal Tracker is installed, the client loads it automatically and shows its tracker tabs. To run without it, set `RACSM_PSP_TRACKER=0` before launching. In-game notification rendering and the newer native gameplay patches are not yet active; notifications appear in the client log.
 
 Validation includes a real local Archipelago server and the actual PSP client using synthetic PSP RAM: authentication, starting inventory, starting-bolt checkpoints, mission reporting, and reward delivery passed. This is not a completed live-emulator playthrough.
 
@@ -75,6 +75,11 @@ This section is for players who want to host a solo or multiplayer game.
 ---
 
 ## Weapons and Gadgets
+
+With the client connected, open the normal pause menu with **Start**. Hold
+**L1 + R1 + D-pad Left** to switch to the ship's planet menu. Hold
+**L1 + R1 + D-pad Right** in the planet menu to return to pause. These
+shortcuts only work in those two menus, not during gameplay or at a vendor.
 
 If weapons or gadgets are not being applied correctly, use the following commands in the client console:
 

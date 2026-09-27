@@ -28,6 +28,13 @@ ANCHOR = struct.pack('<7I', 0xE7B40040, 0xE7B60044, 0xAFB00048,
 
 
 def resolve(memory, planet_id):
+    result = _resolve(memory, planet_id, invalidate=False)
+    if result is None:
+        result = _resolve(memory, planet_id, invalidate=True)
+    return result
+
+
+def _resolve(memory, planet_id, *, invalidate):
     profile = PROFILES.get(str(planet_id))
     menu = MENU_ADDR_BY_PLANET_ID.get(planet_id)
     if profile is None or menu is None:
@@ -39,7 +46,8 @@ def resolve(memory, planet_id):
             return None
         # Compiled block markers can replace words inside these routines.
         # Request retail bytes back; never accept a marker as a signature.
-        memory.invalidate_code()
+        if invalidate:
+            memory.invalidate_code()
         start = 0x08800000
         raw = memory.read_bytes(start, 0x1800000)
         hit = raw.find(ANCHOR)

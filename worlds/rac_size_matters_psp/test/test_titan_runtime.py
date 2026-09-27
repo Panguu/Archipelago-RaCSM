@@ -5,11 +5,48 @@ from types import SimpleNamespace
 from .test_client_gameplay import GameMemory
 from ..core.core import Core
 from ..core.controller import PauseSelectButtons
+from ..core.address_maps import WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS
+from ..core.vendor import MAX_VENDOR_SLOTS
 from ..core.weapons import WEAPON_MAX_LEVELS, PROGRESSIVE_MANUAL, PROGRESSIVE_AUTOMATIC
 from ..locations import TITAN_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION
 
 
 class TestTitanRuntime(unittest.TestCase):
+    def test_native_first_open_list_overwrite_is_repaired_without_false_purchase(self):
+        self.vendor.weapon_vendor()
+        memory = self.vendor.pine
+        expected = memory.read_bytes(WEAPON_VENDOR_ITEMS, MAX_VENDOR_SLOTS * 4 + 4)
+        # Simulate native initialization replacing the AP list after entry.
+        memory.write_bytes(WEAPON_VENDOR_ITEMS, bytes(MAX_VENDOR_SLOTS * 4))
+        memory.write_int32(WEAPON_VENDOR_SLOTS, 0)
+        self.vendor.weapon_vendor()
+        self.assertEqual(memory.read_bytes(WEAPON_VENDOR_ITEMS, len(expected)), expected)
+        self.vendor.send_location.assert_not_called()
+        memory.write_bytes = Mock(wraps=memory.write_bytes)
+        self.core.planet.menu.set = Mock()
+        self.vendor.weapon_vendor()
+        memory.write_bytes.assert_not_called()
+        self.core.planet.menu.set.assert_not_called()
+        # A real purchase is still processed before list repair.
+        memory.write_int32(WEAPON_VENDOR_SLOTS, 0)
+        self.weapons.set('lacerator', True)
+        self.vendor.weapon_vendor()
+        self.vendor.send_location.assert_called_once_with(WEAPON_INTERNAL_TO_LOCATION['lacerator'])
+
+    def test_ammo_list_drift_does_not_switch_back_to_purchase_view(self):
+        self.vendor._is_weapon_ap_owned = lambda name: name == 'lacerator'
+        self.weapons.weapons['lacerator'] = True
+        self.weapons.set('lacerator', True)
+        self.vendor.weapon_vendor()
+        self.press(PauseSelectButtons.D_PAD_RIGHT)
+        memory = self.vendor.pine
+        expected = memory.read_bytes(WEAPON_VENDOR_ITEMS, MAX_VENDOR_SLOTS * 4 + 4)
+        memory.write_int32(WEAPON_VENDOR_SLOTS, 0)
+        self.vendor.weapon_vendor()
+        self.assertFalse(self.vendor.show_purchasable_weapons)
+        self.assertEqual(memory.read_bytes(WEAPON_VENDOR_ITEMS, len(expected)), expected)
+        self.vendor.send_location.assert_not_called()
+
     def setUp(self):
         self.core = Core(GameMemory())
         self.core.clank_enabled = False

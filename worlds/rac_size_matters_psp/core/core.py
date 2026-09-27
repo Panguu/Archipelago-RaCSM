@@ -54,6 +54,10 @@ _SCRIPTED_GADGET_LOCATIONS: dict[str, str] = {
     "sprout_o_matic": Rac5Locations.RYLLUS_SPROUT,
     "shrink_ray":     Rac5Locations.KALIDON_SHRINK,
 }
+_SCRIPTED_GADGET_PLANETS: dict[str, int] = {
+    "sprout_o_matic": 0x02,
+    "shrink_ray": 0x03,
+}
 
 # Mission/cutscene location -> the gadget-pickup location that coincides
 # with it in-game. Primary signal: missions.check() fires on the mission's
@@ -331,6 +335,14 @@ class Core:
 
         self._apply_mod_unlock_flags()
 
+    def _scripted_gadget_location(self, name: str) -> str | None:
+        # Loaded overlays can contain native gadget unlocks. Those are not
+        # evidence of a pickup on another planet, including during AP resync.
+        if (self.planet.is_ready
+                and self.planet.planet_id == _SCRIPTED_GADGET_PLANETS.get(name)):
+            return _SCRIPTED_GADGET_LOCATIONS.get(name)
+        return None
+
     def _sync_weapon_gadget_ownership(self) -> None:
         """Force every weapon/gadget's unlocked bit (memory + tracking dict)
         to match true AP ownership. Runs after sync_slots() re-baselines
@@ -352,7 +364,7 @@ class Core:
             owned = self._ap_owned_gadgets.get(name, False)
             if wi.gadgets.get(name, False) != owned:
                 if not owned:
-                    loc = _SCRIPTED_GADGET_LOCATIONS.get(name)
+                    loc = self._scripted_gadget_location(name)
                     if loc:
                         self.send_location(loc)
                 wi.set(name, owned)
@@ -698,7 +710,7 @@ class Core:
         # before _suppress_forced_starter_items() below, which would
         # otherwise discard this exact transition as forced-unlock noise.
         for name in changed["gadgets"]:
-            loc = _SCRIPTED_GADGET_LOCATIONS.get(name)
+            loc = self._scripted_gadget_location(name)
             if loc:
                 self.send_location(loc)
 

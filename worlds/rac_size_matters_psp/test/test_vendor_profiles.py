@@ -1,7 +1,7 @@
 import struct
 import unittest
 from contextlib import nullcontext
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ..core.address_maps import CURRENT_PLANET_ADDRESS, MENU_ADDR_BY_PLANET_ID
 from ..core.structs.game import TransitionGateStruct
@@ -44,7 +44,37 @@ class TestVendorProfiles(unittest.TestCase):
                 self.assertIsNotNone(result)
                 for field in ('rows', 'icons', 'textures', 'text'):
                     self.assertEqual(getattr(result, field), 0x09138D00+PROFILES[str(planet)][field]['relative'])
-                memory.invalidate_code.assert_called_once()
+                memory.invalidate_code.assert_not_called()
+
+    def test_jit_marker_triggers_one_validated_fallback(self):
+        memory = self.make_memory(3)
+        address = 0x09138D00 + PROFILES['3']['icons']['code'] + 8
+        original = memory.read_bytes(address, 4)
+        memory.write_int32(address, 0x682C90E2)
+        memory.invalidate_code.side_effect = lambda: memory.write_bytes(address, original)
+        self.assertIsNotNone(resolve(memory, 3))
+        memory.invalidate_code.assert_called_once()
+
+    def test_transient_profile_failure_retries_without_reopening(self):
+        memory = self.make_memory(3)
+        profile = resolve(memory, 3)
+        view = VendorPresentation(memory)
+        with patch('worlds.rac_size_matters_psp.core.vendor_presentation.resolve',
+                   side_effect=[None, profile]) as lookup, patch(
+                'worlds.rac_size_matters_psp.core.vendor_presentation.time.monotonic',
+                return_value=10) as clock:
+            self.assertIsNone(view._profile(3))
+            self.assertIsNone(view._profile(3))
+            lookup.assert_called_once()
+            clock.return_value = 11
+            self.assertEqual(view._profile(3), profile)
+            self.assertEqual(lookup.call_count, 2)
+            view._planet_id = 3
+            view.update(3, True, False)
+            self.assertEqual(view._profile(3), profile)
+            self.assertEqual(lookup.call_count, 2)
+            view.abandon()
+            self.assertEqual(view._resolved_profiles, {})
 
     def test_known_live_pokitaru_addresses_match_recovered_references(self):
         result = resolve(self.make_memory(1), 1)

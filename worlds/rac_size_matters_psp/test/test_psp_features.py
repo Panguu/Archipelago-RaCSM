@@ -176,6 +176,7 @@ class TestCodePatches(unittest.TestCase):
         memory.write_bytes = checked_write
         plan = CodePlan(memory, [Patch(0x08800000, b"abcd", b"wxyz")], name="code")
         plan.install()
+        plan.install()  # An already validated hook does not pause/flush again.
         plan.restore()
         self.assertEqual(events, ["pause", "clear", "resume"] * 2)
         self.assertEqual(memory.data, b"abcd")

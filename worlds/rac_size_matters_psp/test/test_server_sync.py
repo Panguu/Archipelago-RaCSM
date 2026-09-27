@@ -2,6 +2,8 @@ import asyncio
 import unittest
 from unittest.mock import AsyncMock, Mock
 
+from NetUtils import NetworkSlot, SlotType
+
 from ..client.psp_mixin import PspMixin
 from ..client.server_sync import ServerSyncMixin
 from ..core.address_maps import PLAYER_BOLT_COUNT
@@ -148,7 +150,11 @@ class TestServerSync(unittest.IsolatedAsyncioTestCase):
         ctx._send_map_page = AsyncMock()
         ctx.item_names = {ctx.game: {1: "Lacerator", 2: "Bolts"}}
         ctx._show_new_item_notifications = Mock()
-        ctx.on_package("Connected", {"slot_data": {"split_infobots": True, "clank_challenges": 0}})
+        ctx.on_package("Connected", {
+            "slot": 1,
+            "slot_info": {"1": NetworkSlot("Player", ctx.game, SlotType.player)},
+            "slot_data": {"split_infobots": True, "clank_challenges": 0},
+        })
         await asyncio.sleep(0)
         before = bytes(ctx.pine.data)
         await ctx._poll_game()

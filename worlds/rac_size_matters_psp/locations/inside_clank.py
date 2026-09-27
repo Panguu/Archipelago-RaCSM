@@ -1,10 +1,10 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import HasAll, True_
+from rule_builder.rules import Has, HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets
 from ..options import AllCutscenes, AllMissions, ChallengeMode, ShrinkRayOptions, SkillPoints
-from ..rules._helpers import HasChallengeMode, HasShrinkRayDoorAccess
+from ..rules._helpers import HasChallengeMode
 from .model import Completion, LocationOptions, Rac5Locations
 
 LOCATIONS = (
@@ -29,7 +29,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.INSIDE_CLANK_CHESTPLATE,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & HasShrinkRayDoorAccess(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("armour", "mega_bomb", 1),
         categories=frozenset(("armour_pickup",)),
         definition_order=30,
@@ -46,7 +46,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.INSIDE_CLANK_SHOCK,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & HasShrinkRayDoorAccess(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("skill_bits", None, 4294967296),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -56,7 +56,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.INSIDE_CLANK_RATCHET,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & HasShrinkRayDoorAccess(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("skill_bits", None, 8589934592),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -66,7 +66,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.INSIDE_CLANK_ESCAPE,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & HasShrinkRayDoorAccess(world),
+        lambda world: True_(),
         Completion("missions", 0x088c1392, 32, 8),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -76,7 +76,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & HasShrinkRayDoorAccess(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("missions", 0x088c1394, 2, 9),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -96,7 +96,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.INSIDE_CLANK_STATIC,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & HasShrinkRayDoorAccess(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", C.Rac5VendorLocations.INSIDE_CLANK_STATIC),
         options=LocationOptions(weapon=C.Rac5Weapons.STATIC_BARRIER),
         categories=frozenset(("weapon_vendor",)),
@@ -108,7 +108,7 @@ LOCATIONS = (
         C.Rac5Planets.INSIDE_CLANK,
         lambda world: (
             HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER)
-            & HasShrinkRayDoorAccess(world)
+            & Has(Rac5Gadgets.SHRINK_RAY)
             & HasChallengeMode(world, 1)
         ),
         Completion("events", C.Rac5TitanVendorLocations.INSIDE_CLANK_STATIC_TITAN),

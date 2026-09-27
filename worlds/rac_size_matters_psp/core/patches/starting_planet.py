@@ -82,6 +82,13 @@ class StartingPlanet:
                 or self.memory.read_int32(TransitionGateStruct.BASE_ADDRESS) != TRANSITION_GATE_IDLE):
             self.base = self.plan = self.applied = None
             return
+        # An unchanged installed patch needs no breakpoint or JIT flush.
+        # A reset or replaced overlay falls through to the checked slow path.
+        if (self.plan is not None and self.applied == self.target
+                and self.memory.get_game_id() == 'UCUS98633'
+                and all(self.memory.read_bytes(e.address, len(e.replacement)) == e.replacement
+                        for e in self.plan.edits)):
+            return
         with self.memory.paused():
             self.memory.invalidate_code()
             base = self._frontend()

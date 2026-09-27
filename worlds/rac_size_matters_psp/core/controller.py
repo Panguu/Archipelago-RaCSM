@@ -5,8 +5,8 @@ from .address_maps import PLANET_ADDRESSES
 
 """
 Controller Logic
-Holding L1 + L2 + R1 + R2 + START is the hotkey to force-open the Planet Menu
-(see PLANET_MENU_HOTKEY / GlobalButtonState.opens_planet_menu).
+In the pause menu, L1 + R1 + D-pad Left switches to the Planet Menu.
+In the Planet Menu, L1 + R1 + D-pad Right returns to the pause menu.
 """
 class PauseSelectButtons(IntFlag):
     SELECT = 0x01
@@ -29,12 +29,16 @@ class ControllerButtons(IntFlag):
     SQUARE   = 0x80
 
 
-# Held together, forces the Planet Menu open via MenuState.set_menu(PLANET_MENU).
-# PSP has no L2/R2, so the hotkey is L1 + R1 + SELECT instead of the PS2 combo.
+# These shortcuts switch between menus only after native menu mode is open.
 PLANET_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
     ControllerButtons.L1,
     ControllerButtons.R1,
-    PauseSelectButtons.START,
+    PauseSelectButtons.D_PAD_LEFT,
+)
+PAUSE_MENU_HOTKEY: tuple[PauseSelectButtons | ControllerButtons, ...] = (
+    ControllerButtons.L1,
+    ControllerButtons.R1,
+    PauseSelectButtons.D_PAD_RIGHT,
 )
 
 
@@ -79,8 +83,12 @@ class GlobalButtonState:
 
     @property
     def opens_planet_menu(self) -> bool:
-        """True while the Planet Menu hotkey combo is held."""
-        return self.pressed(*PLANET_MENU_HOTKEY)
+        """True while the left shortcut is held without the opposite direction."""
+        return self.pressed(*PLANET_MENU_HOTKEY) and not self.pressed(PauseSelectButtons.D_PAD_RIGHT)
+
+    @property
+    def opens_pause_menu(self) -> bool:
+        return self.pressed(*PAUSE_MENU_HOTKEY) and not self.pressed(PauseSelectButtons.D_PAD_LEFT)
 
     def __repr__(self) -> str:
         # !r forces repr() (which still includes flag names) — since Python 3.11,
