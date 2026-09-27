@@ -146,6 +146,37 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
 
 
 class RegionalSaveAddressTests(unittest.TestCase):
+    def test_challenge_tier_follows_region_changes_and_planet_loads(self):
+        from unittest.mock import Mock
+        from ..core import address_maps
+        from ..core.challenge_mode import ChallengeModeState
+
+        previous = address_maps.GAME_ID
+        memory = Mock()
+        try:
+            address_maps.select_game("SCUS-97615")
+            state = ChallengeModeState(memory)
+            for serial, address in (
+                ("SCPS-15120", 0x1F4C5B8),
+                ("SCUS-97615", 0x1F4C778),
+                ("SCES-55019", 0x1F4C778),
+                ("SCPS-15120", 0x1F4C5B8),
+            ):
+                with self.subTest(serial=serial):
+                    address_maps.select_game(serial)
+                    for tier in (0, 1, 2):
+                        memory.reset_mock()
+                        state.set_by_option(tier)
+                        memory.write_int8.assert_called_once_with(address, tier)
+                        memory.read_int8.return_value = tier
+                        self.assertEqual(state.tier, tier)
+                        memory.read_int8.assert_called_once_with(address)
+                        memory.reset_mock()
+                        state.setup()
+                        memory.write_int8.assert_called_once_with(address, tier)
+        finally:
+            address_maps.select_game(previous)
+
     def test_save_fields_and_completion_reads_follow_region_after_import(self):
         from ..core import address_maps
         from ..core.armour import ArmourStruct

@@ -13,7 +13,11 @@ class ChallengeModeSlot:
 
     def __init__(self, field: str) -> None:
         self.field = field
-        self.address = ChallengeModeStruct.address_of(field)
+
+    @property
+    def address(self) -> int:
+        # The game region is detected after this descriptor is constructed.
+        return ChallengeModeStruct.address_of(self.field)
 
     def __get__(self, instance, owner) -> int | None:
         if instance is None:

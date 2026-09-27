@@ -37,12 +37,23 @@ class TestVendorPresentation(unittest.TestCase):
                     self.assertEqual(getattr(plan, field), value)
 
     def test_text_icons_restore_and_purchase_identity(self):
+        self.check_text_icons_restore_and_purchase_identity()
+
+    def test_titan_text_icons_restore_and_purchase_identity_in_all_regions(self):
+        for serial in ('SCUS-97615', 'SCES-55019', 'SCPS-15120'):
+            for level in (0, 3, 4, 7):
+                with self.subTest(serial=serial, level=level):
+                    self.check_text_icons_restore_and_purchase_identity(2, serial, level)
+
+    def check_text_icons_restore_and_purchase_identity(self, kind=0, serial='SCUS-97615', level=0):
         memory = Memory()
+        memory.get_game_id = lambda: serial
         render, header, strings, equipment, icons, textures = (0xD10000, 0x300000, 0x310000, 0x320000, 0x330000, 0x340000)
         memory.write_bytes(render, native.RENDER_SIGNATURE)
+        memory.write_bytes(render + native.TITAN_TITLE_BRANCH_OFFSET, native.TITAN_TITLE_BRANCH)
         plan = native.VendorPresentation(memory, render, header, strings, equipment, icons, textures)
         rows, table, title, description, spec = 0x350000, 0x360000, 0x370000, 0x370100, 0x380000
-        offer = (1, 50, 0, 35000, 0, 4, 0)
+        offer = (1, 50, 0, 35000, 0, 4, kind)
         ammo = (1, 50, 0, 100, 0, 4, 1)
         memory.write_bytes(rows, packed(*offer, *ammo))
         memory.write_bytes(header, packed(rows, 2, 1, 0))
@@ -51,7 +62,8 @@ class TestVendorPresentation(unittest.TestCase):
         memory.write_bytes(title, b'Acid Bomb Glove\0')
         vanilla = b'Original weapon description. ' * 8 + b'\0'
         memory.write_bytes(description, vanilla)
-        memory.write_int32(equipment + 4 * 88 + 16, spec)
+        memory.write_int32(equipment + 4 * 88 + 0x3C, level)
+        memory.write_int32(equipment + 4 * 88 + 16 + level * 4, spec)
         memory.write_bytes(spec + 16, packed(44, 818))
         memory.write_int32(icons + 4, 10)
         image, palette, pixels, colors = 0x390000, 0x391000, 0x392000, 0x393000
@@ -61,7 +73,7 @@ class TestVendorPresentation(unittest.TestCase):
         memory.write_int32(image + 48, pixels)
         memory.write_int32(palette + 48, colors)
         reward = VendorReward(100, 200, 2, 'Progressive Sword', 'Other Player', 1)
-        scouts = SimpleNamespace(for_purchase=lambda kind, key: reward if (kind, key) == (0, 4) else None)
+        scouts = SimpleNamespace(for_purchase=lambda purchase, key: reward if (purchase, key) == (kind, 4) else None)
         baseline = bytes(memory.data)
         plan.tick(True, scouts)
         self.assertEqual(memory.read_int32(rows + 4), 1)
@@ -69,9 +81,15 @@ class TestVendorPresentation(unittest.TestCase):
         self.assertEqual(memory.read_bytes(rows + 28, 28), packed(*ammo))
         self.assertIn(b'Progressive Sword', memory.read_bytes(description, len(vanilla)))
         self.assertIn(b'For Other Player', memory.read_bytes(description, len(vanilla)))
+        self.assertEqual(memory.read_bytes(render + native.TITAN_TITLE_BRANCH_OFFSET, 4),
+                         native.SCOUTED_TITLE_BRANCH if kind == 2 else native.TITAN_TITLE_BRANCH)
+        self.assertEqual(memory.read_int32(table + 4), description)
+        recipient = memory.read_int32(table + 12)
+        self.assertTrue(memory.read_bytes(recipient, 17).startswith(b'For Other Player\0'))
         memory.write_int32(header + 12, 1)
         plan.tick(True, scouts)
         self.assertEqual(memory.read_bytes(description, len(vanilla)), vanilla)
+        self.assertEqual(memory.read_bytes(render + native.TITAN_TITLE_BRANCH_OFFSET, 4), native.TITAN_TITLE_BRANCH)
         plan.tick(False, scouts)
         memory.write_int32(header + 12, 0)
         self.assertEqual(bytes(memory.data), baseline)

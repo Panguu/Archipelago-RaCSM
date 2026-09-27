@@ -36,6 +36,11 @@ def set_icon_style(style: str) -> None:
     _icon_style = style
 
 RENDER_SIGNATURE = packed(0x27BDFC80, 0x3C04FFFF, 0xFFB00320, 0x3484FFFF, 0xFFB10328)
+# The Titan title path formats the level-four name with a native Titan prefix.
+# Scouted offers must instead draw the localized title replaced by _text.
+TITAN_TITLE_BRANCH_OFFSET = 0x784
+TITAN_TITLE_BRANCH = packed(0x10400020)  # beq v0, zero, ordinary_title
+SCOUTED_TITLE_BRANCH = packed(0x10000020)  # beq zero, zero, ordinary_title
 
 
 def prepare(pine, code_start, code):
@@ -169,6 +174,11 @@ class VendorPresentation:
         title = bytes((0x90, reward.title_color)) + title + b"\x90\x01\0"
         recipient = recipient[:capacity - len(title) - 1] + b"\0"
         payload = (title + recipient).ljust(capacity, b"\0")
+        if row[6] == 2:
+            branch = self.render + TITAN_TITLE_BRANCH_OFFSET
+            if self.pine.read_bytes(branch, 4) != TITAN_TITLE_BRANCH:
+                raise RuntimeError("Vendor Titan title branch changed")
+            self._change(self.text_changes, branch, SCOUTED_TITLE_BRANCH)
         self._change(self.text_changes, desc, payload)
         self._change(self.text_changes, title_entry, packed(desc))
         self._change(self.text_changes, desc_entry, packed(desc + len(title)))
