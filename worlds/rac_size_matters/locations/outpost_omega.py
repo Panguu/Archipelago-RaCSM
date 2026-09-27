@@ -48,7 +48,12 @@ LOCATIONS = (
         C.Rac5Planets.OUTPOST_OMEGA,
         lambda world: True_(),
         Completion(_S.SKILL_BITS, None, 1048576),
-        options=LocationOptions(requirements=(OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"),)),
+        options=LocationOptions(
+            requirements=(
+                OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"),
+                OptionFilter(SkyboardChallenges, (1,), "in"),
+            ),
+        ),
         categories=frozenset(("skill_point", "skyboard_challenge_skill_point")),
         native_planets=(23,),
         definition_order=57,
@@ -68,7 +73,9 @@ LOCATIONS = (
         C.Rac5Planets.OUTPOST_OMEGA,
         lambda world: True_(),
         Completion(_S.MISSIONS, 32814030, 16, 6),
-        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
+        options=LocationOptions(
+            requirements=(OptionFilter(AllMissions, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in")),
+        ),
         categories=frozenset(("story_mission", "mission")),
         check_order=10,
         definition_order=75,

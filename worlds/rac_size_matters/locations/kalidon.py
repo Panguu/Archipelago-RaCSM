@@ -82,6 +82,7 @@ LOCATIONS = (
         C.Rac5Planets.KALIDON,
         lambda world: True_(),
         Completion(_S.EVENTS, C.Rac5Locations.KALIDON_SHRINK),
+        options=LocationOptions(requirements=(OptionFilter(SkyboardChallenges, (1,), "in"),)),
         categories=frozenset((_C.GADGET_PICKUP,)),
         definition_order=43,
     ),
@@ -110,7 +111,12 @@ LOCATIONS = (
         C.Rac5Planets.KALIDON,
         lambda world: True_(),
         Completion(_S.SKILL_BITS, None, 1024),
-        options=LocationOptions(requirements=(OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"),)),
+        options=LocationOptions(
+            requirements=(
+                OptionFilter(EnableSkyboardChallengeSkillPoints, (1,), "in"),
+                OptionFilter(SkyboardChallenges, (1,), "in"),
+            ),
+        ),
         categories=frozenset((_C.SKILL_POINT, _C.SKYBOARD_CHALLENGE_SKILL_POINT)),
         native_planets=(3,),
         definition_order=52,
@@ -120,7 +126,9 @@ LOCATIONS = (
         C.Rac5Planets.KALIDON,
         lambda world: True_(),
         Completion(_S.MISSIONS, 32814024, 16, 3),
-        options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
+        options=LocationOptions(
+            requirements=(OptionFilter(AllMissions, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in")),
+        ),
         categories=frozenset((_C.STORY_MISSION, _C.MISSION, _C.SKYBOARD_ITEM)),
         check_order=6,
         definition_order=71,
