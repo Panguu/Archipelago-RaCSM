@@ -1182,21 +1182,6 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Shrink Ray Grindrail",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Dayni Moon: Shrink Ray Titanium bolt entrance",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Inside Clank: Shrink Ray Grindrail",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Kalidon: Enter Planet",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -1207,27 +1192,17 @@
             "icon": "icons/Crate.png"
           },
           {
+            "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
             "name": "Kalidon: Shrink Ray Enter the Factory",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
             "name": "Kalidon: Shrink Ray Inside the Factory",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Quodrona: Shrink Ray Clone Training Room",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Quodrona: Shrink Ray Entrance",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1516,6 +1491,16 @@
             "name": "Outpost Omega: Skyboard Challenge: The Vortex",
             "item_count": 1,
             "icon": "icons/Skyboard_Challanges.png"
+          },
+          {
+            "name": "Outpost Omega: Shrink Ray Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Shrink Ray Second Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -1646,6 +1631,16 @@
           },
           {
             "name": "Challax: Explore the miniature city",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Shrink Ray Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Shrink Ray Second Puzzle",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1805,6 +1800,11 @@
             "name": "Dayni Moon: Clank Challenge: Welcome to Dayni",
             "item_count": 1,
             "icon": "icons/Clank_Challanges.png"
+          },
+          {
+            "name": "Dayni Moon: Shrink Ray Titanium bolt entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -1870,6 +1870,11 @@
           },
           {
             "name": "Inside Clank: Mega Bomb Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Inside Clank: Shrink Ray Grindrail",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -1974,6 +1979,16 @@
             "name": "Quodrona: Gadgetron Vendor: Laser Tracer Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Shrink Ray Entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Quodrona: Shrink Ray Clone Training Room",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       }
@@ -2000,7 +2015,7 @@
         ]
       },
       {
-        "name": "Pokitaru: T-Bolt: Above Zipline",
+        "name": "Pokitaru Titanium Bolt Above Zipline + Hyperborean Gloves",
         "map_locations": [
           {
             "map": "Pokitaru",
@@ -2013,6 +2028,11 @@
             "name": "Pokitaru: T-Bolt: Above Zipline",
             "item_count": 1,
             "icon": "icons/Titanium_bolt.png"
+          },
+          {
+            "name": "Pokitaru: Hyperborean Gloves",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -2051,6 +2071,23 @@
         ]
       },
       {
+        "name": "Pokitaru: Chameleon Boots",
+        "map_locations": [
+          {
+            "map": "Pokitaru",
+            "x": 96,
+            "y": 245
+          }
+        ],
+        "sections": [
+          {
+            "name": "Pokitaru: Chameleon Boots",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
         "name": "Pokitaru Remaining Checks",
         "map_locations": [
           {
@@ -2082,16 +2119,6 @@
           },
           {
             "name": "Pokitaru: Fight some robots (Complete Luna's photoshoot)",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Pokitaru: Hyperborean Gloves",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Pokitaru: Chameleon Boots",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -3026,7 +3053,7 @@
         "sections": []
       },
       {
-        "name": "Ryllus Titanium Bolt After the Wall + Wildfire Helmet",
+        "name": "Ryllus Titanium Bolt After the Wall + Wildfire Helmet + Hyperborean Boots",
         "map_locations": [
           {
             "map": "Ryllus",
@@ -3042,6 +3069,11 @@
           },
           {
             "name": "Ryllus: Wildfire Helmet before temple entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Ryllus: Hyperborean Boots",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -3110,11 +3142,6 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Ryllus: Hyperborean Boots",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Ryllus: Gadgetron Vendor: Agents of Doom Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -3154,7 +3181,7 @@
         ]
       },
       {
-        "name": "Kalidon: T-Bolt: Side of Mechanoid Factory",
+        "name": "Kalidon Titanium Bolt Side of Mechanoid Factory + Shrink Ray Enter the Factory",
         "map_locations": [
           {
             "map": "Kalidon",
@@ -3167,6 +3194,11 @@
             "name": "Kalidon: T-Bolt: Side of Mechanoid Factory",
             "item_count": 1,
             "icon": "icons/Titanium_bolt.png"
+          },
+          {
+            "name": "Kalidon: Shrink Ray Enter the Factory",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -3220,7 +3252,7 @@
         ]
       },
       {
-        "name": "Kalidon: Sludge Mk9 Chestplate from Master's Challenge",
+        "name": "Kalidon Sludge Mk9 Chestplate + Chameleon Chestplate",
         "map_locations": [
           {
             "map": "Kalidon",
@@ -3228,7 +3260,18 @@
             "y": 169
           }
         ],
-        "sections": []
+        "sections": [
+          {
+            "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Kalidon: Chameleon Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
       },
       {
         "name": "Kalidon: Wildfire Boots inside factory",
@@ -3275,6 +3318,23 @@
         ]
       },
       {
+        "name": "Kalidon: Shrink Ray Inside the Factory",
+        "map_locations": [
+          {
+            "map": "Kalidon",
+            "x": 330,
+            "y": 203
+          }
+        ],
+        "sections": [
+          {
+            "name": "Kalidon: Shrink Ray Inside the Factory",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
         "name": "Kalidon Skill Points",
         "map_locations": [
           {
@@ -3315,11 +3375,6 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Kalidon: Chameleon Chestplate",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Kalidon: Gadgetron Vendor: Scorcher Titan - 250,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -3350,52 +3405,12 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Shrink Ray Grindrail",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Dayni Moon: Shrink Ray Titanium bolt entrance",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Inside Clank: Shrink Ray Grindrail",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Kalidon: Enter Planet",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
           {
             "name": "Kalidon: Search the factory",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Kalidon: Shrink Ray Enter the Factory",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Kalidon: Shrink Ray Inside the Factory",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Kalidon: Sludge Mk9 Chestplate from Mundo Fight",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Quodrona: Shrink Ray Clone Training Room",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Quodrona: Shrink Ray Entrance",
             "item_count": 1,
             "icon": "icons/Crate.png"
           }
@@ -3563,6 +3578,23 @@
     "name": "5",
     "children": [
       {
+        "name": "Dreamtime: Hyperborean Chestplate",
+        "map_locations": [
+          {
+            "map": "Dreamtime",
+            "x": 390,
+            "y": 285
+          }
+        ],
+        "sections": [
+          {
+            "name": "Dreamtime: Hyperborean Chestplate",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
         "name": "Dreamtime Remaining Checks",
         "map_locations": [
           {
@@ -3613,11 +3645,6 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Dreamtime: Hyperborean Chestplate",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Dreamtime: Gadgetron Vendor: Suck Cannon Titan - 300,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -3639,6 +3666,45 @@
   {
     "name": "6",
     "children": [
+      {
+        "name": "Outpost Omega Chameleon Gloves + Shrink Ray Second Grindrail",
+        "map_locations": [
+          {
+            "map": "Outpost Omega",
+            "x": 210,
+            "y": 579
+          }
+        ],
+        "sections": [
+          {
+            "name": "Outpost Omega: Chameleon Gloves",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Outpost Omega: Shrink Ray Second Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Outpost Omega: Shrink Ray Grindrail",
+        "map_locations": [
+          {
+            "map": "Outpost Omega",
+            "x": 448,
+            "y": 231
+          }
+        ],
+        "sections": [
+          {
+            "name": "Outpost Omega: Shrink Ray Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
       {
         "name": "Outpost Omega Remaining Checks",
         "map_locations": [
@@ -3686,11 +3752,6 @@
           },
           {
             "name": "Outpost Omega: Rematch - Skyboard racers (Complete Interior Decorating)",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
-            "name": "Outpost Omega: Chameleon Gloves",
             "item_count": 1,
             "icon": "icons/Crate.png"
           },
@@ -3783,6 +3844,45 @@
         ]
       },
       {
+        "name": "Challax Hyperborean Helmet + Shrink Ray Second Puzzle",
+        "map_locations": [
+          {
+            "map": "Challax",
+            "x": 233,
+            "y": 89
+          }
+        ],
+        "sections": [
+          {
+            "name": "Challax: Hyperborean Helmet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          },
+          {
+            "name": "Challax: Shrink Ray Second Puzzle",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Challax: Shrink Ray Grindrail",
+        "map_locations": [
+          {
+            "map": "Challax",
+            "x": 277,
+            "y": 373
+          }
+        ],
+        "sections": [
+          {
+            "name": "Challax: Shrink Ray Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
         "name": "Challax Remaining Checks",
         "map_locations": [
           {
@@ -3858,11 +3958,6 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Challax: Hyperborean Helmet",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Challax: Gadgetron Vendor: Sniper Mine Titan - 500,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -3905,7 +4000,7 @@
     "name": "8",
     "children": [
       {
-        "name": "Dayni Moon: T-Bolt: Bounce on the Blue mimic",
+        "name": "Dayni Moon Titanium Bolt Bounce on the Blue mimic + Shrink Ray Titanium bolt entrance",
         "map_locations": [
           {
             "map": "Dayni Moon",
@@ -3918,6 +4013,11 @@
             "name": "Dayni Moon: T-Bolt: Bounce on the Blue mimic",
             "item_count": 1,
             "icon": "icons/Titanium_bolt.png"
+          },
+          {
+            "name": "Dayni Moon: Shrink Ray Titanium bolt entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -4120,7 +4220,7 @@
         ]
       },
       {
-        "name": "Inside Clank: T-Bolt: Walk behind the ladder",
+        "name": "Inside Clank Titanium Bolt Walk behind the ladder + Chameleon Helmet",
         "map_locations": [
           {
             "map": "Inside Clank",
@@ -4133,6 +4233,28 @@
             "name": "Inside Clank: T-Bolt: Walk behind the ladder",
             "item_count": 1,
             "icon": "icons/Titanium_bolt.png"
+          },
+          {
+            "name": "Inside Clank: Chameleon Helmet",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Inside Clank: Shrink Ray Grindrail",
+        "map_locations": [
+          {
+            "map": "Inside Clank",
+            "x": 398,
+            "y": 289
+          }
+        ],
+        "sections": [
+          {
+            "name": "Inside Clank: Shrink Ray Grindrail",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
@@ -4172,11 +4294,6 @@
             "icon": "icons/Crate.png"
           },
           {
-            "name": "Inside Clank: Chameleon Helmet",
-            "item_count": 1,
-            "icon": "icons/Crate.png"
-          },
-          {
             "name": "Inside Clank: Gadgetron Vendor: Static Barrier Titan - 2,500,000",
             "item_count": 1,
             "icon": "icons/Crate.png"
@@ -4199,7 +4316,7 @@
     "name": "10",
     "children": [
       {
-        "name": "Quodrona: T-Bolt: Ratchet Clones and Dummies",
+        "name": "Quodrona Titanium Bolt Ratchet Clones and Dummies + Shrink Ray Clone Training Room",
         "map_locations": [
           {
             "map": "Quodrona",
@@ -4212,6 +4329,28 @@
             "name": "Quodrona: T-Bolt: Ratchet Clones and Dummies",
             "item_count": 1,
             "icon": "icons/Titanium_bolt.png"
+          },
+          {
+            "name": "Quodrona: Shrink Ray Clone Training Room",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
+          }
+        ]
+      },
+      {
+        "name": "Quodrona: Shrink Ray Entrance",
+        "map_locations": [
+          {
+            "map": "Quodrona",
+            "x": 472,
+            "y": 712
+          }
+        ],
+        "sections": [
+          {
+            "name": "Quodrona: Shrink Ray Entrance",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       },
