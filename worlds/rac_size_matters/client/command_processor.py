@@ -134,26 +134,3 @@ class RACCommandProcessor(ClientCommandProcessor):
         """Toggle BoltLink on or off for this session."""
         asyncio.create_task(self.ctx._set_bolt_link_enabled(not self.ctx._bolt_link_enabled))
         return True
-
-    def _cmd_toggle_ghostlink(self) -> bool:
-        """Toggle GhostLink on or off for this session."""
-        asyncio.create_task(self.ctx._set_ghost_link_enabled(not self.ctx._ghost_link_enabled))
-        return True
-
-    def _cmd_ghost_link_interval(self, seconds: str = "") -> bool:
-        """Override the ghost_link_update_interval YAML option for this session without regenerating.
-        0 stops broadcasting your own position; no argument shows the current value."""
-        if not seconds:
-            logger.info(f"[RAC] GhostLink update interval: {self.ctx._ghost_link_interval}s")
-            return True
-        try:
-            value = float(seconds)
-        except ValueError:
-            logger.warning(f"[RAC] Invalid interval {seconds!r} — must be a number of seconds.")
-            return True
-        if value < 0:
-            logger.warning("[RAC] Interval can't be negative.")
-            return True
-        self.ctx._ghost_link_interval = value
-        logger.info(f"[RAC] GhostLink update interval set to {value}s.")
-        return True

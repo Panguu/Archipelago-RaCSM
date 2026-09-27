@@ -8,6 +8,7 @@ from CommonClient import logger
 from ..core import TextColour, colored_text, reconcile_traps
 from ..universal_tracker import PLANET_ID_TO_REGION
 from ..core.address_maps import SUPPORTED_GAMES
+from ..core.save_data import highest_weapon_levels
 from .constants import PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
 
@@ -199,7 +200,13 @@ class PineMixin:
                 or not self._wiring.planet.is_ready or self._wiring.at_main_menu
                 or self._wiring.vendor_active or self._wiring.native.waiting):
             return
-        snapshot = self._wiring.planet.weapons.level_snapshot()
+        weapons = self._wiring.planet.weapons
+        live = weapons.level_snapshot()
+        snapshot = weapons.within_level_ceilings(highest_weapon_levels(self._local_weapon_state, live))
+        dropped = {name: (live.get(name), level) for name, level in snapshot.items() if live.get(name) != level}
+        if dropped:
+            logger.warning(f"[RAC] Weapon levels dropped unexpectedly, keeping known levels: {dropped}")
+            weapons.restore_levels(snapshot)
         self._local_weapon_state = snapshot
         now = time.monotonic()
         if not force and now - self._last_weapon_state_push < _WEAPON_STATE_PUSH_INTERVAL:

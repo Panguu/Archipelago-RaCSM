@@ -41,3 +41,16 @@ class RAC5SaveData:
             armour_slots=dict(data.get("armour_slots") or {}),
             weapon_state=levels,
         )
+
+
+def highest_weapon_levels(*snapshots: dict[str, int]) -> dict[str, int]:
+    """Per-weapon highest valid level across `snapshots`. Levels never go down in normal play,
+    so a lower reading is a bad write (or a stale copy) and must never be saved or restored."""
+    levels: dict[str, int] = {}
+    for snapshot in snapshots:
+        for name, value in snapshot.items():
+            if name not in WEAPON_MAX_LEVELS or type(value) is not int:
+                continue
+            if 0 <= value < WEAPON_MAX_LEVELS[name] and value > levels.get(name, -1):
+                levels[name] = value
+    return levels

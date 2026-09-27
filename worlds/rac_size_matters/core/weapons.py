@@ -563,6 +563,38 @@ class WeaponInventory:
             return None, 4
         return 3, None
 
+    @staticmethod
+    def _manual_cap(cap: int, level: int, titan_ceiling: int | None, titan_floor: int | None) -> int:
+        """Progressive-manual level cap for one weapon after applying its Titan bounds."""
+        if titan_floor is not None:
+            return max(cap, titan_floor)
+        if titan_ceiling is not None and cap > titan_ceiling:
+            return titan_ceiling if level < titan_ceiling else cap
+        if titan_ceiling is not None:
+            return min(cap, titan_ceiling)
+        return cap
+
+    def level_ceiling(self, name: str) -> int | None:
+        """Highest level apply_progressive_leveling() currently lets `name` keep, or None if it never lowers it."""
+        titan_ceiling, titan_floor = self._titan_bound(name)
+        if self.progressive_mode == PROGRESSIVE_OFF:
+            return titan_ceiling
+        cap = self.level_caps.get(name, -1)
+        if self.progressive_mode == PROGRESSIVE_AUTOMATIC:
+            return max(cap, 0)
+        addr = self._weapon_addrs.get(name)
+        cap = self._manual_cap(cap, addr.level if addr is not None else 0, titan_ceiling, titan_floor)
+        return None if cap < 0 else cap
+
+    def within_level_ceilings(self, levels: dict[str, int]) -> dict[str, int]:
+        """`levels` with each weapon lowered to its level_ceiling(), so a guarded save/restore
+        never fights the Progressive Weapon or Challenge Mode Titan cap."""
+        capped = {}
+        for name, level in levels.items():
+            ceiling = self.level_ceiling(name)
+            capped[name] = level if ceiling is None else min(level, ceiling)
+        return capped
+
     @batched_inventory
     def apply_progressive_leveling(self) -> None:
         """Gate weapon leveling behind Progressive Weapon items and/or Challenge Mode Titan purchase every tick."""
@@ -589,13 +621,7 @@ class WeaponInventory:
                 addr.experience = 0
                 continue
 
-            if titan_floor is not None:
-                cap = max(cap, titan_floor)
-            elif titan_ceiling is not None and cap > titan_ceiling:
-                if addr.level < titan_ceiling:
-                    cap = titan_ceiling
-            elif titan_ceiling is not None:
-                cap = min(cap, titan_ceiling)
+            cap = self._manual_cap(cap, addr.level, titan_ceiling, titan_floor)
 
             if cap < 0:
                 pinned = self._pinned_experience.get(name)

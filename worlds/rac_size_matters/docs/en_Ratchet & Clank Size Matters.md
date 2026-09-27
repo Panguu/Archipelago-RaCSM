@@ -105,7 +105,7 @@ changes. The client must be connected to enforce these effects.
 
 ### Game Links
 
-Cross-player options, each with a matching client-side toggle you also need to turn on (`/toggle_ammolink`, `/toggle_boltlink`, `/toggle_ghostlink` — see the [setup guide](setup_en.md#client-commands)) before they actually do anything — enabling the YAML option alone auto-enables the toggle on connect, but you can flip any of them on/off per-session from the client too, same as Death Link.
+Cross-player options, each with a matching client-side toggle you also need to turn on (`/toggle_ammolink`, `/toggle_boltlink` — see the [setup guide](setup_en.md#client-commands)) before they actually do anything — enabling the YAML option alone auto-enables the toggle on connect, but you can flip any of them on/off per-session from the client too, same as Death Link.
 
 **These only ever link you with other Ratchet & Clank: Size Matters players** — never with players of other games, even ones on your same team. Ghost Link picks its candidate peers by explicitly matching game, and Ammo/Bolt Link's underlying sync data is keyed under this game's own namespace, so another game's client never sees or touches it.
 
@@ -114,7 +114,7 @@ Cross-player options, each with a matching client-side toggle you also need to t
 | Ammo Link | Off | Mirrors weapon ammo counts with every other connected, linked player: whenever your ammo for a weapon changes, everyone else linked for that weapon is updated to match, and vice versa. Players don't need matching weapon inventories. |
 | Bolt Link | Off | Mirrors your bolt count with every other connected, linked player — spend or collect bolts on any linked player and everyone else's balance matches. |
 | Ghost Link | Off | Renders another linked, connected player as a static ghost clone whenever you're both on the same planet. Only one ghost can ever be shown at once — if multiple linked players share your planet, the lowest slot number wins. Has an additional host.yaml-level kill switch (applied at generation time, not by the running server — see [dynamicpine's docs](../../dynamicpine/docs/adding_to_apworld.md) for the distinction if you host on a different machine than you generate on). |
-| Ghost Link Update Interval | 5s | How often (in seconds) your position is broadcast to other Ghost Link players. 0 broadcasts as fast as possible (every poll tick, no throttling). Overridable live per-session with `/ghost_link_interval`, without regenerating. |
+| Ghost Link Update Interval | 5s | How often (in seconds) your position is broadcast to other Ghost Link players. 0 broadcasts as fast as possible (every poll tick, no throttling). |
 
 Plus the standard Archipelago options (Death Link, Progression Balancing, Accessibility, Start Inventory From Pool,
 etc.) shared across every game.

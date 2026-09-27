@@ -27,6 +27,7 @@ from ..core import RAC5SaveData, TextColour, colored_text, set_trap_durations
 from ..core.core import Core
 from ..core import vendor_presentation
 from ..core.options import ClientOptions
+from ..core.save_data import highest_weapon_levels
 from ..locations import ALL_LOCATIONS
 from ..pypine import Pine
 from ..world import RACSizeMatterWorld
@@ -149,8 +150,11 @@ class RACContext(
             or self._wiring.vendor_active
         ):
             return
-        data = self._local_weapon_state or self._stored_save_data().weapon_state
-        self._wiring.planet.weapons.restore_levels(data)
+        weapons = self._wiring.planet.weapons
+        data = weapons.within_level_ceilings(highest_weapon_levels(
+            self._local_weapon_state, self._stored_save_data().weapon_state, weapons.level_snapshot()
+        ))
+        weapons.restore_levels(data)
         self._local_weapon_state = dict(data)
         self._weapon_state_restored = True
 

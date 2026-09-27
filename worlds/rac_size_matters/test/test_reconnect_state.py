@@ -21,8 +21,11 @@ def context():
     ctx._pushed_weapon_state = {}
     ctx._last_weapon_state_push = 0.0
     ctx.stored_data = {ctx._save_data_key(): {"weapon_state": {"lacerator": 2}}}
+    weapons = Mock()
+    weapons.level_snapshot.return_value = {}
+    weapons.within_level_ceilings.side_effect = lambda levels: levels
     ctx._wiring = SimpleNamespace(
-        planet=SimpleNamespace(is_ready=True, weapons=Mock()),
+        planet=SimpleNamespace(is_ready=True, weapons=weapons),
         at_main_menu=False, vendor_active=False, native=SimpleNamespace(waiting=False))
     ctx.send_msgs = AsyncMock()
     return ctx
