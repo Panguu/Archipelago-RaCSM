@@ -1,9 +1,12 @@
 import copy
+import struct
+from contextlib import nullcontext
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ..core.patches.kernel import KernelBridge
+from ..core.vendor_profiles import ANCHOR
 from .test_client_gameplay import GameMemory
 
 
@@ -41,6 +44,63 @@ class CPU:
 
 
 class TestKernelBridge(unittest.TestCase):
+    def make_frame_bridge(self, interior):
+        memory = GameMemory()
+        profile = SimpleNamespace(frame=0x091DD360, timer=0x09300000)
+        bridge = KernelBridge(memory, profile, interior=interior)
+        memory._control = CPU(bridge.boundary)
+        memory._control._request = Mock(wraps=memory._control._request)
+        memory.paused = lambda **kwargs: nullcontext()
+        memory.invalidate_code = Mock()
+        expected = ANCHOR if interior else struct.pack(
+            '<3I', 0x27BDFFA0, 0x3C040930, 0x8C840000)
+        memory.write_bytes(bridge.boundary, expected)
+        return bridge, memory, expected
+
+    def test_frame_waits_for_deferred_jit_invalidation(self):
+        for interior in (False, True):
+            with self.subTest(interior=interior):
+                bridge, memory, expected = self.make_frame_bridge(interior)
+                memory.write_int32(bridge.boundary, 0x682C90E2)
+                before = bytes(memory.data)
+                def finish_invalidation(_):
+                    self.assertFalse(bridge._active)
+                    memory._control._request.assert_not_called()
+                    self.assertEqual(bytes(memory.data), before)
+                    memory.write_bytes(bridge.boundary, expected)
+                with patch('worlds.rac_size_matters_psp.core.patches.kernel.time.sleep',
+                           side_effect=finish_invalidation) as sleep:
+                    with bridge.frame():
+                        self.assertTrue(bridge._active)
+                sleep.assert_called_once_with(0.05)
+                self.assertFalse(bridge._active)
+
+    def test_frame_rejects_persistent_mismatch_without_running_cpu(self):
+        for replacement in (0, 0x682C90E2):
+            with self.subTest(replacement=replacement):
+                bridge, memory, expected = self.make_frame_bridge(True)
+                memory.write_int32(bridge.boundary, replacement)
+                before = bytes(memory.data)
+                with patch('worlds.rac_size_matters_psp.core.patches.kernel.time.monotonic',
+                           side_effect=[0, 2]):
+                    with self.assertRaisesRegex(RuntimeError, 'HUD boundary changed at') as error:
+                        with bridge.frame():
+                            self.fail('Invalid boundary was accepted')
+                self.assertIn(expected.hex(), str(error.exception))
+                self.assertIn(memory.read_bytes(bridge.boundary, len(expected)).hex(), str(error.exception))
+                memory._control._request.assert_not_called()
+                self.assertEqual(bytes(memory.data), before)
+                self.assertFalse(bridge._active)
+
+    def test_valid_frame_does_not_wait(self):
+        bridge, memory, _ = self.make_frame_bridge(True)
+        with patch('worlds.rac_size_matters_psp.core.patches.kernel.time.sleep') as sleep:
+            with bridge.frame():
+                self.assertTrue(bridge._active)
+        sleep.assert_not_called()
+        memory.invalidate_code.assert_called_once()
+        self.assertFalse(bridge._active)
+
     def make_bridge(self):
         memory = GameMemory()
         profile = SimpleNamespace(frame=0x091DD360)

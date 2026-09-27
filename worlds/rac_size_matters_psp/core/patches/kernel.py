@@ -3,6 +3,7 @@
 Debugger traffic is CPU control/register metadata only. RAM uses pymem.
 """
 from contextlib import contextmanager
+import time
 
 
 class KernelBridge:
@@ -38,8 +39,21 @@ class KernelBridge:
             if self.interior:
                 from ..vendor_profiles import ANCHOR
                 expected = ANCHOR
-            if self.memory.read_bytes(self.boundary, len(expected)) != expected:
-                raise RuntimeError('HUD boundary changed')
+            # Invalidation is queued by PPSSPP's frame loop. Its fixed wait
+            # can finish before the JIT has restored the retail instructions.
+            # Keep the guest stopped and require an exact match before running
+            # any guest code; never treat an emuhack opcode as a valid boundary.
+            deadline = time.monotonic() + 2.0
+            while True:
+                actual = self.memory.read_bytes(self.boundary, len(expected))
+                if actual == expected:
+                    break
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        f'HUD boundary changed at {self.boundary:#010x}: '
+                        f'expected {expected.hex()}, got {actual.hex()} '
+                        '(JIT invalidation did not restore the expected instructions)')
+                time.sleep(0.05)
             control = self.memory._control
             if control._request('cpu.status')['pc'] != self.boundary:
                 control._request('cpu.runUntil', address=self.boundary, response_event='cpu.stepping')
