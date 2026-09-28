@@ -120,16 +120,34 @@ class NativeRuntime:
         code = b"".join(p.read_bytes(base + offset, 0x10000) for offset in range(0, 0x280000, 0x10000))
         if options.balance_patch:
             self.balance = balance_patch.prepare(p, planet=target, code_start=base, code=code)
+        if target not in PLANET_ADDRESSES:
             if self.balance is not None:
                 self.plans.append(self.balance)
-        if target not in PLANET_ADDRESSES:
             for patch in self.plans:
                 patch.install()
             self.module = target
             self._attach_reload_requested = False
             return
-        if options.ship_menu:
-            self.plans.append(ship_menu.prepare(p, code_start=base, code=code))
+        pieces = [ArmourPiece.CHESTPLATE, ArmourPiece.HELMET, ArmourPiece.GLOVES, ArmourPiece.BOOTS]
+        armour_locations = {
+            ArmourStruct.SET_FIELDS.index(pickup.set_key) * 4 + pieces.index(pickup.piece): pickup.name
+            for pickup in ARMOUR_PICKUPS
+            if self.allowed_locations is None or pickup.name in self.allowed_locations
+        }
+        self.armour = (
+            armour_pickup.prepare(
+                p,
+                code_start=base,
+                code=code,
+                locations=armour_locations,
+                checked=self.checked,
+                bypass_tier_gate=not self.progressive_challenge_mode_enabled,
+            )
+            if options.armour_pickup
+            else None
+        )
+        # Shrink Ray only binds here: its door locks are live objects, so Core
+        # installs it via set_skip() once the planet has initialised them.
         if self.shrink_ray is not None and options.shrink_ray:
             self.shrink_ray.bind(target, base, code)
         presentation = (
@@ -159,8 +177,8 @@ class NativeRuntime:
             if options.vendor
             else None
         )
-        if plan is not None:
-            self.plans.append(plan)
+        skin_plans = []
+        hud_plans = []
         box = PLANET_ADDRESSES[target].small_text_box
         if box is not None and plan is not None and options.skins:
             has_hero_buffer = p.read_int32(multiplayer_skins.mcp_address(self.gate.game_id) + 0x2DC) != 0
@@ -173,9 +191,9 @@ class NativeRuntime:
                 menu=PLANET_ADDRESSES[target].menu,
                 model_count=multiplayer_skins.COUNT if extended else 7,
             )
-            self.plans.append(self.skin)
+            skin_plans.append(self.skin)
             if extended:
-                self.plans.append(multiplayer_skins.prepare(p, code_start=base, code=code, skin=self.skin))
+                skin_plans.append(multiplayer_skins.prepare(p, code_start=base, code=code, skin=self.skin))
             if options.item_toast:
                 self.toast = item_toast.prepare(
                     p, code_start=base, code=code, small_box=box, starter=plan.starter, frame_hook=self.skin.entry
@@ -184,7 +202,7 @@ class NativeRuntime:
                     self.connection_warning = connection_warning.prepare(
                         p, arena=plan.arena, font=self.toast.font, colour=self.toast.colour, text=self.toast.text
                     )
-                    self.plans.append(self.connection_warning)
+                    hud_plans.append(self.connection_warning)
                     self.toast = item_toast.prepare(
                         p,
                         code_start=base,
@@ -194,7 +212,6 @@ class NativeRuntime:
                         frame_hook=self.skin.entry,
                         status_hook=self.connection_warning.entry,
                     )
-                self.plans.append(self.toast)
         if self.balance is not None and target in (2, 10):
             if plan is None:
                 raise RuntimeError("Balance patch conditional effects require the native vendor storage")
@@ -203,50 +220,45 @@ class NativeRuntime:
                     p, code_start=base, code=code, small_box=box, starter=plan.starter,
                     frame_hook=self.skin.entry if self.skin is not None else None,
                 )
-            else:
-                self.plans.remove(self.toast)
             callback = balance_patch.prepare_callback(
                 p, balance=self.balance, arena=plan.arena,
                 max_health=PLANET_ADDRESSES[target].max_health, toast=self.toast,
             )
             self.balance_callback = callback
-            self.plans.append(callback)
+            hud_plans.append(callback)
             self.toast = item_toast.prepare(
                 p, code_start=base, code=code, small_box=box, starter=plan.starter,
                 frame_hook=self.skin.entry if self.skin is not None else None,
                 status_hook=self.connection_warning.entry if self.connection_warning is not None else None,
                 balance_hook=callback.entry,
             )
-            self.plans.append(self.toast)
-        pieces = [ArmourPiece.CHESTPLATE, ArmourPiece.HELMET, ArmourPiece.GLOVES, ArmourPiece.BOOTS]
-        armour_locations = {
-            ArmourStruct.SET_FIELDS.index(pickup.set_key) * 4 + pieces.index(pickup.piece): pickup.name
-            for pickup in ARMOUR_PICKUPS
-            if self.allowed_locations is None or pickup.name in self.allowed_locations
-        }
-        self.armour = (
-            armour_pickup.prepare(
-                p,
-                code_start=base,
-                code=code,
-                locations=armour_locations,
-                checked=self.checked,
-                bypass_tier_gate=not self.progressive_challenge_mode_enabled,
-            )
-            if options.armour_pickup
-            else None
-        )
-        if self.armour is not None:
-            self.plans.append(self.armour)
+        if self.toast is not None:
+            hud_plans.append(self.toast)
+        planet_plans = []
         if target == 1 and options.pokitaru_ship:
-            self.plans.append(pokitaru_ship.prepare(p, gate=self.gate))
+            planet_plans.append(pokitaru_ship.prepare(p, gate=self.gate))
         elif target == 2 and options.sprout_pickup:
             self.pickup = sprout_pickup.prepare(p, gate=self.gate, checked=Rac5Locations.RYLLUS_SPROUT in self.checked)
-            self.plans.append(self.pickup)
+            planet_plans.append(self.pickup)
         if target == 9 and plan is not None and options.inside_clank_exit:
-            self.plans.append(
+            planet_plans.append(
                 inside_clank_exit.prepare(p, code_start=base, code=code, arena=plan.arena, gate=self.gate)
             )
+        # Install order: armour pickup, skins, balance, ship menu, vendor, HUD
+        # (connection warning, balance callback, item toast), then planet-specific.
+        self.plans = [
+            patch
+            for patch in (
+                self.armour,
+                *skin_plans,
+                self.balance,
+                ship_menu.prepare(p, code_start=base, code=code) if options.ship_menu else None,
+                plan,
+                *hud_plans,
+                *planet_plans,
+            )
+            if patch is not None
+        ]
         installed = []
         try:
             for patch in self.plans:

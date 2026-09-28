@@ -79,6 +79,8 @@ class TestRuntimeRefactor(unittest.TestCase):
     def test_nonprogressive_titan_purchase_preserves_inventory_and_progress(self):
         for owned in (False, True):
             for level in range(8):
+                if owned and level == 3:
+                    continue  # An owned V4 weapon steps up to V5; see test_nonprogressive_v4_auto_levels_to_v5_on_challenge_mode.
                 with self.subTest(owned=owned, level=level):
                     memory, inventory = self.inventory()
                     inventory.challenge_mode = 1
@@ -97,6 +99,66 @@ class TestRuntimeRefactor(unittest.TestCase):
                     self.assertEqual(inventory.get("lacerator"), owned)
                     self.assertEqual(inventory.has_weapon("lacerator"), owned)
 
+    def test_nonprogressive_v4_auto_levels_to_v5_on_challenge_mode(self):
+        # A weapon reaches V4 at Challenge Mode 0, the tier rises to 1, and it auto-levels
+        # to V5 with no Titan purchase.
+        _, inventory = self.inventory()
+        inventory.set("lacerator", True)
+        inventory.set("scorcher", False)
+        inventory.set_level("lacerator", 3)
+        inventory.set_level("scorcher", 3)
+        inventory.set_experience("lacerator", 123)
+        inventory.sync_slots()
+        inventory.update_progression()
+        self.assertEqual(inventory.get_level("lacerator"), 3)
+        inventory.challenge_mode = 1
+        inventory.update_progression()
+        self.assertFalse(inventory.titan_purchased["lacerator"])
+        self.assertEqual(inventory.get_level("lacerator"), 4)
+        self.assertEqual(inventory.get_level("scorcher"), 3)
+        self.assertEqual(inventory.get_experience("lacerator"), 0)
+        changed = inventory.check()
+        self.assertEqual(changed["levels"], [("lacerator", 5)])
+        self.assertEqual(changed["titans"], ["lacerator"])
+
+    def test_progressive_weapons_auto_level_v4_to_v5_on_challenge_mode(self):
+        # A weapon reaches V4 at Challenge Mode 0, the tier rises to 1, and it auto-levels
+        # to V5 with no Titan purchase.
+        for mode in (1, 2):
+            with self.subTest(mode=mode):
+                _, inventory = self.inventory()
+                inventory.progressive_mode = mode
+                inventory.level_caps["lacerator"] = 4
+                inventory.set("lacerator", True)
+                inventory.set_level("lacerator", 3)
+                inventory.sync_slots()
+                inventory.update_progression()
+                self.assertEqual(inventory.get_level("lacerator"), 3)
+                self.assertEqual(inventory.level_ceiling("lacerator"), 3)
+                self.assertFalse(any(inventory.check().values()))
+                inventory.challenge_mode = 1
+                inventory.update_progression()
+                self.assertFalse(inventory.titan_purchased["lacerator"])
+                self.assertEqual(inventory.get_level("lacerator"), 4)
+                changed = inventory.check()
+                self.assertEqual(changed["levels"], [("lacerator", 5)])
+                self.assertEqual(changed["titans"], ["lacerator"])
+
+    def test_progressive_titan_purchase_does_not_level_without_fifth_copy(self):
+        for mode in (1, 2):
+            with self.subTest(mode=mode):
+                _, inventory = self.inventory()
+                inventory.progressive_mode = mode
+                inventory.challenge_mode = 1
+                inventory.level_caps["lacerator"] = 3
+                inventory.set("lacerator", True)
+                inventory.set_level("lacerator", 3)
+                inventory.titan_purchased["lacerator"] = True
+                for _ in range(2):
+                    inventory.update_progression()
+                self.assertEqual(inventory.get_level("lacerator"), 3)
+                self.assertEqual(inventory.level_ceiling("lacerator"), 3)
+
     def test_nonprogressive_titan_reconnect_preserves_unreceived_weapon(self):
         _, inventory = self.inventory()
         inventory.challenge_mode = 1
@@ -105,14 +167,15 @@ class TestRuntimeRefactor(unittest.TestCase):
         self.assertEqual(inventory.get_level("lacerator"), 0)
         self.assertFalse(inventory.get("lacerator"))
 
-    def test_nonprogressive_weapon_still_capped_before_titan_purchase(self):
+    def test_nonprogressive_v5_kept_without_titan_purchase(self):
         _, inventory = self.inventory()
         inventory.challenge_mode = 1
+        inventory.set("lacerator", True)
         inventory.set_level("lacerator", 4)
         inventory.set_experience("lacerator", 123)
         inventory.update_progression()
-        self.assertEqual(inventory.get_level("lacerator"), 3)
-        self.assertEqual(inventory.get_experience("lacerator"), 0)
+        self.assertEqual(inventory.get_level("lacerator"), 4)
+        self.assertEqual(inventory.get_experience("lacerator"), 123)
 
     def test_memory_window_leaves_unrelated_game_changes_untouched(self):
         memory = Memory()

@@ -554,41 +554,26 @@ class WeaponInventory:
             else:
                 self._prev_experience[name] = current
 
-    def _titan_bound(self, name: str) -> tuple[int | None, int | None]:
-        """(ceiling, floor) Challenge Mode Titan bounds for `name`: (3, None) before its
-        Titan variant is bought, (None, 4) after, (None, None) if not applicable."""
-        if self.challenge_mode < 1 or name not in TITAN_ELIGIBLE_WEAPONS:
-            return None, None
-        if self.titan_purchased.get(name, False):
-            return None, 4
-        return 3, None
-
-    @staticmethod
-    def _manual_cap(cap: int, level: int, titan_ceiling: int | None, titan_floor: int | None) -> int:
-        """Progressive-manual level cap for one weapon after applying its Titan bounds."""
-        if titan_floor is not None:
-            return max(cap, titan_floor)
-        if titan_ceiling is not None and cap > titan_ceiling:
-            return titan_ceiling if level < titan_ceiling else cap
-        if titan_ceiling is not None:
-            return min(cap, titan_ceiling)
+    def _level_cap(self, name: str) -> int:
+        """Progressive Weapon level cap for `name`, held at V4 for a Titan-eligible weapon until
+        Challenge Mode 1 is reached, since V5+ is Challenge Mode content even with enough copies."""
+        cap = self.level_caps.get(name, -1)
+        if self.challenge_mode < 1 and name in TITAN_ELIGIBLE_WEAPONS:
+            return min(cap, 3)
         return cap
 
     def level_ceiling(self, name: str) -> int | None:
         """Highest level apply_progressive_leveling() currently lets `name` keep, or None if it never lowers it."""
-        titan_ceiling, titan_floor = self._titan_bound(name)
         if self.progressive_mode == PROGRESSIVE_OFF:
-            return titan_ceiling
-        cap = self.level_caps.get(name, -1)
+            return None
+        cap = self._level_cap(name)
         if self.progressive_mode == PROGRESSIVE_AUTOMATIC:
             return max(cap, 0)
-        addr = self._weapon_addrs.get(name)
-        cap = self._manual_cap(cap, addr.level if addr is not None else 0, titan_ceiling, titan_floor)
         return None if cap < 0 else cap
 
     def within_level_ceilings(self, levels: dict[str, int]) -> dict[str, int]:
         """`levels` with each weapon lowered to its level_ceiling(), so a guarded save/restore
-        never fights the Progressive Weapon or Challenge Mode Titan cap."""
+        never fights the Progressive Weapon cap."""
         capped = {}
         for name, level in levels.items():
             ceiling = self.level_ceiling(name)
@@ -597,31 +582,28 @@ class WeaponInventory:
 
     @batched_inventory
     def apply_progressive_leveling(self) -> None:
-        """Gate weapon leveling behind Progressive Weapon items and/or Challenge Mode Titan purchase every tick."""
+        """Gate weapon leveling behind Progressive Weapon items, and step V4 weapons up to V5
+        once Challenge Mode allows it, every tick. Buying a Titan never changes a level itself."""
         mode = self.progressive_mode
-        titan_active = self.challenge_mode >= 1
-        if mode == PROGRESSIVE_OFF and not titan_active:
+        if mode == PROGRESSIVE_OFF and self.challenge_mode < 1:
             return
 
         for name, addr in self._weapon_addrs.items():
-            titan_ceiling, titan_floor = self._titan_bound(name) if titan_active else (None, None)
-
             if mode == PROGRESSIVE_OFF:
-                # Buying the AP Titan location lifts the level ceiling; it does
-                # not grant levels (including to weapons not yet received).
-                if titan_ceiling is not None and addr.level > titan_ceiling:
-                    addr.level = titan_ceiling
+                # V5 has no experience threshold, so an owned V4 weapon steps straight up once
+                # Challenge Mode is reached, even if it hit V4 before Progressive Challenge Mode
+                # raised the tier.
+                if name in TITAN_ELIGIBLE_WEAPONS and addr.level == 3 and addr.unlocked:
+                    addr.level = 4
                     addr.experience = 0
                 continue
 
-            cap = self.level_caps.get(name, -1)
+            cap = self._level_cap(name)
 
             if mode == PROGRESSIVE_AUTOMATIC:
                 addr.level = max(cap, 0)
                 addr.experience = 0
                 continue
-
-            cap = self._manual_cap(cap, addr.level, titan_ceiling, titan_floor)
 
             if cap < 0:
                 pinned = self._pinned_experience.get(name)
