@@ -27,7 +27,7 @@ from .shrink_ray import ShrinkRaySkipInventory
 from .skill_points import SkillPointInventory
 from .skins import SkinInventory
 from .titanium_bolts import TitaniumBoltInventory
-from .traps import service_traps
+from .traps import reconcile_traps, service_traps
 from .vendor import WEAPON_VENDOR_IDS, ModVendorMenu, VendorInventory, WeaponVendorMenu
 
 if TYPE_CHECKING:
@@ -221,6 +221,8 @@ class Core:
                 self._log("[RAC] Player at main menu — waiting for a save to load before applying AP state.")
             else:
                 self._log("[RAC] Save loaded — resuming normal play.")
+                # A save written mid-trap carries the trap's flags; clear any we aren't tracking.
+                reconcile_traps(self.pine)
         return self.at_main_menu
 
     def wire(

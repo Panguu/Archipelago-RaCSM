@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import TYPE_CHECKING
 
 from ..constants import Rac5Traps
@@ -50,6 +51,9 @@ def set_trap_durations(overrides: dict[str, float]) -> None:
 
 _active_deadlines: dict[str, float] = {}
 _revert_handles: dict[str, asyncio.TimerHandle] = {}
+# Expired traps whose game-memory effect hasn't been confirmed cleared yet. Retried every
+# tick so a revert that lands during a PINE hiccup or level load can't leave a trap stuck.
+_needs_clear: set[str] = set()
 _no_clank_effects: dict[object, NoClank] = {}
 _missing_clank_pack: set[object] = set()
 
@@ -64,8 +68,41 @@ def set_clank_pack_ownership(pine: Pine, *, enabled: bool, owned: bool) -> None:
     service_traps(pine)
 
 
+def _expire(trap_name: str) -> None:
+    _active_deadlines.pop(trap_name, None)
+    handle = _revert_handles.pop(trap_name, None)
+    if handle is not None:
+        handle.cancel()
+    if trap_name in _DIRECT_ADDRESSES or trap_name in _CHEAT_BITS:
+        _needs_clear.add(trap_name)
+
+
+def _write_effect(pine: Pine, trap_name: str, on: bool) -> None:
+    """Write a memory-flag trap's effect, only touching memory when it differs."""
+    field = _DIRECT_ADDRESSES.get(trap_name)
+    if field is not None:
+        address = getattr(address_maps, field)
+        want = 1 if on else 0
+        if pine.read_int8(address) != want:
+            pine.write_int8(address, want)
+        return
+    bit = _CHEAT_BITS[trap_name]
+    current = pine.read_int8(address_maps.CHEATS)
+    wanted = current | bit if on else current & ~bit
+    if wanted != current:
+        pine.write_int8(address_maps.CHEATS, wanted)
+
+
 def service_traps(pine: Pine) -> None:
-    """Maintain transient object effects against the currently loaded level."""
+    """Called every tick: expire overdue traps and re-assert every trap's effect, so
+    effects the game resets (level loads, save loads) are re-applied while active and
+    reverts that failed to write are retried until they stick. Write errors propagate."""
+    # Deadlines come from loop.time(), which is time.monotonic() on the default loop.
+    now = time.monotonic()
+    for trap_name, deadline in list(_active_deadlines.items()):
+        if deadline <= now:
+            _expire(trap_name)
+
     effect = _no_clank_effects.get(pine)
     if effect is not None:
         active = pine in _missing_clank_pack or Rac5Traps.TRAP_NO_CLANK in _active_deadlines
@@ -73,16 +110,20 @@ def service_traps(pine: Pine) -> None:
         if not active and not effect.backpacks:
             _no_clank_effects.pop(pine, None)
 
+    for trap_name in _active_deadlines:
+        if trap_name in _DIRECT_ADDRESSES or trap_name in _CHEAT_BITS:
+            _write_effect(pine, trap_name, True)
+    for trap_name in list(_needs_clear):
+        _write_effect(pine, trap_name, False)
+        _needs_clear.discard(trap_name)
+
 
 def close_no_clank_trap(pine: Pine) -> None:
     """Restore backpack objects before closing the emulator connection."""
     _missing_clank_pack.discard(pine)
     if pine not in _no_clank_effects:
         return
-    _active_deadlines.pop(Rac5Traps.TRAP_NO_CLANK, None)
-    handle = _revert_handles.pop(Rac5Traps.TRAP_NO_CLANK, None)
-    if handle is not None:
-        handle.cancel()
+    _expire(Rac5Traps.TRAP_NO_CLANK)
     service_traps(pine)
 
 
@@ -97,11 +138,15 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     duration = _trap_durations.get(trap_name)
     if duration is None:
         return
+    if trap_name != Rac5Traps.TRAP_NO_CLANK and trap_name not in _DIRECT_ADDRESSES and trap_name not in _CHEAT_BITS:
+        return
 
     loop = asyncio.get_event_loop()
     now = loop.time()
     new_deadline = max(_active_deadlines.get(trap_name, now), now) + duration
+    # Bookkeeping before any memory write, so a failed write is still enforced/reverted by ticks.
     _active_deadlines[trap_name] = new_deadline
+    _needs_clear.discard(trap_name)
 
     existing_handle = _revert_handles.pop(trap_name, None)
     if existing_handle is not None:
@@ -110,49 +155,22 @@ def activate_trap(pine: Pine, trap_name: str) -> None:
     if trap_name == Rac5Traps.TRAP_NO_CLANK:
         _no_clank_effects.setdefault(pine, NoClank(pine))
 
-        def _revert() -> None:
-            _active_deadlines.pop(trap_name, None)
-            _revert_handles.pop(trap_name, None)
-            try:
-                service_traps(pine)
-            except Exception:
-                # Keep the snapshot for a retry by normal polling/reconnect.
-                logging.getLogger("CommonClient").warning("[RAC] No Clank restoration pending reconnect.", exc_info=True)
-
-        _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
-        service_traps(pine)
-        return
-
-    if trap_name in _DIRECT_ADDRESSES:
-        address = getattr(address_maps, _DIRECT_ADDRESSES[trap_name])
-        pine.write_int8(address, 1)
-
-        def _revert() -> None:
-            _active_deadlines.pop(trap_name, None)
-            _revert_handles.pop(trap_name, None)
-            pine.write_int8(address, 0)
-
-        _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
-        return
-
-    bit = _CHEAT_BITS.get(trap_name)
-    if bit is None:
-        return
-    current = pine.read_int8(address_maps.CHEATS)
-    pine.write_int8(address_maps.CHEATS, current | bit)
-
     def _revert() -> None:
-        _active_deadlines.pop(trap_name, None)
-        _revert_handles.pop(trap_name, None)
-        latest = pine.read_int8(address_maps.CHEATS)
-        pine.write_int8(address_maps.CHEATS, latest & ~bit)
+        _expire(trap_name)
+        try:
+            service_traps(pine)
+        except Exception:
+            # _needs_clear / the NoClank snapshot keep the revert pending; the next tick retries it.
+            logging.getLogger("CommonClient").warning(f"[RAC] {trap_name} revert pending retry.", exc_info=True)
 
     _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
+    service_traps(pine)
 
 
 def reconcile_traps(pine: Pine) -> None:
     """Clear any trap effect in game memory with no bookkeeping in _active_deadlines,
-    called on PINE (re)connect — catches a bit left stuck by a client restart or dropped revert."""
+    called on PINE (re)connect and on each save load — catches a bit left stuck by a client
+    restart, a dropped revert, or a save written while a trap was active."""
     service_traps(pine)
     for trap_name, field in _DIRECT_ADDRESSES.items():
         address = getattr(address_maps, field)
