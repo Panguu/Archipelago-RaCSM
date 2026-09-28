@@ -585,6 +585,7 @@ racsm_option_groups = [
         [
             ProgressionBalancing,
             Accessibility,
+            BalancePatch,
         ],
     ),
     OptionGroup(
@@ -616,7 +617,6 @@ racsm_option_groups = [
             WeaponExperienceMultiplier,
             BoltMultiplier,
             NanotechExperienceMultiplier,
-            BalancePatch,
         ],
     ),
     OptionGroup(
