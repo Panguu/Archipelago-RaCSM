@@ -324,7 +324,7 @@ class InventoryMixin:
         try:
             current = self.pine.read_int32(address_maps.PLAYER_BOLT_COUNT)
             for _ in range(bolt_items_to_grant):
-                grant = min(200000, max(75000, int(current * 0.2)))
+                grant = min(200000, max(35000, int(current * 0.2)))
                 current = min(current + grant, MAX_PLAYER_BOLTS)
             self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, current)
             self._wiring.player_bolts.rebaseline(current)

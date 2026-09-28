@@ -18,7 +18,7 @@ def set_entrance_rules(world: "RACSizeMatterWorld") -> None:
     world.set_rule(mw.get_entrance("To Metalis", player), Has(Rac5Infobots.METALIS))
     world.set_rule(
         mw.get_entrance("To Dreamtime", player),
-        HasAll(Rac5Infobots.OUTPOST_OMEGA, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        Has(Rac5Infobots.OUTPOST_OMEGA),
     )
     world.set_rule(mw.get_entrance("To Outpost Omega", player), Has(Rac5Infobots.OUTPOST_OMEGA))
     world.set_rule(mw.get_entrance("To Challax", player), HasAll(Rac5Infobots.CHALLAX))
