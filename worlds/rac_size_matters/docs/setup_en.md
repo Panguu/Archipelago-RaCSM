@@ -82,8 +82,17 @@ The weapon/gadget array's memory location is resolved directly from the loaded p
 Toggling a Link on/off client-side is only half the picture — the matching YAML option (Ammo Link, Bolt Link, Ghost Link) must also be enabled at generation time. See the game info page's "What options are available?" section for details.
 
 ---
-## Optional PCSX2 Patches
-(Usernamecipher Movement + Weapons Patch)[https://github.com/usernamecipher/size-matters-update] - this balances the game play and makes ng+ starts more possible recommended if you havnt played the game in a while 
+## Optional Balance Patch
+
+Set `balance_patch: true` in your player YAML to enable usernamecipher's Update
+1.03 weapon and movement balance patch. It defaults to `false` and supports US,
+EU and JP. The client applies it automatically when loading a level; you do not
+need to install a separate PCSX2 cheat. Leave the external Update PNACH disabled
+when using this option, since it would overwrite the client's regional changes.
+
+Changing the setting requires generating a seed with the new option. When the
+client receives a changed setting, it reloads the current supported level to
+apply or remove the patch. See [balance patch notes](balance_patch.md).
 
 ## Troubleshooting
 

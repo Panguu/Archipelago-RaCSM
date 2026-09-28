@@ -414,6 +414,7 @@ class RACSizeMatterWorld(World):
             Rac5Options.RANDOM_STARTING_PLANET: self.options.random_starting_planet.value,
             "starting_planet_id": self.starting_planet_id,
             Rac5Options.EXPERIMENTAL_SKINS: bool(self.options.experimental_skins.value),
+            Rac5Options.BALANCE_PATCH: bool(self.options.balance_patch.value),
             Rac5Options.STARTING_SKIN: self.options.starting_skin.value,
             Rac5Options.AP_ICON: self.options.ap_icon.current_key,
             Rac5Options.WEAPON_EXPERIENCE_MULTIPLIER: self.options.weapon_experience_multiplier.value,

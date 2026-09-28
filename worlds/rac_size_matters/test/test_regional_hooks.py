@@ -119,6 +119,7 @@ class RegionalHookTests(unittest.TestCase):
                 plan.install()
                 journal = plan.journals[0][0]
                 runtime = NativeRuntime.__new__(NativeRuntime)
+                runtime.balance_callback = None
                 runtime.pine = memory
                 runtime.pickup = plan
                 runtime.connection_warning = runtime.presentation = None

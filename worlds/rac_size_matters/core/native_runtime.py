@@ -13,6 +13,7 @@ from .menu import MenuStateValue
 from .patches import (
     PatchOptions,
     armour_pickup,
+    balance_patch,
     connection_warning,
     inside_clank_exit,
     item_toast,
@@ -58,6 +59,9 @@ class NativeRuntime:
         self._released = False
         self._attach_reload_requested = False
         self.waiting = False
+        self.balance = None
+        self.balance_callback = None
+        self._installed_balance_option = self.patch_options.balance_patch
 
     def close(self):
         if self.pine.get_game_id() != self.gate.game_id:
@@ -101,13 +105,29 @@ class NativeRuntime:
         self.skin = None
         self.armour = None
         self.vendor.native_plan = None
-        if target not in PLANET_ADDRESSES:
+        self.balance = None
+        self.balance_callback = None
+        self._installed_balance_option = self.patch_options.balance_patch
+        if target not in PLANET_ADDRESSES and not (target == 15 and self.patch_options.balance_patch):
+            if target == 15:
+                self.module = target
+                self._attach_reload_requested = False
             return
         p = self.pine
         options = self.patch_options
         # Include relocated switch tables too (Dayni Moon's ship-menu table
         # lies beyond the old 0x240000-byte executable-only window).
         code = b"".join(p.read_bytes(base + offset, 0x10000) for offset in range(0, 0x280000, 0x10000))
+        if options.balance_patch:
+            self.balance = balance_patch.prepare(p, planet=target, code_start=base, code=code)
+            if self.balance is not None:
+                self.plans.append(self.balance)
+        if target not in PLANET_ADDRESSES:
+            for patch in self.plans:
+                patch.install()
+            self.module = target
+            self._attach_reload_requested = False
+            return
         if options.ship_menu:
             self.plans.append(ship_menu.prepare(p, code_start=base, code=code))
         if self.shrink_ray is not None and options.shrink_ray:
@@ -175,6 +195,29 @@ class NativeRuntime:
                         status_hook=self.connection_warning.entry,
                     )
                 self.plans.append(self.toast)
+        if self.balance is not None and target in (2, 10):
+            if plan is None:
+                raise RuntimeError("Balance patch conditional effects require the native vendor storage")
+            if self.toast is None:
+                self.toast = item_toast.prepare(
+                    p, code_start=base, code=code, small_box=box, starter=plan.starter,
+                    frame_hook=self.skin.entry if self.skin is not None else None,
+                )
+            else:
+                self.plans.remove(self.toast)
+            callback = balance_patch.prepare_callback(
+                p, balance=self.balance, arena=plan.arena,
+                max_health=PLANET_ADDRESSES[target].max_health, toast=self.toast,
+            )
+            self.balance_callback = callback
+            self.plans.append(callback)
+            self.toast = item_toast.prepare(
+                p, code_start=base, code=code, small_box=box, starter=plan.starter,
+                frame_hook=self.skin.entry if self.skin is not None else None,
+                status_hook=self.connection_warning.entry if self.connection_warning is not None else None,
+                balance_hook=callback.entry,
+            )
+            self.plans.append(self.toast)
         pieces = [ArmourPiece.CHESTPLATE, ArmourPiece.HELMET, ArmourPiece.GLOVES, ArmourPiece.BOOTS]
         armour_locations = {
             ArmourStruct.SET_FIELDS.index(pickup.set_key) * 4 + pieces.index(pickup.piece): pickup.name
@@ -238,6 +281,9 @@ class NativeRuntime:
             self.checked.add(name)
 
     def _poll(self):
+        if (self.balance_callback is not None and self.balance_callback.needs_doors
+                and self.vendor.planet.is_ready):
+            balance_patch.bind_doors(self.balance_callback)
         if self.connection_warning is not None:
             connection_warning.refresh(self.connection_warning, self.ap_connected)
         if self.vendor.planet.is_ready and self._presentation_pending is not None:
@@ -330,18 +376,25 @@ class NativeRuntime:
                 self.presentation = None
             return state in (4, 5)
         target = p.read_int32(address_maps.CURRENT_PLANET_ADDRESS)
-        if self.module == target and (self.vendor.native_plan is not None or not self.patch_options.vendor):
+        if self._installed_balance_option != self.patch_options.balance_patch:
+            self.module = None
+        if self.module == target and (
+            self.vendor.native_plan is not None or not self.patch_options.vendor or target == 15
+        ):
             try:
                 if self.vendor.native_plan is not None:
                     self.vendor.native_plan._validate(replacement=True)
                 if self.shrink_ray is not None and self.shrink_ray.plan is not None:
                     self.shrink_ray.plan._validate(replacement=self.shrink_ray.plan.installed)
+                if self.balance is not None:
+                    self.balance._validate(replacement=True)
             except RuntimeError:
                 self.module = None
             else:
                 self._poll()
                 return False
-        if target in PLANET_ADDRESSES and self.module != target and not self._attach_reload_requested:
+        balance_flying_level = target == 15 and (self.patch_options.balance_patch or self.balance is not None)
+        if (target in PLANET_ADDRESSES or balance_flying_level) and self.module != target and not self._attach_reload_requested:
             if p.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR) == 0xFFFFFFFF:
                 self._attach_reload_requested = True
                 self.vendor.planet.is_ready = False

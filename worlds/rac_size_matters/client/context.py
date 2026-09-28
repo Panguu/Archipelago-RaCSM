@@ -328,6 +328,7 @@ class RACContext(
             self._wiring.native.patch_options = replace(
                 self._wiring.native.patch_options,
                 multiplayer_skins=bool(self.slot_data.get(Rac5Options.EXPERIMENTAL_SKINS, False)),
+                balance_patch=bool(self.slot_data.get(Rac5Options.BALANCE_PATCH, False)),
             )
             if not self._ap_icon_chosen_by_command:
                 try:

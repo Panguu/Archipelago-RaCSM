@@ -8,7 +8,7 @@ from .asm import Patch, jump, packed
 from .plan import Plan, supported_game_id
 
 
-def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, status_hook=None):
+def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, status_hook=None, balance_hook=None):
     game_id = supported_game_id(pine)
     def read(address, count):
         offset = address - code_start
@@ -79,6 +79,13 @@ def prepare(pine, *, code_start, code, small_box, starter, frame_hook=None, stat
         words[empty_branch] = m.beq(
             m.T1, m.ZERO, 27 - empty_branch - 1
         )  # Branch 27 - empty_branch - 1 words if T1 == ZERO.
+    if balance_hook is not None:
+        # A third callback still fits before the fixed epilogue/data offsets.
+        words[2:2] = [jump(balance_hook), m.NOP]
+        empty_branch = 8 + (2 if frame_hook is not None else 0) + (2 if status_hook is not None else 0)
+        words[empty_branch] = m.beq(m.T1, m.ZERO, 27 - empty_branch - 1)
+    if len(words) > 27:
+        raise RuntimeError("Item message callbacks exceed reserved storage")
     words += [0] * (27 - len(words))
     words += [
         m.ld(m.RA, 8, m.SP),  # Load RA from SP + 8.

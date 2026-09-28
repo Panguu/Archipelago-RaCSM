@@ -19,3 +19,4 @@ class PatchOptions:
     pokitaru_ship: bool = True
     sprout_pickup: bool = True
     inside_clank_exit: bool = True
+    balance_patch: bool = False

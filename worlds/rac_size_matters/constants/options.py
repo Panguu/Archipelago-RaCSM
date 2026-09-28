@@ -32,6 +32,7 @@ class Rac5Options:
     RANDOM_STARTING_PLANET = "random_starting_planet"
     STARTING_BOLTS = "starting_bolts"
     EXPERIMENTAL_SKINS = "experimental_skins"
+    BALANCE_PATCH = "balance_patch"
     STARTING_SKIN = "starting_skin"
     AP_ICON = "ap_icon"
     TRAP_CHANCE = "trap_chance"

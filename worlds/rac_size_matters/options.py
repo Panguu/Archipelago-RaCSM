@@ -472,6 +472,14 @@ class WeaponLevelChecks(Choice):
     default = 0
 
 
+class BalancePatch(Toggle):
+    """Enable usernamecipher's Update 1.03 weapon and movement balance patch.
+    Disabled by default."""
+
+    display_name = "Balance Patch"
+    default = 0
+
+
 class ExperimentalSkins(Toggle):
     """Patches the thirteen red multiplayer skins into the single-player skin menu.
     Experimental. When off, the multiplayer skins aren't patched in at all, and
@@ -556,6 +564,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
         Rac5Options.RANDOM_STARTING_PLANET: RandomStartingPlanet,
         Rac5Options.STARTING_BOLTS: StartingBolts,
         Rac5Options.EXPERIMENTAL_SKINS: ExperimentalSkins,
+        Rac5Options.BALANCE_PATCH: BalancePatch,
         Rac5Options.STARTING_SKIN: StartingSkin,
         Rac5Options.AP_ICON: ApIcon,
         Rac5Options.TRAP_CHANCE: TrapChance,
@@ -607,6 +616,7 @@ racsm_option_groups = [
             WeaponExperienceMultiplier,
             BoltMultiplier,
             NanotechExperienceMultiplier,
+            BalancePatch,
         ],
     ),
     OptionGroup(
