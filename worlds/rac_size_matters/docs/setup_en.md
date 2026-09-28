@@ -82,6 +82,8 @@ The weapon/gadget array's memory location is resolved directly from the loaded p
 Toggling a Link on/off client-side is only half the picture — the matching YAML option (Ammo Link, Bolt Link, Ghost Link) must also be enabled at generation time. See the game info page's "What options are available?" section for details.
 
 ---
+## Optional PCSX2 Patches
+(Usernamecipher Movement + Weapons Patch)[https://github.com/usernamecipher/size-matters-update] - this balances the game play and makes ng+ starts more possible recommended if you havnt played the game in a while 
 
 ## Troubleshooting
 
