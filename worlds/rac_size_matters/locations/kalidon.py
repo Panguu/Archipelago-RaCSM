@@ -319,7 +319,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) ,
         Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset((_C.SHRINK_RAY_SKIP,)),
