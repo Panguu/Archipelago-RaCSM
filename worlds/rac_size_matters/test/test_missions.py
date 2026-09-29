@@ -62,5 +62,17 @@ class TestMissionPlanetGating(unittest.TestCase):
         self.assertIn(self.name, self.inventory.completed)
 
 
+class TestOutpostOmegaRematch(unittest.TestCase):
+    """The skyboard rematch is completed on Outpost Omega 2 (0x17), not Outpost Omega 1 (0x06)."""
+
+    def test_rematch_fires_on_outpost_omega_2(self) -> None:
+        pine = FakePine()
+        inventory = MissionInventory(pine)
+        name = Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH
+        address, mask = _address_mask(name)
+        pine.mem[address] = mask
+        self.assertEqual(inventory.check(0x17), [name])
+
+
 if __name__ == "__main__":
     unittest.main()

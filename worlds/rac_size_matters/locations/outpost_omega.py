@@ -72,11 +72,11 @@ LOCATIONS = (
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH,
         C.Rac5Planets.OUTPOST_OMEGA,
         lambda world: True_(),
-        Completion(_S.MISSIONS, 32814030, 16, 6),
+        Completion(_S.MISSIONS, 32814030, 16, 23),
         options=LocationOptions(
             requirements=(OptionFilter(AllMissions, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in")),
         ),
-        categories=frozenset(("story_mission", "mission")),
+        categories=frozenset(("story_mission", "mission", "skyboard_challenge")),
         check_order=10,
         definition_order=75,
     ),
