@@ -19,6 +19,7 @@ class MenuStateValue(IntEnum):
     QUICK_SELECT_MENU = 0x0A
     MOD_VENDOR        = 0x0E
     PLANET_MENU       = 0x10
+    PDA               = 0x12
     SKYBOARD_MENU     = 0x15
 
 
@@ -89,7 +90,7 @@ class MenuInventory:
 
     @property
     def is_vendor(self) -> bool:
-        return self.current in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR)
+        return self.current in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR, MenuStateValue.PDA)
 
     @property
     def is_weapons_vendor(self) -> bool:

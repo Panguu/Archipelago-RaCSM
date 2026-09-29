@@ -141,6 +141,8 @@ Any weapon's vendor menu has two views, swapped with D-Pad Left/Right:
 - **Left (default) view** — the normal purchasable list: whatever's still available to buy at this vendor. If a weapon has already been fully purchased here, the vendor opens straight into the right view instead, since there's nothing left to show on the left.
 - **Right view** — your full owned inventory instead, so you can buy ammo for a weapon you already own that isn't (or is no longer) listed on this vendor's purchasable side.
 
+The PDA is ammo-only: it uses the game's normal PDA prices and ammo restrictions, with no Left/Right view switching or AP purchase locations.
+
 With Challenge Mode 1+, a Titan-eligible weapon's kiosk also lists its Titan variant once the base weapon has reached level 4 — buying it is just a location check and never changes the weapon's level. The weapon moves up to level 5 on its own (with Progressive Weapons Off, as soon as Challenge Mode is 1+; with Manual or Automatic, once its 5th Progressive Weapon copy is received), and the check for the Titan purchase location fires the moment the level 4→5 transition happens, vendor visit or not.
 
 

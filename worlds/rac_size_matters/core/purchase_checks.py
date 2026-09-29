@@ -47,27 +47,32 @@ class PurchaseChecks:
         changed["gadgets"] = kept_gadgets
 
     def _check_vendor_purchases(self) -> None:
-        """Track weapons/mod-vendor open+close, calling weapon_vendor()/mod_vendor() every tick while open."""
+        """Track vendor visits, including the PDA's separate ammo-only menu."""
         core = self.core
         current = core.planet.menu.get()
-        is_vendor = current in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR)
-        was_vendor = core._prev_vendor in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR)
+        vendor_states = (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.MOD_VENDOR, MenuStateValue.PDA)
+        is_vendor = current in vendor_states
+        was_vendor = core._prev_vendor in vendor_states
+        changed_vendor = current != core._prev_vendor
         core._prev_vendor = current
-        if is_vendor and (not was_vendor):
-            core.quick_select.sync()
-            core.quick_select.freeze()
-            if current == MenuStateValue.WEAPONS_VENDOR:
-                core.weapon_vendor.activate()
-            else:
-                core.mod_vendor.activate()
-            core.on_vendor_open()
-        elif was_vendor and (not is_vendor):
+        if was_vendor and changed_vendor:
             core.weapon_vendor.deactivate()
             core.mod_vendor.deactivate()
             core.vendor.close()
             core.quick_select.restore()
             core.quick_select.unfreeze()
             core.on_vendor_close()
+        if is_vendor and changed_vendor:
+            core.quick_select.sync()
+            core.quick_select.freeze()
+            if current in (MenuStateValue.WEAPONS_VENDOR, MenuStateValue.PDA):
+                core.weapon_vendor.activate()
+            else:
+                core.mod_vendor.activate()
+            core.on_vendor_open()
+        if current == MenuStateValue.PDA:
+            core.vendor.pda_vendor()
+            return
         if current == MenuStateValue.WEAPONS_VENDOR:
             core.vendor.weapon_vendor()
             return

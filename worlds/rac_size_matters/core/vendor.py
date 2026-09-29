@@ -201,6 +201,7 @@ class VendorInventory:
 
         self._weapon_vendor_open:      bool = False
         self._mod_vendor_open:         bool = False
+        self._pda_open:                bool = False
         self.show_purchasable_weapons: bool = True
         self.native_plan = None
         self._native_purchase_pending = False
@@ -348,12 +349,21 @@ class VendorInventory:
         if self.native_plan is None:
             raise RuntimeError("Native vendor patch must be installed before opening the vendor")
         self.native_plan._validate(replacement=True)
+        if self._pda_open:
+            purchases = False
         self.show_purchasable_weapons = purchases
         self.pine.write_int32(self.native_plan.view_mode, 0 if purchases else 1)
         names = self._purchasable_names() if purchases else [
             name for name in self.weapons.weapons if self._is_weapon_ap_owned(name)]
         self._set_items(names)
-        self.refresh(MenuStateValue.WEAPONS_VENDOR)
+        self.refresh(MenuStateValue.PDA if self._pda_open else MenuStateValue.WEAPONS_VENDOR)
+
+    def pda_vendor(self) -> None:
+        """Use native PDA ammo prices and restrictions, without purchase views or controls."""
+        if not self._pda_open:
+            self._pda_open = True
+            self._weapon_vendor_open = True
+            self._set_weapon_view(False)
 
     def weapon_vendor(self) -> None:
         """D-pad left: native AP checks; D-pad right: real owned-weapon ammo.
@@ -381,6 +391,7 @@ class VendorInventory:
             self.weapons.revert_unowned(self._is_weapon_ap_owned)
         self._weapon_vendor_open = False
         self._mod_vendor_open = False
+        self._pda_open = False
         self.show_purchasable_weapons = True
         self._native_purchase_pending = False
 

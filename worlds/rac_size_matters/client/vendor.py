@@ -9,6 +9,7 @@ from ..core import (
     activate_trap,
 )
 from ..core import address_maps
+from ..core.menu import MenuStateValue
 from ..core.address_maps import PLAYER_BOLT_COUNT
 from ..core.notifications import receipt_text, sent_text
 from ..core.player_bolts import MAX_PLAYER_BOLTS
@@ -43,6 +44,8 @@ class VendorHandlerMixin:
         if self.slot is None or not self.pine_connected:
             return
         vendor = self._wiring.vendor
+        if self._wiring.planet.menu.get() == MenuStateValue.PDA:
+            return
         if self._wiring.weapon_vendor.active:
             loc_names = vendor.purchasable_locations()
         elif self._wiring.mod_vendor.active:
