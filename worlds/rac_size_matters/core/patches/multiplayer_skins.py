@@ -413,12 +413,10 @@ def prepare(pine, *, code_start, code, skin):
         m.sd(m.RA, 0, m.SP),  # Add signed immediate; Save 64-bit register.
         *m.li32(m.T0, 0x84000),  # Load 540672 into T0.
         m.addu(m.S6, m.S4, m.T0),  # Add registers; Load 32-bit constant.
-        # Each level rebuilds the extended descriptors with empty
-        # size caches, even when the resident loaded id survives.
-        # Force a fresh MP read before finish uploads its textures.
-        m.sltiu(m.T0, m.S3, 7),  # Set T0 to S3 < 7.
-        m.bne(m.T0, m.ZERO, 2),  # Branch 2 words if T0 != ZERO.
-        0,  # Compare unsigned immediate; Branch if unequal.
+        # The resident loaded id can survive a planet transition even though
+        # the hero/texture buffers are reused. Stock skins (including Pirate)
+        # must reload too: matching ids do not prove those assets are intact.
+        # Invalidate only begin's cached id, preserving the requested id in S3.
         m.addiu(m.S0, m.ZERO, -1),  # Set S0 to ZERO + -1.
         jump(load_model),  # Call 32057888.
         0,

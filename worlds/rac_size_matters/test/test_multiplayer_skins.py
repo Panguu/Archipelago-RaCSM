@@ -29,13 +29,44 @@ def prepare(name="pokitaru"):
 
 
 class MultiplayerSkinsTests(unittest.TestCase):
-    def test_reinstalled_loader_forces_fresh_multiplayer_assets(self):
-        p, _, plan = prepare()
-        plan.install()
-        for selected in range(mp.COUNT):
-            with self.subTest(skin=selected):
+    def test_standalone_patches_reload_all_skins(self):
+        patches = Path(__file__).parents[1] / "standalone_skins"
+        for filename, entry, load_model in (
+            ("SCUS-97615_8661F7BA.pnach", 0x1180A04, 0x1E92A20),
+            ("SCES-55019_FCB981D5.pnach", 0x1180604, 0x1E927C8),
+            ("SCPS-15120_9ADCF7AF.pnach", 0x1182604, 0x1E946D0),
+        ):
+            p = Memory()
+            writes = {}
+            for line in (patches / filename).read_text().splitlines():
+                if line.startswith("patch=1,EE,2"):
+                    _, _, address, _, value = line.split(",")
+                    writes[int(address, 16) & 0x0FFFFFFF] = int(value, 16)
+            # Execute the shipped trampoline, including its padding and
+            # native call, rather than the Python builder's equivalent.
+            for address in range(entry, entry + 0x38, 4):
+                p.write_int32(address, writes[address])
+            for selected in range(mp.COUNT):
+                with self.subTest(patch=filename, skin=selected):
+                    cpu = CPU(p)
+                    cpu.r[m.S0] = cpu.r[m.S3] = selected
+                    cpu.r[m.S4] = 0x100000
+                    calls = []
+                    cpu.run(entry, stubs={load_model: lambda c: calls.append(
+                        (c.r[m.S0] & 0xFFFFFFFF, c.r[m.S3], c.r[m.S6])
+                    )})
+                    self.assertEqual(calls, [(0xFFFFFFFF, selected, 0x184000)])
+
+    def test_reinstalled_loader_forces_fresh_assets_including_stock_skins(self):
+        for region, selected in product(("pokitaru", "eu_pokitaru", "jp_pokitaru"), range(mp.COUNT)):
+            with self.subTest(region=region, skin=selected):
+                p, f, plan = prepare(region)
+                load_model = (p.read_int32(f["begin"] + 0x7C) & 0x3FFFFFF) << 2
+                plan.install()
                 # A level reload retains the loaded id but installs descriptors
-                # whose sizes are zero. Native begin must not skip the read.
+                # whose sizes are zero for MP skins. Stock skin sizes can
+                # survive, but their texture buffers are not a valid cache
+                # either. Native begin must not skip either kind of read.
                 descriptor = plan.descriptors + selected * 24
                 if selected >= 7:
                     self.assertEqual(p.read_int32(descriptor + 20), 0)
@@ -47,12 +78,12 @@ class MultiplayerSkinsTests(unittest.TestCase):
                 cpu.run(
                     plan.buffer + 0x75900,
                     stubs={
-                        0x1E92A20: lambda c: calls.append(c.r[m.S6]),
+                        load_model: lambda c: calls.append((c.r[m.S6], c.r[m.S0] & 0xFFFFFFFF)),
                     },
                 )
-                self.assertEqual(calls, [plan.buffer + 0x84000])
+                self.assertEqual(calls, [(plan.buffer + 0x84000, 0xFFFFFFFF)])
                 self.assertEqual(cpu.r[m.S3], selected)
-                self.assertEqual(cpu.r[m.S0] & 0xFFFFFFFF, 0xFFFFFFFF if selected >= 7 else selected)
+                self.assertEqual(cpu.r[m.S0] & 0xFFFFFFFF, 0xFFFFFFFF)
 
     def test_all_levels_install_restore_and_red_only_menu(self):
         for name in FIXTURES:

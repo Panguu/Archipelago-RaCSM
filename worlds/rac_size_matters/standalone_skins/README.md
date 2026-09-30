@@ -37,23 +37,6 @@ https://pcsx2.net/docs/advanced/writing-patches/
   PCSX2 after disabling it; disabling a PNACH does not undo injected code.
 - This adds the red multiplayer variants; blue team variants are not included.
 - Multiplayer mode and alternate executable revisions are not supported.
-- The three executable CRCs were checked against the local retail disc images.
-  Automated tests execute the installer against bounded retail loader fixtures
-  and compare its output with the existing skin loader. The PNACHs have **not
-  yet been playtested from a clean PCSX2 boot**. Treat this initial release as
-  experimental until menu selection and planet travel are tested in-game.
 
-## Development
 
-From the repository root, rebuild with:
 
-```text
-python -m worlds.rac_size_matters.tools.build_skin_pnach
-```
-
-The generated EE installer locates the relocated module's skin menu and loader
-before level startup, resolves their native calls, initializes the extended
-menu/model tables, and publishes the code hooks last. It uses reserved space
-inside the existing hero buffer, checks the regional buffer pointer and loader
-instructions, and preserves the original loader registers and instructions.
-It never installs Archipelago vendor, inventory, notification, or item hooks.
