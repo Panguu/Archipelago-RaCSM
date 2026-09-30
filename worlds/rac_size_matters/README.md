@@ -22,6 +22,8 @@ Amondo for tidying up my static strings and for testing this game ( honestly thi
 
 Concrete for making the absolutly fantastic icon im no artist so having someone actually talanted make one is amazing!!!
 
+I cant believe i didnt mention him before but SomeLazyGamer for his amazing poptracker (he fixes it and i break it thats entirly on me) he does fantastic work on it and deserves the credit. check out his poptracker [here](https://github.com/SomeLazyGamer/RaC-5-SM-AP-Poptracker)
+
 ImJustATester for helping me find addresses (especially the traps) as well as load logic and other fixes theres honestly too many addresses and maps they helped find i couldnt list them all.
 
 Juniper Bunbun for their amazing AP icons these are cosmetic icons and can be changed using the `/apicon [blue|purple|grey]` or set in the options menu.

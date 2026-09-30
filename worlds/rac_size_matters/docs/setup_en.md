@@ -73,26 +73,24 @@ The weapon/gadget array's memory location is resolved directly from the loaded p
 | `/states` | Print every active internal state — useful when reporting a bug. |
 | `/rac5_info` | Print the current slot options plus every active state's repr. |
 | `/vendor_refresh` | Force-rewrite the vendor's item list immediately, instead of waiting for the next menu open/close. |
+| `/skin <name>` | Set Ratchet's skin directly, e.g. `/skin trash`, `/skin tuxedo`, or an id 0-19. Multiplayer skins need Experimental Skins enabled in your YAML. |
+| `/apicon [style]` | Choose the Archipelago icon shown on vendor items: `original`, `purple`, `grey`, or `blue`. No argument prints the current style. |
 | `/debug` | Toggle verbose per-tick state-change logging in the client console. |
-| `/spawn_ghost` | Spawn a static ghost clone of yourself at your current position (only on planets with confirmed Ghost Ratchet addresses) — debug tool, unrelated to Ghost Link. |
+| `/spawn_ghost` | Spawn a static ghost clone of yourself at your current position - debug tool. |
 | `/toggle_deathlink` | Toggle DeathLink on or off for this session. |
 | `/toggle_ammolink` | Toggle Ammo Link on or off for this session. |
 | `/toggle_boltlink` | Toggle Bolt Link on or off for this session. |
 
 Toggling a Link on/off client-side is only half the picture — the matching YAML option (Ammo Link, Bolt Link, Ghost Link) must also be enabled at generation time. See the game info page's "What options are available?" section for details.
 
+## Poptracker
+SomeLazyGamer did a fantastic job on the poptracker and if you use poptracker make sure to check it out [link](https://github.com/SomeLazyGamer/RaC-5-SM-AP-Poptracker)
+
 ---
 ## Optional Balance Patch
 
-Set `balance_patch: true` in your player YAML to enable usernamecipher's Update
-1.03 weapon and movement balance patch. It defaults to `false` and supports US,
-EU and JP. The client applies it automatically when loading a level; you do not
-need to install a separate PCSX2 cheat. Leave the external Update PNACH disabled
-when using this option, since it would overwrite the client's regional changes.
+Set `balance_patch: true` in your player YAML to enable, this is taken from UsernameCiphers Balance patch none of it was done by me i just used his changes into the patch for EU, US and JP aswel. Check out his original patch here he did a great job on it and deserves all the credit. [link](https://github.com/usernamecipher/size-matters-update)
 
-Changing the setting requires generating a seed with the new option. When the
-client receives a changed setting, it reloads the current supported level to
-apply or remove the patch. See [balance patch notes](balance_patch.md).
 
 ## Troubleshooting
 
@@ -100,12 +98,12 @@ apply or remove the patch. See [balance patch notes](balance_patch.md).
 Make sure you are running a recognized serial: `SCUS-97615` (US), `SCES-55019` (EU), or `SCPS-15120` (JP). Restart the client after updating so it loads the regional detection code.
 
 **Weapons are not appearing after receiving items**
-Use `/reconnect` in the client console to re-apply everything received so far. If that doesn't help, use `/force_sync`.
+Use `/reconnect` in the client console to re-apply everything received so far.
 
 **Vendor purchases are not registering**
-Make sure you are standing at a vendor on a planet that has vendor locations. Purchases are detected when you buy from the vendor menu — the client needs to be connected before you open the menu.
+Make sure you are standing at a vendor on a planet that has vendor locations. Purchases are detected when you buy from the vendor menu - the client needs to be connected before you open the menu.
 
 **Ratchet's model is invisible after a planet load (Starting Skin set to anything other than Default)**
 Open the in-game Skins menu and close it again — the chosen skin doesn't fully apply on its own after a planet load, and skipping this step can leave the model invisible instead.
 
-**If you need further help**, join the [Archipelago Discord](https://discord.gg/archipelago) and visit the `[PSP/PS2] Ratchet & Clank Size Matters` thread in the `future-game-design` forum channel (located at the bottom).
+**If you need further help**, join the [Archipelago Discord](https://discord.gg/archipelago) and visit the `[PSP/PS2] Ratchet & Clank Size Matters` thread in the `future-game-design` forum channel.
