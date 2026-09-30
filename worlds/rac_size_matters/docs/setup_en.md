@@ -100,6 +100,8 @@ Make sure you are running a recognized serial: `SCUS-97615` (US), `SCES-55019` (
 **Weapons are not appearing after receiving items**
 Use `/reconnect` in the client console to re-apply everything received so far.
 
+**Experimental Skins causing large texture or is missing textures.** The experimental skins are as they say experimental, there are patches located in the `standalone_skins` folder for all 3 versions of the game (EU, US and JP). If you are using Experiemental skins without the patch it will work but you must connected the client to the game before loading a planet. the patch is applied during load transitions so as long as you dont enter a level transition while disconnected to the client it should work as intended. this is a toggleable option and is optional you are not forced into this patch.
+
 **Vendor purchases are not registering**
 Make sure you are standing at a vendor on a planet that has vendor locations. Purchases are detected when you buy from the vendor menu - the client needs to be connected before you open the menu.
 
