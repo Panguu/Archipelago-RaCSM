@@ -332,6 +332,7 @@ class Core:
             return
         if self._refresh_main_menu_state():
             return
+        previous_planet_id = self.planet.planet_id
         became_ready = self.planet.check_transition()
         self.planet_unlock.check()
 
@@ -356,7 +357,7 @@ class Core:
 
         if became_ready:
             self._planet_settle_until = time.monotonic() + _PLANET_SETTLE_SECONDS
-            self.planet.weapons.wipe()
+            self.planet.weapons.wipe(preserve_levels=previous_planet_id == _KALIDON_RACE_ID)
             if not self._initial_load_done:
                 self.planet.weapon_cycler.initialize(self._first_owned_weapon_id)
             if self._ap_inventory_ready:

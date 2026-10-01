@@ -27,18 +27,19 @@ class ChallengePickup:
 
 @dataclass(frozen=True, slots=True)
 class SkyboardPickup:
-    unlock_addr: int
-    completed_addr: int  # poll this for completion bitmask; 0x00 = not yet confirmed
+    attempted_addr: int
+    completed_addr: int  # Four packed two-bit win counters, each saturating at 3.
     mask: SkyboardBit
     name: str
     planet: str
 
 
 class SkyboardBit(IntFlag):
-    RACE_1 = 0x01
-    RACE_2 = 0x04
-    RACE_3 = 0x10
-    RACE_4 = 0x40
+    # Either bit means at least one win, including a counter value of 2.
+    RACE_1 = 0x03
+    RACE_2 = 0x0C
+    RACE_3 = 0x30
+    RACE_4 = 0xC0
 
 
 class ChallengeSection(IntEnum):
@@ -125,7 +126,7 @@ GLADIATOR_FAILSAFE = {
 CHALLENGE_NAME_TO_GROUP = LocationView(_CHALLENGES, value=lambda location: location.options.challenge_group)
 ALL_SKYBOARD_PICKUPS = [
     SkyboardPickup(
-        location.completed.key - 1,
+        location.completed.key + 1,
         location.completed.key,
         SkyboardBit(location.completed.mask),
         location.name,
@@ -142,10 +143,8 @@ SKYBOARD_ADDRESS_MASK_MAP = LocationView(
     key=lambda location: (location.completed.key, location.completed.mask),
     value=lambda location: location.name,
 )
-SKYBOARD_UNLOCK_MASK = {
-    address: sum(pickup.mask for pickup in ALL_SKYBOARD_PICKUPS if pickup.unlock_addr == address)
-    for address in {pickup.unlock_addr for pickup in ALL_SKYBOARD_PICKUPS}
-}
+# The adjacent byte counts attempts, including losses. Neither byte is an
+# unlock bitfield: never write attempts or wins just to make a race available.
 
 CHALLENGE_ONLY_ITEMS: frozenset[str] = frozenset(
     {

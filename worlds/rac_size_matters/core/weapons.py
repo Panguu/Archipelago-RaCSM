@@ -352,6 +352,18 @@ class WeaponInventory:
         self.apply_experience_boost()
         if not vendor_active:
             self.apply_progressive_leveling()
+            if self.progressive_mode == PROGRESSIVE_MANUAL:
+                for name, addr in self._weapon_addrs.items():
+                    # Consume a full XP bar here before exposing boosted XP to
+                    # the game. Otherwise it can process several level-ups
+                    # between polls, bypassing the received-item cap.
+                    threshold = exp_threshold_for_level(name, addr.level + 2)
+                    if (self._level_cap(name) > addr.level and threshold is not None
+                            and addr.experience >= threshold):
+                        addr.level += 1
+                        addr.experience = 0
+                    # Baseline the XP actually written, not the pre-cap boost.
+                    self._prev_experience[name] = addr.experience
 
     def set_base(self, array_base: int | None) -> None:
         """Rebind every weapon/gadget address to the planet's array base, or unbind
@@ -636,13 +648,14 @@ class WeaponInventory:
                     addr.experience = ceiling
 
     @batched_inventory
-    def wipe(self) -> None:
-        """Zero every weapon/gadget/mod unlock bit and level, and rebaseline every tracking dict."""
+    def wipe(self, *, preserve_levels: bool = False) -> None:
+        """Reset ownership, retaining game-restored levels when returning from a race."""
         for addr in self._weapon_addrs.values():
             addr.unlocked = False
             for slot in _MOD_SLOTS:
                 setattr(addr, slot, False)
-            addr.level = 0
+            if not preserve_levels:
+                addr.level = 0
         for addr in self._gadget_addrs.values():
             addr.unlocked = False
 
@@ -652,7 +665,7 @@ class WeaponInventory:
         self._raw_weapons = dict(self.weapons)
         self._raw_gadgets = dict(self.gadgets)
         self._raw_mods = {name: dict(mods) for name, mods in self.mods.items()}
-        self._raw_level = dict.fromkeys(self._weapon_addrs, 0)
+        self._raw_level = {name: addr.level for name, addr in self._weapon_addrs.items()}
         self._prev_experience = {name: addr.experience for name, addr in self._weapon_addrs.items()}
 
     @batched_inventory

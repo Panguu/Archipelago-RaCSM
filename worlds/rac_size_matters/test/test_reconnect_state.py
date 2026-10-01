@@ -25,13 +25,25 @@ def context():
     weapons.level_snapshot.return_value = {}
     weapons.within_level_ceilings.side_effect = lambda levels: levels
     ctx._wiring = SimpleNamespace(
-        planet=SimpleNamespace(is_ready=True, weapons=weapons),
+        planet=SimpleNamespace(is_ready=True, weapons_available=True, weapons=weapons),
         at_main_menu=False, vendor_active=False, native=SimpleNamespace(waiting=False))
     ctx.send_msgs = AsyncMock()
     return ctx
 
 
 class ReconnectStateTests(unittest.TestCase):
+    def test_restore_waits_until_weapons_are_available_after_race(self):
+        ctx = context()
+        ctx._save_data_received = True
+        ctx._wiring.planet.weapons_available = False
+        ctx._try_restore_weapon_state(force=True)
+        self.assertFalse(ctx._weapon_state_restored)
+        ctx._wiring.planet.weapons.level_snapshot.assert_not_called()
+        ctx._wiring.planet.weapons.restore_levels.assert_not_called()
+        ctx._wiring.planet.weapons_available = True
+        ctx._try_restore_weapon_state()
+        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"lacerator": 2})
+
     def test_restore_waits_for_fresh_storage_reply(self):
         ctx = context()
         ctx._try_restore_weapon_state(force=True)

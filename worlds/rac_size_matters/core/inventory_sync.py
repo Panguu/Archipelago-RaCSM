@@ -51,7 +51,7 @@ class InventorySync:
         core._ap_owned_weapons = dict(weapons)
         core._ap_owned_gadgets = dict(gadgets)
         core.planet.weapons.level_caps = dict(weapon_levels)
-        if not core.planet.is_ready or core.vendor_active:
+        if not core.planet.weapons_available or core.vendor_active:
             return
         wi = core.planet.weapons
         with wi.memory():

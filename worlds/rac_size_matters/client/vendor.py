@@ -193,7 +193,7 @@ class InventoryMixin:
             wiring = self._wiring
             if wiring.at_main_menu:
                 return
-            if wiring.planet.is_ready and not wiring.vendor_active:
+            if wiring.planet.weapons_available and not wiring.vendor_active:
                 wiring.planet.weapons.wipe()
             wiring.apply_inventory(**inventory)
             wiring.restore_world_states(checked)

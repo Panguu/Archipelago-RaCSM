@@ -197,6 +197,20 @@ class PlanetInventory:
         self._prev_menu: MenuStateValue | None = None
         self._cached_movement: PlayerMovementState | None = None
 
+    @property
+    def weapons_available(self) -> bool:
+        """Only access weapons on a ready, current level with a weapon array.
+
+        Read the live id too: client restore can run before check_transition().
+        Skyboard and Clank sub-levels must not use the previous planet's array.
+        """
+        return (
+            self.is_ready
+            and not self.giant_clank_active
+            and WEAPON_ARRAY_BASE_BY_PLANET.get(self.planet_id) is not None
+            and self.pine.read_int8(address_maps.CURRENT_PLANET_ADDRESS) == self.planet_id
+        )
+
     def set_starting_planet(self, planet_id: int | None) -> None:
         """Configure the frontend New Game patch; never redirect loaded saves."""
         if planet_id is not None and planet_id not in ELIGIBLE:

@@ -118,7 +118,7 @@ _SKYBOARD_ADDRESSES: tuple[int, ...] = tuple({address for address, _mask in SKYB
 
 class SkyboardInventory:
     """Pine-backed live accessor + completion tracking for every skyboard
-    race's completion bit, keyed by (address, mask)."""
+    race's two-bit win counter, keyed by (address, mask)."""
 
     def __init__(self, pine: Pine) -> None:
         self.pine = pine
@@ -136,7 +136,13 @@ class SkyboardInventory:
     def set(self, name: str, value: bool) -> None:
         address, mask = self._name_to_addr_mask[name]
         raw = self.pine.read_int8(save_address(address))
-        raw = (raw | mask) if value else (raw & ~mask)
+        # Set an uncompleted race to one win; preserve existing win counts.
+        # The mask covers a two-bit counter, not two independent flags.
+        if value:
+            if not raw & mask:
+                raw |= mask & -mask
+        else:
+            raw &= ~mask
         self.pine.write_int8(save_address(address), raw)
 
     def delete(self, name: str) -> None:

@@ -145,7 +145,7 @@ class RACContext(
             not self._save_data_received
             or not self.pine_connected
             or (not force and self._weapon_state_restored)
-            or not self._wiring.planet.is_ready
+            or not self._wiring.planet.weapons_available
             or self._wiring.at_main_menu
             or self._wiring.vendor_active
         ):

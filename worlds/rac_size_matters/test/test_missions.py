@@ -1,8 +1,14 @@
 """Tests for MissionInventory's planet-gating: a mission bit tied to planet X
 must not be reported until the player is actually on that planet."""
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock
 
-from ..constants import Rac5CutsceneLocations
+from ..constants import Rac5CutsceneLocations, Rac5SkyboardChallenges
+from ..core.challenges import SkyboardInventory
+from ..core.location_checks import LocationChecks
+from ..locations import ALL_LOCATIONS
+from .test_runtime_refactor import Memory
 from ..core.locations.mission_locations import LOCATION_TO_PLANET_ID, VALIDATED_MISSION_MAP
 from ..core.missions import MissionInventory
 
@@ -72,6 +78,39 @@ class TestOutpostOmegaRematch(unittest.TestCase):
         address, mask = _address_mask(name)
         pine.mem[address] = mask
         self.assertEqual(inventory.check(0x17), [name])
+
+    def test_race_completion_also_sends_rematch_without_mission_bit(self):
+        for already_checked in (False, True):
+            for missions_enabled in (False, True):
+                with self.subTest(already_checked=already_checked, missions_enabled=missions_enabled):
+                    pine = Memory()
+                    race = Rac5SkyboardChallenges.OUTPOST_OMEGA_INTERIOR
+                    rematch = Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH
+                    completion = ALL_LOCATIONS[race].completed
+                    skyboard = SkyboardInventory(pine)
+                    if already_checked:
+                        skyboard.sync_from_ap({race})
+                    core = SimpleNamespace(
+                        pine=pine, planet=SimpleNamespace(planet_id=0x17),
+                        skill_points_enabled=False, clank_enabled=False, skyboard_enabled=True,
+                        shrink_ray_locations_enabled=False, all_missions_enabled=missions_enabled,
+                        all_cutscenes_enabled=False, missions=MissionInventory(pine), skyboard=skyboard,
+                        bolts=SimpleNamespace(check=lambda _: []), send_location=Mock(),
+                    )
+                    checks = LocationChecks(core)
+                    checks.world()
+                    core.send_location.assert_not_called()
+                    # Losing the race increments attempts, not wins. It must
+                    # not grant the race or its fallback rematch story check.
+                    pine.write_bytes(completion.key + 1, b"\x01")
+                    checks.world()
+                    core.send_location.assert_not_called()
+                    pine.write_bytes(completion.key, bytes([completion.mask]))
+                    checks.world()
+                    checks.world()
+                    sent = [call.args[0] for call in core.send_location.call_args_list]
+                    self.assertEqual(sent.count(rematch), int(missions_enabled))
+                    self.assertEqual(sent.count(race), int(not already_checked))
 
 
 if __name__ == "__main__":

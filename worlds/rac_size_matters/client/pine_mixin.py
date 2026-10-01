@@ -197,7 +197,7 @@ class PineMixin:
         """Cache live levels and publish changes, never temporary vendor values."""
         if (self.slot is None or not self.pine_connected or not self._weapon_state_restored
                 or not self._save_data_received or not self._items_received_ready
-                or not self._wiring.planet.is_ready or self._wiring.at_main_menu
+                or not self._wiring.planet.weapons_available or self._wiring.at_main_menu
                 or self._wiring.vendor_active or self._wiring.native.waiting):
             return
         weapons = self._wiring.planet.weapons

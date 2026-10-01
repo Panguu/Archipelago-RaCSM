@@ -1,4 +1,4 @@
-from ..constants import Rac5CutsceneLocations, Rac5Locations
+from ..constants import Rac5CutsceneLocations, Rac5Locations, Rac5SkyboardChallenges
 from ..locations import ALL_LOCATIONS, WEAPON_LEVEL_LOOKUP
 from ..locations.observation import LocationObservation
 from . import address_maps
@@ -35,6 +35,14 @@ class LocationChecks:
             )
         if core.skyboard_enabled:
             self.events(core.skyboard.check(observation.skyboard))
+            # The rematch mission bit is not reliably set by the race. Its
+            # actual completion flag also satisfies the story location, even
+            # if the separate race location was already checked before reconnect.
+            rematch = Rac5CutsceneLocations.OUTPOST_OMEGA_REMATCH
+            interior = ALL_LOCATIONS[Rac5SkyboardChallenges.OUTPOST_OMEGA_INTERIOR]
+            if rematch not in core.missions.completed and interior.completed(observation):
+                core.missions.completed.add(rematch)
+                self.mission(rematch)
         if core.shrink_ray_locations_enabled:
             self.events(core.shrink_ray.check(core.planet.planet_id))
 
