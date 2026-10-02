@@ -138,6 +138,7 @@ class PersistLevelTests(unittest.IsolatedAsyncioTestCase):
         ctx._local_weapon_state = {"lacerator": 3}
         ctx._pine_lock = asyncio.Lock()
         ctx._parse_inventory = Mock(return_value={})
+        ctx._sync_vendor_rule_items = Mock()
         ctx._checked_location_names = Mock(return_value=set())
         ctx._wiring.apply_inventory = Mock()
         ctx._wiring.restore_world_states = Mock()

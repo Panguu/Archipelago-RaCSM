@@ -19,6 +19,7 @@ _PROJECTILE_WEAPONS = [
     display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_DATA[internal].is_projectile
 ]
 _PROJECTILE_WEAPONS_ALL_NAMES = [*_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _PROJECTILE_WEAPONS)]
+PROJECTILE_WEAPON_ITEM_NAMES = frozenset(_PROJECTILE_WEAPONS_ALL_NAMES)
 _ARMOUR_PIECE_INDEX: dict[str, int] = {"Chestplate": 1, "Helmet": 2, "Gloves": 3, "Boots": 4}
 _ARMOUR_SET_ORDER_INDEX: dict[str, int] = {display: i for i, (display, _internal) in enumerate(ARMOUR_SETS)}
 

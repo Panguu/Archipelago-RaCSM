@@ -62,6 +62,7 @@ from .options import (
 )
 from .regions import create_regions
 from .rules import set_rules
+from .rules._helpers import PROJECTILE_WEAPON_ITEM_NAMES
 from .settings import RACSizeMatterSettings
 from .universal_tracker import setup_options_from_slot_data, tracker_world
 
@@ -299,6 +300,8 @@ class RACSizeMatterWorld(World):
         if self.options.starting_bolts.value > 0:
             self.multiworld.push_precollected(self.create_item("Bolts"))
 
+        self._ensure_early_projectile_weapon(pool)
+
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         deficit = len(pool) - unfilled
         filler_count = -deficit
@@ -326,6 +329,18 @@ class RACSizeMatterWorld(World):
 
         for name in pool:
             self.multiworld.itempool.append(self.create_item(name))
+
+    def _ensure_early_projectile_weapon(self, pool: list[str]) -> None:
+        """Most starting-planet checks need a projectile weapon; with the vanilla vendors disabled,
+        sphere 0 can shrink to a single slot, and fill fails whenever anything else lands there."""
+        if any(name in PROJECTILE_WEAPON_ITEM_NAMES for name in self.preplaced_items):
+            return
+        early_items = self.multiworld.local_early_items[self.player]
+        if any(name in PROJECTILE_WEAPON_ITEM_NAMES for name in early_items):
+            return
+        candidates = sorted({name for name in pool if name in PROJECTILE_WEAPON_ITEM_NAMES})
+        if candidates:
+            early_items[self.random.choice(candidates)] = 1
 
     def get_excluded_count(self) -> int:
         return len(self.options.exclude_locations.value)
@@ -377,7 +392,10 @@ class RACSizeMatterWorld(World):
         raise OptionError(message)
 
     def fill_slot_data(self) -> dict[str, Any]:
+        from .vendor_rules import build_vendor_rules
+
         return {
+            "vendor_rules": build_vendor_rules(self),
             "split_infobots": True,
             Rac5Options.DEATH_LINK: bool(self.options.death_link.value),
             Rac5Options.AMMO_LINK: bool(self.options.ammo_link.value),

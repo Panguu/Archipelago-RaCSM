@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from collections import Counter
 
 from ..core import (
     ALL_TRAPS,
@@ -179,6 +180,14 @@ class InventoryMixin:
             "clank_pack":      clank_pack,
         }
 
+    def _sync_vendor_rule_items(self) -> None:
+        vendor = self._wiring.vendor
+        items = Counter(self.item_names[self.game].get(item.item, "") for item in self.items_received)
+        if items != vendor.rule_items:
+            vendor.rule_items = items
+            if vendor.location_rules is not None:
+                vendor.force_refresh()
+
     async def force_sync(self) -> None:
         """Force the player's in-game state to match AP, wiping the current planet's weapon/gadget/mod
         array first. Skipped if the planet isn't ready or a vendor is open, which already zero/restore.
@@ -196,6 +205,7 @@ class InventoryMixin:
             if wiring.planet.weapons_available and not wiring.vendor_active:
                 wiring.planet.weapons.wipe()
             wiring.apply_inventory(**inventory)
+            self._sync_vendor_rule_items()
             wiring.restore_world_states(checked)
             wiring.restore_armour_from_locations(checked)
             self._try_restore_weapon_state(force=True)
@@ -219,6 +229,7 @@ class InventoryMixin:
         inventory = self._parse_inventory()
         async with self._pine_lock:
             self._wiring.apply_inventory(**inventory)
+            self._sync_vendor_rule_items()
             if self.items_received and self._filler_checkpoint_synced:
                 self._grant_new_bolt_items()
                 self._grant_new_trap_items()

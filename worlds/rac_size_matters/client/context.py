@@ -269,6 +269,7 @@ class RACContext(
         if cmd == "Connected":
             self._wiring.native.ap_connected = True
             self.slot_data = args.get("slot_data", {})
+            self._wiring.vendor.configure_rules(self.slot_data.get("vendor_rules"))
             self._wiring.native.enabled = True
             native_ids = set(args.get("missing_locations", ())) | set(args.get("checked_locations", ()))
             self._wiring.native.allowed_locations = {

@@ -50,6 +50,8 @@ WEAPON_VENDOR_IDS: dict[str, int] = {
 
 _ITEM_IDS: dict[str, int] = WEAPON_VENDOR_IDS
 
+# Legacy reachability tables below are used only when slot data has no vendor_rules.
+# New seeds export their location and entrance rules; edit those definitions instead.
 _WEAPON_TO_PLANET_KEY: dict[str, str] = {
     "lacerator":       "POKITARU",
     "acid_bomb_glove": "POKITARU",
@@ -204,6 +206,23 @@ class VendorInventory:
         self.show_purchasable_weapons: bool = True
         self.native_plan = None
         self._native_purchase_pending = False
+        # None selects the legacy gates for seeds generated before rule export.
+        self.location_rules = None
+        self.rule_items: dict[str, int] = {}
+
+    def configure_rules(self, data) -> None:
+        if data is not None and data.get("version") != 1:
+            raise ValueError("Unsupported vendor rules version")
+        self.location_rules = None if data is None else data["locations"]
+        self.rule_items = {}
+
+    def _location_accessible(self, location: str | None) -> bool:
+        from ..vendor_rules import evaluate_rule
+
+        if self.location_rules is None:
+            raise RuntimeError("No exported vendor rules configured")
+        rule = self.location_rules.get(location)
+        return rule is not None and evaluate_rule(rule, self.rule_items)
 
     def record_native_purchase(self, kind: str, location: str) -> None:
         """Adopt a native journal event without inferring gameplay ownership."""
@@ -245,6 +264,9 @@ class VendorInventory:
     def _is_titan_eligible(self, name: str) -> bool:
         """Whether `name` still has an unbought Titan variant to offer:
         Challenge Mode 1+, one of TITAN_ELIGIBLE_WEAPONS, not yet bought."""
+        if self.location_rules is not None:
+            return (not self.weapons.titan_purchased.get(name, False)
+                    and self._location_accessible(TITAN_INTERNAL_TO_LOCATION.get(name)))
         return (self.challenge_mode >= 1 and name in TITAN_ELIGIBLE_WEAPONS
                 and not self.weapons.titan_purchased.get(name, False))
 
@@ -268,6 +290,23 @@ class VendorInventory:
         """Weapons/gadgets shown on the vendor's default (left, buy-new) view. A
         Titan-eligible weapon stays listed (reusing the same slot) until its Titan
         variant is bought; Mootator has no base listing, so it only appears Titan-pending."""
+        if self.location_rules is not None:
+            names = []
+            for name, location in WEAPON_INTERNAL_TO_LOCATION.items():
+                target = TITAN_INTERNAL_TO_LOCATION.get(name) if self._is_purchased(name) else location
+                if self._is_purchased(name) and self.weapons.titan_purchased.get(name, False):
+                    continue
+                if self._location_accessible(target):
+                    names.append(name)
+            # Mootator has no base purchase location.
+            for name, location in TITAN_INTERNAL_TO_LOCATION.items():
+                if name not in WEAPON_INTERNAL_TO_LOCATION and not self.weapons.titan_purchased.get(name, False):
+                    if self.weapons.get_level(name) >= 3 and self._location_accessible(location):
+                        names.append(name)
+            for name, location in GADGET_INTERNAL_TO_LOCATION.items():
+                if not self._is_purchased(name) and self._location_accessible(location):
+                    names.append(name)
+            return names
         names: list[str] = []
         for name, planet_key in _WEAPON_TO_PLANET_KEY.items():
             if name in _CHALLENGE_MODE_ONLY_WEAPONS and self.challenge_mode < 1:
@@ -309,6 +348,8 @@ class VendorInventory:
     def _is_mod_location_accessible(self, loc: str) -> bool:
         """Whether this location's mod vendor is actually reachable — planet
         accessibility alone isn't enough where an extra gadget or Challenge Mode gates it."""
+        if self.location_rules is not None:
+            return self._location_accessible(loc)
         if loc in _CHALLENGE_MODE_MOD_LOCATIONS and self.challenge_mode < 1:
             return False
         planet_key = _MOD_LOCATION_TO_PLANET_KEY.get(loc)
@@ -449,8 +490,7 @@ class VendorInventory:
         if self._weapon_vendor_open:
             self._set_weapon_view(self.show_purchasable_weapons)
         elif self._mod_vendor_open:
-            self._set_items(self._mod_vendor_weapons())
-            self.refresh(MenuStateValue.MOD_VENDOR)
+            self._refresh_mod_vendor()
 
     def refresh(self, menu_value: MenuStateValue) -> None:
         """Write the current item list into game memory, then poke the menu update
