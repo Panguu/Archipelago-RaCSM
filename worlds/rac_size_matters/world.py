@@ -1,6 +1,6 @@
 from typing import Any, ClassVar
 
-from BaseClasses import ItemClassification, Tutorial
+from BaseClasses import CollectionState, ItemClassification, Tutorial
 
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
@@ -56,7 +56,9 @@ from .options import (
     ShrinkRayOptions,
     SkillPoints,
     SkyboardChallenges,
+    StartingGadgets,
     StartingSkin,
+    StartingWeapons,
     WeaponLevelChecks,
     racsm_option_groups,
 )
@@ -184,6 +186,35 @@ class RACSizeMatterWorld(World):
 
     def set_rules(self) -> None:
         set_rules(self)
+
+    def generate_basic(self) -> None:
+        self._validate_sphere_zero()
+
+    def _validate_sphere_zero(self) -> None:
+        """Some starting planets have almost no checks reachable with the starting items; when the
+        early items use them all up, nothing else can go in sphere 0 and fill always fails."""
+        if self.multiworld.players != 1:
+            return
+        early_items = {**self.multiworld.early_items[self.player], **self.multiworld.local_early_items[self.player]}
+        early_count = sum(early_items.values())
+        state = CollectionState(self.multiworld)
+        for name, count in early_items.items():
+            for _ in range(count):
+                state.collect(self.create_item(name), True)
+        state.sweep_for_advancements()
+        reachable = sum(
+            1 for location in self.multiworld.get_unfilled_locations(self.player) if location.can_reach(state)
+        )
+        if reachable > early_count:
+            return
+        player_name = self.multiworld.get_player_name(self.player)
+        raise OptionError(
+            f"{player_name}'s RAC Size Matters: Not enough locations reachable at the start! {reachable} "
+            f"locations are reachable with your starting items and {early_count} are needed for early items, "
+            f"leaving nothing for the rest of the fill. Consider raising "
+            f"{StartingWeapons.display_name} or {StartingGadgets.display_name}, changing "
+            f"{RandomStartingPlanet.display_name}, or enabling more location options."
+        )
 
     def _choose_preplaced_items(self) -> list[str]:
         """Items precollected ahead of the pool: starting-planet infobot(s) plus
