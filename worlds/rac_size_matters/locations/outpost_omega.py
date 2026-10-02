@@ -61,7 +61,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SPROUT_O_MATIC),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.MISSIONS, 32814030, 128, 6),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),

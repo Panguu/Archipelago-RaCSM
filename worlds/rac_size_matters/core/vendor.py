@@ -125,7 +125,6 @@ _MOD_VENDOR_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {
 }
 
 _WEAPON_VENDOR_EXTRA_GADGETS: dict[str, tuple[str, ...]] = {
-    "DREAMTIME":    (Rac5GadgetKeys.HYPERSHOT, Rac5GadgetKeys.SPROUT_O_MATIC),
     "INSIDE_CLANK": (
         Rac5GadgetKeys.HYPERSHOT, Rac5GadgetKeys.SPROUT_O_MATIC,
         Rac5GadgetKeys.SHRINK_RAY, Rac5GadgetKeys.POLARIZER,
