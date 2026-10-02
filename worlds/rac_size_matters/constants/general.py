@@ -19,7 +19,7 @@ class Rac5Locations:
 
     KALIDON_WIN = "Kalidon: Win the skyboard race (Complete Learner's Permit)"
     KALIDON_SHRINK = "Kalidon: Receive Shrink Ray"
-    KALIDON_CHESTPLATE = "Kalidon: Sludge Mk9 Chestplate from Mundo Fight"
+    KALIDON_CHESTPLATE = "Kalidon: Sludge Mk9 Chestplate from Mungo Fight"
     KALIDON_BOOTS = "Kalidon: Wildfire Boots inside factory"
 
     METALIS_WAR = "Metalis: Survive Robot War III (Complete Buzzsaw Blitz)"
