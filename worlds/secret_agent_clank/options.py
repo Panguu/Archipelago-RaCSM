@@ -351,13 +351,19 @@ class SecretAgentClankOptions(PerGameCommonOptions):
 
 
 sac_option_groups = [
-    OptionGroup("SAC Cosmetics", [ClankSkin, RatchetSkin, QwarkSkin]),
+    OptionGroup("SAC Game Options", [
+        Infobots,
+        Operatives,
+        Goal,
+        NgPlus,
+        ProgressiveChallengeMode,
+        WeaponXPMultiplier,
+        HealthXPMultiplier,
+        BoltMultiplier
+    ]),
     OptionGroup("SAC Item Options", [
         ProgressiveWeapons,
         ProgressiveWrench,
-        WeaponXPMultiplier,
-        HealthXPMultiplier,
-        BoltMultiplier,
         StartingWeapons,
         StartingGadgets,
         StartingBolts,
@@ -375,12 +381,6 @@ sac_option_groups = [
         AllKeycards,
         AllAlienCodes,
         SendScoutedLocations,
-        Goal,
-        NgPlus,
-        ProgressiveChallengeMode,
     ]),
-    OptionGroup("SAC Character Options", [
-        Infobots,
-        Operatives,
-    ]),
+    OptionGroup("SAC Cosmetics", [ClankSkin, RatchetSkin, QwarkSkin]),
 ]

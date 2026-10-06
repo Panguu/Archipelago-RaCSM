@@ -29,12 +29,12 @@ class SACProgressiveClankWeapons:
 @dataclass(frozen=True)
 class SACProtoWeapons:
     """NG+ Proto upgrades, paired with SACClankWeapons by shared attribute name."""
-    THROWTIE          = "Proto Tie-A-Rang (Clank)"
-    CUFFLINK          = "Proto Cufflink Bomb (Clank)"
-    TANGLEVINE        = "Proto Tanglevine Carnation (Clank)"
-    FLAMETHROWERPEN   = "Proto Blowtorch Briefcase (Clank)"
-    HOLOKNUCKLES      = "Proto Holo-Knuckles (Clank)"
-    LIGHTNINGUMBRELLA = "Proto Thunderstorm Umbrella (Clank)"
+    THROWTIE          = "Proto Whirlwind Throwtie (Clank)"
+    CUFFLINK          = "Proto Wrist Mortar (Clank)"
+    TANGLEVINE        = "Proto Kudzu Tangle (Clank)"
+    FLAMETHROWERPEN   = "Proto Hellfire Haversack (Clank)"
+    HOLOKNUCKLES      = "Proto Hardlight Fist (Clank)"
+    LIGHTNINGUMBRELLA = "Proto Lightning Rod (Clank)"
 
 
 @dataclass(frozen=True)
