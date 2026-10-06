@@ -209,20 +209,27 @@ class VendorInventory:
         # None selects the legacy gates for seeds generated before rule export.
         self.location_rules = None
         self.rule_items: dict[str, int] = {}
+        self._reached_cache: tuple[dict[str, int], set[str]] | None = None
 
     def configure_rules(self, data) -> None:
-        if data is not None and data.get("version") != 1:
+        from ..vendor_rules import VERSION
+
+        if data is not None and data.get("version") != VERSION:
             raise ValueError("Unsupported vendor rules version")
-        self.location_rules = None if data is None else data["locations"]
+        self.location_rules = data
         self.rule_items = {}
+        self._reached_cache = None
 
     def _location_accessible(self, location: str | None) -> bool:
-        from ..vendor_rules import evaluate_rule
+        from ..vendor_rules import location_accessible, reachable_regions
 
         if self.location_rules is None:
             raise RuntimeError("No exported vendor rules configured")
-        rule = self.location_rules.get(location)
-        return rule is not None and evaluate_rule(rule, self.rule_items)
+        # rule_items may be replaced or mutated in place, so key the cache on a snapshot.
+        if self._reached_cache is None or self._reached_cache[0] != self.rule_items:
+            self._reached_cache = (dict(self.rule_items),
+                                   reachable_regions(self.location_rules["regions"], self.rule_items))
+        return location_accessible(self.location_rules, location, self.rule_items, self._reached_cache[1])
 
     def record_native_purchase(self, kind: str, location: str) -> None:
         """Adopt a native journal event without inferring gameplay ownership."""

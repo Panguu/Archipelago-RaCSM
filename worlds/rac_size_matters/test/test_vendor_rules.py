@@ -6,11 +6,13 @@ from unittest import TestCase
 from unittest.mock import Mock
 
 from BaseClasses import CollectionState
+from NetUtils import decode, encode
 
 from ..constants import Rac5VendorLocations, Rac5TitanVendorLocations
 from ..core.vendor import VendorInventory
 from ..client.vendor import InventoryMixin
-from ..vendor_rules import build_vendor_rules, evaluate_rule
+from ..locations import MENU_REGION
+from ..vendor_rules import build_vendor_rules, location_accessible
 from .bases import RACSizeMatterTestBase
 
 
@@ -27,16 +29,19 @@ class TestVendorRuleParity(RACSizeMatterTestBase):
                 for item in pool:
                     if rng.random() < chance:
                         state.collect(item, prevent_sweep=True)
-                for name, rule in payload["locations"].items():
+                for name in payload["locations"]:
                     location = self.multiworld.get_location(name, self.player)
-                    self.assertEqual(evaluate_rule(rule, state.prog_items[self.player]),
+                    self.assertEqual(location_accessible(payload, name, state.prog_items[self.player]),
                                      location.can_reach(state), name)
 
     def test_dreamtime_needs_only_outpost(self):
-        rules = build_vendor_rules(self.world)["locations"]
-        rule = rules[Rac5VendorLocations.DREAMTIME_SUCK]
-        self.assertFalse(evaluate_rule(rule, {}))
-        self.assertTrue(evaluate_rule(rule, {"Infobot: Outpost Omega": 1}))
+        rules = build_vendor_rules(self.world)
+        self.assertFalse(location_accessible(rules, Rac5VendorLocations.DREAMTIME_SUCK, {}))
+        self.assertTrue(location_accessible(rules, Rac5VendorLocations.DREAMTIME_SUCK, {"Infobot: Outpost Omega": 1}))
+
+    def test_connected_packet_within_json_depth_limit(self):
+        # decode() applies the same depth limit CommonClient enforces on server packets.
+        decode(encode([{"cmd": "Connected", "slot_data": self.world.fill_slot_data()}]))
 
 
 class TestProgressiveVendorRuleParity(TestVendorRuleParity):
@@ -60,9 +65,9 @@ class TestVendorRuleMenu(TestCase):
         self.titan = Rac5TitanVendorLocations.DREAMTIME_SUCK_TITAN
 
     def test_rules_override_legacy_and_preserve_purchase_transition(self):
-        self.vendor.configure_rules({"version": 1, "locations": {
-            self.base: ["has", "Infobot: Outpost Omega", 1],
-            self.titan: ["has", "Progressive Challenge Mode", 1],
+        self.vendor.configure_rules({"version": 2, "regions": {}, "locations": {
+            self.base: [MENU_REGION, ["has", "Infobot: Outpost Omega", 1]],
+            self.titan: [MENU_REGION, ["has", "Progressive Challenge Mode", 1]],
         }})
         self.assertNotIn("suck_cannon", self.vendor._purchasable_names())
         self.vendor.rule_items = Counter({"Infobot: Outpost Omega": 1})
@@ -75,7 +80,7 @@ class TestVendorRuleMenu(TestCase):
         self.assertEqual(self.vendor.purchasable_locations(), [])
 
     def test_old_seed_fallback_and_reconnect_reset(self):
-        self.vendor.configure_rules({"version": 1, "locations": {}})
+        self.vendor.configure_rules({"version": 2, "regions": {}, "locations": {}})
         self.assertEqual(self.vendor._purchasable_names(), [])
         self.vendor.configure_rules(None)
         self.assertIn("suck_cannon", self.vendor._purchasable_names())
@@ -83,11 +88,11 @@ class TestVendorRuleMenu(TestCase):
 
     def test_unknown_version_is_rejected(self):
         with self.assertRaises(ValueError):
-            self.vendor.configure_rules({"version": 2, "locations": {}})
+            self.vendor.configure_rules({"version": 1, "locations": {}})
 
     def test_mod_rule_and_item_sync(self):
-        self.vendor.configure_rules({"version": 1, "locations": {
-            "mod": ["has", "Progressive Challenge Mode", 2],
+        self.vendor.configure_rules({"version": 2, "regions": {"Gated": [[MENU_REGION, ["true"]]]}, "locations": {
+            "mod": ["Gated", ["has", "Progressive Challenge Mode", 2]],
         }})
         context = InventoryMixin()
         context._wiring = SimpleNamespace(vendor=self.vendor)
