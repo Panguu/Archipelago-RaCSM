@@ -95,6 +95,10 @@ class RACWeb(WebWorld):
     option_groups = racsm_option_groups
 
 
+# Free sphere-0 slots at or below which one is reserved for an item that opens more locations.
+TIGHT_SPHERE_ZERO_SLOTS = 2
+
+
 class RACSizeMatterWorld(World):
     """Ratchet & Clank: Size Matters is a 2007 PSP/PS2 action platformer following
     Ratchet and Clank as they unravel the mystery of the Technomites across ten planets.
@@ -190,6 +194,14 @@ class RACSizeMatterWorld(World):
     def generate_basic(self) -> None:
         self._validate_sphere_zero()
 
+    def _sphere_zero_reachable(self, early_items: dict[str, int]) -> int:
+        state = CollectionState(self.multiworld)
+        for name, count in early_items.items():
+            for _ in range(count):
+                state.collect(self.create_item(name), True)
+        state.sweep_for_advancements()
+        return sum(1 for location in self.multiworld.get_unfilled_locations(self.player) if location.can_reach(state))
+
     def _validate_sphere_zero(self) -> None:
         """Some starting planets have almost no checks reachable with the starting items; when the
         early items use them all up, nothing else can go in sphere 0 and fill always fails."""
@@ -197,15 +209,10 @@ class RACSizeMatterWorld(World):
             return
         early_items = {**self.multiworld.early_items[self.player], **self.multiworld.local_early_items[self.player]}
         early_count = sum(early_items.values())
-        state = CollectionState(self.multiworld)
-        for name, count in early_items.items():
-            for _ in range(count):
-                state.collect(self.create_item(name), True)
-        state.sweep_for_advancements()
-        reachable = sum(
-            1 for location in self.multiworld.get_unfilled_locations(self.player) if location.can_reach(state)
-        )
+        reachable = self._sphere_zero_reachable(early_items)
         if reachable > early_count:
+            if reachable - early_count <= TIGHT_SPHERE_ZERO_SLOTS:
+                self._reserve_sphere_zero_opener(early_items, reachable)
             return
         player_name = self.multiworld.get_player_name(self.player)
         raise OptionError(
@@ -215,6 +222,20 @@ class RACSizeMatterWorld(World):
             f"{StartingWeapons.display_name} or {StartingGadgets.display_name}, changing "
             f"{RandomStartingPlanet.display_name}, or enabling more location options."
         )
+
+    def _reserve_sphere_zero_opener(self, early_items: dict[str, int], reachable: int) -> None:
+        """With only a slot or two free at the start, fill can put items there that open nothing new
+        and run out of reachable locations; reserve one of them for an item that does open more."""
+        candidates = sorted({
+            item.name for item in self.multiworld.itempool
+            if item.player == self.player and item.advancement and item.name not in early_items
+        })
+        gains = {name: self._sphere_zero_reachable({**early_items, name: 1}) for name in candidates}
+        best = max(gains.values(), default=reachable)
+        if best <= reachable + 1:
+            return
+        name = self.random.choice([name for name, gain in gains.items() if gain == best])
+        self.multiworld.local_early_items[self.player][name] = 1
 
     def _choose_preplaced_items(self) -> list[str]:
         """Items precollected ahead of the pool: starting-planet infobot(s) plus
