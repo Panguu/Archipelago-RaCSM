@@ -98,7 +98,7 @@ class NativeCapturePlansTests(unittest.TestCase):
                     wrench = WrenchProgression(p)
                     wrench.enabled = True
                     hooks.patches.extend(wrench.prepare(symbols, module))
-                    hooks.patches.extend(MissionTravel(p).prepare(symbols))
+                    hooks.patches.extend(MissionTravel(p).prepare(symbols, module=module))
                     mods = WeaponMods(p)
                     mods.configure({"weapon_mods": True, "operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng})
                     hooks.patches.extend(mods.prepare(symbols, hooks, module, set(), vendor))

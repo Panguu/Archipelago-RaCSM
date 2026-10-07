@@ -33,6 +33,26 @@ def setup_vendor_world(world_type, options=None):
 
 
 class VendorAccessTests(unittest.TestCase):
+    def test_ratchet_only_vendor_requires_pda_and_has_reachable_stock(self):
+        for mode in range(4):
+            with self.subTest(mode=mode):
+                m = setup_multiworld(SecretAgentClankWorld, seed=12345, options={
+                    'operatives': {'Ratchet': 1}, 'goal': 'ratchet_prison_escape',
+                    'nanotech_checks': False, 'infobots': mode, 'ng_plus': 1})
+                world = m.worlds[1]
+                self.assertTrue(world.has_vendor)
+                locations = m.get_region('Vendor', 1).locations
+                self.assertTrue(locations)
+                state = m.get_all_state(False)
+                for location in locations:
+                    self.assertTrue(location.can_reach(state), location.name)
+                while state.has(SACRatchetWeapons.RATCHETPDA, 1):
+                    state.remove(world.create_item(SACRatchetWeapons.RATCHETPDA))
+                for location in locations:
+                    self.assertFalse(location.can_reach(state), location.name)
+                distribute_items_restrictive(m)
+                self.assertTrue(m.fulfills_accessibility())
+
     def test_seed_options_filter_shared_catalog(self):
         for ng_plus in (0, 1, 2):
             for operatives in ({"Clank": 1}, {"Clank": 1, "Ratchet": 1}):

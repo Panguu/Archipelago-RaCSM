@@ -120,7 +120,8 @@ class VendorCatalog(PatchSet):
                 index += 1
         buffer = descriptors + len(entries) * 8
         self.tabs = VendorTabs()
-        tab_patches, dispatch = self.tabs.prepare(p, symbols, hooks, builder, original, catalog_start)
+        tab_patches, dispatch = self.tabs.prepare(p, symbols, hooks, builder, original, catalog_start,
+                                                 descriptors=descriptors, count=len(entries))
         payload = bytearray(original[:self.START]) + dispatch + code
         for entry in entries:
             payload.extend(struct.pack("<2I", *entry))

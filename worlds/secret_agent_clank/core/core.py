@@ -8,6 +8,7 @@ from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
 from ..constants.vendor import vendor_location_name
 from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_INTERNAL_TO_DISPLAY
+from ..options import Goal
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
 from .inventories.alien_codes import AlienCodeInventory
@@ -77,6 +78,7 @@ class Core:
         self.native_runtime.weapon_mods = self.weapon_mods
         self._native_pause_notice = False
         self.missions      = MissionInventory(pine)
+        self.native_runtime.on_quasar_complete = self._record_quasar_completion
         self.cutscenes      = CutsceneInventory(pine)
         self.gadgetbot_challenges = GadgetbotChallengeInventory(pine)
         self.special_challenges   = SpecialChallengeInventory(pine)
@@ -86,6 +88,7 @@ class Core:
         self.alien_codes    = AlienCodeInventory(pine)
         self.keycards = KeycardInventory(pine)
         self.goal = 0
+        self.pick_and_mix_goals = None
         self.character_unlocks = False
         self.progressive_planets: list[str] | None = None
         self._goal_sent = False
@@ -392,13 +395,20 @@ class Core:
         self._reapply_all_inventories()
 
         self.progression.sync()
-        for name in (*self.progression.level_checks(), *self.progression.nanotech_checks(), *self.stealth.checks()):
+        for name in (*self.progression.level_checks(), *self.progression.nanotech_checks(),
+                     *self.progression.ratchet_nanotech_checks(self.case.symbols), *self.stealth.checks()):
             self._send_once(name)
         self.weapon_mods.sync()
         self.wrench.sync()
         self.bolt_rewards.deliver()
         self.vendor_rewards.tick(self.case.symbols)
         self.notifications.tick()
+
+    def _record_quasar_completion(self):
+        mission = CHAPTER_ENTRIES[SACCases.THE_QUASAR_FIELDS][0].name
+        self.missions.completed[mission] = True
+        name = mission if self.missions_all() else MISSION_COMPLETE_NAME[SACCases.THE_QUASAR_FIELDS]
+        self._report_checks(self.missions, [name])
 
     def _check_goal(self):
         complete = self.missions._reported
@@ -408,8 +418,23 @@ class Core:
                     (bool(CHAPTER_ENTRIES.get(case.name)) and
                      all(self.missions.completed.get(entry.name, False) for entry in CHAPTER_ENTRIES[case.name]))
                     for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])
-        reached = {0: klunk, 1: qwark, 2: klunk or qwark,
-                   3: self.keycards.chalice_collected, 4: self.alien_codes.all_found}.get(self.goal, False)
+        gadgetbots = all(MISSION_COMPLETE_NAME[case.name] in complete or
+                         all(self.missions.completed.get(entry.name, False)
+                             for entry in CHAPTER_ENTRIES[case.name])
+                         for case in CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS])
+        ratchet = all(self.ratchet_challenges.completed.values())
+        conditions = {
+            Goal.option_defeat_klunk: klunk,
+            Goal.option_qwark_opera: qwark,
+            Goal.option_any: klunk or qwark,
+            Goal.option_all_gadgetbots: gadgetbots,
+            Goal.option_ratchet_prison_escape: ratchet,
+            Goal.option_chalice_of_power: self.keycards.chalice_collected,
+            Goal.option_alien_codes: self.alien_codes.all_found,
+        }
+        reached = (bool(self.pick_and_mix_goals) and
+                   all(conditions.get(goal, False) for goal in self.pick_and_mix_goals)
+                   if self.pick_and_mix_goals is not None else conditions.get(self.goal, False))
         if reached and not self._goal_sent:
             self.on_goal()
             self._goal_sent = True

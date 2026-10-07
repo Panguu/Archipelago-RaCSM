@@ -11,12 +11,16 @@ from ..core.notifications import ItemNotifications
 class NotificationDeliveryTests(unittest.IsolatedAsyncioTestCase):
     def context(self):
         hud = ItemNotifications(None)
+        async def request(command, payload):
+            self.assertEqual(command, 'items')
+            for notification in payload[1]:
+                hud.enqueue(*notification)
         ctx = SimpleNamespace(
             slot=1, pine_connected=True, game='Secret Agent Clank',
             item_names={'Secret Agent Clank': {101: 'Progressive Wrench', 102: 'Test Trap'}},
             items_received=[], player_names={2: 'Pangu'}, _pine_lock=asyncio.Lock(),
             _notification_count=0,
-            _wiring=SimpleNamespace(apply_inventory=Mock(), notifications=hud),
+            _worker=SimpleNamespace(request=AsyncMock(side_effect=request)),
             _apply_new_traps=AsyncMock())
         return ctx, hud
 

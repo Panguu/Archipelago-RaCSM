@@ -80,9 +80,9 @@ class SACLocation:
             case SACLocationType.CUTSCENE:
                 return bool(options.all_cutscenes)
             case SACLocationType.KEYCARD:
-                return bool(options.all_keycards)
+                return options.keycard_checks_enabled
             case SACLocationType.ALIEN_CODE:
-                return bool(options.all_alien_codes)
+                return options.alien_code_checks_enabled
         return True
 
     @property

@@ -3,7 +3,8 @@ import struct
 from typing import TYPE_CHECKING, NamedTuple
 
 from ...constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, MISSION_NAMES, MissionFlag
-from ...constants.planets import CASE_NAME_TO_CASE
+from ...constants.cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
+from ...constants.planets import CASE_NAME_TO_CASE, SACCases
 from ..case_menu import CASE_LABELS
 from ..symbols import RuntimeSymbols
 
@@ -113,7 +114,11 @@ class MissionInventory:
         """Progress can persist into the next module before the next host poll."""
         self._resolve_labels()
         found = []
-        for name in self._resolved_cases or {}:
+        # The final boss can enter the ending without completing its task row.
+        # Its resident ending flag survives that transition and missing tables.
+        names = dict.fromkeys(self._resolved_cases or {})
+        names[SACCases.KLUNKS_LAIR] = None
+        for name in names:
             case = CASE_NAME_TO_CASE.get(name)
             if case is not None:
                 found.extend(self.check(case, all_missions=all_missions))
@@ -134,6 +139,25 @@ class MissionInventory:
         newly: list[str] = []
         if current_case is None:
             return newly
+        if current_case.name == SACCases.THE_QUASAR_FIELDS:
+            mission = CHAPTER_ENTRIES[current_case.name][0].name
+            complete_name = MISSION_COMPLETE_NAME[current_case.name]
+            if self.completed[mission] or complete_name in self._reported:
+                # Restore the display after reload from the captured finish or
+                # server-confirmed check, without forging the next intro flag.
+                addresses = self._resolve_case_addresses(current_case)
+                if addresses and len(addresses) == 1:
+                    if self.pine.read_int32(addresses[0]) != MissionFlag.UNLOCKED_COMPLETED:
+                        self.pine.write_int32(addresses[0], MissionFlag.UNLOCKED_COMPLETED)
+                name = mission if all_missions else complete_name
+                return [] if name in self._reported else [name]
+        if current_case.name == SACCases.KLUNKS_LAIR:
+            ending = CUTSCENE_FLAGS[SACCutsceneLocations.KLUNKS_LAIR_COMPLETE_CUTSCENE]
+            if ending.is_set(self.pine.read_int8(ending.address)):
+                mission = CHAPTER_ENTRIES[SACCases.KLUNKS_LAIR][0].name
+                self.completed[mission] = True
+                name = mission if all_missions else MISSION_COMPLETE_NAME[SACCases.KLUNKS_LAIR]
+                return [] if name in self._reported else [name]
         self._resolve_labels()
         if not all_missions:
             story = self._story_addresses.get(current_case.name, ())

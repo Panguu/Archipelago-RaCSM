@@ -19,9 +19,6 @@ PINE is the memory interface the client uses to communicate with the emulator.
 3. Find the **PINE** section and enable it. Leave the slot/port at the default value unless you have a specific reason to change it.
 4. Restart PCSX2 if prompted.
 
----
-## Configuring your YAML file
-
 ### What is a YAML file and why do I need one?
 
 Your YAML file contains a set of configuration options which provide the generator with information about how it should

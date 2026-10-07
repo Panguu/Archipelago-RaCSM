@@ -115,8 +115,10 @@ class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
     async def test_server_loss_marks_watchdog_offline(self):
         context = SACContext.__new__(SACContext)
         context._stealth_load_task = None
-        context._wiring = SimpleNamespace(native_runtime=SimpleNamespace(ap_connected=True))
+        context._worker = SimpleNamespace(request=AsyncMock())
         with patch.object(CommonContext, 'connection_closed', new_callable=AsyncMock) as closed:
             await context.connection_closed()
         closed.assert_awaited_once()
-        self.assertFalse(context._wiring.native_runtime.ap_connected)
+        import asyncio
+        await asyncio.sleep(0)
+        context._worker.request.assert_awaited_once_with("ap_connected", False)

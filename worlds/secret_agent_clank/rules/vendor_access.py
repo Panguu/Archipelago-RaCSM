@@ -2,7 +2,8 @@ from rule_builder.rules import CanReachRegion, False_, Has, True_
 
 from ..constants import CHARACTER_ITEM_NAME, PROGRESSIVE_CHARACTER_ITEM_NAME
 from ..constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MODE
-from ..constants.clank_gadgets import SACClankGadgets
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
+from ..constants.weapons import SACRatchetWeapons
 from ..constants.planets import CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, PLANET_ACCESS_ITEM_NAME, SACCases
 from ..constants.vendor_unlocks import VENDOR_CASES
 from ..constants.weapons import EQUIPMENT_DISPLAY_TO_INTERNAL
@@ -16,34 +17,32 @@ VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     if internal in VENDOR_LOCATIONS.values()
 )
 
-# Fill in the physical vendor routes here; no extra item gates are guessed.
 VENDOR_REQUIREMENTS = {
     SACCases.BOLTAIRE_MUSEUM: Has(SACClankGadgets.BLACK_OUT_PEN),
     SACCases.BOLTAIRE_GEM_WING: False_(),
-    SACCases.MAX_SECURITY_CELLS: False_(),
+    SACCases.MAX_SECURITY_CELLS: Has(SACRatchetWeapons.RATCHETPDA),
     SACCases.ROOFTOP_DEATHTRAP: False_(),
     SACCases.ASYANICA_ROOFTOPS: True_(),
     SACCases.LARGER_THAN_LIFE: False_(),
-    # Disabled until its rules are sorted out; reachable when Special Missions are enabled.
-    SACCases.COUNTESS_VILLA: False_(),
+    SACCases.COUNTESS_VILLA: True_(),
     SACCases.GLACIARA_SKI_SLOPES: False_(),
-    SACCases.THE_MESS_HALL: False_(),
+    SACCases.THE_MESS_HALL: Has(SACRatchetWeapons.RATCHETPDA),
     SACCases.AZCOTAL_ALLEY: True_(),
     SACCases.GONDOLA_ASCENT: True_(),
     SACCases.SUCK_AND_JIVE: False_(),
-    SACCases.HIGH_ROLLERS_CASINO: False_(),
-    SACCases.THE_EXERCISE_YARD: False_(),
+    SACCases.HIGH_ROLLERS_CASINO: Has(SACClankGadgets.HOLOMONOCLE) & Has(SACClankWeapons.CUFFLINK),
+    SACCases.THE_EXERCISE_YARD: Has(SACRatchetWeapons.RATCHETPDA),
     SACCases.HIGH_STAKES_ROOM: False_(),
     SACCases.VENANTONIO_LABS: True_(),
     SACCases.VENANTONIO_CANALS: False_(),
     SACCases.MADAM_BUTTERQWARK: False_(),
     SACCases.GALACTIC_BOLT_RESERVE: True_(),
     SACCases.INSIDE_THE_A_EYE: False_(),
-    SACCases.THE_SHOWERS: False_(),
+    SACCases.THE_SHOWERS: Has(SACRatchetWeapons.RATCHETPDA),
     SACCases.SPACESHIP_GRAVEYARD: True_(),
     SACCases.SAINT_QWARK: False_(),
     SACCases.THE_QUASAR_FIELDS: False_(),
-    SACCases.PRISON_BREAKOUT: False_(),
+    SACCases.PRISON_BREAKOUT: Has(SACRatchetWeapons.RATCHETPDA),
     SACCases.DAMS_EDGE_HYDRANO: False_(),
     SACCases.A_FICTION_FULL_OF_DOLLARS: False_(),
     SACCases.BULKHEAD_LOCK: False_(),

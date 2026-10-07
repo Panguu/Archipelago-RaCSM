@@ -3,6 +3,7 @@ from ...constants.native_functions import NativeFunctions as Functions
 from ..symbols import require
 from .asm import Patch, branch, jump, packed
 from .patch import PatchSet
+from . import mips as m
 
 
 class TravelLayout:
@@ -25,8 +26,9 @@ class TravelLayout:
 
 
 class MissionTravel(PatchSet):
-    def prepare(self, symbols):
+    def prepare(self, symbols, *, module=None):
         self.patches = []
+        self.completion_mailbox = None
         helper, map_ender = require(
             symbols, Functions.UPDATE_CHANGE_TO_LEVEL_OR_MAP_IF_ALREADY_COMPLETED,
             Functions.SCRNGALACTICMAP_SET_LEVEL_ENDER)
@@ -34,6 +36,18 @@ class MissionTravel(PatchSet):
         helper_patch = self._prepare_current_level_route(helper, map_ender, change)
         arena_patches = self._prepare_arena_routes(symbols, helper)
         self.patches = [helper_patch, *arena_patches]
+        if module == 24:
+            # Quasar's task predicate is the *next* case's intro flag. Record
+            # the actual finish here and let the host capture it before reload
+            # can discard this DLL. Returning success leaves the game running.
+            mailbox = helper + 0x70
+            self._expect(helper + 0x68, (0xDFBF0008, 0x03E00008, 0x27BD0010),
+                         "Quasar completion mailbox")
+            code = packed([*m.li32(m.T0, mailbox), m.addiu(m.T1, m.ZERO, 1),
+                           m.sw(m.T1, 0, m.T0), m.jr(m.RA), m.addiu(m.V0, m.ZERO, 1)])
+            self.patches[0] = Patch(helper, self.pine.read_bytes(helper, len(code)), code)
+            self.patches.append(Patch(mailbox, packed([0x27BD0010]), packed([0])))
+            self.completion_mailbox = mailbox
         return self.patches
 
     def _expect(self, address, instructions, label):

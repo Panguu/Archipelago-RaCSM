@@ -8,6 +8,7 @@ from Utils import async_start
 class DeathLinkMixin:
     async def _set_death_link_enabled(self, enabled: bool) -> None:
         self._death_link_enabled = enabled
+        await self._worker.request("death_enabled", enabled)
         await self.update_death_link(enabled)
         logger.info(f"[SAC] DeathLink {'enabled' if enabled else 'disabled'}.")
 
@@ -44,7 +45,4 @@ class DeathLinkMixin:
         cause = data.get("cause") or f"{source} died"
         logger.info(f"[SAC] DeathLink received: {cause}")
         async with self._pine_lock:
-            self._kill_player_sync()
-
-    def _kill_player_sync(self) -> None:
-        self._wiring.case.ratchet.health = 0.0
+            await self._worker.request("death")

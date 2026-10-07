@@ -26,3 +26,17 @@ def nanotech_access_rule(world: "SecretAgentClankWorld", level: int) -> Rule:
     if world.options.progressive_challenge_mode and level > CLANK_NG_CAP:
         rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
     return rule
+
+
+def ratchet_nanotech_access_rule(world: "SecretAgentClankWorld", level: int) -> Rule:
+    from rule_builder.rules import CanReachRegion, False_
+    cases = CASES_BY_OPERATIVE[SACOperatives.RATCHET]
+    if level <= NANOTECH_EARLY_CAP:
+        rule = False_()
+        for case in cases:
+            rule = rule | CanReachRegion(case.name)
+    else:
+        rule = can_reach_all_cases(world, (case.name for case in cases))
+    if world.options.progressive_challenge_mode and level > 60:
+        rule = rule & Has(PROGRESSIVE_CHALLENGE_MODE)
+    return rule

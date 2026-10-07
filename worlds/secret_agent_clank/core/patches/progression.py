@@ -56,6 +56,7 @@ class Progression(PatchSet):
         self.manual = False
         self.check_mode = 0
         self.nanotech_checks_enabled = False
+        self.ratchet_nanotech_checks_enabled = False
         self.cap_address = None
         self.ng_plus = 0
         self.max_challenge_mode = 0
@@ -80,6 +81,7 @@ class Progression(PatchSet):
         if self.check_mode not in range(5):
             raise ValueError("weapon_level_checks must be between 0 and 4")
         self.nanotech_checks_enabled = bool(data.get("nanotech_checks", False))
+        self.ratchet_nanotech_checks_enabled = bool(data.get("ratchet_nanotech_checks", False))
         self.max_challenge_mode = int(data.get("ng_plus", 0))
         if self.max_challenge_mode not in (0, 1, 2):
             raise ValueError("ng_plus must be between 0 and 2")
@@ -144,6 +146,19 @@ class Progression(PatchSet):
         health = CLANK_START_NANOTECH + bisect_right(CLANK_XP_THRESHOLDS, xp) - 1
         return tuple(nanotech_location_name(level) for level in nanotech_levels(self.ng_plus)
                      if level <= health)
+
+    def ratchet_nanotech_checks(self, symbols):
+        if not self.ratchet_nanotech_checks_enabled or self.ng_address is None or not symbols:
+            return ()
+        from ..ratchet_nanotech import read_ratchet_nanotech
+        from ...constants.nanotech import ratchet_nanotech_levels, ratchet_nanotech_location_name
+        try:
+            data = read_ratchet_nanotech(self.pine, symbols)
+        except ValueError:
+            return ()  # Loading or invalid data cannot award a location.
+        return tuple(ratchet_nanotech_location_name(level)
+                     for level in ratchet_nanotech_levels(self.ng_plus)
+                     if level <= data['xp_nanotech'])
 
     def prepare(self, symbols, hooks, module, *, vendor_enabled=True):
         self.patches = []

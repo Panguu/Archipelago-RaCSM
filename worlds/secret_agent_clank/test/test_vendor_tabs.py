@@ -18,6 +18,36 @@ def _signed16(word):
     return (word & 32767) - (word & 32768)
 
 class VendorTabsTests(unittest.TestCase):
+    def test_initial_tab_uses_live_available_stock(self):
+        p = self.memory()
+        entry, mode, descriptors, flags, builder = range(0x110000, 0x160000, 0x10000)
+        # Includes regular stock, a locked row, and a Titan upgrade.
+        for states, expected in (((2, 1, 4), 1), ((1, 1, 4), 0),
+                                  ((2, 1, 3), 0), ((2, 2, 4), 1)):
+            with self.subTest(states=states):
+                for i, (state, unchecked) in enumerate(zip(states, (1, 255, 3))):
+                    p.write_int8(flags + i, state)
+                    p.write_bytes(descriptors + i * 8, struct.pack('<2I', flags + i, unchecked << 24))
+                p.write_bytes(entry, VendorTabs.initial_tab_routine(mode, descriptors, 3, builder))
+                p.write_int8(mode, 1 - expected)
+                before = p.read_bytes(flags, 3)
+                cpu = CPU(p)
+                saved = cpu.r[16:]
+                cpu.run(entry, stop=builder)
+                self.assertEqual(p.read_int8(mode), expected)
+                self.assertEqual(p.read_bytes(flags, 3), before)
+                self.assertEqual(cpu.r[16:], saved)
+                first, second = VendorTabs.split_initial_tab(
+                    VendorTabs.initial_tab_routine(mode, descriptors, 3, builder), entry, entry + 0x1000)
+                p.write_bytes(entry, first)
+                p.write_bytes(entry + 0x1000, second)
+                p.write_int8(mode, 1 - expected)
+                CPU(p).run(entry, stop=builder)
+                self.assertEqual(p.read_int8(mode), expected)
+        p.write_bytes(entry, VendorTabs.initial_tab_routine(mode, descriptors, 0, builder))
+        CPU(p).run(entry, stop=builder)
+        self.assertEqual(p.read_int8(mode), 1)
+
     def memory(self):
         p = CaptureMemory()
         p.data.extend(bytes(0x2000000 - len(p.data)))
@@ -153,6 +183,10 @@ class VendorTabsTests(unittest.TestCase):
         reset = (p.read_int32(symbols['SCRNVENDOR_Init__Fv'] + 0x5C) & 0x3FFFFFF) << 2
         CPU(p).run(reset, stop=builder)
         self.assertEqual(p.read_int8(mode), 0)
+        for slot in hooks.locations['vendor']:
+            p.write_int8(hooks.tables['vendor'] + slot, 2)
+        CPU(p).run(reset, stop=builder)
+        self.assertEqual(p.read_int8(mode), 1)
 
     def test_unknown_ammo_or_storage_layout_fails_before_writes(self):
         for corrupt in ('ammo', 'storage'):

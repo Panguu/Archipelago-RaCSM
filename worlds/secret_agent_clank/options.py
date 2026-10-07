@@ -7,6 +7,7 @@ from Options import (
     ItemDict,
     OptionCounter,
     OptionGroup,
+    OptionSet,
     PerGameCommonOptions,
     Range,
     StartInventoryPool,
@@ -84,15 +85,16 @@ class AllCutscenes(Toggle):
 
 class SkillPoints(Choice):
     """Off: no skill point checks. Easy: the easier challenges only.
-    Hard: all skill points, including perfect runs, strict timers and scores.
+    Normal: Easy and Normal challenges. Hard: all three difficulties.
     Checks requiring disabled operatives are excluded. Legacy true means hard.
     """
     display_name = "Skill Points"
     option_off = 0
     option_easy = 1
-    option_hard = 2
+    option_normal = 2
+    option_hard = 3
     alias_false = 0
-    alias_true = 2
+    alias_true = 3
     default = 0
 
     @classmethod
@@ -102,14 +104,26 @@ class SkillPoints(Choice):
         return super().from_any(data)
 
 
-class AllKeycards(Toggle):
-    """Include the 3 keycard pickups as optional AP location checks."""
-    display_name = "All Keycards"
+class RandomSkillPoints(Toggle):
+    """Select a random subset of eligible skill points, up to the chosen difficulty.
+    Off includes every eligible skill point. Skill Points Off always disables them.
+    """
+    display_name = "Random Skill Points"
 
 
-class AllAlienCodes(Toggle):
-    """Include the 27 Alien Codes as optional AP location checks."""
-    display_name = "All Alien Codes"
+class SkillPointCount(Range):
+    """Total skill points to select when Random Skill Points is enabled.
+    Raises an options error if difficulty and enabled operatives leave too few.
+    """
+    display_name = "Random Skill Point Count"
+    range_start = 0
+    range_end = 30
+    default = 5
+
+
+class KeycardsAndAlienCodes(Toggle):
+    """Include the 3 keycard pickups and all 27 Alien Codes as AP location checks."""
+    display_name = "Keycards & Alien Codes"
 
 
 class SendScoutedLocations(DefaultOnToggle):
@@ -143,7 +157,7 @@ class Operatives(OptionCounter):
 
 
 class Goal(Choice):
-    """Victory condition."""
+    """Victory condition. Pick and Mix requires every condition selected below."""
     display_name = "Goal"
     option_defeat_klunk    = 0
     option_qwark_opera     = 1
@@ -152,7 +166,19 @@ class Goal(Choice):
     option_alien_codes      = 4
     option_chalice_of_power = 5
     option_any             = 6
+    option_pick_and_mix    = 7
     default = 0
+
+
+
+class PickAndMixGoals(OptionSet):
+    """Add or remove victory conditions. All selected conditions must be completed.
+    At least one must be selected when Goal is Pick and Mix.
+    """
+    display_name = "Pick and Mix Goals"
+    valid_keys = {"defeat_klunk", "qwark_opera", "all_gadgetbots",
+                  "ratchet_prison_escape", "alien_codes", "chalice_of_power"}
+    default = frozenset()
 
 
 class NgPlus(Range):
@@ -226,6 +252,13 @@ class NanotechChecks(DefaultOnToggle):
     Requires Clank to be enabled. Other operatives never award these checks.
     """
     display_name = "Clank Nanotech Checks"
+
+
+class RatchetNanotechChecks(Toggle):
+    """Check each Ratchet nanotech increase: 21-60 in NG, 21-90 in NG+.
+    Requires Ratchet. Checks use his saved XP, once per level across all missions.
+    """
+    display_name = "Ratchet Nanotech Checks"
 
 
 class ProgressiveWrench(Toggle):
@@ -326,10 +359,12 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     all_missions: Missions
     all_cutscenes: AllCutscenes
     skill_points: SkillPoints
-    all_keycards: AllKeycards
-    all_alien_codes: AllAlienCodes
+    random_skill_points: RandomSkillPoints
+    skill_point_count: SkillPointCount
+    keycards_and_alien_codes: KeycardsAndAlienCodes
     send_scouted_locations: SendScoutedLocations
     goal: Goal
+    pick_and_mix_goals: PickAndMixGoals
     infobots: Infobots
     operatives: Operatives
     ng_plus: NgPlus
@@ -338,6 +373,7 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     weapon_level_checks: WeaponLevelChecks
     stealth_takedown_checks: StealthTakedownChecks
     nanotech_checks: NanotechChecks
+    ratchet_nanotech_checks: RatchetNanotechChecks
     progressive_wrench: ProgressiveWrench
     weapon_xp_multiplier: WeaponXPMultiplier
     health_xp_multiplier: HealthXPMultiplier
@@ -349,12 +385,22 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     trap_weight: TrapWeight
     trap_duration: TrapDuration
 
+    @property
+    def keycard_checks_enabled(self):
+        return getattr(self, '_legacy_collectible_checks',
+                       (bool(self.keycards_and_alien_codes),) * 2)[0]
+
+    @property
+    def alien_code_checks_enabled(self):
+        return getattr(self, '_legacy_collectible_checks',
+                       (bool(self.keycards_and_alien_codes),) * 2)[1]
+
 
 sac_option_groups = [
+    OptionGroup("SAC Goal Options", [Goal, PickAndMixGoals]),
     OptionGroup("SAC Game Options", [
         Infobots,
         Operatives,
-        Goal,
         NgPlus,
         ProgressiveChallengeMode,
         WeaponXPMultiplier,
@@ -375,11 +421,13 @@ sac_option_groups = [
         Missions,
         AllCutscenes,
         SkillPoints,
+        RandomSkillPoints,
+        SkillPointCount,
         WeaponLevelChecks,
         NanotechChecks,
+        RatchetNanotechChecks,
         StealthTakedownChecks,
-        AllKeycards,
-        AllAlienCodes,
+        KeycardsAndAlienCodes,
         SendScoutedLocations,
     ]),
     OptionGroup("SAC Cosmetics", [ClankSkin, RatchetSkin, QwarkSkin]),

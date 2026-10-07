@@ -8,6 +8,7 @@ from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, Tr
 from .constants import ALL_CASES, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, SACCases, SACOperatives
 from .constants.clank_gadgets import SACClankGadgets
 from .constants.weapon_mods import enabled_mods
+from .constants.vendor_unlocks import VENDOR_CASES
 from .constants.weapon_progression import TITAN_LOCATIONS
 from .constants.weapons import EQUIPMENT_INTERNAL_TO_DISPLAY
 from .entities import SACLocation
@@ -17,9 +18,11 @@ from .locations import (
     CASE_REGIONS,
     KEYCARD_LOCATIONS,
     RATCHET_CHALLENGE_LOCATIONS,
+    SKILL_POINT_LOCATIONS,
 )
-from .locations.nanotech import create_nanotech_locations
+from .locations.nanotech import create_nanotech_locations, create_ratchet_nanotech_locations
 from .locations.stealth import create_stealth_locations
+from .locations.skill_points import select_skill_points
 from .locations.weapon_levels import create_weapon_level_locations
 from .options import Goal
 from .rules.rule_helpers import case_access_rule, disabled_operatives
@@ -32,18 +35,22 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     player = world.player
     multiworld = world.multiworld
     disabled = disabled_operatives(world)
+    world.selected_skill_points = select_skill_points(world)
 
     menu_region = Region("Menu", player, multiworld)
-    # The vendor is opened from Clank's pause menu, so it needs Clank and at least
-    # one enabled case with a vendor route.
-    has_vendor = SACOperatives.CLANK not in disabled and any(
+    # Clank's menu and Ratchet's PDA both provide vendor routes.
+    has_vendor = any(
         case.operative not in disabled and
         not isinstance(VENDOR_REQUIREMENTS.get(case.name, False_()), False_)
         for case in ALL_CASES
     )
     world.has_vendor = has_vendor
+    def available_stock(name):
+        return CASE_NAME_TO_CASE[VENDOR_CASES[name]].operative not in disabled
+
     world.weapon_mod_catalog = (
-        enabled_mods(world.options.operatives.value, world.options.ng_plus.value) if has_vendor else ()
+        tuple(mod for mod in enabled_mods(world.options.operatives.value, world.options.ng_plus.value)
+              if available_stock(mod.location)) if has_vendor else ()
     )
     if world.using_ut:
         saved_ids = world.passthrough.get("weapon_mod_ids", ())
@@ -55,7 +62,7 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
             return (SACOperatives.CLANK if name.endswith("(Clank)")
                     else SACOperatives.RATCHET) not in disabled
         for definition in BASE_VENDOR_LOCATIONS.values():
-            if enabled_item(definition.name) and definition.available(world.options):
+            if enabled_item(definition.name) and definition.available(world.options) and available_stock(definition.name):
                 vendor_region.locations.append(SACLocation(
                     player, definition.name, world.location_name_to_id[definition.name], vendor_region))
         for mod in world.weapon_mod_catalog:
@@ -63,7 +70,7 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
                 player, mod.location, world.location_name_to_id[mod.location], vendor_region))
         if world.options.ng_plus.value:
             for internal, name in TITAN_LOCATIONS.items():
-                if enabled_item(EQUIPMENT_INTERNAL_TO_DISPLAY[internal]):
+                if enabled_item(EQUIPMENT_INTERNAL_TO_DISPLAY[internal]) and available_stock(name):
                     vendor_region.locations.append(SACLocation(
                         player, name, world.location_name_to_id[name], vendor_region))
         menu_region.connect(vendor_region)
@@ -76,6 +83,10 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     for case_name, region in case_regions.items():
         # Stable sort: locations of one type keep their case file's order.
         for definition in sorted(CASE_REGIONS[case_name].locations, key=lambda location: location.region_order):
+            if definition.name in SKILL_POINT_LOCATIONS:
+                if definition.name in world.selected_skill_points:
+                    region.locations.append(SACLocation(player, definition.name, world.location_name_to_id[definition.name], region))
+                continue
             if definition.available(world.options):
                 region.locations.append(SACLocation(player, definition.name, world.location_name_to_id[definition.name], region))
 
@@ -87,16 +98,43 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
     multiworld.regions += [menu_region, *case_regions.values()]
     create_weapon_level_locations(world, menu_region)
     create_nanotech_locations(world, menu_region)
+    create_ratchet_nanotech_locations(world, menu_region)
     create_stealth_locations(world, menu_region)
 
 
-def _create_victory(
+def _create_victory(world, case_regions, disabled_operatives):
+    def add_victory(name, region, rule):
+        loc = SACLocation(world.player, name, None, region)
+        loc.place_locked_item(world.create_event("Victory"))
+        world.set_rule(loc, rule)
+        region.locations.append(loc)
+
+    if world.options.goal != Goal.option_pick_and_mix:
+        _create_goal_conditions(world, case_regions, disabled_operatives,
+                                world.options.goal.value, add_victory)
+        return
+    selected = world.options.pick_and_mix_goals.value
+    if not selected:
+        raise OptionError(f"{world.multiworld.get_player_name(world.player)}: "
+                          "Pick and Mix requires at least one selected goal.")
+    conditions = []
+    for name in sorted(selected):
+        _create_goal_conditions(world, case_regions, disabled_operatives,
+                                Goal.from_any(name).value,
+                                lambda title, region, rule: conditions.append((region, rule)))
+    rule = True_()
+    for region, condition in conditions:
+        rule = rule & CanReachRegion(region.name) & condition
+    add_victory("Victory: Pick and Mix", conditions[0][0], rule)
+
+
+def _create_goal_conditions(
     world: "SecretAgentClankWorld", case_regions: dict[str, Region], disabled_operatives: set[str],
+    goal: int, add_victory,
 ) -> None:
-    """Place a locked Victory event for each condition of the chosen goal; reaching any one completes the game."""
+    """Validate one goal and pass its victory requirements to the caller."""
     player = world.player
     player_name = world.multiworld.get_player_name(player)
-    goal = world.options.goal.value
     clank_disabled = SACOperatives.CLANK in disabled_operatives
     qwark_disabled = SACOperatives.QWARK in disabled_operatives
     gadgetbots_disabled = SACOperatives.GADGETBOTS in disabled_operatives
@@ -128,16 +166,10 @@ def _create_victory(
             "but Ratchet is disabled via the Operatives option."
         )
 
-    def add_victory(name: str, region: Region, rule) -> None:
-        loc = SACLocation(player, name, None, region)
-        loc.place_locked_item(world.create_event("Victory"))
-        world.set_rule(loc, rule)
-        region.locations.append(loc)
-
     if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
         alien_codes = goal == Goal.option_alien_codes
         collectibles = tuple((ALIEN_CODE_LOCATIONS if alien_codes else KEYCARD_LOCATIONS).values())
-        locations_enabled = world.options.all_alien_codes if alien_codes else world.options.all_keycards
+        locations_enabled = world.options.alien_code_checks_enabled if alien_codes else world.options.keycard_checks_enabled
         rule = True_()
         for location in collectibles:
             if location.case not in case_regions:

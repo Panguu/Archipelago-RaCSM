@@ -18,7 +18,7 @@ from .symbols import RuntimeSymbols
 
 CLANK_MODULES = frozenset(CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK])
 NON_VENDOR_CASES = frozenset(case.name for operative in
-                            (SACOperatives.RATCHET, SACOperatives.QWARK, SACOperatives.GADGETBOTS)
+                            (SACOperatives.QWARK, SACOperatives.GADGETBOTS)
                             for case in CASES_BY_OPERATIVE[operative])
 
 
@@ -33,7 +33,8 @@ class NativeRuntime:
         self.progression = None
         self.weapon_mods = None
         self.skins = None
-        self.vendor_modules = set(CLANK_MODULES)
+        self.vendor_modules = set(CLANK_MODULES) | {
+            CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.RATCHET]}
         self.vendor_locations = None
         self.vendor_catalog = None
         self.presentation = None
@@ -41,6 +42,8 @@ class NativeRuntime:
         self.ap_connected = False
         self.owned_cases = frozenset()
         self.starting_case = StartingCase(pine, log)
+        self.mission_travel = None
+        self.on_quasar_complete = lambda: None
 
     def configure_vendors(self, case_names):
         self.vendor_modules = {CASE_MODULES[name] for name in case_names if name not in NON_VENDOR_CASES}
@@ -102,7 +105,8 @@ class NativeRuntime:
                                    entitlements=entitlements, vendor_enabled=vendor_enabled)
                 if self.wrench is not None:
                     self.hooks.patches.extend(self.wrench.prepare(symbols, target))
-                self.hooks.patches.extend(MissionTravel(p).prepare(symbols))
+                self.mission_travel = MissionTravel(p)
+                self.hooks.patches.extend(self.mission_travel.prepare(symbols, module=target))
                 if self.skins is not None:
                     self.hooks.patches.extend(self.skins.prepare(symbols))
                 if self.weapon_mods is not None:
@@ -142,14 +146,21 @@ class NativeRuntime:
                 self.awaiting_start = False
                 self.reload_requested = False
                 return False
-            if p.read_int32(self.gate.STATE) == 4 or p.read_int32(0x206324) != 0xFFFFFFFF:
+            if not self._gameplay_settled(require_current=False):
                 return False
             if self.hooks.installed and self.hooks.is_current():
-                self.connection_warning.refresh(self.ap_connected)
-                if p.read_int32(0x206338) != 3:
-                    return False
                 if self.hooks.entitlement_table is not None and not p.read_int8(self.hooks.entitlement_table + 40):
                     return False
+                # Recheck after inspecting module-local memory: travel may
+                # have started during those PINE round trips.
+                if not self._gameplay_settled():
+                    return False
+                mailbox = getattr(self.mission_travel, "completion_mailbox", None)
+                if self.hooks.module == 24 and mailbox is not None and p.read_int32(mailbox) == 1:
+                    self.on_quasar_complete()
+                    self._reload_current_level()
+                    return False
+                self.connection_warning.refresh(self.ap_connected)
                 if self.vendor_catalog is not None:
                     self.vendor_catalog.challenge_level = self.progression.ng_plus if self.progression is not None else 0
                     self.vendor_catalog.sync_cases(self.owned_cases)
@@ -163,6 +174,13 @@ class NativeRuntime:
         except Exception:
             self.close()
             raise
+
+    def _gameplay_settled(self, *, require_current=True):
+        """Reject outgoing modules and every intermediate loader state."""
+        module, requested, loader, game = self.pine.batch_read_int32(
+            (CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS, self.gate.STATE, 0x206338))
+        return ((not require_current or module == self.hooks.module) and requested == 0xFFFFFFFF
+                and loader == 5 and game == 3)
 
     def _reload_current_level(self):
         """Recover missing hooks through a fresh native load, once per attempt."""
@@ -188,7 +206,7 @@ class NativeRuntime:
         try:
             if (self.hooks.installed and self.pine.get_game_id() == "SCUS-97623"
                     and self.hooks.is_current()
-                    and self.pine.read_int32(0x206324) == 0xFFFFFFFF):
+                    and self._gameplay_settled()):
                 self.connection_warning.refresh(False)
         finally:
             self.gate.release()

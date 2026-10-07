@@ -33,6 +33,42 @@ class VendorTabs:
     UP, DOWN = 4, 8
 
     @staticmethod
+    def initial_tab_routine(mode, descriptors, count, builder):
+        # Use the catalog's live comparison bytes: checked, case-locked and
+        # challenge-locked rows must not select an empty purchases tab.
+        code = [*m.li32(m.T0, descriptors), *m.li32(m.T1, descriptors + count * 8),
+                m.addiu(m.T2, m.ZERO, 1)]
+        if count:
+            loop = len(code)
+            code += [m.lw(m.T3, 0, m.T0), m.lbu(m.T3, 0, m.T3),
+                     m.lbu(m.V0, 7, m.T0)]
+            found = len(code)
+            code += [0, 0, m.addiu(m.T0, m.T0, 8)]
+            code += [m.bne(m.T0, m.T1, loop - len(code) - 1), 0]
+            done = len(code)
+            code += [m.beq(m.ZERO, m.ZERO, 2), 0, m.addiu(m.T2, m.ZERO, 0)]
+            code[found] = m.beq(m.T3, m.V0, done + 2 - found - 1)
+        code += [*m.li32(m.T0, mode), m.sb(m.T2, 0, m.T0), jump(builder), 0]
+        return packed(code)
+
+    @staticmethod
+    def split_initial_tab(code, first, second):
+        instructions = words(code)
+        def address(index):
+            return first + index * 4 if index < 11 else second + (index - 11) * 4
+        for index, word in enumerate(instructions):
+            if word >> 26 in (4, 5):
+                offset = word & 65535
+                if offset & 32768:
+                    offset -= 65536
+                target = index + 1 + offset
+                delta = (address(target) - address(index) - 4) // 4
+                if not -32768 <= delta < 32768:
+                    raise RuntimeError('Initial vendor tab branch exceeds MIPS range')
+                instructions[index] = word & 0xFFFF0000 | delta & 65535
+        return packed(instructions[:11] + [jump(second), 0]), packed(instructions[11:])
+
+    @staticmethod
     def controller_address(pine, symbols):
         address = require(symbols, "CONTROLLER_GetButtonsDown__FUi")
         upper, ret, lower, nop = words(pine.read_bytes(address, 16))
@@ -113,7 +149,7 @@ class VendorTabs:
             result.append(packed(code))
         return result
 
-    def prepare(self, pine, symbols, hooks, builder, original, catalog):
+    def prepare(self, pine, symbols, hooks, builder, original, catalog, descriptors=0, count=0):
         patches, ranges = [], []
         self.buttons_address = self.controller_address(pine, symbols)
         for offset, name in ((0x8C, "GADGET_IsGadgetOfChar__F8PLR_TYPE7eGADGET"),
@@ -172,7 +208,18 @@ class VendorTabs:
         low = lower & 65535
         dirty = ((upper & 65535) << 16) + (low - 65536 if low & 32768 else low)
         self.input_address = allocate(self.input_routine(mode, pressed, analog, builder, dirty))
-        reset = allocate(packed([*m.li32(m.T0, mode), m.sb(m.ZERO, 0, m.T0), jump(builder), 0]))
+        initial = self.initial_tab_routine(mode, descriptors, count, builder)
+        if count:
+            # Fit around the two relocated ammo pieces without consuming the
+            # catalog row buffer. Split after ADDIU, never in a delay slot.
+            reset = allocate(bytes(52))
+            continuation = allocate(bytes(len(initial) - 44))
+            first, second = self.split_initial_tab(initial, reset, continuation)
+            for address, body in ((reset, first), (continuation, second)):
+                index = next(i for i, patch in enumerate(patches) if patch.address == address)
+                patches[index] = Patch(address, patches[index].original, body)
+        else:
+            reset = allocate(initial)
         reserve(browse + 0x18, packed([jump(self.input_address, True)]))
         reserve(init + 0x5C, packed([jump(reset, True)]))
         hooks.extra_ranges.extend(ranges)

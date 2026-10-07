@@ -33,9 +33,9 @@ class SACCommandProcessor(ClientCommandProcessor):
         if case:
             match = self._match_case(case)
             return match.case_id if match is not None else None
-        if self.ctx._wiring.case.case_id is None:
+        if self.ctx._game_state.get("case_id") is None:
             logger.warning(f"[SAC] No current case known -- pass a case name to anchor off, e.g. /{command} museum.")
-        return self.ctx._wiring.case.case_id
+        return self.ctx._game_state.get("case_id")
 
     def _cmd_reconnect(self) -> bool:
         """Reconnect to PCSX2 and re-apply received Archipelago items."""
@@ -48,104 +48,51 @@ class SACCommandProcessor(ClientCommandProcessor):
             logger.warning("[SAC] Usage: /native_locations on|off")
             return False
 
-        async def change_mode():
-            async with self.ctx._pine_lock:
-                try:
-                    self.ctx._wiring.set_native_locations(mode.lower() == "on")
-                except Exception as exc:
-                    logger.warning(f"[SAC] Native location mode: {exc}")
-        async_start(change_mode())
+        async_start(self._worker_command("native_locations", mode.lower() == "on"))
         return True
 
+    async def _worker_command(self, command, payload=None):
+        try:
+            result = await self.ctx._worker.request(command, payload)
+            if isinstance(result, dict):
+                for key, value in result.items():
+                    logger.info(f"[SAC] {key}: {value}")
+            elif isinstance(result, list):
+                for row in result:
+                    logger.info(f"[SAC] {row}")
+            elif result is not None:
+                logger.info(f"[SAC] {result}")
+        except Exception as exc:
+            logger.warning(f"[SAC] {command}: {exc}")
+
     def _cmd_sac_info(self) -> bool:
-        """Print the slot options and the state of every tracker (read-only)."""
-        ctx = self.ctx
-        options = "\n".join(f"{key}: {value}" for key, value in ctx.slot_data.items())
-        logger.info(f"[SAC] Options:\n{options}")
-
-        w = ctx._wiring
-        states = (
-            w.case, w.case.ratchet, w.case.clank, w.case.qwark, w.vendor, w.missions,
-            w.titanium_bolts, w.skill_points, w.cutscenes,
-            w.gadgetbot_challenges, w.special_challenges, w.ratchet_challenges,
-            w.quick_select, w.case_struct,
-        )
-        logger.info("[SAC] States: " + " ".join(repr(state) for state in states))
-
-        owned_ratchet = {name: v for name, v in w._ap_owned.get("ratchet", {}).items() if v}
-        owned_equipment = {name: v for name, v in w._owned_equipment().items() if v}
-        hooks = w.native_runtime.hooks
-        logger.info(
-            f"[SAC] inventory_initialized={w._inventory_initialized} "
-            f"bound_weapons={len(w.case.ratchet_items.weapons)} "
-            f"ap_owned_ratchet_true={sorted(owned_ratchet)} "
-            f"owned_equipment_true={sorted(owned_equipment)}"
-        )
-        logger.info(
-            f"[SAC] native: awaiting_start={w.native_runtime.awaiting_start} "
-            f"generation={w.native_runtime.generation} "
-            f"hooks.installed={hooks.installed} hooks.is_current={hooks.is_current()} "
-            f"entitlement_table={hooks.entitlement_table!r}"
-        )
+        """Print slot options and a snapshot from the game worker."""
+        logger.info(f"[SAC] Options: {self.ctx.slot_data}")
+        async_start(self._worker_command("diagnostic", ("sac_info", None)))
         return True
 
     def _cmd_mission_table(self) -> bool:
-        """Print each chapter-table slot's task count and whether it matches the cases found in it."""
-        w = self.ctx._wiring
-        rows = w.missions.dump_chapter_table()
-        if not rows:
-            logger.warning("[SAC] Couldn't resolve the chapter table right now -- game still loading?")
-            return True
-        for row in rows:
-            if row.assumed_case is None:
-                logger.info(f"[SAC] slot {row.slot}: {row.task_count} task(s) -- no case currently assumed here")
-                continue
-            label = "OK" if row.matches else "MISMATCH"
-            logger.info(
-                f"[SAC] slot {row.slot}: {row.task_count} task(s) -- "
-                f"assumed {row.assumed_case!r} expects {row.expected_count} -- {label}"
-            )
+        """Print native mission-table rows from the game worker."""
+        async_start(self._worker_command("diagnostic", ("mission_table", None)))
+        return True
+
+    def _cmd_ratchet_nanotech(self) -> bool:
+        """Read Ratchet XP, Nanotech, native caps and HUD health."""
+        async_start(self._worker_command("diagnostic", ("ratchet_nanotech", None)))
         return True
 
     def _cmd_case_states(self, case: str = "") -> bool:
-        """Batch-read and print every case's current locked/unlocked byte."""
-        w = self.ctx._wiring
-        current_case_id = self._resolve_case_id(case, "case_states")
-        if current_case_id is None:
-            return True
-
-        states = w.case_unlocks.read_all(current_case_id)
-        if not states:
-            logger.warning(
-                f"[SAC] Couldn't resolve the unlock table off case id {current_case_id} -- "
-                "its anchor isn't confirmed live yet."
-            )
-            return True
-
-        for c in ALL_CASES:
-            state = states.get(c.name)
-            label = state.name if state is not None else "UNKNOWN"
-            logger.info(f"[SAC] {c.name}: {label}")
+        """Read the case states through the single game connection."""
+        case_id = self._resolve_case_id(case, "case_states")
+        if case_id is not None:
+            async_start(self._worker_command("diagnostic", ("case_states", case_id)))
         return True
 
     def _cmd_case_struct(self, case: str = "") -> bool:
-        """Print every raw case-unlock table slot (0 = locked, 3 = unlocked) and its case, if identified."""
-        w = self.ctx._wiring
-        current_case_id = self._resolve_case_id(case, "case_struct")
-        if current_case_id is None:
-            return True
-
-        slots = w.case_struct.read_all(current_case_id)
-        if not slots:
-            logger.warning(
-                f"[SAC] Couldn't resolve the case-unlock table off case id {current_case_id} -- "
-                "its anchor isn't confirmed live yet."
-            )
-            return True
-
-        for slot, value in slots.items():
-            case_name = w.case_struct.slot_case_name(slot) or "UNIDENTIFIED"
-            logger.info(f"[SAC] slot {slot}: {value} (0x{value:02X}) -- {case_name}")
+        """Read the raw case-unlock slots through the game worker."""
+        case_id = self._resolve_case_id(case, "case_struct")
+        if case_id is not None:
+            async_start(self._worker_command("diagnostic", ("case_struct", case_id)))
         return True
 
     def _cmd_enable_deathlink(self) -> bool:

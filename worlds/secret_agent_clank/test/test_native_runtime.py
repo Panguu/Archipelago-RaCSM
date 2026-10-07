@@ -14,6 +14,7 @@ from ..core.inventories.missions import MissionInventory
 from ..core.native_runtime import NativeRuntime
 from ..core.patches import MARKER, LocationHooks
 from ..locations import ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
+from ..options import Goal
 from .test_runtime import Memory
 
 
@@ -57,6 +58,36 @@ class NativeRuntimeTests(unittest.TestCase):
         self.runtime._reload_current_level()
         self.assertEqual(self.p.writes, [])
         self.assertFalse(self.runtime.reload_requested)
+
+    def test_transition_blocks_runtime_writes_even_with_current_hooks(self):
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        self.runtime.vendor_catalog = Mock()
+        self.runtime.skins = Mock()
+        for address, value in ((0x100, 0), (0x100, 1), (0x100, 2),
+                               (0x100, 3), (0x100, 4), (0x206338, 2),
+                               (0x206324, 22)):
+            with self.subTest(address=address, value=value):
+                original = self.p.read_int32(address)
+                self.p.write_int32(address, value)
+                self.assertFalse(self.runtime.service(set(), {}))
+                self.runtime.connection_warning.refresh.assert_not_called()
+                self.runtime.vendor_catalog.sync_cases.assert_not_called()
+                self.runtime.skins.sync.assert_not_called()
+                self.hooks.sync_checked.assert_not_called()
+                self.hooks.sync_entitlements.assert_not_called()
+                self.p.write_int32(address, original)
+
+    def test_travel_during_hook_validation_blocks_runtime_writes(self):
+        self.hooks.installed = True
+        def begin_travel():
+            self.p.write_int32(0x206324, 22)
+            return True
+        self.hooks.is_current.side_effect = begin_travel
+        self.assertFalse(self.runtime.service(set(), {}))
+        self.runtime.connection_warning.refresh.assert_not_called()
+        self.hooks.sync_checked.assert_not_called()
+        self.hooks.sync_entitlements.assert_not_called()
 
     def test_reconnect_can_retry_reload_after_failure(self):
         self.runtime.reload_requested = True
@@ -120,11 +151,13 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.vendor_modules, {4, 11})
         self.assertNotIn(21, runtime.vendor_modules)
 
-    def test_non_clank_routes_never_enable_vendor_patches(self):
+    def test_ratchet_routes_enable_vendors_but_qwark_and_gadgetbots_do_not(self):
         from ..constants.planets import ALL_CASES
         runtime = NativeRuntime(self.p, Mock(), Mock())
         runtime.configure_vendors(case.name for case in ALL_CASES)
-        for module in (3, 5, 9, 14, 18, 20, 21, 23, 25, 27, 28):
+        for module in (3, 9, 14, 21, 25):
+            self.assertTrue(runtime.vendor_enabled_for_module(module))
+        for module in (5, 18, 20, 23, 27, 28):
             self.assertFalse(runtime.vendor_enabled_for_module(module))
         for clank in (0, 1):
             self.p.batch_write_int8([(0x206C89, clank)])
@@ -300,12 +333,27 @@ class AlienFlagTests(unittest.TestCase):
         self.assertFalse(cards.chalice_collected)
         core = Core(p)
         core.keycards = cards
-        core.goal = 3
+        core.goal = Goal.option_chalice_of_power
         core.on_goal = Mock()
         core._check_goal()
         core.on_goal.assert_not_called()
         values[0xCB] = bytes([1])
         cards.check()
+        core._check_goal()
+        core._check_goal()
+        core.on_goal.assert_called_once()
+
+    def test_saved_chalice_completes_only_chalice_goal(self):
+        core = Core(Memory())
+        core.keycards.flags.read = lambda index: bytes([1]) if index == 0xCB else bytes([0])
+        core.keycards.check()
+        core.on_goal = Mock()
+        for goal in (Goal.option_ratchet_prison_escape, Goal.option_all_gadgetbots,
+                     Goal.option_any, Goal.option_alien_codes):
+            core.goal = goal
+            core._check_goal()
+        core.on_goal.assert_not_called()
+        core.goal = Goal.option_chalice_of_power
         core._check_goal()
         core._check_goal()
         core.on_goal.assert_called_once()

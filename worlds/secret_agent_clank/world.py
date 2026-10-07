@@ -37,7 +37,7 @@ from .items import (
     WEAPON_ITEM_TABLE,
 )
 from .locations import LOCATION_NAME_TO_ID
-from .options import Infobots, SecretAgentClankOptions, sac_option_groups
+from .options import Goal, Infobots, SecretAgentClankOptions, sac_option_groups
 from .regions import create_regions
 from .rules import set_rules
 from .rules.rule_helpers import region_names
@@ -311,14 +311,22 @@ class SecretAgentClankWorld(World):
             "all_missions": self.options.all_missions.value,
             "all_cutscenes": bool(self.options.all_cutscenes.value),
             "skill_points": self.options.skill_points.value,
-            "all_keycards": bool(self.options.all_keycards.value),
-            "all_alien_codes": bool(self.options.all_alien_codes.value),
+            "skill_point_tiers_version": 2,
+            "random_skill_points": bool(self.options.random_skill_points),
+            "skill_point_count": self.options.skill_point_count.value,
+            "selected_skill_points": sorted(self.selected_skill_points),
+            "keycards_and_alien_codes": bool(self.options.keycards_and_alien_codes),
+            "all_keycards": self.options.keycard_checks_enabled,
+            "all_alien_codes": self.options.alien_code_checks_enabled,
             "send_scouted_locations": bool(self.options.send_scouted_locations.value),
             "goal": self.options.goal.value,
+            "pick_and_mix": self.options.goal.value == Goal.option_pick_and_mix,
+            "pick_and_mix_goals": sorted(self.options.pick_and_mix_goals.value),
             "progressive_wrench": bool(self.options.progressive_wrench.value),
             "progressive_weapons": self.options.progressive_weapons.value,
             "weapon_level_checks": self.options.weapon_level_checks.value,
             "nanotech_checks": bool(self.options.nanotech_checks),
+            "ratchet_nanotech_checks": bool(self.options.ratchet_nanotech_checks),
             "stealth_takedown_checks": self.options.stealth_takedown_checks.value,
             "weapon_xp_multiplier": self.options.weapon_xp_multiplier.value,
             "health_xp_multiplier": self.options.health_xp_multiplier.value,

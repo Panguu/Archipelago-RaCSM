@@ -67,13 +67,34 @@ class TestGenerationEverythingOn(SecretAgentClankTestBase):
 
 
 class TestGenerationWithKeycards(SecretAgentClankTestBase):
-    """Smoke test: All Keycards on."""
-    options = {"all_keycards": True}
+    """Smoke test: combined collectible checks on."""
+    options = {"keycards_and_alien_codes": True}
 
 
-class TestGenerationWithAlienCodes(SecretAgentClankTestBase):
-    """Smoke test: All Alien Codes on."""
-    options = {"all_alien_codes": True}
+class TestCombinedCollectibles(unittest.TestCase):
+    def test_toggle_controls_both_categories_and_tracker_preserves_legacy_seeds(self):
+        from ..options import SecretAgentClankOptions
+        from ..universal_tracker import setup_options_from_slot_data
+        self.assertNotIn('all_keycards', SecretAgentClankOptions.type_hints)
+        self.assertNotIn('all_alien_codes', SecretAgentClankOptions.type_hints)
+        for enabled in (False, True):
+            mw = setup_multiworld(SecretAgentClankWorld, options={'keycards_and_alien_codes': enabled})
+            names = {loc.name for loc in mw.get_locations(1)}
+            for category in (KEYCARD_LOCATIONS, ALIEN_CODE_LOCATIONS):
+                self.assertEqual(set(category) & names, set(category) if enabled else set())
+            world = mw.worlds[1]
+            slot = world.fill_slot_data()
+            self.assertEqual(slot['keycards_and_alien_codes'], enabled)
+            mw.re_gen_passthrough = {world.game: slot}
+            setup_options_from_slot_data(world)
+            self.assertEqual(world.options.keycard_checks_enabled, enabled)
+            self.assertEqual(world.options.alien_code_checks_enabled, enabled)
+            del slot['keycards_and_alien_codes']
+            for cards, codes in ((True, False), (False, True)):
+                slot.update(all_keycards=cards, all_alien_codes=codes)
+                setup_options_from_slot_data(world)
+                for category, expected in ((KEYCARD_LOCATIONS, cards), (ALIEN_CODE_LOCATIONS, codes)):
+                    self.assertTrue(all(loc.available(world.options) == expected for loc in category.values()))
 
 
 class TestGoalCharacterMismatch(unittest.TestCase):
@@ -109,14 +130,14 @@ class TestCollectibleGoals(unittest.TestCase):
         self.assertFalse(set(KEYCARD_LOCATIONS) & {loc.name for loc in mw.get_locations(1)})
 
     def test_chalice_goal_generates_with_keycards(self):
-        setup_multiworld(SecretAgentClankWorld, options={"goal": "chalice_of_power", "all_keycards": True})
+        setup_multiworld(SecretAgentClankWorld, options={"goal": "chalice_of_power", "keycards_and_alien_codes": True})
 
     def test_alien_goal_without_code_locations(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={"goal": "alien_codes"})
         self.assertFalse(set(ALIEN_CODE_LOCATIONS) & {loc.name for loc in mw.get_locations(1)})
 
     def test_alien_code_goal_generates_with_all_codes(self):
-        setup_multiworld(SecretAgentClankWorld, options={"goal": "alien_codes", "all_alien_codes": True})
+        setup_multiworld(SecretAgentClankWorld, options={"goal": "alien_codes", "keycards_and_alien_codes": True})
 
     def test_any_survives_with_only_qwark(self):
         setup_multiworld(

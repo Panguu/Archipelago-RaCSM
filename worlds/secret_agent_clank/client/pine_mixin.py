@@ -12,13 +12,9 @@ class PineMixin:
     async def _teardown_pine_connection(self) -> None:
         self.pine_connected = False
         try:
-            self._wiring.close()
+            await self._worker.request("disconnect")
         except Exception:
-            logger.warning("[SAC] Could not restore the loader barrier. Restart the game before continuing if loading is held.", exc_info=True)
-        try:
-            self.pine.disconnect()
-        except Exception:
-            logger.debug("[SAC] pine.disconnect() raised during teardown", exc_info=True)
+            logger.warning("[SAC] Worker could not restore the loader barrier. Restart the game if loading is held.", exc_info=True)
 
     async def reconnect_pine(self) -> None:
         async with self._pine_lock:
@@ -45,10 +41,9 @@ class PineMixin:
     async def _attempt_pine_connect(self, is_reconnect: bool = False) -> None:
         async with self._pine_lock:
             try:
-                self.pine.connect()
-                game_id = self.pine.get_game_id()
-            except Exception:
-                logger.warning("[SAC] Could not connect to PCSX2. Use /reconnect once the emulator is running.")
+                game_id = await self._worker.request("connect", self._pine_port)
+            except Exception as exc:
+                logger.warning(f"[SAC] Could not connect to PCSX2: {exc}. Use /reconnect once the emulator is running.")
                 await self._teardown_pine_connection()
                 return
 
@@ -66,7 +61,7 @@ class PineMixin:
             )
             self.pine_connected = True
             try:
-                self._wiring.tick()
+                self._game_state = await self._worker.request("tick", self._checked_location_names())
             except Exception as exc:
                 logger.warning(
                     f"[SAC] Initial state read failed: {exc}. Use /reconnect once the game is fully loaded."
@@ -99,14 +94,7 @@ class PineMixin:
 
     async def _poll_game(self) -> None:
         async with self._pine_lock:
-            game_id = self.pine.get_game_id()
-        if game_id != EXPECTED_GAME_ID:
-            await self._reject_wrong_game(game_id, is_disconnect=True)
-            return
-
-        async with self._pine_lock:
-            self._wiring.tick()
-
+            self._game_state = await self._worker.request("tick", self._checked_location_names())
         self._maybe_scout_vendor()
         await self._apply_received_items()
 

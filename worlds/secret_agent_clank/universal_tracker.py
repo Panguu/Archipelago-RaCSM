@@ -1,7 +1,7 @@
 """Universal Tracker support: restore options from slot_data when UT regenerates the world without a YAML."""
 from typing import TYPE_CHECKING, Any
 
-from .options import ProgressiveWeapons, SkillPoints
+from .options import Goal, ProgressiveWeapons, SkillPoints
 
 if TYPE_CHECKING:
     from .world import SecretAgentClankWorld
@@ -21,10 +21,21 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     world.options.operatives.value = dict(passthrough["operatives"])
     world.options.all_missions.value = passthrough["all_missions"]
     world.options.all_cutscenes.value = bool(passthrough["all_cutscenes"])
-    world.options.skill_points.value = SkillPoints.from_any(passthrough["skill_points"]).value
-    world.options.all_keycards.value = bool(passthrough["all_keycards"])
-    world.options.all_alien_codes.value = bool(passthrough["all_alien_codes"])
-    world.options.goal.value = passthrough["goal"]
+    tier = passthrough["skill_points"]
+    if passthrough.get("skill_point_tiers_version", 1) < 2 and type(tier) is int and tier == 2:
+        tier = "hard"  # Older seeds used 2 for all skill points.
+    world.options.skill_points.value = SkillPoints.from_any(tier).value
+    world.options.random_skill_points.value = int(passthrough.get("random_skill_points", False))
+    world.options.skill_point_count.value = passthrough.get("skill_point_count", 5)
+    combined = passthrough.get("keycards_and_alien_codes")
+    legacy = (bool(passthrough.get("all_keycards", combined)),
+              bool(passthrough.get("all_alien_codes", combined)))
+    world.options.keycards_and_alien_codes.value = int(any(legacy) if combined is None else combined)
+    # Older seeds may have enabled just one category; preserve their exact checks.
+    world.options._legacy_collectible_checks = legacy
+    world.options.goal.value = (Goal.option_pick_and_mix if passthrough.get("pick_and_mix", False)
+                                else passthrough["goal"])
+    world.options.pick_and_mix_goals.value = set(passthrough.get("pick_and_mix_goals", ()))
 
     # Options that shape the item pool.
     world.options.ng_plus.value = passthrough["ng_plus"]
@@ -32,6 +43,7 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     world.options.progressive_weapons.value = ProgressiveWeapons.from_any(passthrough["progressive_weapons"]).value
     world.options.weapon_level_checks.value = passthrough.get("weapon_level_checks", 0)
     world.options.nanotech_checks.value = passthrough.get("nanotech_checks", False)
+    world.options.ratchet_nanotech_checks.value = passthrough.get("ratchet_nanotech_checks", False)
     world.options.stealth_takedown_checks.value = passthrough.get("stealth_takedown_checks", 0)
     world.options.starting_weapons.value = passthrough["starting_weapons"]
     world.options.starting_gadgets.value = passthrough["starting_gadgets"]

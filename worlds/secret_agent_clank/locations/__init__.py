@@ -18,7 +18,7 @@ from .larger_than_life import REGION as LARGER_THAN_LIFE
 from .madam_butterqwark import REGION as MADAM_BUTTERQWARK
 from .max_security_cells import REGION as MAX_SECURITY_CELLS
 from .model import BASE_ID, CaseRegion, SACLocation, SACLocationType
-from .nanotech import NANOTECH_LOCATIONS
+from .nanotech import NANOTECH_LOCATIONS, RATCHET_NANOTECH_LOCATIONS
 from .prison_breakout import REGION as PRISON_BREAKOUT
 from .rooftop_deathtrap import REGION as ROOFTOP_DEATHTRAP
 from .saint_qwark import REGION as SAINT_QWARK
@@ -101,6 +101,7 @@ LOCATIONS: tuple[SACLocation, ...] = (
     *WEAPON_LEVEL_LOCATIONS.values(),
     *NANOTECH_LOCATIONS.values(),
     *STEALTH_TAKEDOWN_LOCATIONS.values(),
+    *RATCHET_NANOTECH_LOCATIONS.values(),
 )
 
 

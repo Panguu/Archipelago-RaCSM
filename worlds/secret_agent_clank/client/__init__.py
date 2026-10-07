@@ -26,11 +26,15 @@ async def main(args: Namespace) -> None:
         ctx.run_gui()
     ctx.run_cli()
 
-    async_start(ctx.game_watcher(), name="SAC game watcher")
+    watcher = asyncio.create_task(ctx.game_watcher(), name="SAC game watcher")
 
     await ctx.exit_event.wait()
-    async with ctx._pine_lock:
-        await ctx._teardown_pine_connection()
+    watcher.cancel()
+    graceful = await ctx._worker.close()
+    await asyncio.gather(watcher, return_exceptions=True)
+    if not graceful:
+        import logging
+        logging.getLogger("CommonClient").warning("[SAC] Worker required forced shutdown. Restart the game if loading is held.")
     await ctx.shutdown()
 
 
