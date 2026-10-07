@@ -15,21 +15,26 @@ PROJECTILES = tuple(
     name for name, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
     if WEAPON_DATA[internal].is_projectile
 )
+LONG_PROJECTILES = tuple(
+    name for name, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
+    if WEAPON_DATA[internal].is_long_projectile
+)
 
 
 class TestWeaponGeneration(unittest.TestCase):
-    def test_no_available_projectile_rejected(self):
-        non_projectiles = {name: 1 for name in WEAPON_DISPLAY_TO_INTERNAL if name not in PROJECTILES}
-        for weapons, ng_plus in (({}, 1), (non_projectiles, 1), ({"RYNO": 1}, 0),
-                                 ({**non_projectiles, "RYNO": 1}, 0)):
+    def test_no_available_long_projectile_rejected(self):
+        non_long = {name: 1 for name in WEAPON_DISPLAY_TO_INTERNAL if name not in LONG_PROJECTILES}
+        short_projectiles = {name: 1 for name in PROJECTILES if name not in LONG_PROJECTILES}
+        for weapons, ng_plus in (({}, 1), (non_long, 1), (short_projectiles, 1), ({"RYNO": 1}, 0),
+                                 ({**non_long, "RYNO": 1}, 0)):
             with self.subTest(weapons=weapons, ng_plus=ng_plus):
-                with self.assertRaisesRegex(OptionError, "at least one projectile weapon"):
+                with self.assertRaisesRegex(OptionError, "at least one long-range projectile weapon"):
                     setup_multiworld(RACSizeMatterWorld, options={
                         "enabled_weapons": weapons, "ng_plus_items": ng_plus,
                     })
 
     def test_single_weapon_with_default_starting_count(self):
-        for weapon in PROJECTILES:
+        for weapon in LONG_PROJECTILES:
             for progressive in range(3):
                 with self.subTest(weapon=weapon, progressive=progressive):
                     mw = setup_multiworld(RACSizeMatterWorld, seed=42, options={
@@ -45,9 +50,9 @@ class TestWeaponGeneration(unittest.TestCase):
                     self.assertTrue(mw.fulfills_accessibility())
 
     def test_single_weapon_option_fuzz(self):
-        # Every projectile, with and without precollection, across progressive modes,
+        # Every long-range projectile, with and without precollection, across progressive modes,
         # planet starts, optional checks and Challenge Mode. Seeds reproduce failures.
-        for index, weapon in enumerate(PROJECTILES):
+        for index, weapon in enumerate(LONG_PROJECTILES):
             for case in range(30):
                 seed = index * 1000 + case
                 rng = random.Random(seed)

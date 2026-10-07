@@ -173,15 +173,15 @@ class RACSizeMatterWorld(World):
         )
 
     def _validate_weapon_options(self) -> None:
-        """Require a projectile weapon that will actually survive item-pool filtering."""
+        """Require a long-range projectile weapon that will actually survive item-pool filtering."""
         enabled_weapons = enabled_weapon_names(dict(self.options.enabled_weapons.value))
         if not self.options.ng_plus_items:
             enabled_weapons -= NG_PLUS_WEAPONS
         player_name = self.multiworld.get_player_name(self.player)
-        if not any(WEAPON_DATA[WEAPON_DISPLAY_TO_INTERNAL[name]].is_projectile for name in enabled_weapons):
+        if not any(WEAPON_DATA[WEAPON_DISPLAY_TO_INTERNAL[name]].is_long_projectile for name in enabled_weapons):
             raise OptionError(
                 f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} must include at least "
-                "one projectile weapon available with NG+ Items applied - many locations "
+                "one long-range projectile weapon available with NG+ Items applied - many locations "
                 "are only reachable with one."
             )
 

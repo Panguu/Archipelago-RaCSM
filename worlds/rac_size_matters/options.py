@@ -85,8 +85,8 @@ class EnabledWeapons(ItemDict):
     remove it entirely: its own item(s) (including its Progressive Weapon/Mod items),
     its vendor/collectible location, its mod-vendor locations, and its Weapon Level
     Checks locations are all excluded from the pool, exactly as if the weapon didn't
-    exist in this seed. Default 1 includes every weapon. At least one projectile
-    weapon must remain available after applying NG+ Items."""
+    exist in this seed. Default 1 includes every weapon. At least one long-range
+    projectile weapon must remain available after applying NG+ Items."""
 
     display_name = "Enabled Weapons"
     verify_item_name = False

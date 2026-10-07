@@ -18,7 +18,11 @@ if TYPE_CHECKING:
 _PROJECTILE_WEAPONS = [
     display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_DATA[internal].is_projectile
 ]
+_LONG_PROJECTILE_WEAPONS = [
+    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_DATA[internal].is_long_projectile
+]
 _PROJECTILE_WEAPONS_ALL_NAMES = [*_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _PROJECTILE_WEAPONS)]
+_LONG_PROJECTILE_WEAPONS_ALL_NAMES = [*_LONG_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _LONG_PROJECTILE_WEAPONS)]
 PROJECTILE_WEAPON_ITEM_NAMES = frozenset(_PROJECTILE_WEAPONS_ALL_NAMES)
 _ARMOUR_PIECE_INDEX: dict[str, int] = {"Chestplate": 1, "Helmet": 2, "Gloves": 3, "Boots": 4}
 _ARMOUR_SET_ORDER_INDEX: dict[str, int] = {display: i for i, (display, _internal) in enumerate(ARMOUR_SETS)}
@@ -31,6 +35,9 @@ def _unified_armour_count(set_display: str, piece_name: str) -> int:
 
 def HasProjectileWeapon() -> HasAny:
     return HasAny(*_PROJECTILE_WEAPONS_ALL_NAMES)
+
+def HasLongProjectileWeapon() -> HasAny:
+    return HasAny(*_LONG_PROJECTILE_WEAPONS_ALL_NAMES)
 
 
 def HasArmourPiece(set_display: str, piece_name: str) -> HasAnyCount:

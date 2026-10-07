@@ -220,7 +220,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.QUODRONA_CLONE_TRAINING_ROOM,
         C.Rac5Planets.QUODRONA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT),
+        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) & HasClankPack(world) | _glitch(world),
         Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.QUODRONA_CLONE_TRAINING_ROOM),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset(("shrink_ray_skip",)),

@@ -21,6 +21,7 @@ class Weapon:
     mod_count: int
     exp_thresholds: tuple[int | None, ...]
     vendor_ammo: VendorDisplayAmmo
+    is_long_projectile: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +51,7 @@ WEAPONS = (
     Weapon(
         Rac5WeaponKeys.LACERATOR,
         is_projectile=True,
+        is_long_projectile=True,
         classification=ItemClassification.progression,
         max_level=8,
         mod_count=2,
@@ -104,6 +106,7 @@ WEAPONS = (
     Weapon(
         Rac5WeaponKeys.SHOCK_ROCKET,
         is_projectile=True,
+        is_long_projectile=True,
         classification=ItemClassification.progression,
         max_level=8,
         mod_count=3,
@@ -113,6 +116,7 @@ WEAPONS = (
     Weapon(
         Rac5WeaponKeys.SNIPER_MINE,
         is_projectile=True,
+        is_long_projectile=True,
         classification=ItemClassification.progression,
         max_level=8,
         mod_count=2,
@@ -131,6 +135,7 @@ WEAPONS = (
     Weapon(
         Rac5WeaponKeys.LASER_TRACER,
         is_projectile=True,
+        is_long_projectile=True,
         classification=ItemClassification.progression,
         max_level=8,
         mod_count=2,
@@ -158,6 +163,7 @@ WEAPONS = (
     Weapon(
         Rac5WeaponKeys.RYNO,
         is_projectile=True,
+        is_long_projectile=True,
         classification=ItemClassification.progression,
         max_level=4,
         mod_count=0,

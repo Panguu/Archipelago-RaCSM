@@ -136,7 +136,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.KALIDON_SEARCH,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814024, 4, 3),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset((_C.STORY_MISSION, _C.MISSION)),
@@ -147,7 +147,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.KALIDON_EXPLORE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814024, 8, 3),
         options=LocationOptions(
             requirements=(OptionFilter(AllCutscenes, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in")),

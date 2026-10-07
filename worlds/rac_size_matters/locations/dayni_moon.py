@@ -14,6 +14,7 @@ from ..options import (
 )
 from ..rules._helpers import (
     HasChallengeMode,
+    HasLongProjectileWeapon,
     HasProjectileWeapon,
     HasTitanPrereq,
     HasClankPack,
@@ -26,7 +27,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.DAYNI_MOON_BARN,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon(),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon(),
         Completion(_S.BOLT_BITS, None, 268435456),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(8,),
@@ -35,7 +36,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.DAYNI_MOON_MIMIC,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: HasAll(Rac5Gadgets.SPROUT_O_MATIC, Rac5Gadgets.SHRINK_RAY) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.SPROUT_O_MATIC, Rac5Gadgets.SHRINK_RAY) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.BOLT_BITS, None, 536870912),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(8,),
@@ -44,7 +45,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.DAYNI_MOON_HELMET,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.ARMOUR, "mega_bomb", 2),
         categories=frozenset(("armour_pickup",)),
         definition_order=29,
@@ -62,7 +63,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.DAYNI_MOON_WOOL_PROTEST,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.SKILL_BITS, None, 536870912),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -72,7 +73,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.DAYNI_MOON_BOUNCY,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon(),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC),
         Completion(_S.SKILL_BITS, None, 1073741824),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset(("skill_point", "easy_skill_point")),
@@ -82,7 +83,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.DAYNI_MOON,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.MISSIONS, 32814034, 8, 8),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -92,7 +93,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.DAYNI_MOON_LUNA,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.MISSIONS, 32814034, 4, 8),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -102,7 +103,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.DAYNI_MOON_FIGHT1,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.MISSIONS, 32814034, 16, 8),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -112,7 +113,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.DAYNI_MOON_FIGHT2,
         C.Rac5Planets.DAYNI_MOON,
-        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasProjectileWeapon() & HasClankPack(world),
+        lambda world: Has(Rac5Gadgets.SPROUT_O_MATIC) & HasLongProjectileWeapon() & HasClankPack(world),
         Completion(_S.MISSIONS, 32814034, 2, 8),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),

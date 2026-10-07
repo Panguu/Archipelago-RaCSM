@@ -19,7 +19,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.POKITARU_ZIPLINE,
         C.Rac5Planets.POKITARU,
-        lambda world: HasProjectileWeapon() | _glitch(world),
+        lambda world: HasProjectileWeapon() & HasClankPack(world) | _glitch(world),
         Completion(_S.BOLT_BITS, None, 1),
         categories=frozenset(("titanium_bolt",)),
         native_planets=(1,),
@@ -91,7 +91,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.POKITARU_COWS,
         C.Rac5Planets.POKITARU,
-        lambda world: HasAny(Rac5Weapons.MOOTATOR, PROGRESSIVE_WEAPON_NAME[Rac5Weapons.MOOTATOR]),
+        lambda world: HasAny(Rac5Weapons.MOOTATOR, PROGRESSIVE_WEAPON_NAME[Rac5Weapons.MOOTATOR]) & (HasProjectileWeapon() | _glitch(world)),
         Completion(_S.SKILL_BITS, None, 4),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),), weapon=C.Rac5Weapons.MOOTATOR),
         categories=frozenset(("skill_point", "easy_skill_point")),
