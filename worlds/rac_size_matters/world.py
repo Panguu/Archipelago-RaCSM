@@ -320,18 +320,10 @@ class RACSizeMatterWorld(World):
         if self.options.progressive_challenge_mode:
             pool += [PROGRESSIVE_CHALLENGE_MODE_NAME] * self.options.challenge_mode.value
 
-        # Hyperborean/Chameleon are also gated behind Challenge Mode tiers 1/2,
-        # independent of the NG+ Items toggle above; both gates must agree.
-        challenge_mode = self.options.challenge_mode.value
-
+        # Hyperborean/Chameleon items follow NG+ Items only, like RYNO; Challenge Mode
+        # gates their pickup and armour-set locations, not whether the items exist.
         def _armour_set_enabled(internal: str) -> bool:
-            if not ng_plus and internal in NG_PLUS_ARMOUR_SETS:
-                return False
-            if internal == "hyperborean" and challenge_mode < 1:
-                return False
-            if internal == "chameleon" and challenge_mode < 2:
-                return False
-            return True
+            return ng_plus or internal not in NG_PLUS_ARMOUR_SETS
 
         progressive_armour_mode = self.options.progressive_armour.value
         if progressive_armour_mode == ProgressiveArmour.option_per_set:
