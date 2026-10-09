@@ -40,7 +40,7 @@ from .skillpoints import SKILL_POINT_FLAGS, SACSkillPointLocations
 from .special_challenges import SPECIAL_CHALLENGE_FLAGS, SACSpecialChallengeLocations
 from .titanium_bolts import TITANIUM_BOLTS_BY_MODULE, SACTitaniumBoltLocations
 from .types import EventFlag
-from .vendor import VENDOR_LOCATION_PREFIX, VENDOR_WEAPONS, SACVendor, SACVendorWeapons, vendor_location_name
+from .vendor import VENDOR_LOCATION_NAMES, VENDOR_WEAPONS, SACVendor, SACVendorWeapons, vendor_location_name
 from .weapons import (
     GADGETS_FROM_WEAPON_TABLE,
     RATCHET_WEAPONS,
@@ -82,7 +82,7 @@ __all__ = [
     "SKILL_POINT_FLAGS",
     "SPECIAL_CHALLENGE_FLAGS",
     "TITANIUM_BOLTS_BY_MODULE",
-    "VENDOR_LOCATION_PREFIX",
+    "VENDOR_LOCATION_NAMES",
     "VENDOR_WEAPONS",
     "Case",
     "EventFlag",

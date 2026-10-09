@@ -8,6 +8,7 @@ from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, Tr
 from .constants import ALL_CASES, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, SACCases, SACOperatives
 from .constants.clank_gadgets import SACClankGadgets
 from .constants.keycards import KEYCARD_ITEMS
+from .constants.vendor import VENDOR_WEAPONS, vendor_location_name
 from .constants.weapon_mods import enabled_mods
 from .constants.vendor_unlocks import VENDOR_CASES
 from .constants.weapon_progression import TITAN_LOCATIONS
@@ -62,8 +63,9 @@ def create_regions(world: "SecretAgentClankWorld") -> None:
         def enabled_item(name):
             return (SACOperatives.CLANK if name.endswith("(Clank)")
                     else SACOperatives.RATCHET) not in disabled
-        for definition in BASE_VENDOR_LOCATIONS.values():
-            if enabled_item(definition.name) and definition.available(world.options) and available_stock(definition.name):
+        for item in VENDOR_WEAPONS:
+            definition = BASE_VENDOR_LOCATIONS[vendor_location_name(item)]
+            if enabled_item(item) and definition.available(world.options) and available_stock(definition.name):
                 vendor_region.locations.append(SACLocation(
                     player, definition.name, world.location_name_to_id[definition.name], vendor_region))
         for mod in world.weapon_mod_catalog:

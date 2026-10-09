@@ -55,4 +55,4 @@ class VendorScoutTests(unittest.TestCase):
         ids = {name: LOCATION_NAME_TO_ID[name] for name in definitions}
         scouts = VendorScouts(ids)
         self.assertEqual(set(scouts.locations.values()), set(ids.values()))
-        self.assertTrue(all(name.startswith("Vendor: ") for name in definitions))
+        self.assertTrue(all(": Agency Vendor: " in name for name in definitions))

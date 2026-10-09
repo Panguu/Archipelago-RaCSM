@@ -1,18 +1,12 @@
 """SAC's single shop, reached from Clank's pause menu.
 
 Base offers live here; weapon mods and Titan/Proto upgrades are in weapon_mods.py and
-weapon_progression.py. All of them share the "Vendor: <item>" location naming.
+weapon_progression.py. Every purchase is named by its SACVendor constant.
 """
 from dataclasses import dataclass
 
-from .clank_gadgets import SACClankGadgets, SACClankWeapons
-from .weapons import SACRatchetWeapons
-
-VENDOR_LOCATION_PREFIX = "Vendor: "
-
-
-def vendor_location_name(display_name: str) -> str:
-    return f"{VENDOR_LOCATION_PREFIX}{display_name}"
+from .clank_gadgets import SACClankGadgets, SACClankWeapons, SACProtoWeapons
+from .weapons import SACRatchetWeapons, SACTitanWeapons
 
 
 @dataclass(frozen=True)
@@ -86,3 +80,41 @@ class SACVendor:
     CHALLENGE_MODE_BLOWTORCH_BRIEFCASE_MOLTEN_BOLT = "Challenge Mode (Clank): Agency Vendor: Blowtorch Briefcase Molten Bolt Mod - 100,000"
     CHALLENGE_MODE_THUNDERSTORM_UMBRELLA_XENOS_CAPACITOR = "Challenge Mode (Clank): Agency Vendor: Thunderstorm Umbrella Xeno's Capacitor Mod - 100,000"
     CHALLENGE_MODE_THUNDERSTORM_UMBRELLA_THUNDERCLOUD = "Challenge Mode (Clank): Agency Vendor: Thunderstorm Umbrella Thundercloud Mod - 200,000"
+
+
+# Equipment display name -> SACVendor location; weapon mods map theirs in weapon_mods.py.
+VENDOR_LOCATION_NAMES: dict[str, str] = {
+    SACClankGadgets.CLANKPDA: SACVendor.AZCOTAL_ALLEY_AGENCY_PDA,
+    SACClankWeapons.HOLOKNUCKLES: SACVendor.BOLTAIRE_MUSEUM_HOLO_KNUCKLES,
+    SACClankWeapons.SUPERKICK: SACVendor.BOLTAIRE_MUSEUM_CLANK_FU_KICK,
+    SACRatchetWeapons.PORKBOMB: SACVendor.HIGH_ROLLERS_CASINO_PORK_BOBM_GUN,
+    SACClankGadgets.HYPNOWATCH: SACVendor.HIGH_ROLLERS_CASINO_HYPNO_WATCH,
+    SACRatchetWeapons.SHOCKROCKET: SACVendor.GALACTIC_BOLT_RESERVE_SHOCK_ROCKET,
+    SACClankGadgets.BOLTGRABBER: SACVendor.GALACTIC_BOLT_RESERVE_BOLT_GRABBER,
+    SACRatchetWeapons.RYNO: SACVendor.CHALLENGE_MODE_RYNO,
+    SACClankWeapons.KICKSPLOSION: SACVendor.CHALLENGE_MODE_HOT_FOOT_21_BETA,
+    SACRatchetWeapons.PLASMAWHIP: SACVendor.VENANTONIO_LABS_PLASMA_WHIP,
+    SACRatchetWeapons.KICKBLAST: SACVendor.VENANTONIO_LABS_CLANK_FU_HOT_FOOT,
+    SACClankWeapons.LIGHTNINGUMBRELLA: SACVendor.VENANTONIO_LABS_THUNDERSTORM_UMBRELLA,
+    SACTitanWeapons.SHOCKROCKET: SACVendor.GALACTIC_BOLT_RESERVE_TITAN_ELECTRO_ROCKET,
+    SACTitanWeapons.PLASMAWHIP: SACVendor.VENANTONIO_LABS_TITAN_PLASMA_CORD,
+    SACTitanWeapons.PORKBOMB: SACVendor.HIGH_ROLLERS_CASINO_TITAN_MEAT_MORTAR,
+    SACTitanWeapons.BLASTER: SACVendor.BOLTAIRE_MUSEUM_TITAN_DUAL_VINDICATORS,
+    SACTitanWeapons.SHARDGUN: SACVendor.MAX_SECURITY_CELLS_TITAN_SHARD_CANNON,
+    SACTitanWeapons.BEEMINEGLOVE: SACVendor.AZCOTAL_ALLEY_TITAN_KILLER_BEE_MINE,
+    SACTitanWeapons.WALLOPER: SACVendor.MAX_SECURITY_CELLS_TITAN_MARAUDER,
+    SACTitanWeapons.MINELAUNCHER: SACVendor.ASYANICA_ROOFTOPS_TITAN_ORDNANCE_LAUNCHER,
+    SACProtoWeapons.THROWTIE: SACVendor.BOLTAIRE_MUSEUM_PROTO_WHIRLWIND_THROWTIE,
+    SACProtoWeapons.CUFFLINK: SACVendor.ASYANICA_ROOFTOPS_PROTO_WRIST_MORTAR,
+    SACProtoWeapons.TANGLEVINE: SACVendor.AZCOTAL_ALLEY_PROTO_KUDZU_TANGLE,
+    SACProtoWeapons.FLAMETHROWERPEN: SACVendor.VENANTONIO_LABS_PROTO_HELLFIRE_HAVERSACK,
+    SACProtoWeapons.HOLOKNUCKLES: SACVendor.BOLTAIRE_MUSEUM_CLANK_PROTO_HARDLIGHT_FIST,
+    SACProtoWeapons.LIGHTNINGUMBRELLA: SACVendor.VENANTONIO_LABS_PROTO_LIGHTNING_ROD,
+}
+
+
+def vendor_location_name(display_name: str) -> str:
+    return VENDOR_LOCATION_NAMES[display_name]
+
+
+NG_PLUS_VENDOR_LOCATIONS = frozenset(vendor_location_name(name) for name in NG_PLUS_VENDOR_ITEMS)

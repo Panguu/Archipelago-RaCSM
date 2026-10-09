@@ -6,7 +6,7 @@ from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, SACMiss
 from ..constants.operatives import SACOperatives
 from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
-from ..constants.vendor import vendor_location_name
+from ..constants.vendor import VENDOR_LOCATION_NAMES
 from ..constants.weapons import CLANK_PICKUP_TO_INTERNAL, EQUIPMENT_INTERNAL_TO_DISPLAY
 from ..options import Goal
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
@@ -386,7 +386,9 @@ class Core:
         self._report_checks(self.titanium_bolts, self.titanium_bolts.check())
 
         for name in self.vendor.poll_purchases():
-            self._send_once(vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)))
+            location = VENDOR_LOCATION_NAMES.get(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
+            if location is not None:
+                self._send_once(location)
 
         for name in self.case.ratchet_items.check():
             if name in VENDOR_LOCATIONS.values():

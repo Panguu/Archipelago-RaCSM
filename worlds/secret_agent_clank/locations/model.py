@@ -8,7 +8,7 @@ from rule_builder.rules import Rule
 
 from ..constants.planets import CASE_NAME_TO_OPERATIVE, CASE_NAME_TO_PLANET
 from ..constants.skill_point_requirements import EXTRA_SKILL_POINT_OPERATIVES, SKILL_POINT_DIFFICULTY
-from ..constants.vendor import NG_PLUS_VENDOR_ITEMS
+from ..constants.vendor import NG_PLUS_VENDOR_LOCATIONS
 from ..options import Missions
 
 if TYPE_CHECKING:
@@ -69,7 +69,7 @@ class SACLocation:
         """Whether this location exists at all under the given options (the category toggles)."""
         match self.type:
             case SACLocationType.VENDOR:
-                return self.name.removeprefix("Vendor: ") not in NG_PLUS_VENDOR_ITEMS or bool(options.ng_plus.value)
+                return self.name not in NG_PLUS_VENDOR_LOCATIONS or bool(options.ng_plus.value)
             case SACLocationType.CASE_COMPLETE:
                 return options.all_missions.value != Missions.option_all
             case SACLocationType.MISSION:
