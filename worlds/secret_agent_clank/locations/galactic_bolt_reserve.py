@@ -16,6 +16,7 @@ from .model import CaseRegion, SACLocation, SACLocationType
 _BASE = HasAll(SACClankWeapons.CUFFLINK, SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
 _OMNIKEY = _BASE & Has(SACClankGadgets.OMNIKEY)
 _HOLOMONICLE = _OMNIKEY & Has(SACClankGadgets.HOLOMONOCLE)
+STEALTH_RULE = _OMNIKEY
 
 REGION = CaseRegion(SACCases.GALACTIC_BOLT_RESERVE, (
     SACLocation(SACTitaniumBoltLocations.GALACTIC_BOLT_RESERVE_1, SACLocationType.TITANIUM_BOLT, _BASE),

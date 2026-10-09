@@ -32,7 +32,7 @@ class StealthTests(unittest.TestCase):
         for setting in (0, 1, 4, STEALTH_MAX_PER_CASE):
             mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": setting})
             locations = {l.name: l.address for l in mw.get_locations(1)
-                         if l.name.startswith("Clank Stealth Takedowns")}
+                         if l.parent_region.name == "Clank Stealth Takedowns"}
             expected = {case: setting for case in STEALTH_CASES if setting}
             self.assertEqual(set(locations), {stealth_location_name(case, n)
                                               for case, count in expected.items() for n in range(1, count + 1)})
@@ -50,10 +50,10 @@ class StealthTests(unittest.TestCase):
         for operatives in ({"Qwark": 1, "Ratchet": 1}, {"Qwark": 1, "Clank": 0}):
             mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 5,
                 "goal": "qwark_opera", "operatives": operatives})
-            self.assertFalse(any(l.name.startswith("Clank Stealth Takedowns") for l in mw.get_locations(1)))
+            self.assertFalse(any(l.parent_region.name == "Clank Stealth Takedowns" for l in mw.get_locations(1)))
             self.assertEqual(mw.worlds[1].fill_slot_data()["stealth_cases"], {})
 
-    def test_access_requires_case_and_asyanica_items(self):
+    def test_access_requires_case_and_case_items(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 2, "infobots": "cases"})
         world = mw.worlds[1]
         state = CollectionState(mw)
@@ -63,21 +63,31 @@ class StealthTests(unittest.TestCase):
         def reachable(case):
             return mw.get_location(stealth_location_name(case, 2), 1).can_reach(state)
 
+        def collect_weapon(weapon):
+            state.collect(world.create_item(UNLOCK_TO_PROGRESSIVE.get(weapon, weapon)
+                                            if world.options.progressive_weapons else weapon))
+
         # Other stealth cases only need the case itself.
-        reserve = SACCases.GALACTIC_BOLT_RESERVE
-        self.assertFalse(reachable(reserve))
-        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[reserve]))
-        self.assertTrue(reachable(reserve))
+        museum = SACCases.BOLTAIRE_MUSEUM
+        self.assertFalse(reachable(museum))
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[museum]))
+        self.assertTrue(reachable(museum))
         # Asyanica Rooftops also needs its case-complete items: Throwtie and Jetboots.
         rooftops = SACCases.ASYANICA_ROOFTOPS
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[rooftops]))
         self.assertFalse(reachable(rooftops))
-        throwtie = (UNLOCK_TO_PROGRESSIVE.get(SACClankWeapons.THROWTIE, SACClankWeapons.THROWTIE)
-                    if world.options.progressive_weapons else SACClankWeapons.THROWTIE)
-        state.collect(world.create_item(throwtie))
+        collect_weapon(SACClankWeapons.THROWTIE)
         self.assertFalse(reachable(rooftops))
         state.collect(world.create_item(SACClankGadgets.JETBOOTS))
         self.assertTrue(reachable(rooftops))
+        # Galactic Bolt Reserve also needs Cufflink and the Omnikey.
+        reserve = SACCases.GALACTIC_BOLT_RESERVE
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[reserve]))
+        self.assertFalse(reachable(reserve))
+        collect_weapon(SACClankWeapons.CUFFLINK)
+        self.assertFalse(reachable(reserve))
+        state.collect(world.create_item(SACClankGadgets.OMNIKEY))
+        self.assertTrue(reachable(reserve))
 
     def test_native_counter_caps_preserves_arguments_and_tail_calls(self):
         mem = CaptureMemory()
