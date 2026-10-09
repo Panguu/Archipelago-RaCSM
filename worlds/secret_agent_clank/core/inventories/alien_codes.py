@@ -13,9 +13,12 @@ class AlienCodeInventory:
         self.valid = False
         self.found = set()
 
-    def bind(self, symbols):
+    def bind(self, symbols, *, flag_pointer_address=None):
         self.valid = False
-        if not self.flags.bind(symbols):
+        # Keycard Hunt validates the getter before replacing its Treehouse entry.
+        if flag_pointer_address is not None:
+            self.flags.pointer_address = flag_pointer_address
+        elif not self.flags.bind(symbols):
             return False
         get_count = symbols.get("GLOBALVARS_GetTotalAlienCodeCount__FUi")
         if get_count is None:

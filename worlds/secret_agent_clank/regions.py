@@ -7,6 +7,7 @@ from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, Tr
 
 from .constants import ALL_CASES, CASE_NAME_TO_CASE, CASES_BY_OPERATIVE, SACCases, SACOperatives
 from .constants.clank_gadgets import SACClankGadgets
+from .constants.keycards import KEYCARD_ITEMS
 from .constants.weapon_mods import enabled_mods
 from .constants.vendor_unlocks import VENDOR_CASES
 from .constants.weapon_progression import TITAN_LOCATIONS
@@ -152,18 +153,22 @@ _GOAL_OPERATIVES: dict[int, str] = {
 }
 
 
-def _collectibles(goal: int) -> tuple:
-    """The alien code or keycard locations a collectible goal needs."""
-    return tuple((ALIEN_CODE_LOCATIONS if goal == Goal.option_alien_codes else KEYCARD_LOCATIONS).values())
+def _collectibles(goal: int, keycard_hunt=False) -> tuple:
+    """Both collectible goals need Alien Codes to reach the Treehouse.
+
+    The Chalice additionally needs physical keycards unless they are shuffled.
+    """
+    codes = tuple(ALIEN_CODE_LOCATIONS.values())
+    return codes if goal == Goal.option_alien_codes or keycard_hunt else codes + tuple(KEYCARD_LOCATIONS.values())
 
 
-def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_operatives: set[str]) -> "str | None":
+def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_operatives: set[str], keycard_hunt=False) -> "str | None":
     """Why `goal` cannot be completed with these options, or None when it can."""
     operative = _GOAL_OPERATIVES.get(goal)
     if operative in disabled_operatives:
         return f"requires {operative}, but {operative} is disabled via the Operatives option"
     if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
-        for location in _collectibles(goal):
+        for location in _collectibles(goal, keycard_hunt):
             if location.case not in case_regions:
                 return f"requires disabled case {location.case}"
     return None
@@ -177,14 +182,14 @@ def _create_goal_conditions(
     player_name = world.multiworld.get_player_name(world.player)
     if goal == Goal.option_any:
         # Any completes on whichever achievable goal is finished first.
-        goals = [g for g in INDIVIDUAL_GOALS if _goal_unavailable(g, case_regions, disabled_operatives) is None]
+        goals = [g for g in INDIVIDUAL_GOALS if _goal_unavailable(g, case_regions, disabled_operatives, bool(world.options.keycard_hunt)) is None]
         if not goals:
             raise OptionError(f"{player_name}'s Secret Agent Clank: Goal is Any, but no goal can be "
                               "completed with the enabled operatives.")
         for g in goals:
             _add_goal_victory(world, case_regions, g, add_victory)
         return
-    reason = _goal_unavailable(goal, case_regions, disabled_operatives)
+    reason = _goal_unavailable(goal, case_regions, disabled_operatives, bool(world.options.keycard_hunt))
     if reason is not None:
         raise OptionError(f"{player_name}'s Secret Agent Clank: Goal is {GOAL_TITLES[goal]}, which {reason}.")
     _add_goal_victory(world, case_regions, goal, add_victory)
@@ -193,15 +198,16 @@ def _create_goal_conditions(
 def _add_goal_victory(world: "SecretAgentClankWorld", case_regions: dict[str, Region], goal: int, add_victory) -> None:
     title = f"Victory: {GOAL_TITLES[goal]}"
     if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
-        alien_codes = goal == Goal.option_alien_codes
-        collectibles = _collectibles(goal)
-        locations_enabled = world.options.alien_code_checks_enabled if alien_codes else world.options.keycard_checks_enabled
-        rule = True_()
+        collectibles = _collectibles(goal, bool(world.options.keycard_hunt))
+        rule = Has(SACClankGadgets.THERM_OPTIC_SHADES)
         for location in collectibles:
-            # Without AP reward checks, the native collectibles remain available in their case.
+            locations_enabled = (world.options.alien_code_checks_enabled
+                                 if location.name in ALIEN_CODE_LOCATIONS else world.options.keycard_checks_enabled)
+            # Native collectibles remain available even without AP reward checks.
             rule = rule & (CanReachLocation(location.name) if locations_enabled else CanReachRegion(location.case))
-        if alien_codes:
-            rule = rule & Has(SACClankGadgets.THERM_OPTIC_SHADES)
+        if goal == Goal.option_chalice_of_power and world.options.keycard_hunt:
+            for name in KEYCARD_ITEMS:
+                rule = rule & Has(name)
         add_victory(title, case_regions[collectibles[0].case], rule)
     elif goal == Goal.option_ratchet_prison_escape:
         rule = True_()

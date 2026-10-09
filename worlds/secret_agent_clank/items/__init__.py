@@ -20,6 +20,7 @@ from ..constants import (
     SACTraps,
 )
 from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+from ..constants.keycards import KEYCARD_ITEMS
 from ..constants.weapon_mods import WEAPON_MODS
 from ..constants.weapon_progression import PROGRESSIVE_TO_INTERNAL, TITAN_ITEMS
 
@@ -116,3 +117,7 @@ ALL_ITEMS.update(WEAPON_MOD_ITEM_TABLE)
 # Append so all existing item IDs remain stable.
 CHALLENGE_MODE_ITEM_TABLE = _table((PROGRESSIVE_CHALLENGE_MODE,), ItemClassification.progression)
 ALL_ITEMS.update(CHALLENGE_MODE_ITEM_TABLE)
+
+# Append to preserve IDs from existing seeds.
+KEYCARD_ITEM_TABLE = _table(tuple(KEYCARD_ITEMS), ItemClassification.progression)
+ALL_ITEMS.update(KEYCARD_ITEM_TABLE)

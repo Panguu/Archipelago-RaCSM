@@ -38,6 +38,7 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
     world.options.pick_and_mix_goals.value = set(passthrough.get("pick_and_mix_goals", ()))
 
     # Options that shape the item pool.
+    world.options.keycard_hunt.value = bool(passthrough.get("keycard_hunt", False))
     world.options.ng_plus.value = passthrough["ng_plus"]
     world.options.progressive_challenge_mode.value = bool(passthrough.get("progressive_challenge_mode", False))
     world.options.progressive_weapons.value = ProgressiveWeapons.from_any(passthrough["progressive_weapons"]).value

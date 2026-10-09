@@ -37,6 +37,7 @@ class NativeRuntime:
         self.reload_requested = False
         self.generation = 0
         self._stealth_wait_logged = False
+        self.keycard_hunt = None
         self.wrench = None
         self.progression = None
         self.weapon_mods = None
@@ -149,6 +150,8 @@ class NativeRuntime:
                     self.presentation.mailbox = self.presentation.timer = None
                     self.presentation.patches = []
                 self.hooks.patches.extend(self.connection_warning.prepare(symbols, self.hooks))
+                if self.keycard_hunt is not None:
+                    self.hooks.patches.extend(self.keycard_hunt.prepare(symbols, self.hooks, target))
                 if self.progression is not None:
                     self.hooks.patches.extend(self.progression.prepare(
                         symbols, self.hooks, target, vendor_enabled=vendor_enabled))
@@ -187,6 +190,8 @@ class NativeRuntime:
                 if self.vendor_catalog is not None:
                     self.vendor_catalog.challenge_level = self.progression.ng_plus if self.progression is not None else 0
                     self.vendor_catalog.sync_cases(self.owned_cases)
+                if self.keycard_hunt is not None:
+                    self.keycard_hunt.sync()
                 self.hooks.sync_checked(checked)
                 self.hooks.sync_entitlements(entitlements)
                 if self.skins is not None:

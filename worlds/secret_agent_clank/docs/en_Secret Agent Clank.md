@@ -24,6 +24,13 @@ weapon vendor purchases, the 3 keycard locations, all 27 alien code locations, w
 
 The full option list with all details lives on the [player settings page](../player-settings).
 
+**Keycard Hunt** (`keycard_hunt: true`) adds Red, Blue, and Yellow Keycards to the
+Archipelago item pool. Received cards open the keycard door inside the Treehouse;
+collecting the alien codes still unlocks access to the Treehouse itself. When
+**Keycards & Alien Codes** locations are enabled, you must still collect each
+physical keycard to complete its check. Receiving an AP keycard never completes
+that location. Keycard Hunt is off by default.
+
 ## What is the goal?
 The player can specify their goal for the multiworld from the following selection:
 - **Defeat Klunk:** Complete the showdown with Klunk in the Klunk's Lair case file.

@@ -31,6 +31,7 @@ from .items import (
     ALL_ITEMS,
     FILLER_ITEM_NAME,
     GADGET_ITEM_TABLE,
+    KEYCARD_ITEM_TABLE,
     PROGRESSIVE_PLANET_ITEM_NAME,
     RATCHET_PACK_ITEM_TABLE,
     TRAP_ITEM_TABLE,
@@ -199,6 +200,8 @@ class SecretAgentClankWorld(World):
         self.second_starting_case = second_starting_case.name if second_starting_case else None
 
         pool: list[str] = []
+        if self.options.keycard_hunt:
+            pool += list(KEYCARD_ITEM_TABLE)
         if self.options.progressive_challenge_mode:
             pool += [PROGRESSIVE_CHALLENGE_MODE] * self.options.ng_plus.value
         pool += [mod.name for mod in self.weapon_mod_catalog]
@@ -316,6 +319,7 @@ class SecretAgentClankWorld(World):
             "random_skill_points": bool(self.options.random_skill_points),
             "skill_point_count": self.options.skill_point_count.value,
             "selected_skill_points": sorted(self.selected_skill_points),
+            "keycard_hunt": bool(self.options.keycard_hunt),
             "keycards_and_alien_codes": bool(self.options.keycards_and_alien_codes),
             "all_keycards": self.options.keycard_checks_enabled,
             "all_alien_codes": self.options.alien_code_checks_enabled,

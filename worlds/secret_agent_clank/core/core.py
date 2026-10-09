@@ -88,6 +88,7 @@ class Core:
         self.skill_points   = SkillPointState(pine)
         self.alien_codes    = AlienCodeInventory(pine)
         self.keycards = KeycardInventory(pine)
+        self.native_runtime.keycard_hunt = self.keycards.hunt
         self.goal = 0
         self.pick_and_mix_goals = None
         self.character_unlocks = False
@@ -150,12 +151,15 @@ class Core:
         """Cache received items."""
         self._inventory_initialized = True
         self.progression.receive(received_names)
+        self.keycards.hunt.receive(received_names)
         self.weapon_mods.received = set(received_names)
         self.wrench.count = min(5, list(received_names).count(PROGRESSIVE_WRENCH))
         self.bolt_rewards.received = list(received_names).count("Bolts")
         self._ap_owned = {"ratchet": dict(ratchet), "clank": dict(clank)}
         self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
                                                 progressive_planets=self.progressive_planets)
+        if self.alien_codes.all_found:
+            self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
         self.native_runtime.owned_cases = frozenset(self._owned_cases)
 
     def _invalidate_level(self) -> None:
@@ -350,7 +354,9 @@ class Core:
             self.special_challenges.sync()
             self.ratchet_challenges.sync()
             self.alien_codes.sync()
-            self.alien_codes.bind(self.case.symbols)
+            hunt = self.keycards.hunt
+            self.alien_codes.bind(self.case.symbols, flag_pointer_address=(
+                hunt.pointer_address if hunt.enabled and self.case.case_id == 31 else None))
             self.ratchet_challenges.bind(self.case.symbols)
             self.titanium_bolts.bind(self.case.symbols)
             if not self.notifications.bind(self.case.symbols):
@@ -359,6 +365,11 @@ class Core:
             if not self.native_runtime.vendor_enabled_for_module(self.case.case_id):
                 self.vendor.set_addr(None)
             self.on_case_ready()
+        # Read collectible access before updating the menu. AP inventory is
+        # refreshed after every tick, so this cannot rely on the prior tick.
+        self._report_checks(self.alien_codes, self.alien_codes.check())
+        if self.alien_codes.all_found:
+            self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
         newly_accessible = self.case.case_menu.unlock_owned_missions(self._owned_cases)
         menu_screen = self.case.case_menu.screen_address
         if newly_accessible and menu_screen is not None and self.pine.read_int32(menu_screen) == 14:
@@ -368,10 +379,8 @@ class Core:
 
         self._report_checks(self.missions, self.missions.check_all(all_missions=self.missions_all()))
         for inventory in (self.cutscenes, self.gadgetbot_challenges, self.special_challenges,
-                          self.ratchet_challenges, self.skill_points, self.alien_codes, self.keycards):
+                          self.ratchet_challenges, self.skill_points, self.keycards):
             self._report_checks(inventory, inventory.check())
-        if len(self.keycards.found) == 3:
-            self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
         self._check_goal()
 
         self._report_checks(self.titanium_bolts, self.titanium_bolts.check())

@@ -16,3 +16,10 @@ KEYCARD_BITS: dict[str, int] = {
     SACKeycardLocations.BLUE_KEYCARD: 1,
     SACKeycardLocations.YELLOW_KEYCARD: 2,
 }
+
+
+KEYCARD_ITEMS: dict[str, int] = {
+    "Red Keycard": 0,
+    "Blue Keycard": 1,
+    "Yellow Keycard": 2,
+}

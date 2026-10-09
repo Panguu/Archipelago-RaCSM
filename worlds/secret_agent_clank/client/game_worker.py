@@ -74,6 +74,7 @@ class GameRuntime:
             w.native_runtime.ap_connected = True
             w.native_runtime.starting_case.configure(data)
             w.progression.configure(data)
+            w.keycards.hunt.enabled = bool(data.get("keycard_hunt", False))
             w.skins.configure(data)
             w.weapon_mods.configure(data)
             w.wrench.enabled = bool(data.get('progressive_wrench', False))

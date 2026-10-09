@@ -127,6 +127,15 @@ class KeycardsAndAlienCodes(Toggle):
     display_name = "Keycards & Alien Codes"
 
 
+class KeycardHunt(Toggle):
+    """Shuffle Red, Blue, and Yellow Keycards into the AP item pool.
+    All three received cards open the keycard door inside the Treehouse.
+    Treehouse access still requires collecting the Alien Codes.
+    Physical keycard pickups remain separate location checks when enabled.
+    """
+    display_name = "Keycard Hunt"
+
+
 class SendScoutedLocations(DefaultOnToggle):
     """Send vendor-scouted locations out as real AP hints (visible to trackers/other
     players), not just shown locally in the vendor menu. Off keeps scouting local-only."""
@@ -367,6 +376,7 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     random_skill_points: RandomSkillPoints
     skill_point_count: SkillPointCount
     keycards_and_alien_codes: KeycardsAndAlienCodes
+    keycard_hunt: KeycardHunt
     send_scouted_locations: SendScoutedLocations
     goal: Goal
     pick_and_mix_goals: PickAndMixGoals
@@ -413,6 +423,7 @@ sac_option_groups = [
         BoltMultiplier
     ]),
     OptionGroup("SAC Item Options", [
+        KeycardHunt,
         ProgressiveWeapons,
         ProgressiveWrench,
         StartingWeapons,

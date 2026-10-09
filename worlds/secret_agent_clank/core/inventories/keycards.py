@@ -3,12 +3,14 @@ import struct
 
 from ...constants.keycards import KEYCARD_BITS
 from ..global_flags import GlobalFlags
+from ..patches.keycard_hunt import KeycardHunt
 
 
 class KeycardInventory:
     def __init__(self, pine):
         self.pine = pine
         self.flags = GlobalFlags(pine)
+        self.hunt = KeycardHunt(pine)
         self.reported = set()
         self.found = set()
         self.door_opened = False
@@ -18,7 +20,10 @@ class KeycardInventory:
         self._door = None
 
     def bind(self, symbols):
-        self.flags.bind(symbols)
+        if self.hunt.enabled and self.pine.read_int32(0x206328) == 31:
+            self.flags.pointer_address = self.hunt.pointer_address
+        else:
+            self.flags.bind(symbols)
         self.root_pointer = self.door_type = None
         self._door = None
         if self.pine.read_int32(0x206328) != 31:
@@ -33,6 +38,10 @@ class KeycardInventory:
             return
         low = w[1] & 0xFFFF
         self.root_pointer = ((w[0] & 0xFFFF) << 16) + (low - 0x10000 if low & 0x8000 else low)
+
+    @property
+    def has_all(self):
+        return self.hunt.mask == 7 if self.hunt.enabled else len(self.found) == 3
 
     def sync_from_ap(self, checked):
         self.reported.update(checked)
@@ -84,7 +93,7 @@ class KeycardInventory:
         self.found = {name for name, bit in KEYCARD_BITS.items() if value[0] & (1 << bit)}
         chalice = self.flags.read(0xCB)
         self.chalice_collected = chalice is not None and chalice[0] != 0
-        if value[0] == 7 and self._door_is_open():
+        if self.has_all and self._door_is_open():
             self.door_opened = True
         return sorted(self.found - self.reported)
 

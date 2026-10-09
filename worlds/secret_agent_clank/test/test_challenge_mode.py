@@ -19,11 +19,11 @@ class ChallengeModeTests(unittest.TestCase):
     def test_defaults_and_slider_label(self):
         self.assertEqual(NgPlus.display_name, "Max Challenge Mode")
         for option in (WeaponXPMultiplier, HealthXPMultiplier, BoltMultiplier):
-            self.assertEqual(option.default, 4)
+            self.assertEqual(option.default, 5)
         world = setup_multiworld(SecretAgentClankWorld).worlds[1]
         slot = world.fill_slot_data()
         for key in ("weapon_xp_multiplier", "health_xp_multiplier", "bolt_multiplier"):
-            self.assertEqual(slot[key], 4)
+            self.assertEqual(slot[key], 5)
         self.assertFalse(slot["progressive_challenge_mode"])
 
     def test_pool_counts_and_fill_for_each_maximum(self):
@@ -73,7 +73,8 @@ class ChallengeModeTests(unittest.TestCase):
 
     def test_challenge_checks_require_first_unlock(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={
-            "ng_plus": 2, "progressive_challenge_mode": True, "weapon_level_checks": "all"})
+            "ng_plus": 2, "progressive_challenge_mode": True, "weapon_level_checks": "all",
+            "nanotech_checks": True})
         state = CollectionState(mw)
         for item in (*mw.itempool, *mw.precollected_items[1]):
             if item.name != PROGRESSIVE_CHALLENGE_MODE:

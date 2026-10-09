@@ -45,26 +45,27 @@ class NanotechTests(unittest.TestCase):
 
     def test_generation_caps_and_disabled(self):
         for ng, count in ((0, 45), (1, 70), (2, 70)):
-            mw = setup_multiworld(SecretAgentClankWorld, options={"ng_plus": ng})
+            mw = setup_multiworld(SecretAgentClankWorld, options={"ng_plus": ng, "nanotech_checks": True})
             locations = [l for l in mw.get_locations(1) if l.name.startswith("Clank Nanotech Level")]
             self.assertEqual(len(locations), count)
-        mw = setup_multiworld(SecretAgentClankWorld, options={"nanotech_checks": False})
+        # Clank Nanotech Locations are off by default.
+        mw = setup_multiworld(SecretAgentClankWorld)
         self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
 
     def test_clank_access_required_and_disabled_operative(self):
-        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases"})
+        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "nanotech_checks": True})
         state = CollectionState(mw)
         for item in mw.precollected_items[1]:
             state.remove(item)
         location = mw.get_location("Clank Nanotech Level 16", 1)
         self.assertFalse(location.can_reach(state))
         mw = setup_multiworld(SecretAgentClankWorld, options={
-            "goal": "qwark_opera", "operatives": {"Ratchet": 1, "Qwark": 1}})
+            "goal": "qwark_opera", "operatives": {"Ratchet": 1, "Qwark": 1}, "nanotech_checks": True})
         self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
 
     def test_case_count_tiers(self):
         # Each Clank case with enemy access puts 10 more levels in logic: 16-25, 26-35, ...
-        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "ng_plus": 1})
+        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "ng_plus": 1, "nanotech_checks": True})
         world = mw.worlds[1]
         infobots = [CASE_NAME_TO_INFOBOT[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]]
         state = CollectionState(mw)
@@ -90,7 +91,7 @@ class NanotechTests(unittest.TestCase):
         self.assertTrue(reachable(85))
 
     def test_enemy_items_gate_tiers(self):
-        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases"})
+        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "nanotech_checks": True})
         world = mw.worlds[1]
         infobots = {CASE_NAME_TO_INFOBOT[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
         state = CollectionState(mw)
