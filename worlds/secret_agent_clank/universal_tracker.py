@@ -39,6 +39,7 @@ def setup_options_from_slot_data(world: "SecretAgentClankWorld") -> None:
 
     # Options that shape the item pool.
     world.options.keycard_hunt.value = bool(passthrough.get("keycard_hunt", False))
+    world.options.progressive_wrench.value = bool(passthrough.get("progressive_wrench", False))
     world.options.ng_plus.value = passthrough["ng_plus"]
     world.options.progressive_challenge_mode.value = bool(passthrough.get("progressive_challenge_mode", False))
     world.options.progressive_weapons.value = ProgressiveWeapons.from_any(passthrough["progressive_weapons"]).value

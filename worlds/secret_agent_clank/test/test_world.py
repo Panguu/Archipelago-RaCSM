@@ -186,3 +186,43 @@ class TestCollectibleGoals(unittest.TestCase):
             SecretAgentClankWorld,
             options={"goal": "any", "operatives": {"Ratchet": 1, "Qwark": 1, "Gadgetbots": 1}},
         )
+
+
+class TestUniversalTrackerRegeneration(unittest.TestCase):
+    """Universal Tracker rebuilds the world from slot data alone; its logic must match the seed's."""
+
+    @staticmethod
+    def regenerate(slot, seed):
+        from argparse import Namespace
+        from BaseClasses import MultiWorld
+        from test.general import gen_steps
+        from worlds.AutoWorld import call_all
+        mw = MultiWorld(1)
+        mw.game = {1: SecretAgentClankWorld.game}
+        mw.player_name = {1: "Tester1"}
+        mw.set_seed(seed)
+        args = Namespace()
+        # No YAML: every option starts at its default and slot data must restore it.
+        for key, option in SecretAgentClankWorld.options_dataclass.type_hints.items():
+            setattr(args, key, {1: option.from_any(option.default)})
+        mw.set_options(args)
+        mw.re_gen_passthrough = {SecretAgentClankWorld.game: slot}
+        mw.state = CollectionState(mw)
+        for step in gen_steps:
+            call_all(mw, step)
+        return mw
+
+    def test_progressive_wrench_keeps_mess_hall_challenges_gated(self):
+        from ..constants.ratchet_challenges import SACRatchetChallengeLocations
+        from ..items import PROGRESSIVE_WRENCH_ITEM_NAME
+        original = setup_multiworld(SecretAgentClankWorld, seed=1, options={"progressive_wrench": True})
+        mw = self.regenerate(original.worlds[1].fill_slot_data(), seed=2)
+        self.assertTrue(mw.worlds[1].options.progressive_wrench)
+        self.assertEqual({l.name for l in mw.get_locations(1)}, {l.name for l in original.get_locations(1)})
+        location = mw.get_location(SACRatchetChallengeLocations.THE_MESS_HALL_NAILS_FOR_BREAKFAST, 1)
+        state = mw.get_all_state(False)
+        while state.has(PROGRESSIVE_WRENCH_ITEM_NAME, 1):
+            state.remove(mw.worlds[1].create_item(PROGRESSIVE_WRENCH_ITEM_NAME))
+        self.assertFalse(location.can_reach(state))
+        state.collect(mw.worlds[1].create_item(PROGRESSIVE_WRENCH_ITEM_NAME))
+        self.assertTrue(location.can_reach(state))
