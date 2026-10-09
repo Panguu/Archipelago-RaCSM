@@ -1,5 +1,6 @@
 """Return mission completion to the current level, including Ratchet movies."""
 from ...constants.native_functions import NativeFunctions as Functions
+from ...constants.missions import NATIVE_FINISH_CASES
 from ..symbols import require
 from .asm import Patch, branch, jump, packed
 from .patch import PatchSet
@@ -37,13 +38,13 @@ class MissionTravel(PatchSet):
         arena_patches = self._prepare_arena_routes(symbols, helper)
         self.patches = [helper_patch, *arena_patches]
         self.patches.extend(self._prepare_story_routes(symbols, helper, change))
-        if module == 24:
-            # Quasar's task predicate is the *next* case's intro flag. Record
+        if module in NATIVE_FINISH_CASES:
+            # These task predicates are the *next* case's intro flag. Record
             # the actual finish here and let the host capture it before reload
             # can discard this DLL. Returning success leaves the game running.
             mailbox = helper + 0x70
             self._expect(helper + 0x68, (0xDFBF0008, 0x03E00008, 0x27BD0010),
-                         "Quasar completion mailbox")
+                         "Mission completion mailbox")
             code = packed([*m.li32(m.T0, mailbox), m.addiu(m.T1, m.ZERO, 1),
                            m.sw(m.T1, 0, m.T0), m.jr(m.RA), m.addiu(m.V0, m.ZERO, 1)])
             self.patches[0] = Patch(helper, self.pine.read_bytes(helper, len(code)), code)

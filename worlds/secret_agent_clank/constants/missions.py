@@ -257,3 +257,10 @@ MISSION_COMPLETE_NAME: dict[str, str] = {
 }
 
 MISSION_NAMES: tuple[str, ...] = tuple(entry.name for entries in CHAPTER_ENTRIES.values() for entry in entries)
+
+# These single-mission cases use the next case's intro as their retail finish
+# predicate. AP permits out-of-order travel, so capture their actual exit instead.
+NATIVE_FINISH_CASES = {
+    24: SACCases.THE_QUASAR_FIELDS,
+    29: SACCases.UNDERWATER_BUNKER,
+}

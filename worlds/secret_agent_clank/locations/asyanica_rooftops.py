@@ -15,9 +15,9 @@ from ..constants import (
 from .model import CaseRegion, SACLocation, SACLocationType
 
 _BASE_RULE = HasAll(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
-COMPLETE_RULE = _BASE_RULE
-"""Items to complete the case, also used by its stealth takedown checks."""
 _OMNIKEY = _BASE_RULE & Has(SACClankGadgets.OMNIKEY)
+COMPLETE_RULE = _OMNIKEY
+"""Items to complete the case, also used by its stealth takedown checks."""
 
 REGION = CaseRegion(SACCases.ASYANICA_ROOFTOPS, (
     SACLocation(SACPickups.ASYANICA_ROOFTOPS_MINE_LAUNCHER, SACLocationType.RATCHET_WEAPON, _OMNIKEY),

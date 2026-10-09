@@ -2,7 +2,7 @@
 import struct
 from typing import TYPE_CHECKING
 
-from ...constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, MISSION_NAMES, MissionFlag
+from ...constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, MISSION_NAMES, MissionFlag, NATIVE_FINISH_CASES
 from ...constants.cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
 from ...constants.planets import CASE_NAME_TO_CASE, SACCases
 from ..case_menu import CASE_LABELS
@@ -109,6 +109,8 @@ class MissionInventory:
         # Its resident ending flag survives that transition and missing tables.
         names = dict.fromkeys(self._resolved_cases or {})
         names[SACCases.KLUNKS_LAIR] = None
+        # A captured finish must remain retryable even if the table disappears.
+        names.update(dict.fromkeys(NATIVE_FINISH_CASES.values()))
         for name in names:
             case = CASE_NAME_TO_CASE.get(name)
             if case is not None:
@@ -130,7 +132,7 @@ class MissionInventory:
         newly: list[str] = []
         if current_case is None:
             return newly
-        if current_case.name == SACCases.THE_QUASAR_FIELDS:
+        if current_case.name in NATIVE_FINISH_CASES.values():
             mission = CHAPTER_ENTRIES[current_case.name][0].name
             complete_name = MISSION_COMPLETE_NAME[current_case.name]
             if self.completed[mission] or complete_name in self._reported:
@@ -142,6 +144,10 @@ class MissionInventory:
                         self.pine.write_int32(addresses[0], MissionFlag.UNLOCKED_COMPLETED)
                 name = mission if all_missions else complete_name
                 return [] if name in self._reported else [name]
+            # Retail marks these tasks complete from the next case's intro,
+            # which can be visited independently in AP. Only the native finish
+            # receipt (or an AP-confirmed check) is evidence of completion.
+            return []
         if current_case.name == SACCases.KLUNKS_LAIR:
             ending = CUTSCENE_FLAGS[SACCutsceneLocations.KLUNKS_LAIR_COMPLETE_CUTSCENE]
             if ending.is_set(self.pine.read_int8(ending.address)):

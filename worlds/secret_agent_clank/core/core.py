@@ -79,7 +79,7 @@ class Core:
         self.native_runtime.weapon_mods = self.weapon_mods
         self._native_pause_notice = False
         self.missions      = MissionInventory(pine)
-        self.native_runtime.on_quasar_complete = self._record_quasar_completion
+        self.native_runtime.on_mission_complete = self._record_mission_completion
         self.cutscenes      = CutsceneInventory(pine)
         self.gadgetbot_challenges = GadgetbotChallengeInventory(pine)
         self.special_challenges   = SpecialChallengeInventory(pine)
@@ -411,10 +411,10 @@ class Core:
         self.vendor_rewards.tick(self.case.symbols)
         self.notifications.tick()
 
-    def _record_quasar_completion(self):
-        mission = CHAPTER_ENTRIES[SACCases.THE_QUASAR_FIELDS][0].name
+    def _record_mission_completion(self, case_name):
+        mission = CHAPTER_ENTRIES[case_name][0].name
         self.missions.completed[mission] = True
-        name = mission if self.missions_all() else MISSION_COMPLETE_NAME[SACCases.THE_QUASAR_FIELDS]
+        name = mission if self.missions_all() else MISSION_COMPLETE_NAME[case_name]
         self._report_checks(self.missions, [name])
 
     def _check_goal(self):

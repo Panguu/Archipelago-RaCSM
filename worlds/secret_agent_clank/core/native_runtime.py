@@ -2,6 +2,7 @@
 import logging
 
 from ..constants.native_modules import CASE_MODULES
+from ..constants.missions import NATIVE_FINISH_CASES
 from ..constants.planets import CASES_BY_OPERATIVE
 from ..constants.operatives import SACOperatives
 from ..constants.vendor import vendor_location_name
@@ -52,7 +53,7 @@ class NativeRuntime:
         self.owned_cases = frozenset()
         self.starting_case = StartingCase(pine, log)
         self.mission_travel = None
-        self.on_quasar_complete = lambda: None
+        self.on_mission_complete = lambda case_name: None
 
     def configure_vendors(self, case_names):
         self.vendor_modules = {CASE_MODULES[name] for name in case_names if name not in NON_VENDOR_CASES}
@@ -182,8 +183,9 @@ class NativeRuntime:
                 if not self._gameplay_settled():
                     return False
                 mailbox = getattr(self.mission_travel, "completion_mailbox", None)
-                if self.hooks.module == 24 and mailbox is not None and p.read_int32(mailbox) == 1:
-                    self.on_quasar_complete()
+                if (self.hooks.module in NATIVE_FINISH_CASES
+                        and mailbox is not None and p.read_int32(mailbox) == 1):
+                    self.on_mission_complete(NATIVE_FINISH_CASES[self.hooks.module])
                     self._reload_current_level()
                     return False
                 self.connection_warning.refresh(self.ap_connected)
