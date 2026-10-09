@@ -128,79 +128,94 @@ def _create_victory(world, case_regions, disabled_operatives):
     add_victory("Victory: Pick and Mix", conditions[0][0], rule)
 
 
+# Every goal Any can complete on, and Pick and Mix can combine.
+INDIVIDUAL_GOALS: tuple[int, ...] = (
+    Goal.option_defeat_klunk, Goal.option_qwark_opera, Goal.option_all_gadgetbots,
+    Goal.option_ratchet_prison_escape, Goal.option_these_are_the_real_adventures_of_captain_qwark,
+    Goal.option_alien_codes, Goal.option_chalice_of_power,
+)
+GOAL_TITLES: dict[int, str] = {
+    Goal.option_defeat_klunk: "Defeat Klunk",
+    Goal.option_qwark_opera: "Qwark Opera",
+    Goal.option_all_gadgetbots: "All Gadgetbots",
+    Goal.option_ratchet_prison_escape: "Ratchet Prison Escape",
+    Goal.option_these_are_the_real_adventures_of_captain_qwark: "These Are the Real Adventures of Captain Qwark",
+    Goal.option_alien_codes: "All Alien Codes",
+    Goal.option_chalice_of_power: "Collect the Chalice of Power",
+}
+_GOAL_OPERATIVES: dict[int, str] = {
+    Goal.option_defeat_klunk: SACOperatives.CLANK,
+    Goal.option_qwark_opera: SACOperatives.QWARK,
+    Goal.option_all_gadgetbots: SACOperatives.GADGETBOTS,
+    Goal.option_ratchet_prison_escape: SACOperatives.RATCHET,
+    Goal.option_these_are_the_real_adventures_of_captain_qwark: SACOperatives.QWARK,
+}
+
+
+def _collectibles(goal: int) -> tuple:
+    """The alien code or keycard locations a collectible goal needs."""
+    return tuple((ALIEN_CODE_LOCATIONS if goal == Goal.option_alien_codes else KEYCARD_LOCATIONS).values())
+
+
+def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_operatives: set[str]) -> "str | None":
+    """Why `goal` cannot be completed with these options, or None when it can."""
+    operative = _GOAL_OPERATIVES.get(goal)
+    if operative in disabled_operatives:
+        return f"requires {operative}, but {operative} is disabled via the Operatives option"
+    if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
+        for location in _collectibles(goal):
+            if location.case not in case_regions:
+                return f"requires disabled case {location.case}"
+    return None
+
+
 def _create_goal_conditions(
     world: "SecretAgentClankWorld", case_regions: dict[str, Region], disabled_operatives: set[str],
     goal: int, add_victory,
 ) -> None:
     """Validate one goal and pass its victory requirements to the caller."""
-    player = world.player
-    player_name = world.multiworld.get_player_name(player)
-    clank_disabled = SACOperatives.CLANK in disabled_operatives
-    qwark_disabled = SACOperatives.QWARK in disabled_operatives
-    gadgetbots_disabled = SACOperatives.GADGETBOTS in disabled_operatives
-    ratchet_disabled = SACOperatives.RATCHET in disabled_operatives
+    player_name = world.multiworld.get_player_name(world.player)
+    if goal == Goal.option_any:
+        # Any completes on whichever achievable goal is finished first.
+        goals = [g for g in INDIVIDUAL_GOALS if _goal_unavailable(g, case_regions, disabled_operatives) is None]
+        if not goals:
+            raise OptionError(f"{player_name}'s Secret Agent Clank: Goal is Any, but no goal can be "
+                              "completed with the enabled operatives.")
+        for g in goals:
+            _add_goal_victory(world, case_regions, g, add_victory)
+        return
+    reason = _goal_unavailable(goal, case_regions, disabled_operatives)
+    if reason is not None:
+        raise OptionError(f"{player_name}'s Secret Agent Clank: Goal is {GOAL_TITLES[goal]}, which {reason}.")
+    _add_goal_victory(world, case_regions, goal, add_victory)
 
-    if goal == Goal.option_defeat_klunk and clank_disabled:
-        raise OptionError(
-            f"{player_name}'s Secret Agent Clank: Goal is Defeat Klunk, which requires Clank, "
-            "but Clank is disabled via the Operatives option."
-        )
-    if goal == Goal.option_qwark_opera and qwark_disabled:
-        raise OptionError(
-            f"{player_name}'s Secret Agent Clank: Goal is Qwark Opera, which requires Qwark, "
-            "but Qwark is disabled via the Operatives option."
-        )
-    if goal == Goal.option_any and clank_disabled and qwark_disabled:
-        raise OptionError(
-            f"{player_name}'s Secret Agent Clank: Goal is Any, which requires Clank or Qwark, "
-            "but both are disabled via the Operatives option."
-        )
-    if goal == Goal.option_all_gadgetbots and gadgetbots_disabled:
-        raise OptionError(
-            f"{player_name}'s Secret Agent Clank: Goal is All Gadgetbots, which requires Gadgetbots, "
-            "but Gadgetbots is disabled via the Operatives option."
-        )
-    if goal == Goal.option_ratchet_prison_escape and ratchet_disabled:
-        raise OptionError(
-            f"{player_name}'s Secret Agent Clank: Goal is Ratchet Prison Escape, which requires Ratchet, "
-            "but Ratchet is disabled via the Operatives option."
-        )
 
+def _add_goal_victory(world: "SecretAgentClankWorld", case_regions: dict[str, Region], goal: int, add_victory) -> None:
+    title = f"Victory: {GOAL_TITLES[goal]}"
     if goal in (Goal.option_alien_codes, Goal.option_chalice_of_power):
         alien_codes = goal == Goal.option_alien_codes
-        collectibles = tuple((ALIEN_CODE_LOCATIONS if alien_codes else KEYCARD_LOCATIONS).values())
+        collectibles = _collectibles(goal)
         locations_enabled = world.options.alien_code_checks_enabled if alien_codes else world.options.keycard_checks_enabled
         rule = True_()
         for location in collectibles:
-            if location.case not in case_regions:
-                raise OptionError(f"{player_name}: the selected goal requires disabled case {location.case}.")
             # Without AP reward checks, the native collectibles remain available in their case.
             rule = rule & (CanReachLocation(location.name) if locations_enabled else CanReachRegion(location.case))
         if alien_codes:
             rule = rule & Has(SACClankGadgets.THERM_OPTIC_SHADES)
-        title = "All Alien Codes" if alien_codes else "Collect the Chalice of Power"
-        add_victory(f"Victory: {title}", case_regions[collectibles[0].case], rule)
-
-    if goal in (Goal.option_defeat_klunk, Goal.option_any) and not clank_disabled:
-        case = CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR]
-        add_victory("Victory: Defeat Klunk", case_regions[case.name], case_access_rule(world, case))
-
-    if goal in (Goal.option_qwark_opera, Goal.option_any) and not qwark_disabled:
-        qwark_cases = CASES_BY_OPERATIVE[SACOperatives.QWARK]
-        rule = case_access_rule(world, qwark_cases[0])
-        for case in qwark_cases[1:]:
-            rule = rule & case_access_rule(world, case)
-        add_victory("Victory: Qwark Opera", case_regions[qwark_cases[0].name], rule)
-
-    if goal == Goal.option_all_gadgetbots and not gadgetbots_disabled:
-        gadgetbot_cases = CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS]
-        rule = case_access_rule(world, gadgetbot_cases[0])
-        for case in gadgetbot_cases[1:]:
-            rule = rule & case_access_rule(world, case)
-        add_victory("Victory: All Gadgetbots", case_regions[gadgetbot_cases[0].name], rule)
-
-    if goal == Goal.option_ratchet_prison_escape and not ratchet_disabled:
+        add_victory(title, case_regions[collectibles[0].case], rule)
+    elif goal == Goal.option_ratchet_prison_escape:
         rule = True_()
         for name in RATCHET_CHALLENGE_LOCATIONS:
             rule = rule & CanReachLocation(name)
-        add_victory("Victory: Ratchet Prison Escape", case_regions[SACCases.PRISON_BREAKOUT], rule)
+        add_victory(title, case_regions[SACCases.PRISON_BREAKOUT], rule)
+    else:
+        cases = {
+            Goal.option_defeat_klunk: (CASE_NAME_TO_CASE[SACCases.KLUNKS_LAIR],),
+            Goal.option_qwark_opera: (CASE_NAME_TO_CASE[SACCases.MADAM_BUTTERQWARK],),
+            Goal.option_all_gadgetbots: CASES_BY_OPERATIVE[SACOperatives.GADGETBOTS],
+            Goal.option_these_are_the_real_adventures_of_captain_qwark: CASES_BY_OPERATIVE[SACOperatives.QWARK],
+        }[goal]
+        rule = case_access_rule(world, cases[0])
+        for case in cases[1:]:
+            rule = rule & case_access_rule(world, case)
+        add_victory(title, case_regions[cases[0].name], rule)

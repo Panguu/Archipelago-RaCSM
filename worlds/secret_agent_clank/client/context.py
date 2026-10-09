@@ -66,12 +66,16 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self._notification_slot = None
         self._stealth_identity = None
         self._stealth_load_task = None
+        # /debug: show the game worker's diagnostic messages.
+        self.debug_logging = False
 
     def _worker_event(self, kind, value, identity=None):
         if identity is not None and identity != self._notification_slot:
             return
         if kind == "log":
             logger.info(value)
+        elif kind == "debug":
+            self._debug_log(value)
         elif kind == "location":
             self._append_location_by_name(value)
         elif kind == "goal":
@@ -81,19 +85,36 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         elif kind == "bolts":
             self._save_bolt_state(*value)
         elif kind == "stealth":
-            key = f"secret_agent_clank_stealth_{self.team}_{self.slot}"
-            async_start(self.send_msgs([{"cmd": "Set", "key": key,
-                "operations": [{"operation": "max", "value": value}]}]))
+            # Per-case counts only rise; "update" merges just the cases sent.
+            async_start(self.send_msgs([{"cmd": "Set", "key": self._stealth_key(),
+                "operations": [{"operation": "update", "value": value}]}]))
+
+    def _debug_log(self, message):
+        """Diagnostic messages, shown only while /debug is on."""
+        if self.debug_logging:
+            logger.info(message)
+
+    def _stealth_key(self):
+        return f"secret_agent_clank_stealth_cases_{self.team}_{self.slot}"
 
     async def _load_stealth_state(self, identity):
-        key = f"secret_agent_clank_stealth_{self.team}_{self.slot}"
+        key = self._stealth_key()
         self.stored_data.pop(key, None)
-        await self.send_msgs([{"cmd": "Set", "key": key, "want_reply": True,
-                               "operations": [{"operation": "default", "value": 0}]}])
+        await self.send_msgs([{"cmd": "Set", "key": key, "default": {}, "want_reply": True,
+                               "operations": [{"operation": "default", "value": {}}]}])
         while key not in self.stored_data:
+            if identity != self._notification_slot or self.exit_event.is_set():
+                return
             await asyncio.sleep(0.1)
         if identity == self._notification_slot:
-            await self._worker.request("stealth", self.stored_data[key])
+            counts = self.stored_data[key]
+            if type(counts) is int and counts == 0:
+                # Older requests omitted the packet's default and created 0.
+                # This sentinel contains no progress; preserve actual dictionaries.
+                counts = {}
+                await self.send_msgs([{"cmd": "Set", "key": key,
+                    "operations": [{"operation": "replace", "value": counts}]}])
+            await self._worker.request("stealth", counts)
 
     async def _configure_game(self, identity, data, allowed):
         try:
@@ -104,8 +125,11 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
             await self._worker.request("sync", self._checked_location_names())
             async_start(self._load_bolt_state())
             async_start(self._load_trap_state())
-            if int(data.get("stealth_takedown_checks", 0)):
+            if data.get("stealth_cases"):
                 self._stealth_load_task = asyncio.create_task(self._load_stealth_state(identity))
+                await self._stealth_load_task
+                if identity != self._notification_slot or self.exit_event.is_set():
+                    return
             if not self.pine_connected:
                 self._dynamic_pine_port()
                 await self._attempt_pine_connect()
@@ -113,7 +137,8 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
                 await self._apply_received_items()
         except Exception:
             logger.exception("[SAC] Game worker configuration failed")
-            self.pine_connected = False
+            async with self._pine_lock:
+                await self._teardown_pine_connection()
 
     def _bolt_storage_keys(self) -> tuple[str, str]:
         """Server data-storage keys for this slot's delivered and pending bolt rewards."""
@@ -128,9 +153,10 @@ class SACContext(PineMixin, DeathLinkMixin, CommonContext):
         self.stored_data.pop(delivered_key, None)
         self.stored_data.pop(pending_key, None)
         await self.send_msgs([
-            {"cmd": "Set", "key": delivered_key, "want_reply": True, "operations": [
+            {"cmd": "Set", "key": delivered_key, "default": {"count": 0, "starting_delivered": False},
+             "want_reply": True, "operations": [
                 {"operation": "default", "value": {"count": 0, "starting_delivered": False}}]},
-            {"cmd": "Set", "key": pending_key, "want_reply": True,
+            {"cmd": "Set", "key": pending_key, "default": None, "want_reply": True,
              "operations": [{"operation": "default", "value": None}]},
         ])
         while delivered_key not in self.stored_data or pending_key not in self.stored_data:

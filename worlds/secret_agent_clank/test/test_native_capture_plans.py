@@ -6,6 +6,7 @@ from pathlib import Path
 from ..core.main_menu import is_main_menu
 from ..core.patches import MARKER, PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
 from ..core.native_runtime import NativeRuntime
+from ..core.notifications import ItemNotifications
 from ..constants.native_functions import NativeFunctions
 from ..core.patches.connection_warning import ConnectionWarning
 from ..core.patches.gain_storage import GainStorage
@@ -16,6 +17,7 @@ from ..core.patches.vendor_catalog import VendorCatalog
 from ..core.patches.vendor_presentation import VendorPresentation
 from ..core.patches.weapon_mods import WeaponMods
 from ..core.patches.wrench import WrenchProgression
+from ..constants.stealth import STEALTH_CASES, STEALTH_MAX_PER_CASE
 from ..core.stealth import StealthState
 from ..core.symbols import RuntimeSymbols
 from .test_runtime import Memory
@@ -106,8 +108,8 @@ class NativeCapturePlansTests(unittest.TestCase):
                     progression.configure({"ng_plus": ng, "progressive_weapons": progressive,
                         "weapon_xp_multiplier": multiplier, "health_xp_multiplier": multiplier, "bolt_multiplier": multiplier})
                     progression.stealth = StealthState(p)
-                    progression.stealth.configure(3)
-                    progression.stealth.load(0)
+                    progression.stealth.configure(dict.fromkeys(STEALTH_CASES, STEALTH_MAX_PER_CASE))
+                    progression.stealth.load({})
                     if ng and vendor:
                         hooks.patches.extend(TitanVendor(p).prepare(symbols, hooks, set()))
                     elif vendor:
@@ -123,6 +125,8 @@ class NativeCapturePlansTests(unittest.TestCase):
                     self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
                     self.assertEqual(p.data, raw, "Planning must not write RAM")
                     hooks._install_plan()
+                    # Core binds the receipt HUD after install, over the watchdog's render hook.
+                    self.assertTrue(ItemNotifications(p).bind(symbols), "Receipt HUD must bind after install")
                     if not vendor:
                         for name, size in ((NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE, 0x350),
                                            (NativeFunctions.GADGET_IS_SELLABLE, 0x30)):
@@ -131,7 +135,7 @@ class NativeCapturePlansTests(unittest.TestCase):
                                 self.assertEqual(p.read_bytes(address, size), raw[address:address + size])
                         self.assertNotIn("vendor", hooks.tables)
                     if progression.stealth.binding is not None:
-                        counter, site, replacement, address, code = progression.stealth.binding
+                        _, counter, site, replacement, address, code = progression.stealth.binding
                         self.assertGreater(counter, 0)
                         self.assertEqual(p.read_bytes(site, len(replacement)), replacement)
                         self.assertEqual(p.read_bytes(address, len(code)), code)

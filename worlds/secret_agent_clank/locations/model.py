@@ -80,10 +80,14 @@ class SACLocation:
             case SACLocationType.CUTSCENE:
                 return bool(options.all_cutscenes)
             case SACLocationType.KEYCARD:
-                return options.keycard_checks_enabled
+                return options.keycard_checks_enabled and self.operatives_enabled(options)
             case SACLocationType.ALIEN_CODE:
-                return options.alien_code_checks_enabled
+                return options.alien_code_checks_enabled and self.operatives_enabled(options)
         return True
+
+    def operatives_enabled(self, options: "SecretAgentClankOptions") -> bool:
+        """Whether every operative this location needs is enabled."""
+        return all(options.operatives.value.get(operative, 0) for operative in self.operatives)
 
     @property
     def operatives(self) -> frozenset[str]:

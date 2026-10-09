@@ -1,12 +1,47 @@
 import struct
 import unittest
+from pathlib import Path
 
 from ..core.patches import jump, packed
 from ..core.patches.mission_travel import MissionTravel
+from ..core.symbols import RuntimeSymbols
 from .test_runtime import Memory
 
 
 class MissionTravelTests(unittest.TestCase):
+    def test_story_bypasses_in_captured_modules(self):
+        captures = list((Path(__file__).parents[1] / '.research').glob('*.ram'))
+        verified = 0
+        for capture in captures:
+            p = Memory()
+            p.data[:] = capture.read_bytes()
+            symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
+            helper = symbols.get('UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi')
+            if helper is None:
+                continue
+            with self.subTest(capture=capture.name):
+                change = symbols['UPDATE_ChangeToLevel__Fib']
+                travel = MissionTravel(p)
+                edits = travel._prepare_story_routes(symbols, helper, change)
+                expected = {
+                    symbols['SCRNGADGETBOTARENA_Update__Fv'] + 0x130,
+                    symbols['SCRNVEHICLECHALLENGES_Update__Fv'] + 0x218,
+                    symbols['SCRNVEHICLECHALLENGES_Exit__Fv'] + 0xA4,
+                    symbols['SCRNGALACTICMAP_Level5MovieHackFinishedCallback__FPv'] + 12,
+                }
+                self.assertEqual({edit.address for edit in edits}, expected)
+                for edit in edits:
+                    self.assertEqual(p.read_bytes(edit.address, 4), edit.original)
+                    self.assertEqual(edit.original, packed([jump(change, True)]))
+                    self.assertEqual(edit.replacement, packed([jump(helper, True)]))
+                # A changed native layout must not be accepted as this route.
+                p.write_int32(edits[0].address, 0)
+                with self.assertRaisesRegex(RuntimeError, 'Story Continue travel'):
+                    travel._prepare_story_routes(symbols, helper, change)
+                verified += 1
+        if not verified:
+            self.skipTest('Local gameplay captures unavailable')
+
     def test_completion_reloads_current_module_for_both_arena_exits(self):
         p = Memory()
         f, ender = 0x110000, 0x120000

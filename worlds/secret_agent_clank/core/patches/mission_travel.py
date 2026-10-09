@@ -36,6 +36,7 @@ class MissionTravel(PatchSet):
         helper_patch = self._prepare_current_level_route(helper, map_ender, change)
         arena_patches = self._prepare_arena_routes(symbols, helper)
         self.patches = [helper_patch, *arena_patches]
+        self.patches.extend(self._prepare_story_routes(symbols, helper, change))
         if module == 24:
             # Quasar's task predicate is the *next* case's intro flag. Record
             # the actual finish here and let the host capture it before reload
@@ -49,6 +50,48 @@ class MissionTravel(PatchSet):
             self.patches.append(Patch(mailbox, packed([0x27BD0010]), packed([0])))
             self.completion_mailbox = mailbox
         return self.patches
+
+    def _prepare_story_routes(self, symbols, helper, change):
+        """Result-screen Continue paths bypass the shared completion helper."""
+        edits = []
+        highest = symbols.get("GLOBALVARS_GetHighestLevelCanGoTo__Fv")
+        for name, offset in (("SCRNGADGETBOTARENA_Update__Fv", 0x124),
+                             ("SCRNVEHICLECHALLENGES_Update__Fv", 0x20C)):
+            address = symbols.get(name)
+            if address is None:
+                continue
+            if highest is None:
+                raise ValueError("Missing story destination export")
+            site = address + offset
+            self._expect(site, (jump(highest, True), 0, 0x0040202D,
+                                jump(change, True), 0x24050001), "Story Continue travel")
+            edits.append(Patch(site + 12, packed([jump(change, True)]),
+                               packed([jump(helper, True)])))
+
+        vehicle = symbols.get("SCRNVEHICLECHALLENGES_Exit__Fv")
+        update = symbols.get("SCRNVEHICLECHALLENGES_Update__Fv")
+        if vehicle is not None and update is not None:
+            callback = vehicle + 0x90
+            self._expect(update + 0x1E4, (0x3C060000 | ((callback + 0x8000) >> 16),
+                                         0x0200202D, 0x24C60000 | (callback & 0xFFFF)),
+                         "Vehicle movie callback registration")
+            if highest is None:
+                raise ValueError("Missing story destination export")
+            self._expect(callback, (0x27BDFFF0, 0xFFBF0000, jump(highest, True), 0,
+                                   0x0040202D, jump(change, True), 0x24050001,
+                                   0xDFBF0000, 0x03E00008, 0x27BD0010),
+                         "Vehicle movie completion travel")
+            edits.append(Patch(callback + 0x14, packed([jump(change, True)]),
+                               packed([jump(helper, True)])))
+
+        movie = symbols.get("SCRNGALACTICMAP_Level5MovieHackFinishedCallback__FPv")
+        if movie is not None:
+            self._expect(movie, (0x27BDFFF0, 0x2404000F, 0xFFBF0000, jump(change, True),
+                                 0x24050001, 0xDFBF0000, 0x03E00008, 0x27BD0010),
+                         "Story movie completion travel")
+            edits.append(Patch(movie + 12, packed([jump(change, True)]),
+                               packed([jump(helper, True)])))
+        return edits
 
     def _expect(self, address, instructions, label):
         expected = packed(instructions)

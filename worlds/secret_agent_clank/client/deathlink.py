@@ -21,7 +21,7 @@ class DeathLinkMixin:
         self._last_death_link = now
         source = self.auth or "Ratchet"
         planet_name = self.current_planet or "an unknown planet"
-        logger.info("[SAC] DeathLink sent.")
+        self._debug_log("[SAC] DeathLink sent.")
         async_start(
             self.send_msgs([{
                 "cmd": "Bounce",
@@ -43,6 +43,6 @@ class DeathLinkMixin:
         self._last_death_link = max(timestamp, time.time())
         source = data.get("source", "Unknown")
         cause = data.get("cause") or f"{source} died"
-        logger.info(f"[SAC] DeathLink received: {cause}")
+        self._debug_log(f"[SAC] DeathLink received: {cause}")
         async with self._pine_lock:
             await self._worker.request("death")

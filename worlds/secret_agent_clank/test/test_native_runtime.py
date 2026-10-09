@@ -12,6 +12,7 @@ from ..core.inventories.alien_codes import AlienCodeInventory
 from ..core.inventories.keycards import KeycardInventory
 from ..core.inventories.missions import MissionInventory
 from ..core.native_runtime import NativeRuntime
+from ..core.patches.loader_gate import LoaderBarrierLost, LoaderGate
 from ..core.patches import MARKER, LocationHooks
 from ..locations import ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
 from ..options import Goal
@@ -19,6 +20,35 @@ from .test_runtime import Memory
 
 
 class NativeRuntimeTests(unittest.TestCase):
+    def test_lost_barrier_stops_sync_without_reloading(self):
+        self.p.get_game_id = lambda: "SCUS-97623"
+        gate = self.runtime.gate = LoaderGate(self.p)
+        struct.pack_into("<11I", self.p.data, gate.SIGNATURE_START, *gate.SIGNATURE)
+        gate.arm()
+        self.hooks.installed = True
+        self.hooks.is_current.return_value = True
+        # Reproduce the reported signature during an in-flight level load.
+        self.p.batch_write_int32([(gate.SITE, gate.ORIGINAL), (gate.STATE, 4),
+                                 (gate.STATUS, 1), (gate.TARGET, 16),
+                                 (gate.HANDLE, 0x200000)])
+        self.p.writes.clear()
+        with self.assertRaisesRegex(LoaderBarrierLost, "automatic reload is disabled"):
+            self.runtime.service(set(), {})
+        self.assertFalse(gate.armed)
+        self.assertFalse(self.hooks.installed)
+        self.assertEqual(self.p.writes, [])
+        self.hooks.prepare.assert_not_called()
+        self.hooks.sync_entitlements.assert_not_called()
+        self.assertFalse(self.runtime.reload_requested)
+
+    def test_unknown_loader_change_does_not_enter_recovery(self):
+        self.runtime.gate.armed = True
+        self.runtime.gate.held_module.side_effect = RuntimeError("unknown loader code")
+        with self.assertRaisesRegex(RuntimeError, "unknown loader code"):
+            self.runtime.service(set(), {})
+        self.assertFalse(self.runtime.reload_requested)
+        self.hooks.prepare.assert_not_called()
+
     def test_missing_hooks_reload_current_module_once(self):
         self.p.writes.clear()
         self.assertFalse(self.runtime.service(set(), {}))
@@ -279,10 +309,26 @@ class NativeRuntimeTests(unittest.TestCase):
             self.runtime.service(set(), {})
         self.runtime.gate.release.assert_called_once()
 
+    def test_loader_waits_for_stored_stealth_counts(self):
+        from ..core.stealth import StealthState
+        self.runtime.configure_vendors([])
+        self.runtime.gate.held_module.return_value = 1
+        self.runtime.progression = Mock(ng_plus=0, max_challenge_mode=0)
+        self.runtime.progression.prepare.return_value = []
+        self.runtime.progression.stealth = StealthState(self.p)
+        self.runtime.progression.stealth.configure({SACCases.BOLTAIRE_MUSEUM: 1})
+        self.hooks.patches = []
+        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"):
+            self.assertFalse(self.runtime.service(set(), {}))
+            self.hooks.prepare.assert_not_called()
+            self.runtime.gate.release.assert_not_called()
+            self.runtime.progression.stealth.load({})
+            self.assertFalse(self.runtime.service(set(), {}))
+        self.hooks.prepare.assert_called_once()
+        self.runtime.gate.release.assert_called_once()
+
     def test_ap_session_cannot_disable_native_hooks(self):
         core = Core(self.p)
-        with self.assertRaises(RuntimeError):
-            core.set_native_locations(False)
         core.apply_inventory(ratchet={"throwTie": False}, clank={SACClankGadgets.BLACK_OUT_PEN: True})
         self.assertEqual(core._entitlements(), {11: False, 17: True, 25: False})
 

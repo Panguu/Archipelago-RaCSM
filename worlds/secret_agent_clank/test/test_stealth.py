@@ -1,15 +1,17 @@
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from BaseClasses import CollectionState
 from Options import OptionError
-from rule_builder.rules import Has
 from test.general import setup_multiworld
 
-from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
-from ..constants.stealth import stealth_location_name
+from ..constants import CASE_NAME_TO_INFOBOT, SACCases
+from ..constants.stealth import STEALTH_CASES, STEALTH_MAX_PER_CASE, stealth_location_name
+from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
+from ..locations import LOCATION_NAME_TO_ID
+from ..constants.clank_gadgets import SACClankGadgets, SACClankWeapons
 from ..core.patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS, LocationHooks
 from ..core.patches import mips as m
 from ..core.patches.mission_travel import MissionTravel
@@ -20,85 +22,116 @@ from ..core.patches.vendor_presentation import VendorPresentation
 from ..core.patches.weapon_mods import WeaponMods
 from ..core.stealth import END, StealthState
 from ..core.symbols import RuntimeSymbols
-from ..rules.stealth import stealth_access_rule
 from ..world import SecretAgentClankWorld
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 
 
 class StealthTests(unittest.TestCase):
-    def test_generation_modes_and_stable_ids(self):
+    def test_generation_per_case_slider_and_stable_ids(self):
         ids = {}
-        for mode, expected in ((0, ()), (1, (5,10,15,20,25)), (2, (10,20)), (3, tuple(range(1,26)))):
-            mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": mode})
-            locations = {l.name: l.address for l in mw.get_locations(1) if l.name.startswith("Clank Stealth Takedowns:")}
-            self.assertEqual(set(locations), {stealth_location_name(n) for n in expected})
+        for setting in (0, 1, 4, STEALTH_MAX_PER_CASE):
+            mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": setting})
+            locations = {l.name: l.address for l in mw.get_locations(1)
+                         if l.name.startswith("Clank Stealth Takedowns")}
+            expected = {case: setting for case in STEALTH_CASES if setting}
+            self.assertEqual(set(locations), {stealth_location_name(case, n)
+                                              for case, count in expected.items() for n in range(1, count + 1)})
             for name, address in locations.items():
                 self.assertEqual(ids.setdefault(name, address), address)
-            self.assertEqual(mw.worlds[1].fill_slot_data()["stealth_takedown_checks"], mode)
-        for mode in (1, 2, 3):
-            for operatives in ({"Qwark": 1, "Ratchet": 1}, {"Qwark": 1, "Clank": 0}):
-                with self.assertRaisesRegex(OptionError, "requires Clank"):
-                    setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": mode,
-                        "goal": "qwark_opera", "operatives": operatives})
+                self.assertEqual(address, LOCATION_NAME_TO_ID[name])
+            slot = mw.worlds[1].fill_slot_data()
+            self.assertEqual(slot["stealth_takedown_checks"], setting)
+            self.assertEqual(slot["stealth_cases"], expected)
+        # IDs exist for every stealth case and takedown up to the slider maximum.
+        for case in STEALTH_CASES:
+            for n in range(1, STEALTH_MAX_PER_CASE + 1):
+                self.assertIn(stealth_location_name(case, n), LOCATION_NAME_TO_ID)
+        for operatives in ({"Qwark": 1, "Ratchet": 1}, {"Qwark": 1, "Clank": 0}):
+            with self.assertRaisesRegex(OptionError, "requires Clank"):
+                setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 1,
+                    "goal": "qwark_opera", "operatives": operatives})
         setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 0,
             "goal": "qwark_opera", "operatives": {"Qwark": 1}})
 
-    def test_access_requires_a_clank_case(self):
-
-        mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 3})
+    def test_access_requires_case_and_asyanica_items(self):
+        mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 2, "infobots": "cases"})
+        world = mw.worlds[1]
         state = CollectionState(mw)
         for item in mw.precollected_items[1]:
             state.remove(item)
-        loc = mw.get_location(stealth_location_name(25), 1)
-        self.assertFalse(loc.can_reach(state))
-        state.collect(mw.worlds[1].create_item(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM]))
-        self.assertFalse(loc.can_reach(state))  # A single Clank case is not enough for the TODO fallback.
-        for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]:
-            state.collect(mw.worlds[1].create_item(CASE_NAME_TO_INFOBOT[case.name]))
-        self.assertTrue(loc.can_reach(state))
+
+        def reachable(case):
+            return mw.get_location(stealth_location_name(case, 2), 1).can_reach(state)
+
+        # Other stealth cases only need the case itself.
+        reserve = SACCases.GALACTIC_BOLT_RESERVE
+        self.assertFalse(reachable(reserve))
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[reserve]))
+        self.assertTrue(reachable(reserve))
+        # Asyanica Rooftops also needs its case-complete items: Throwtie and Jetboots.
+        rooftops = SACCases.ASYANICA_ROOFTOPS
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[rooftops]))
+        self.assertFalse(reachable(rooftops))
+        throwtie = (UNLOCK_TO_PROGRESSIVE.get(SACClankWeapons.THROWTIE, SACClankWeapons.THROWTIE)
+                    if world.options.progressive_weapons else SACClankWeapons.THROWTIE)
+        state.collect(world.create_item(throwtie))
+        self.assertFalse(reachable(rooftops))
+        state.collect(world.create_item(SACClankGadgets.JETBOOTS))
+        self.assertTrue(reachable(rooftops))
 
     def test_native_counter_caps_preserves_arguments_and_tail_calls(self):
         mem = CaptureMemory()
         mem.write_int32 = lambda a, n: mem.batch_write_int32([(a, n)])
         counter, entry, target = 0x110000, 0x120000, 0x130000
         mem.write_bytes(entry, StealthState.wrapper(counter, target))
-        for count in (0, 4, 24, 25):
+        for count in (0, 4, STEALTH_MAX_PER_CASE - 1, STEALTH_MAX_PER_CASE):
             mem.write_int32(counter, count)
             cpu = CPU(mem)
             cpu.r[m.A0] = 0x123456
             cpu.run(entry, stop=target)
-            self.assertEqual(mem.read_int32(counter), min(count + 1, 25))
+            self.assertEqual(mem.read_int32(counter), min(count + 1, STEALTH_MAX_PER_CASE))
             self.assertEqual(cpu.r[m.A0], 0x123456)
             self.assertEqual(cpu.r[m.RA], CPU.STOP)
 
     def test_poll_retry_reload_and_state_loading(self):
+        museum, alley = SACCases.BOLTAIRE_MUSEUM, SACCases.AZCOTAL_ALLEY
         mem = CaptureMemory()
         s = StealthState(mem)
-        s.configure(1, reset=True)
-        s.binding = (0x1000, 0x2000, b"site", 0x3000, b"code")
+        s.configure({museum: 2, alley: 3}, reset=True)
+        s.binding = (museum, 0x1000, 0x2000, b"site", 0x3000, b"code")
         mem.write_bytes(0x2000, b"site")
         mem.write_bytes(0x3000, b"code")
-        mem.batch_write_int32([(0x1000, 11)])
+        mem.batch_write_int32([(0x1000, 4)])
         s.on_count = Mock()
         s.poll()
         self.assertEqual(s.checks(), ())
-        s.load(0)
+        s.load({alley: 1})
         s.poll()
-        s.on_count.assert_called_once_with(11)
-        self.assertEqual(s.checks(), (stealth_location_name(5), stealth_location_name(10)))
+        s.on_count.assert_called_once_with({museum: 4})
+        # Each case is capped at its own check count; other cases keep their own progress.
+        self.assertEqual(s.checks(), (stealth_location_name(museum, 1), stealth_location_name(museum, 2),
+                                      stealth_location_name(alley, 1)))
         self.assertEqual(s.checks(), s.checks())  # checks retry until normal delivery accepts them
         mem.batch_write_int32([(0x1000, 0)])
         s.poll()
-        self.assertEqual(mem.read_int32(0x1000), 11)
-        s.configure(1)
-        s.load(5)
-        self.assertEqual(s.count, 11)
+        self.assertEqual(mem.read_int32(0x1000), 4)
+        s.configure({museum: 2, alley: 3})
+        s.load({museum: 1})
+        self.assertEqual(s.counts, {museum: 4, alley: 1})
         mem.write_bytes(0x2000, b"gone")
         s.poll()
         self.assertIsNone(s.binding)
-        s.configure(0, reset=True)
+        with self.assertRaises(ValueError):
+            s.load(5)  # The old single global counter.
+        s.configure({}, reset=True)
         self.assertEqual(s.checks(), ())
+
+    def test_prepare_skips_cases_without_checks(self):
+        s = StealthState(CaptureMemory())
+        s.configure({SACCases.AZCOTAL_ALLEY: 1})
+        self.assertEqual(s.prepare({}, Mock(), SACCases.BOLTAIRE_MUSEUM), [])
+        self.assertIsNone(s.binding)
 
     def test_research_captures_validate_success_path_and_plan(self):
         paths = list((Path(__file__).parents[1] / ".research").glob("*.ram"))
@@ -113,8 +146,8 @@ class StealthTests(unittest.TestCase):
                 continue
             seen += 1
             s = StealthState(mem)
-            s.configure(3)
-            s.load(7)
+            s.configure({SACCases.BOLTAIRE_MUSEUM: STEALTH_MAX_PER_CASE})
+            s.load({SACCases.BOLTAIRE_MUSEUM: 7})
             progression = Progression(mem)
             progression.stealth = s
             edits = progression.prepare(symbols, SimpleNamespace(patches=[]), 1, vendor_enabled=False)
@@ -125,12 +158,12 @@ class StealthTests(unittest.TestCase):
                 self.assertEqual(mem.read_bytes(edit.address, len(edit.original)), edit.original)
                 mem.write_bytes(edit.address, edit.replacement)
             s.poll()
-            self.assertEqual(s.count, 7)
+            self.assertEqual(s.counts, {SACCases.BOLTAIRE_MUSEUM: 7})
             for edit in reversed(edits):
                 mem.write_bytes(edit.address, edit.original)
             mem.batch_write_int32([(symbols[END] + 0x4C, 0)])
             with self.assertRaisesRegex(RuntimeError, "path changed"):
-                s.prepare(symbols, Mock())
+                s.prepare(symbols, Mock(), SACCases.BOLTAIRE_MUSEUM)
         self.assertGreater(seen, 0)
 
     def test_combined_pickup_vendor_progression_and_stealth_plans(self):
@@ -166,8 +199,8 @@ class StealthTests(unittest.TestCase):
                         "health_xp_multiplier": 5 if module == 1 else 1,
                         "bolt_multiplier": 8 if module == 1 else 1})
                     prog.stealth = StealthState(mem)
-                    prog.stealth.configure(3)
-                    prog.stealth.load(0)
+                    prog.stealth.configure(dict.fromkeys(STEALTH_CASES, STEALTH_MAX_PER_CASE))
+                    prog.stealth.load({})
                     hooks.patches.extend(VendorCatalog(mem).prepare(symbols, hooks))
                     hooks.patches.extend(prog.prepare(symbols, hooks, module))
                     hooks.patches.extend(VendorPresentation(mem).prepare(symbols, hooks))
@@ -182,17 +215,3 @@ class StealthTests(unittest.TestCase):
                     self.assertEqual(mem.data, raw)
 
         self.assertGreater(verified, 0, "No combined capture plans were tested")
-
-    def test_editable_tiers_cover_all_milestones(self):
-
-
-        # Patching each tier demonstrates the intended edit points independently.
-        with patch("worlds.secret_agent_clank.rules.stealth.stealth_5_rule", return_value=Has("five")) as five, \
-             patch("worlds.secret_agent_clank.rules.stealth.stealth_10_rule", return_value=Has("ten")) as ten, \
-             patch("worlds.secret_agent_clank.rules.stealth.stealth_25_rule", return_value=Has("twenty-five")) as final:
-            for count in range(1, 26):
-                five.reset_mock(); ten.reset_mock(); final.reset_mock()
-                stealth_access_rule(None, count)
-                self.assertEqual(five.call_count, 1)
-                self.assertEqual(ten.call_count, int(count > 5))
-                self.assertEqual(final.call_count, int(count > 10))

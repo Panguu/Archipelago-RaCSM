@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from ..core.address_maps import BOLTS_ADDRESS
-from ..core.bolt_rewards import BoltRewards, reward_balance
+from ..core.bolt_rewards import MAX_BOLTS, MAX_BOLTS_PER_PACK, BoltRewards, reward_balance
 from ..core.core import Core
 from .test_runtime import Memory
 
@@ -38,6 +38,26 @@ class BoltRewardTests(unittest.TestCase):
         self.assertEqual(reward_balance(1000, 2), 1440)
         self.assertEqual(reward_balance(491, 1), 589)
         self.assertEqual(reward_balance(0, 3), 0)
+
+    def test_each_pack_is_capped(self):
+        self.assertEqual(reward_balance(999_995, 1), 999_995 + 199_999)
+        self.assertEqual(reward_balance(1_000_000, 1), 1_000_000 + MAX_BOLTS_PER_PACK)
+        self.assertEqual(reward_balance(5_000_000, 2), 5_000_000 + 2 * MAX_BOLTS_PER_PACK)
+
+    def test_rewards_are_capped(self):
+        self.assertEqual(reward_balance(8_900_000, 1), MAX_BOLTS)
+        self.assertEqual(reward_balance(MAX_BOLTS + 5, 1), MAX_BOLTS)
+        self.p.write_int32(BOLTS_ADDRESS, 8_500_000)
+        self.r.configure(**self.server.configure_kwargs(starting_bolts=100_000))
+        self.r.received = 3
+        self.r.deliver()
+        self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), MAX_BOLTS)
+
+    def test_bolts_earned_in_game_are_clamped(self):
+        self.r.deliver()
+        self.p.write_int32(BOLTS_ADDRESS, MAX_BOLTS + 1234)
+        self.r.deliver()
+        self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), MAX_BOLTS)
 
     def test_starting_grant_precedes_rewards_and_survives_restart(self):
         self.r.configure(**self.server.configure_kwargs(starting_bolts=5000))

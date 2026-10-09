@@ -16,6 +16,7 @@ from Options import (
 
 from .constants.cheats import TRAP_DURATIONS
 from .constants.operatives import ALL_OPERATIVES
+from .constants.stealth import STEALTH_MAX_PER_CASE
 
 
 class ClankSkin(Choice):
@@ -157,16 +158,21 @@ class Operatives(OptionCounter):
 
 
 class Goal(Choice):
-    """Victory condition. Pick and Mix requires every condition selected below."""
+    """Victory condition.
+    Qwark Opera completes Madam Butterqwark; These Are The Real Adventures Of Captain Qwark
+    completes every Qwark case. Any completes on whichever goal is finished first.
+    Pick and Mix requires every condition selected below.
+    """
     display_name = "Goal"
     option_defeat_klunk    = 0
     option_qwark_opera     = 1
     option_all_gadgetbots   = 2
     option_ratchet_prison_escape = 3
-    option_alien_codes      = 4
-    option_chalice_of_power = 5
-    option_any             = 6
-    option_pick_and_mix    = 7
+    option_these_are_the_real_adventures_of_captain_qwark = 4
+    option_alien_codes      = 5
+    option_chalice_of_power = 6
+    option_any             = 7
+    option_pick_and_mix    = 8
     default = 0
 
 
@@ -176,8 +182,8 @@ class PickAndMixGoals(OptionSet):
     At least one must be selected when Goal is Pick and Mix.
     """
     display_name = "Pick and Mix Goals"
-    valid_keys = {"defeat_klunk", "qwark_opera", "all_gadgetbots",
-                  "ratchet_prison_escape", "alien_codes", "chalice_of_power"}
+    valid_keys = {"defeat_klunk", "qwark_opera", "all_gadgetbots", "ratchet_prison_escape",
+                  "these_are_the_real_adventures_of_captain_qwark", "alien_codes", "chalice_of_power"}
     default = frozenset()
 
 
@@ -234,35 +240,34 @@ class WeaponLevelChecks(Choice):
     default = 0
 
 
-class StealthTakedownChecks(Choice):
-    """Cumulative successful Clank stealth takedowns, up to 25.
-    Every 5 checks 5/10/15/20/25; every 10 checks 10/20; all checks 1-25.
+class StealthTakedownChecks(Range):
+    """Successful Clank stealth takedown checks per case: takedowns 1 up to this
+    number in every case that has stealth takedowns, capped at what the case offers.
+    Takedowns add up across replays of a case. 0 turns them off.
     Requires Clank. Progress is tracked while the AP client is connected.
     """
     display_name = "Stealth Takedown Checks"
-    option_off = 0
-    option_every_5 = 1
-    option_every_10 = 2
-    option_all = 3
+    range_start = 0
+    range_end = STEALTH_MAX_PER_CASE
     default = 0
 
 
-class NanotechChecks(DefaultOnToggle):
-    """Check each Clank nanotech increase: 16-60 in NG, 16-85 in NG+.
-    Requires Clank to be enabled. Other operatives never award these checks.
+class NanotechChecks(Toggle):
+    """Add a location for each Clank nanotech increase: 16-60 in NG, 16-85 in NG+.
+    Requires Clank to be enabled. Other operatives never award these locations.
     """
-    display_name = "Clank Nanotech Checks"
+    display_name = "Clank Nanotech Locations"
 
 
 class RatchetNanotechChecks(Toggle):
-    """Check each Ratchet nanotech increase: 21-60 in NG, 21-90 in NG+.
-    Requires Ratchet. Checks use his saved XP, once per level across all missions.
+    """Add a location for each Ratchet nanotech increase: 21-60 in NG, 21-90 in NG+.
+    Requires Ratchet. Locations use his saved XP, once per level across all missions.
     """
-    display_name = "Ratchet Nanotech Checks"
+    display_name = "Ratchet Nanotech Locations"
 
 
 class ProgressiveWrench(Toggle):
-    """Adds 5 Progressive Wrench items to the pool (Ratchet only) -- each copy upgrades the wrench a level."""
+    """Adds 5 Progressive Wrench items to the pool (Ratchet only) each copy upgrades the wrench a level. Wrench starts as disabled if this is turned on."""
     display_name = "Progressive Wrench"
 
 
@@ -271,7 +276,7 @@ class WeaponXPMultiplier(Range):
     display_name = "Weapon XP Multiplier"
     range_start = 1
     range_end = 10
-    default = 4
+    default = 5
 
 
 class HealthXPMultiplier(Range):
@@ -279,7 +284,7 @@ class HealthXPMultiplier(Range):
     display_name = "Nanotech XP Multiplier"
     range_start = 1
     range_end = 10
-    default = 4
+    default = 5
 
 
 class BoltMultiplier(Range):
@@ -287,7 +292,7 @@ class BoltMultiplier(Range):
     display_name = "Bolt Multiplier"
     range_start = 1
     range_end = 10
-    default = 4
+    default = 5
 
 
 class DeathAmnesty(Range):

@@ -19,7 +19,7 @@ The [player settings page for this game](../player-settings) contains all the op
 
 All weapons, gadgets for both Clank and Ratchet, level access (depending on the yaml setting) are shuffled into the item pool and placed on the following location
 types: end of level completion, mission completion, cutscenes watched, titanium bolt locations, skill point completions, challenges completed in special missions/as gadgetbots/as Ratchet,
-weapon vendor purchases, the 3 keycard locations, all 27 alien code locations, weapon and nanotech levels, stealth takedown thresholds.
+weapon vendor purchases, the 3 keycard locations, all 27 alien code locations, weapon and nanotech levels, and stealth takedowns in each Clank case.
 ## What options are available?
 
 The full option list with all details lives on the [player settings page](../player-settings).

@@ -1,6 +1,6 @@
 """Read 32-bit mission states by native case label and mission title ID."""
 import struct
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 from ...constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, MISSION_NAMES, MissionFlag
 from ...constants.cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
@@ -53,15 +53,6 @@ def resolve_chapter_table(pine: "Pine", base: int | None = None) -> "dict[int, t
         if lo <= ptr < hi and 0 < count <= _PLAUSIBLE_MAX_COUNT and ptr + count * _TASK_ENTRY_SIZE <= hi:
             slots[i] = (ptr, count)
     return slots
-
-
-class ChapterTableRow(NamedTuple):
-    """One row of MissionInventory.dump_chapter_table()."""
-    slot: int
-    task_count: int
-    assumed_case: "str | None"
-    expected_count: "int | None"
-    matches: "bool | None"
 
 
 class MissionInventory:
@@ -210,18 +201,6 @@ class MissionInventory:
         if writes:
             self.pine.batch_write_int8(writes)
         return len(writes)
-
-    def dump_chapter_table(self) -> list["ChapterTableRow"]:
-        """For /mission_table: each slot's task count against the tasks expected for the cases found in it."""
-        slots = resolve_chapter_table(self.pine, self.table_base)
-        rows = []
-        for slot, (pointer, count) in sorted(slots.items()):
-            labels = self.pine.batch_read_int32([pointer + i * 0x60 + 0x3C for i in range(count)])
-            names = list(dict.fromkeys(CASE_LABELS[label] for label in labels if label in CASE_LABELS))
-            expected = sum(len(CHAPTER_ENTRIES.get(name, ())) for name in names)
-            rows.append(ChapterTableRow(slot, count, " / ".join(names) or None,
-                                        expected if names else None, expected == count if names else None))
-        return rows
 
     def __repr__(self) -> str:
         seen = sum(self.completed.values())

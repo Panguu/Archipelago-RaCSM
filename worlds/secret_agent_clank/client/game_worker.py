@@ -20,7 +20,8 @@ class GameRuntime:
         from ..rules.vendor_access import VENDOR_REQUIREMENTS
         from rule_builder.rules import False_
         from .vendor_scouts import VendorScouts
-        self.core = Core(self.pine, log=lambda message: self.event('log', message))
+        self.core = Core(self.pine, log=lambda message: self.event('log', message),
+                         debug=lambda message: self.event('debug', message))
         self.scouts = VendorScouts(LOCATION_NAME_TO_ID)
         self.core.vendor_rewards.scouts = self.scouts
         self.core.native_runtime.configure_vendors(
@@ -34,7 +35,7 @@ class GameRuntime:
             missions_all=lambda: self.data.get('all_missions', 0) == 1,
             on_bolt_state_changed=lambda delivered, pending: self.event('bolts', (delivered, pending)),
         )
-        self.core.stealth.on_count = lambda count: self.event('stealth', count)
+        self.core.stealth.on_count = lambda counts: self.event('stealth', counts)
 
     def event(self, kind, value):
         self.emit(kind, value, self.identity)
@@ -67,7 +68,7 @@ class GameRuntime:
             self.identity, self.data, self.allowed = identity, dict(data), set(allowed)
             if changed:
                 w.notifications.queue.clear()
-            w.stealth.configure(int(data.get('stealth_takedown_checks', 0)), reset=changed)
+            w.stealth.configure(dict(data.get('stealth_cases', {})), reset=changed)
             w.bolt_rewards.enabled = False
             self.scouts.rewards.clear()
             w.native_runtime.ap_connected = True
@@ -134,38 +135,36 @@ class GameRuntime:
             w.bolt_rewards.configure(**payload)
         elif command == 'stealth':
             w.stealth.load(payload)
-            w.stealth.on_count(w.stealth.count)
+            w.stealth.on_count(dict(w.stealth.counts))
         elif command == 'scouts':
             self.scouts.rewards = payload
-        elif command == 'native_locations':
-            w.set_native_locations(payload)
         elif command == 'diagnostic':
             return self.diagnostic(*payload)
         else:
             raise ValueError(f'Unknown game-worker command: {command}')
 
-    def diagnostic(self, command, case_id=None):
-        from ..core.ratchet_nanotech import read_ratchet_nanotech
+    def diagnostic(self, command):
         w = self.core
         if command == 'sac_info':
+            gate = w.native_runtime.gate
+            loader = None
+            if self.connected:
+                addresses = (gate.SITE, gate.STATE, gate.STATUS, gate.TARGET, gate.HANDLE,
+                             0x206324, 0x206328, 0x206338)
+                loader = dict(zip(
+                    ('instruction', 'state', 'status', 'target', 'handle',
+                     'requested_module', 'current_module', 'game_state'),
+                    (f'0x{value:08X}' for value in self.pine.batch_read_int32(addresses))))
             return {'case_id': w.case.case_id, 'inventory_initialized': w._inventory_initialized,
                     'hooks_installed': w.location_hooks.installed,
+                    'loader': loader, 'barrier_armed': gate.armed,
+                    'reload_requested': w.native_runtime.reload_requested,
+                    'stealth_loaded': w.stealth.loaded,
+                    'stealth_cases': len(w.stealth.cases),
                     'awaiting_start': w.native_runtime.awaiting_start,
                     'generation': w.native_runtime.generation,
                     'owned_equipment': sorted(name for name, owned in w._owned_equipment().items() if owned),
                     'missions': repr(w.missions)}
-        if not self.connected or not w.case.is_ready:
-            raise ValueError('Wait until gameplay is ready')
-        if command == 'ratchet_nanotech':
-            return read_ratchet_nanotech(self.pine, w.case.symbols)
-        if command == 'mission_table':
-            return [row._asdict() for row in w.missions.dump_chapter_table()]
-        case_id = case_id if case_id is not None else w.case.case_id
-        if command == 'case_states':
-            return {name: state.name for name, state in w.case_unlocks.read_all(case_id).items()}
-        if command == 'case_struct':
-            return {slot: (value, w.case_struct.slot_case_name(slot))
-                    for slot, value in w.case_struct.read_all(case_id).items()}
         raise ValueError(f'Unknown diagnostic: {command}')
 
 

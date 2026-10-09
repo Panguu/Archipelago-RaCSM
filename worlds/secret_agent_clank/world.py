@@ -37,6 +37,7 @@ from .items import (
     WEAPON_ITEM_TABLE,
 )
 from .locations import LOCATION_NAME_TO_ID
+from .locations.stealth import stealth_case_counts
 from .options import Goal, Infobots, SecretAgentClankOptions, sac_option_groups
 from .regions import create_regions
 from .rules import set_rules
@@ -155,7 +156,7 @@ class SecretAgentClankWorld(World):
             f"(starting case: {self.starting_case}), so items cannot be placed. Enable more operatives or cases, "
             "raise starting_weapons / starting_gadgets, or turn on more location checks "
             "(such as Missions: All, All Cutscenes, Skill Points, Keycards, Alien Codes, "
-            "Weapon Level Checks or Nanotech Checks)."
+            "Weapon Level Checks, Clank Nanotech Locations or Ratchet Nanotech Locations)."
         )
 
     def create_items(self) -> None:
@@ -328,6 +329,7 @@ class SecretAgentClankWorld(World):
             "nanotech_checks": bool(self.options.nanotech_checks),
             "ratchet_nanotech_checks": bool(self.options.ratchet_nanotech_checks),
             "stealth_takedown_checks": self.options.stealth_takedown_checks.value,
+            "stealth_cases": stealth_case_counts(self),
             "weapon_xp_multiplier": self.options.weapon_xp_multiplier.value,
             "health_xp_multiplier": self.options.health_xp_multiplier.value,
             "bolt_multiplier": self.options.bolt_multiplier.value,

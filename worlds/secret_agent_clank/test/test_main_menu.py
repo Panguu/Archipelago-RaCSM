@@ -42,11 +42,13 @@ class MainMenuTests(unittest.TestCase):
         self.assertEqual(log.call_count, 2)
 
     def test_core_shows_notice_without_ap_and_skips_gameplay_reads(self):
-        log = Mock()
-        core = Core(self.p, log)
+        log, debug = Mock(), Mock()
+        core = Core(self.p, log, debug)
         core._read_native_locations = Mock()
         core.case.check_transition = Mock()
         core.tick()
-        log.assert_called_once_with('[SAC] Start a new game')
+        # Routine status only appears with /debug on.
+        debug.assert_called_once_with('[SAC] Start a new game')
+        log.assert_not_called()
         core._read_native_locations.assert_not_called()
         core.case.check_transition.assert_not_called()

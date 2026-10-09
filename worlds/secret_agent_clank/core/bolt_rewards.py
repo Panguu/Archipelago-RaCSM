@@ -1,10 +1,15 @@
 """Deliver AP currency once per received item."""
 from .address_maps import BOLTS_ADDRESS
 
+MAX_BOLTS = 9_000_000
+MAX_BOLTS_PER_PACK = 200_000
+
 
 def reward_balance(balance, count):
+    balance = min(MAX_BOLTS, balance)
     for _ in range(count):
-        updated = min(0x7FFFFFFF, balance + balance // 5)
+        # Each pack adds 20% of the balance, at most MAX_BOLTS_PER_PACK.
+        updated = min(MAX_BOLTS, balance + min(balance // 5, MAX_BOLTS_PER_PACK))
         if updated == balance:
             break
         balance = updated
@@ -60,9 +65,13 @@ class BoltRewards:
                 self.delivered = pending["count"]
             self.pending = None
             self._save()
+        # Enforce the cap on bolts earned in-game too, not just AP rewards.
+        # Only once no write-ahead journal is open, so recovery stays exact.
+        if self.pine.read_int32(BOLTS_ADDRESS) > MAX_BOLTS:
+            self.pine.write_int32(BOLTS_ADDRESS, MAX_BOLTS)
         if not self.starting_delivered:
             before = self.pine.read_int32(BOLTS_ADDRESS)
-            after = min(0x7FFFFFFF, before + self.starting_bolts)
+            after = min(MAX_BOLTS, before + self.starting_bolts)
             # Award once, preserving bolts already earned while connecting.
             # Use the same write-ahead recovery as received percentage items.
             self.pending = {"kind": "starting", "before": before, "after": after}

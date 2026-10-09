@@ -2,7 +2,7 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME
+from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, SACMissionLocations
 from ..constants.operatives import SACOperatives
 from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
 from ..constants.planets import CASE_ID_TO_CASE, CASES_BY_OPERATIVE, SACCases
@@ -12,7 +12,6 @@ from ..options import Goal
 from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
 from .bolt_rewards import BoltRewards
 from .inventories.alien_codes import AlienCodeInventory
-from .inventories.case_struct import CaseStructInventory
 from .inventories.case_unlocks import CaseUnlockInventory, resolve_owned_cases
 from .inventories.cutscenes import CutsceneInventory
 from .inventories.gadgetbot_challenges import GadgetbotChallengeInventory
@@ -45,11 +44,14 @@ _HOOKED_PICKUP_NAMES = frozenset(WEAPON_ORDER[slot] for slot in PICKUP_LOCATIONS
 
 class Core:
 
-    def __init__(self, pine, log: Callable[[str], None] | None = None) -> None:
+    def __init__(self, pine, log: Callable[[str], None] | None = None,
+                 debug: Callable[[str], None] | None = None) -> None:
         self.pine = pine
         self._log = log or logger.info
-        self.main_menu = MainMenuNotice(pine, self._log)
-        self.bolt_rewards = BoltRewards(pine, self._log)
+        # Diagnostics only shown while the client's /debug is on.
+        self._debug = debug or logger.debug
+        self.main_menu = MainMenuNotice(pine, self._debug)
+        self.bolt_rewards = BoltRewards(pine, self._debug)
         self.notifications = ItemNotifications(pine)
         self.traps = Traps(pine)
 
@@ -59,14 +61,13 @@ class Core:
         self.case.on_respawn          = self._handle_respawn
 
         self.case_unlocks  = CaseUnlockInventory(pine)
-        self.case_struct   = CaseStructInventory(pine)
         # Owned and rebound by self.case on every case transition.
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
-        self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log)
+        self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log, self._debug)
         self.skins = Skins(pine)
         self.native_runtime.skins = self.skins
-        self.vendor_rewards = VendorRewards(pine, self.vendor, self._log)
+        self.vendor_rewards = VendorRewards(pine, self.vendor, self._debug)
         self.native_runtime.presentation = self.vendor_rewards.text
         self.wrench = WrenchProgression(pine)
         self.native_runtime.wrench = self.wrench
@@ -172,11 +173,6 @@ class Core:
         self.keycards.root_pointer = None
         self._native_pause_notice = False
 
-    def set_native_locations(self, enabled: bool) -> None:
-        """Compatibility command: an AP session may not disable interception."""
-        if not enabled:
-            raise RuntimeError("Native pickup/vendor interception is mandatory; it cannot be disabled")
-
     def _owned_equipment(self) -> dict[str, bool]:
         """Resolve AP ownership once for both native hooks and inventory writes."""
         owned = dict(self._ap_owned["ratchet"])
@@ -213,7 +209,7 @@ class Core:
         screen = self.case.case_menu.screen_address
         if screen is None or self.pine.read_int32(screen) not in (8, 14, 16):
             if not self._native_pause_notice:
-                self._log("[SAC] Open Case Files to activate native vendor/pickup checks for this level.")
+                self._debug("[SAC] Open Case Files to activate native vendor/pickup checks for this level.")
                 self._native_pause_notice = True
             return False
         if (hooks.module == self.case.case_id and hooks.marker_address is not None
@@ -229,7 +225,7 @@ class Core:
                       vendor_enabled=vendor_enabled)
         hooks.install(screen)
         self._native_pause_notice = False
-        self._log("[SAC] Native vendor/pickup checks active for this level.")
+        self._debug("[SAC] Native vendor/pickup checks active for this level.")
         return True
 
     def _send_once(self, name: str) -> None:
@@ -343,7 +339,7 @@ class Core:
 
         if became_ready:
             case_label = current_case.name if current_case else f"unknown case 0x{self.case.case_id:X}"
-            logger.info(f"[SAC] Case changed -> {case_label} (id={self.case.case_id})")
+            self._debug(f"[SAC] Case changed -> {case_label} (id={self.case.case_id})")
             # Mission table addresses are per level; re-resolve them for this one.
             self.missions.invalidate_resolved_addresses()
             self.missions.table_base = table_base
@@ -358,7 +354,7 @@ class Core:
             self.ratchet_challenges.bind(self.case.symbols)
             self.titanium_bolts.bind(self.case.symbols)
             if not self.notifications.bind(self.case.symbols):
-                self._log("[SAC] Native receipt HUD layout could not be validated for this module.")
+                self._debug("[SAC] Native receipt HUD layout could not be validated for this module.")
             self.keycards.bind(self.case.symbols)
             if not self.native_runtime.vendor_enabled_for_module(self.case.case_id):
                 self.vendor.set_addr(None)
@@ -366,7 +362,7 @@ class Core:
         newly_accessible = self.case.case_menu.unlock_owned_missions(self._owned_cases)
         menu_screen = self.case.case_menu.screen_address
         if newly_accessible and menu_screen is not None and self.pine.read_int32(menu_screen) == 14:
-            self._log("[SAC] New cases available: " + ", ".join(sorted(newly_accessible))
+            self._debug("[SAC] New cases available: " + ", ".join(sorted(newly_accessible))
                       + ". Fully close and reopen Case Files to refresh the list.")
         self.case.case_menu.apply_access(self._owned_cases)
 
@@ -414,10 +410,12 @@ class Core:
         complete = self.missions._reported
         klunk = (MISSION_COMPLETE_NAME[SACCases.KLUNKS_LAIR] in complete or
                  self.missions.completed.get(CHAPTER_ENTRIES[SACCases.KLUNKS_LAIR][-1].name, False))
-        qwark = all(MISSION_COMPLETE_NAME[case.name] in complete or
-                    (bool(CHAPTER_ENTRIES.get(case.name)) and
-                     all(self.missions.completed.get(entry.name, False) for entry in CHAPTER_ENTRIES[case.name]))
-                    for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])
+        butterqwark = (MISSION_COMPLETE_NAME[SACCases.MADAM_BUTTERQWARK] in complete or
+                       self.missions.completed.get(SACMissionLocations.MADAM_BUTTERQWARK_QWARKOGRAPHY_CH_3, False))
+        all_qwark = all(MISSION_COMPLETE_NAME[case.name] in complete or
+                        (bool(CHAPTER_ENTRIES.get(case.name)) and
+                         all(self.missions.completed.get(entry.name, False) for entry in CHAPTER_ENTRIES[case.name]))
+                        for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])
         gadgetbots = all(MISSION_COMPLETE_NAME[case.name] in complete or
                          all(self.missions.completed.get(entry.name, False)
                              for entry in CHAPTER_ENTRIES[case.name])
@@ -425,13 +423,15 @@ class Core:
         ratchet = all(self.ratchet_challenges.completed.values())
         conditions = {
             Goal.option_defeat_klunk: klunk,
-            Goal.option_qwark_opera: qwark,
-            Goal.option_any: klunk or qwark,
+            Goal.option_qwark_opera: butterqwark,
             Goal.option_all_gadgetbots: gadgetbots,
             Goal.option_ratchet_prison_escape: ratchet,
+            Goal.option_these_are_the_real_adventures_of_captain_qwark: all_qwark,
             Goal.option_chalice_of_power: self.keycards.chalice_collected,
             Goal.option_alien_codes: self.alien_codes.all_found,
         }
+        # Any completes on whichever goal is finished first.
+        conditions[Goal.option_any] = any(conditions.values())
         reached = (bool(self.pick_and_mix_goals) and
                    all(conditions.get(goal, False) for goal in self.pick_and_mix_goals)
                    if self.pick_and_mix_goals is not None else conditions.get(self.goal, False))

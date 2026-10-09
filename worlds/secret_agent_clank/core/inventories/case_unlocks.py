@@ -84,21 +84,6 @@ class CaseUnlockInventory:
             result[case.name] = anchor + (CASE_UNLOCK_TABLE_OFFSETS[slot - 1] - current_offset)
         return result
 
-    def read_all(self, current_case_id: "int | None") -> dict[str, "CaseUnlockState | None"]:
-        """Batch-read every case's current locked/unlocked byte."""
-        table = self._resolve_table(current_case_id)
-        if not table:
-            return {}
-        names = list(table)
-        raw_values = self.pine.batch_read_int8([table[name] for name in names])
-        result: dict[str, CaseUnlockState | None] = {}
-        for name, value in zip(names, raw_values):
-            try:
-                result[name] = CaseUnlockState(value)
-            except ValueError:
-                result[name] = None
-        return result
-
     def apply_all(self, owned_case_names: "set[str]", current_case_id: "int | None") -> None:
         """Unlock every owned case and lock the rest, in one batch write."""
         table = self._resolve_table(current_case_id)

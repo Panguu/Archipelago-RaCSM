@@ -2,6 +2,10 @@
 import struct
 
 
+class LoaderBarrierLost(RuntimeError):
+    """The complete original loader returned while our barrier was armed."""
+
+
 class LoaderGate:
     SITE = 0x103BCC
     ORIGINAL = 0x24030005
@@ -27,7 +31,21 @@ class LoaderGate:
             expected[5] = self.HELD
         actual = self.pine.read_bytes(self.SIGNATURE_START, len(expected) * 4)
         if actual != struct.pack("<11I", *expected):
-            raise RuntimeError("Resident loader signature changed")
+            if len(actual) != len(expected) * 4:
+                detail = f"short read: expected {len(expected) * 4} bytes, got {len(actual)}"
+            else:
+                words = struct.unpack("<11I", actual)
+                detail = "; ".join(
+                    f"0x{self.SIGNATURE_START + index * 4:08X}: "
+                    f"expected 0x{wanted:08X}, got 0x{found:08X}"
+                    for index, (wanted, found) in enumerate(zip(expected, words))
+                    if wanted != found)
+                if patched and words == self.SIGNATURE:
+                    detail += ("; loader barrier was restored to original game code "
+                               "while this client still considered it armed "
+                               "(possible game reset, save-state load, or another client)")
+                    raise LoaderBarrierLost(f"Resident loader signature changed ({detail})")
+            raise RuntimeError(f"Resident loader signature changed ({detail})")
 
     def arm(self):
         if self.armed:

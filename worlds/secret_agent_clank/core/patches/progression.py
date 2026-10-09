@@ -253,9 +253,10 @@ class Progression(PatchSet):
             if self.stealth is not None:
                 # Shared DLLs can contain Clank code even on another operative's
                 # route. Only the Clank success call is intercepted, never generic kills.
-                clank_modules = {CASE_MODULES[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
-                if module in clank_modules:
-                    edits.extend(self.stealth.prepare(symbols, allocate))
+                # Clank cases use distinct modules, so the module names the case.
+                clank_cases = {CASE_MODULES[case.name]: case.name for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
+                if module in clank_cases:
+                    edits.extend(self.stealth.prepare(symbols, allocate, clank_cases[module]))
                 else:
                     self.stealth.binding = None
 

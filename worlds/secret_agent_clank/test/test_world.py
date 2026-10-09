@@ -96,6 +96,22 @@ class TestCombinedCollectibles(unittest.TestCase):
                 for category, expected in ((KEYCARD_LOCATIONS, cards), (ALIEN_CODE_LOCATIONS, codes)):
                     self.assertTrue(all(loc.available(world.options) == expected for loc in category.values()))
 
+    def test_collectibles_of_disabled_operatives_are_excluded(self):
+        from ..constants import CASE_NAME_TO_OPERATIVE, SACOperatives
+        from ..constants.operatives import ALL_OPERATIVES
+        for disabled in (SACOperatives.GADGETBOTS, SACOperatives.CLANK):
+            with self.subTest(disabled=disabled):
+                operatives = {operative: int(operative != disabled) for operative in ALL_OPERATIVES}
+                mw = setup_multiworld(SecretAgentClankWorld, options={
+                    'keycards_and_alien_codes': True, 'operatives': operatives, 'goal': 'qwark_opera'})
+                world = mw.worlds[1]
+                names = {loc.name for loc in mw.get_locations(1)}
+                for category in (KEYCARD_LOCATIONS, ALIEN_CODE_LOCATIONS):
+                    for loc in category.values():
+                        expected = CASE_NAME_TO_OPERATIVE[loc.case] != disabled
+                        self.assertEqual(loc.available(world.options), expected, loc.name)
+                        self.assertEqual(loc.name in names, expected, loc.name)
+
 
 class TestGoalCharacterMismatch(unittest.TestCase):
     """Goal options requiring a disabled character must raise OptionError instead of silently generating an unbeatable seed."""

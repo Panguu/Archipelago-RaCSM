@@ -5,8 +5,10 @@ from types import SimpleNamespace
 from BaseClasses import CollectionState
 from test.general import setup_multiworld
 
-from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACOperatives
+from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
+from ..constants.clank_gadgets import SACClankGadgets
 from ..constants.nanotech import CLANK_XP_SAVE_OFFSET
+from ..constants.weapon_progression import UNLOCK_TO_PROGRESSIVE
 from ..core.patches.progression import Progression
 from ..core.symbols import RuntimeSymbols
 from ..rules.rule_helpers import CLANK_ENEMY_CASES
@@ -61,7 +63,7 @@ class NanotechTests(unittest.TestCase):
         self.assertFalse(any(l.name.startswith("Clank Nanotech Level") for l in mw.get_locations(1)))
 
     def test_case_count_tiers(self):
-
+        # Each Clank case with enemy access puts 10 more levels in logic: 16-25, 26-35, ...
         mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases", "ng_plus": 1})
         world = mw.worlds[1]
         infobots = [CASE_NAME_TO_INFOBOT[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]]
@@ -77,19 +79,73 @@ class NanotechTests(unittest.TestCase):
             return mw.get_location(f"Clank Nanotech Level {level}", 1).can_reach(state)
 
         self.assertFalse(reachable(16))
-        enemy_case = next(case for case, items in CLANK_ENEMY_CASES.items() if not items)
-        infobots.remove(CASE_NAME_TO_INFOBOT[enemy_case])
-        infobots.insert(0, CASE_NAME_TO_INFOBOT[enemy_case])
-        state.collect(world.create_item(infobots[0]), prevent_sweep=True)
-        self.assertTrue(reachable(16))
-        self.assertTrue(reachable(30))
-        self.assertFalse(reachable(31))
-        for infobot in infobots[1:-1]:
-            state.collect(world.create_item(infobot), prevent_sweep=True)
-        self.assertFalse(reachable(60))
-        state.collect(world.create_item(infobots[-1]), prevent_sweep=True)
-        self.assertTrue(reachable(60))
+        # Klunk's Lair has no enemy access, so it never advances a tier.
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.KLUNKS_LAIR]), prevent_sweep=True)
+        self.assertFalse(reachable(16))
+        for count, case in enumerate(list(CLANK_ENEMY_CASES)[:7], 1):
+            state.collect(world.create_item(CASE_NAME_TO_INFOBOT[case]), prevent_sweep=True)
+            self.assertTrue(reachable(15 + 10 * count))
+            if count < 7:
+                self.assertFalse(reachable(16 + 10 * count))
         self.assertTrue(reachable(85))
+
+    def test_enemy_items_gate_tiers(self):
+        mw = setup_multiworld(SecretAgentClankWorld, options={"infobots": "cases"})
+        world = mw.worlds[1]
+        infobots = {CASE_NAME_TO_INFOBOT[case.name] for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
+        state = CollectionState(mw)
+        for item in mw.precollected_items[1]:
+            state.remove(item)
+        for item in mw.itempool:
+            if item.name not in infobots and item.name != SACClankGadgets.JETBOOTS:
+                state.collect(item, prevent_sweep=True)
+        # Starting weapons are precollected rather than pooled, so add these explicitly.
+        for name in CLANK_ENEMY_CASES[SACCases.GALACTIC_BOLT_RESERVE]:
+            if name != SACClankGadgets.JETBOOTS:
+                state.collect(world.create_item(UNLOCK_TO_PROGRESSIVE.get(name, name)
+                                                if world.options.progressive_weapons else name), prevent_sweep=True)
+
+        def reachable(level):
+            return mw.get_location(f"Clank Nanotech Level {level}", 1).can_reach(state)
+
+        # Galactic Bolt Reserve alone: its enemies need Jetboots.
+        state.collect(world.create_item(CASE_NAME_TO_INFOBOT[SACCases.GALACTIC_BOLT_RESERVE]), prevent_sweep=True)
+        self.assertFalse(reachable(16))
+        state.collect(world.create_item(SACClankGadgets.JETBOOTS), prevent_sweep=True)
+        self.assertTrue(reachable(25))
+        self.assertFalse(reachable(26))
+
+    def test_tiers_cap_at_available_cases(self):
+        from ..rules.nanotech import nanotech_cases_required
+        self.assertEqual([nanotech_cases_required(level) for level in (16, 25, 26, 60, 61, 85)], [1, 1, 2, 5, 5, 7])
+
+    def test_ratchet_case_count_tiers(self):
+        # Each reachable Ratchet case puts 15 more levels in logic: 21-35, 36-50, ...
+        from ..rules.nanotech import ratchet_nanotech_cases_required
+        self.assertEqual([ratchet_nanotech_cases_required(level) for level in (21, 35, 36, 60, 61, 90)],
+                         [1, 1, 2, 3, 3, 5])
+        mw = setup_multiworld(SecretAgentClankWorld, options={
+            "infobots": "cases", "ng_plus": 1, "ratchet_nanotech_checks": True})
+        world = mw.worlds[1]
+        cases = [case.name for case in CASES_BY_OPERATIVE[SACOperatives.RATCHET]]
+        infobots = {CASE_NAME_TO_INFOBOT[case] for case in cases}
+        state = CollectionState(mw)
+        for item in mw.precollected_items[1]:
+            if item.name in infobots:
+                state.remove(item)
+        for item in mw.itempool:
+            if item.name not in infobots:
+                state.collect(item, prevent_sweep=True)
+
+        def reachable(level):
+            return mw.get_location(f"Ratchet Nanotech Level {level}", 1).can_reach(state)
+
+        self.assertFalse(reachable(21))
+        for count, case in enumerate(cases, 1):
+            state.collect(world.create_item(CASE_NAME_TO_INFOBOT[case]), prevent_sweep=True)
+            self.assertTrue(reachable(min(20 + 15 * count, 90)))
+            if count < 5:
+                self.assertFalse(reachable(21 + 15 * count))
 
     def test_native_capture_layout(self):
 

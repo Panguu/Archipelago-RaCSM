@@ -1,4 +1,6 @@
 """Install native location hooks before each loaded module starts gameplay."""
+import logging
+
 from ..constants.native_modules import CASE_MODULES
 from ..constants.planets import CASES_BY_OPERATIVE
 from ..constants.operatives import SACOperatives
@@ -8,7 +10,7 @@ from .address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from .main_menu import is_main_menu
 from .patches import PICKUP_LOCATIONS, VENDOR_LOCATIONS
 from .patches.connection_warning import ConnectionWarning
-from .patches.loader_gate import LoaderGate
+from .patches.loader_gate import LoaderBarrierLost, LoaderGate
 from .patches.mission_travel import MissionTravel
 from .patches.starting_case import StartingCase
 from .patches.titan_vendor import TitanOffers, TitanVendor
@@ -22,13 +24,19 @@ NON_VENDOR_CASES = frozenset(case.name for operative in
                             for case in CASES_BY_OPERATIVE[operative])
 
 
+logger = logging.getLogger("CommonClient")
+
+
 class NativeRuntime:
-    def __init__(self, pine, hooks, log):
+    def __init__(self, pine, hooks, log, debug=None):
         self.pine, self.hooks, self.log = pine, hooks, log
+        # Diagnostics only shown while the client's /debug is on.
+        self.debug = debug or logger.debug
         self.gate = LoaderGate(pine)
         self.awaiting_start = False
         self.reload_requested = False
         self.generation = 0
+        self._stealth_wait_logged = False
         self.wrench = None
         self.progression = None
         self.weapon_mods = None
@@ -83,7 +91,17 @@ class NativeRuntime:
                 self.awaiting_start = False
             if not self.gate.armed:
                 self.gate.arm()
-            target = self.gate.held_module()
+            try:
+                target = self.gate.held_module()
+            except LoaderBarrierLost as exc:
+                # A fresh load cannot fix a barrier that disappears on every
+                # transition. Stop sync instead of repeatedly reloading.
+                self.gate.armed = False
+                self.hooks.installed = False
+                raise LoaderBarrierLost(
+                    f"{exc}. Game sync stopped; automatic reload is disabled "
+                    "because the loader barrier did not persist through the transition."
+                ) from exc
             if target == 0:
                 self.hooks.installed = False
                 self.awaiting_start = False
@@ -92,8 +110,13 @@ class NativeRuntime:
                 return False
             if target is not None:
                 stealth = getattr(self.progression, "stealth", None)
-                if stealth is not None and stealth.mode and not stealth.loaded:
+                if stealth is not None and stealth.cases and not stealth.loaded:
+                    if not self._stealth_wait_logged:
+                        self.debug("[SAC] Loading is held while waiting for saved stealth "
+                                 "progress from the AP server. Use /sac_info to inspect the wait.")
+                        self._stealth_wait_logged = True
                     return False  # Keep the loader parked until slot progress is known.
+                self._stealth_wait_logged = False
                 symbols = RuntimeSymbols(p)
                 symbols.refresh()
                 self.hooks.installed = False
@@ -140,7 +163,7 @@ class NativeRuntime:
                 self.gate.release()
                 self.awaiting_start = True
                 self.reload_requested = False
-                self.log(f"[SAC] Hooks loaded for {target} (vendor patches {'enabled' if vendor_enabled else 'disabled'})")
+                self.debug(f"[SAC] Hooks loaded for {target} (vendor patches {'enabled' if vendor_enabled else 'disabled'})")
                 return False
             if is_main_menu(p):
                 self.awaiting_start = False
@@ -200,7 +223,7 @@ class NativeRuntime:
         self.reload_requested = True
         self.hooks.installed = False
         p.write_int32(FORCE_CASE_ADDRESS, module)
-        self.log(f"[SAC] Reloading current level (module {module}) to initialize native checks.")
+        self.debug(f"[SAC] Reloading current level (module {module}) to initialize native checks.")
 
     def close(self):
         try:
@@ -213,3 +236,4 @@ class NativeRuntime:
             self.starting_case.close()
             self.awaiting_start = False
             self.reload_requested = False
+            self._stealth_wait_logged = False

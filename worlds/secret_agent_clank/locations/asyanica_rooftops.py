@@ -15,11 +15,13 @@ from ..constants import (
 from .model import CaseRegion, SACLocation, SACLocationType
 
 _BASE_RULE = HasAll(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
+COMPLETE_RULE = _BASE_RULE
+"""Items to complete the case, also used by its stealth takedown checks."""
 _OMNIKEY = _BASE_RULE & Has(SACClankGadgets.OMNIKEY)
 
 REGION = CaseRegion(SACCases.ASYANICA_ROOFTOPS, (
-    SACLocation(SACPickups.ASYANICA_ROOFTOPS_MINE_LAUNCHER, SACLocationType.RATCHET_WEAPON, _BASE_RULE),
-    SACLocation(SACPickups.ASYANICA_ROOFTOPS_CUFFLINK_BOMB, SACLocationType.CLANK_WEAPON, _BASE_RULE),
+    SACLocation(SACPickups.ASYANICA_ROOFTOPS_MINE_LAUNCHER, SACLocationType.RATCHET_WEAPON, _OMNIKEY),
+    SACLocation(SACPickups.ASYANICA_ROOFTOPS_CUFFLINK_BOMB, SACLocationType.CLANK_WEAPON, _OMNIKEY),
     SACLocation(SACPickups.ASYANICA_ROOFTOPS_OMNI_KEY, SACLocationType.CLANK_GADGET, _BASE_RULE),
     SACLocation(SACTitaniumBoltLocations.ASYANICA_ROOFTOPS_1, SACLocationType.TITANIUM_BOLT, _BASE_RULE),
     SACLocation(SACMissionLocations.ASYANICA_ROOFTOPS_COMPLETE, SACLocationType.CASE_COMPLETE, _BASE_RULE),

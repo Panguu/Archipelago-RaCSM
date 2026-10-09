@@ -1,7 +1,7 @@
 import struct
 import unittest
 
-from ..core.patches.loader_gate import LoaderGate
+from ..core.patches.loader_gate import LoaderBarrierLost, LoaderGate
 from .test_runtime import Memory
 
 
@@ -55,4 +55,31 @@ class LoaderGateTests(unittest.TestCase):
         self.gate.arm()
         self.p.write_int32(LoaderGate.SITE, LoaderGate.ORIGINAL)
         self.gate.release()
+        self.assertFalse(self.gate.armed)
+
+    def test_restored_barrier_reports_lost_patch(self):
+        self.gate.arm()
+        self.p.write_int32(LoaderGate.SITE, LoaderGate.ORIGINAL)
+        with self.assertRaisesRegex(LoaderBarrierLost, "loader barrier was restored to original"):
+            self.gate.held_module()
+
+    def test_original_site_with_changed_surroundings_is_not_recoverable(self):
+        self.gate.arm()
+        self.p.write_int32(LoaderGate.SITE, LoaderGate.ORIGINAL)
+        self.p.write_int32(LoaderGate.SITE + 4, 0)
+        with self.assertRaises(RuntimeError) as caught:
+            self.gate.held_module()
+        self.assertNotIsInstance(caught.exception, LoaderBarrierLost)
+
+    def test_signature_error_identifies_changed_instruction(self):
+        self.p.write_int32(LoaderGate.SITE + 4, 0)
+        with self.assertRaisesRegex(
+                RuntimeError, "0x00103BD0: expected 0x24426320, got 0x00000000"):
+            self.gate.arm()
+        self.assertFalse(self.gate.armed)
+
+    def test_short_signature_read_reports_length(self):
+        self.p.read_bytes = lambda address, length: b""
+        with self.assertRaisesRegex(RuntimeError, "expected 44 bytes, got 0"):
+            self.gate.arm()
         self.assertFalse(self.gate.armed)

@@ -30,7 +30,11 @@ class ItemNotifications:
         if None in (show, render, pause):
             return False
         p = self.pine
-        if p.read_int32(show) != 0x27BDFFE0 or p.read_int32(render) != 0x27BDFFE0:
+        # Once installed, the connection watchdog replaces render's prologue
+        # with `j routine; nop`; the body read below is unchanged either way.
+        first, second = struct.unpack("<2I", p.read_bytes(render, 8))
+        hooked = first >> 26 == 2 and second == 0
+        if p.read_int32(show) != 0x27BDFFE0 or (first != 0x27BDFFE0 and not hooked):
             return False
         def address(base, high, low, high_opcode, low_opcode):
             hi, lo = p.read_int32(base + high), p.read_int32(base + low)

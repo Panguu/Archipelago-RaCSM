@@ -1,8 +1,10 @@
 """Shared rule builders, returning rule_builder rule objects."""
+import dataclasses
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import CanReachRegion, False_, Has, Rule, True_
+from BaseClasses import CollectionState
+from rule_builder.rules import CanReachRegion, False_, Has, NestedRule, Rule, True_
 
 from ..constants import (
     CASE_NAME_TO_INFOBOT,
@@ -64,7 +66,7 @@ CLANK_ENEMY_CASES: dict[str, tuple[str, ...]] = {
     SACCases.GONDOLA_ASCENT:        (SACClankGadgets.JETBOOTS,),
     SACCases.HIGH_ROLLERS_CASINO:   (SACClankGadgets.HOLOMONOCLE,),
     SACCases.VENANTONIO_LABS:       (),
-    SACCases.GALACTIC_BOLT_RESERVE: (SACClankWeapons.THROWTIE, SACClankWeapons.CUFFLINK),
+    SACCases.GALACTIC_BOLT_RESERVE: (SACClankWeapons.THROWTIE, SACClankWeapons.CUFFLINK, SACClankGadgets.JETBOOTS),
     SACCases.SPACESHIP_GRAVEYARD:   (),
     SACCases.UNDERWATER_BUNKER:     (),
 }
@@ -76,18 +78,79 @@ def _has_unlock(world: "SecretAgentClankWorld", name: str) -> Has:
     return Has(name)
 
 
-def HasEnemyAccess(world: "SecretAgentClankWorld") -> Rule:
-    """Clank can reach enemies in at least one case (see CLANK_ENEMY_CASES)."""
-    existing = region_names(world)
-    rule = False_()
-    for case, items in CLANK_ENEMY_CASES.items():
-        if case not in existing:
-            continue
-        case_rule = CanReachRegion(case)
-        for item in items:
-            case_rule = case_rule & _has_unlock(world, item)
-        rule = rule | case_rule
+@dataclasses.dataclass(init=False)
+class AtLeast(NestedRule["SecretAgentClankWorld"], game="Secret Agent Clank"):
+    """True when at least `count` of the child rules are true."""
+
+    count: int = 1
+
+    def __init__(self, count: int, *children: Rule, options=(), filtered_resolution: bool = False) -> None:
+        super().__init__(*children, options=options, filtered_resolution=filtered_resolution)
+        self.count = count
+
+    def _instantiate(self, world: "SecretAgentClankWorld") -> Rule.Resolved:
+        if self.count <= 0:
+            return True_().resolve(world)
+        if self.count > len(self.children):
+            return False_().resolve(world)
+        return self.Resolved(tuple(c.resolve(world) for c in self.children), self.count, player=world.player,
+                             caching_enabled=getattr(world, "rule_caching_enabled", False))
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data["count"] = self.count
+        return data
+
+    @classmethod
+    def from_dict(cls, data, world_cls) -> "AtLeast":
+        rule = super().from_dict(data, world_cls)
+        rule.count = data["count"]
+        return rule
+
+    class Resolved(NestedRule.Resolved):
+        count: int
+
+        def _evaluate(self, state: CollectionState) -> bool:
+            remaining = self.count
+            for rule in self.children:
+                if rule(state):
+                    remaining -= 1
+                    if not remaining:
+                        return True
+            return False
+
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            return f"(at least {self.count} of: " + ", ".join(c.explain_str(state) for c in self.children) + ")"
+
+        def __str__(self) -> str:
+            return f"(at least {self.count} of: " + ", ".join(str(c) for c in self.children) + ")"
+
+
+def enemy_case_rule(world: "SecretAgentClankWorld", case: str) -> Rule:
+    """Reach a Clank case, plus the items its enemies need (see CLANK_ENEMY_CASES)."""
+    rule = CanReachRegion(case)
+    for item in CLANK_ENEMY_CASES.get(case, ()):
+        rule = rule & _has_unlock(world, item)
     return rule
+
+
+def enemy_case_rules(world: "SecretAgentClankWorld") -> list[Rule]:
+    """One enemy_case_rule per existing Clank case with enemies."""
+    existing = region_names(world)
+    return [enemy_case_rule(world, case) for case in CLANK_ENEMY_CASES if case in existing]
+
+
+def HasEnemyAccess(world: "SecretAgentClankWorld", cases: int = 1) -> Rule:
+    """Clank can reach enemies in at least `cases` Clank cases (capped at the cases that exist)."""
+    rules = enemy_case_rules(world)
+    if not rules:
+        return False_()
+    if cases <= 1:
+        rule = False_()
+        for case_rule in rules:
+            rule = rule | case_rule
+        return rule
+    return AtLeast(min(cases, len(rules)), *rules)
 
 
 def HasProjectileWeapon() -> Has:
