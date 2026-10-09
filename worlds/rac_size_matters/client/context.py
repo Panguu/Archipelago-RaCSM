@@ -95,6 +95,8 @@ class RACContext(
         self._connection_sync_pending = True
         self._starting_skin_option = 0
         self._ap_icon_chosen_by_command = False
+        # /skin_patch choice; None follows the YAML's Experimental Skins option.
+        self._multiplayer_skins_override: bool | None = None
 
         self._death_link_enabled = False
         self._last_death_link = 0.0
@@ -129,6 +131,13 @@ class RACContext(
                     f"[RAC] PINE call failed during wiring sync: {exc}. If syncing stops working, use /reconnect."
                 )
                 self.pine_connected = False
+
+    def _set_skin_patch(self, enabled: bool) -> None:
+        """Switch the multiplayer skin patch; NativeRuntime reloads the planet to apply it."""
+        native = self._wiring.native
+        if not enabled and self.pine_connected:
+            self._wiring.skin.clear_multiplayer()
+        native.patch_options = replace(native.patch_options, multiplayer_skins=enabled)
 
     def _filler_applied_key(self) -> str:
         return f"racsm_filler_applied_{self.team}_{self.slot}"
@@ -328,7 +337,11 @@ class RACContext(
             self._starting_skin_option = int(self.slot_data.get(Rac5Options.STARTING_SKIN, 0))
             self._wiring.native.patch_options = replace(
                 self._wiring.native.patch_options,
-                multiplayer_skins=bool(self.slot_data.get(Rac5Options.EXPERIMENTAL_SKINS, False)),
+                multiplayer_skins=(
+                    bool(self.slot_data.get(Rac5Options.EXPERIMENTAL_SKINS, False))
+                    if self._multiplayer_skins_override is None
+                    else self._multiplayer_skins_override
+                ),
                 balance_patch=bool(self.slot_data.get(Rac5Options.BALANCE_PATCH, False)),
             )
             if not self._ap_icon_chosen_by_command:
@@ -366,10 +379,12 @@ class RACContext(
             )
             checked = self._checked_location_names()
             starting_skin = self._starting_skin_option
+            skin_patch = self._wiring.native.patch_options.multiplayer_skins
             asyncio.create_task(
                 self._guarded_wiring_call(
                     lambda: (
                         self._wiring.skin.set_by_option(starting_skin),
+                        None if skin_patch else self._wiring.skin.clear_multiplayer(),
                         self._wiring.challenge_mode.set_by_option(challenge_mode_option),
                         self._wiring.sync_from_ap(checked),
                     )

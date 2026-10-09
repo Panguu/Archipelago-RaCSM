@@ -105,6 +105,11 @@ class SkinInventory:
     def delete(self) -> None:
         self.set(Skin.DEFAULT)
 
+    def clear_multiplayer(self) -> None:
+        """Fall back to the default skin so a planet without the multiplayer loader can load Ratchet."""
+        if self._skin.unlock_mask is None or self.get().unlock_mask is None:
+            self.set(Skin.DEFAULT)
+
     def setup(self) -> None:
         """Write the currently selected skin's unlock/equip bytes into game memory."""
         self.equipped = self._skin.equip_id

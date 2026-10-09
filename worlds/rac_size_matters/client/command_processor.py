@@ -79,11 +79,29 @@ class RACCommandProcessor(ClientCommandProcessor):
             logger.info("[RAC] Connect to PCSX2 before changing skins.")
             return False
         if selected.unlock_mask is None and not self.ctx._wiring.native.patch_options.multiplayer_skins:
-            logger.info("[RAC] Multiplayer skins need Experimental Skins enabled in your YAML.")
+            logger.info("[RAC] Multiplayer skins need the skin patch: /skin_patch on.")
             return False
         asyncio.create_task(self.ctx._guarded_wiring_call(
             lambda: self.ctx._wiring.skin.set(selected)))
         logger.info("[RAC] Skin queued: %s. Applies when gameplay is ready.", selected.name)
+        return True
+
+    def _cmd_skin_patch(self, state: str = "") -> bool:
+        """Enable or disable the multiplayer skin patch: /skin_patch on|off. Reloads the current planet.
+        Disabling switches to the default skin if a multiplayer skin is equipped."""
+        choices = {"on": True, "enable": True, "off": False, "disable": False}
+        state = state.lower().strip()
+        current = self.ctx._wiring.native.patch_options.multiplayer_skins
+        if state not in choices:
+            logger.info(f"[RAC] Skin patch {'enabled' if current else 'disabled'}. Use /skin_patch on|off.")
+            return not state
+        enabled = choices[state]
+        self.ctx._multiplayer_skins_override = enabled
+        if enabled == current:
+            logger.info(f"[RAC] Skin patch already {'enabled' if enabled else 'disabled'}.")
+            return True
+        asyncio.create_task(self.ctx._guarded_wiring_call(lambda: self.ctx._set_skin_patch(enabled)))
+        logger.info(f"[RAC] Skin patch {'enabled' if enabled else 'disabled'}. Reloading the planet to apply it.")
         return True
 
     def _cmd_apicon(self, style: str = "") -> bool:

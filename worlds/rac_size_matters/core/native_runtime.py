@@ -62,6 +62,7 @@ class NativeRuntime:
         self.balance = None
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
+        self._installed_multiplayer_skins_option = self.patch_options.multiplayer_skins
 
     def close(self):
         if self.pine.get_game_id() != self.gate.game_id:
@@ -108,6 +109,7 @@ class NativeRuntime:
         self.balance = None
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
+        self._installed_multiplayer_skins_option = self.patch_options.multiplayer_skins
         if target not in PLANET_ADDRESSES and not (target == 15 and self.patch_options.balance_patch):
             if target == 15:
                 self.module = target
@@ -389,6 +391,9 @@ class NativeRuntime:
             return state in (4, 5)
         target = p.read_int32(address_maps.CURRENT_PLANET_ADDRESS)
         if self._installed_balance_option != self.patch_options.balance_patch:
+            self.module = None
+        # Only planets with a skin patch need reloading to add or drop the multiplayer loader.
+        if self._installed_multiplayer_skins_option != self.patch_options.multiplayer_skins and target in PLANET_ADDRESSES:
             self.module = None
         if self.module == target and (
             self.vendor.native_plan is not None or not self.patch_options.vendor or target == 15
