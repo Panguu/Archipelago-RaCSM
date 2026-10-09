@@ -253,7 +253,7 @@ class StealthTakedownChecks(Range):
     """Successful Clank stealth takedown checks per case: takedowns 1 up to this
     number in every case that has stealth takedowns, capped at what the case offers.
     Takedowns add up across replays of a case. 0 turns them off.
-    Requires Clank. Progress is tracked while the AP client is connected.
+    Adds nothing when Clank is disabled. Progress is tracked while the AP client is connected.
     """
     display_name = "Stealth Takedown Checks"
     range_start = 0

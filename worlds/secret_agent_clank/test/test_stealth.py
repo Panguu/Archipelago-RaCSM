@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from BaseClasses import CollectionState
-from Options import OptionError
 from test.general import setup_multiworld
 
 from ..constants import CASE_NAME_TO_INFOBOT, SACCases
@@ -47,12 +46,12 @@ class StealthTests(unittest.TestCase):
         for case in STEALTH_CASES:
             for n in range(1, STEALTH_MAX_PER_CASE + 1):
                 self.assertIn(stealth_location_name(case, n), LOCATION_NAME_TO_ID)
+        # Without Clank the slider is ignored: no stealth locations, no options error.
         for operatives in ({"Qwark": 1, "Ratchet": 1}, {"Qwark": 1, "Clank": 0}):
-            with self.assertRaisesRegex(OptionError, "requires Clank"):
-                setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 1,
-                    "goal": "qwark_opera", "operatives": operatives})
-        setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 0,
-            "goal": "qwark_opera", "operatives": {"Qwark": 1}})
+            mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 5,
+                "goal": "qwark_opera", "operatives": operatives})
+            self.assertFalse(any(l.name.startswith("Clank Stealth Takedowns") for l in mw.get_locations(1)))
+            self.assertEqual(mw.worlds[1].fill_slot_data()["stealth_cases"], {})
 
     def test_access_requires_case_and_asyanica_items(self):
         mw = setup_multiworld(SecretAgentClankWorld, options={"stealth_takedown_checks": 2, "infobots": "cases"})

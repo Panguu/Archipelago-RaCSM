@@ -119,11 +119,6 @@ class SecretAgentClankWorld(World):
 
     def generate_early(self) -> None:
         setup_options_from_slot_data(self)
-        if (self.options.stealth_takedown_checks.value
-                and not self.options.operatives.value.get(SACOperatives.CLANK, 0)):
-            raise OptionError(
-                "Stealth Takedown Checks requires Clank in operatives. "
-                "Enable Clank or set stealth_takedown_checks to off.")
 
     def create_regions(self) -> None:
         create_regions(self)
@@ -160,6 +155,20 @@ class SecretAgentClankWorld(World):
             "Weapon Level Checks, Clank Nanotech Locations or Ratchet Nanotech Locations)."
         )
 
+    def _start_is_viable(self, case) -> bool:
+        """Whether a location inside `case` is reachable from the precollected inventory and its Case File."""
+        from .locations import CASE_REGIONS
+        state = CollectionState(self.multiworld)
+        state.collect(self.create_item(CASE_NAME_TO_INFOBOT[case.name]), prevent_sweep=True)
+        existing = {location.name for location in self.multiworld.get_region(case.name, self.player).locations}
+        for definition in CASE_REGIONS[case.name].locations:
+            if definition.name not in existing:
+                continue
+            rule = definition.resolve_rule(self)
+            if rule is None or rule.resolve(self)(state):
+                return True
+        return False
+
     def create_items(self) -> None:
         existing = region_names(self)
         active_cases = [case for case in ALL_CASES if case.name in existing]
@@ -167,38 +176,6 @@ class SecretAgentClankWorld(World):
                       if self.options.operatives.value.get(case.operative, 0)]
         if not candidates:
             raise OptionError("Secret Agent Clank requires at least one enabled operative")
-        if self.using_ut:
-            name = self.passthrough.get("starting_case", SACCases.BOLTAIRE_MUSEUM)
-            starting_case = next((case for case in active_cases if case.name == name), None)
-            if starting_case is None:
-                raise OptionError(f"Invalid starting case in slot data: {name}")
-        else:
-            starting_case = self.random.choice(candidates)
-        self.starting_case = starting_case.name
-        # The starting case's Case File opens it under every Infobots mode.
-        self.multiworld.push_precollected(
-            self.create_item(CASE_NAME_TO_INFOBOT[starting_case.name])
-        )
-
-        # With Infobots=cases a single starting case can leave too few early
-        # locations, so grant a second case when one is available.
-        second_starting_case = None
-        if self.options.infobots == Infobots.option_cases:
-            second_candidates = [case for case in candidates if case.name != starting_case.name]
-            if second_candidates:
-                if self.using_ut:
-                    name = self.passthrough.get("second_starting_case")
-                    second_starting_case = next(
-                        (case for case in second_candidates if case.name == name), None,
-                    )
-                else:
-                    second_starting_case = self.random.choice(second_candidates)
-                if second_starting_case is not None:
-                    self.multiworld.push_precollected(
-                        self.create_item(CASE_NAME_TO_INFOBOT[second_starting_case.name])
-                    )
-        self.second_starting_case = second_starting_case.name if second_starting_case else None
-
         pool: list[str] = []
         if self.options.keycard_hunt:
             pool += list(KEYCARD_ITEM_TABLE)
@@ -229,6 +206,65 @@ class SecretAgentClankWorld(World):
                 pool.append(name)
         if clank_enabled:
             pool += list(GADGET_ITEM_TABLE)
+        if ratchet_enabled:
+            pool += list(RATCHET_PACK_ITEM_TABLE)
+
+        # Choose once during generation so AP logic and every client agree.
+        # Remove one pooled copy (also for progressive weapons) rather than
+        # duplicating it; filler below replaces the freed location slot.
+        starting_groups = (
+            (SACOperatives.RATCHET, self.options.starting_weapons.value,
+             [name for name in RATCHET_WEAPONS
+              if EQUIPMENT_DISPLAY_TO_INTERNAL[name] in LEVELLED_INTERNALS or EQUIPMENT_DISPLAY_TO_INTERNAL[name] == "hypnowatch"]),
+            (SACOperatives.CLANK, self.options.starting_gadgets.value,
+             list(dict.fromkeys([*GADGETS_FROM_WEAPON_TABLE, *GADGET_ITEM_TABLE]))),
+        )
+        for character, count, eligible in starting_groups:
+            if character not in self.options.operatives.value:
+                continue
+            eligible = [UNLOCK_TO_PROGRESSIVE.get(name, name)
+                        if self.options.progressive_weapons else name for name in eligible]
+            eligible = [name for name in eligible if name in pool]
+            if count > len(eligible):
+                raise OptionError(f"Not enough eligible {character} starting items for {count} selections")
+            for name in self.random.sample(eligible, count):
+                pool.remove(name)
+                self.multiworld.push_precollected(self.create_item(name))
+
+        if self.using_ut:
+            name = self.passthrough.get("starting_case", SACCases.BOLTAIRE_MUSEUM)
+            starting_case = next((case for case in active_cases if case.name == name), None)
+            if starting_case is None:
+                raise OptionError(f"Invalid starting case in slot data: {name}")
+        else:
+            # Prefer a case whose own locations are reachable with the starting
+            # equipment; if none are, generate_basic reports the options error.
+            viable = [case for case in candidates if self._start_is_viable(case)]
+            starting_case = self.random.choice(viable or candidates)
+        self.starting_case = starting_case.name
+        # The starting case's Case File opens it under every Infobots mode.
+        self.multiworld.push_precollected(
+            self.create_item(CASE_NAME_TO_INFOBOT[starting_case.name])
+        )
+
+        # With Infobots=cases a single starting case can leave too few early
+        # locations, so grant a second case when one is available.
+        second_starting_case = None
+        if self.options.infobots == Infobots.option_cases:
+            second_candidates = [case for case in candidates if case.name != starting_case.name]
+            if second_candidates:
+                if self.using_ut:
+                    name = self.passthrough.get("second_starting_case")
+                    second_starting_case = next(
+                        (case for case in second_candidates if case.name == name), None,
+                    )
+                else:
+                    second_starting_case = self.random.choice(second_candidates)
+                if second_starting_case is not None:
+                    self.multiworld.push_precollected(
+                        self.create_item(CASE_NAME_TO_INFOBOT[second_starting_case.name])
+                    )
+        self.second_starting_case = second_starting_case.name if second_starting_case else None
 
         # Access items for the chosen Infobots mode (see rules/rule_helpers.py).
         if self.options.infobots == Infobots.option_progressive_planet:
@@ -259,31 +295,6 @@ class SecretAgentClankWorld(World):
             for character, item_name in PROGRESSIVE_CHARACTER_ITEM_NAME.items():
                 if character in self.options.operatives.value:
                     pool += [item_name] * len(CASES_BY_OPERATIVE.get(character, ()))
-
-        if ratchet_enabled:
-            pool += list(RATCHET_PACK_ITEM_TABLE)
-
-        # Choose once during generation so AP logic and every client agree.
-        # Remove one pooled copy (also for progressive weapons) rather than
-        # duplicating it; filler below replaces the freed location slot.
-        starting_groups = (
-            (SACOperatives.RATCHET, self.options.starting_weapons.value,
-             [name for name in RATCHET_WEAPONS
-              if EQUIPMENT_DISPLAY_TO_INTERNAL[name] in LEVELLED_INTERNALS or EQUIPMENT_DISPLAY_TO_INTERNAL[name] == "hypnowatch"]),
-            (SACOperatives.CLANK, self.options.starting_gadgets.value,
-             list(dict.fromkeys([*GADGETS_FROM_WEAPON_TABLE, *GADGET_ITEM_TABLE]))),
-        )
-        for character, count, candidates in starting_groups:
-            if character not in self.options.operatives.value:
-                continue
-            candidates = [UNLOCK_TO_PROGRESSIVE.get(name, name)
-                          if self.options.progressive_weapons else name for name in candidates]
-            candidates = [name for name in candidates if name in pool]
-            if count > len(candidates):
-                raise OptionError(f"Not enough eligible {character} starting items for {count} selections")
-            for name in self.random.sample(candidates, count):
-                pool.remove(name)
-                self.multiworld.push_precollected(self.create_item(name))
 
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         if len(pool) > unfilled:
