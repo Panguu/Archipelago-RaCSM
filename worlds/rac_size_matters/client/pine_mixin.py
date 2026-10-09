@@ -16,7 +16,7 @@ _WEAPON_STATE_PUSH_INTERVAL: float = 5.0
 
 
 class PineMixin:
-    """Detect the supported region before driving Core and recheck every poll."""
+    """Detect the supported region before driving Core and recheck every poll. Runs in the worker process."""
 
     def _select_game_region(self, game_id: str) -> None:
         """Called under the PINE lock, before any initial reads or game ticks."""
@@ -175,9 +175,7 @@ class PineMixin:
             await self.force_sync()
         prev_planet = self.current_planet
         async with self._pine_lock:
-            self._wiring.native.ap_connected = bool(
-                self.slot is not None and self.server and self.server.socket
-                and not self.server.socket.closed)
+            self._wiring.native.ap_connected = self.slot is not None and self.ap_connected
             if self._items_received_ready and self._save_data_received:
                 self._try_restore_weapon_state()
                 self._wiring.tick()

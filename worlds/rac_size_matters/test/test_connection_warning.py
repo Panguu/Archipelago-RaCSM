@@ -1,8 +1,10 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
+from ..client import protocol
 from ..client.context import CommonContext, RACContext
+from ..client.worker import GameWorker
 from ..core.native_runtime import NativeRuntime
 from ..core.patches import connection_warning, item_toast
 from .test_native_patches import CPU, Memory, plans
@@ -95,8 +97,16 @@ class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
     async def test_actual_common_client_disconnect_callback_marks_offline(self):
         # Invoke on a real class instance without opening sockets or initializing UI.
         context = RACContext.__new__(RACContext)
-        context._wiring = SimpleNamespace(native=SimpleNamespace(ap_connected=True))
+        context._worker_state = {}
+        context._worker = Mock()
         with patch.object(CommonContext, "connection_closed", new_callable=AsyncMock) as closed:
             await context.connection_closed()
         closed.assert_awaited_once()
-        self.assertFalse(context._wiring.native.ap_connected)
+        context._worker.send.assert_called_once_with((protocol.AP_DISCONNECTED,))
+
+    async def test_worker_disconnect_message_marks_native_offline(self):
+        worker = GameWorker(lambda message: None)
+        worker.ap_connected = worker._wiring.native.ap_connected = True
+        await worker.handle((protocol.AP_DISCONNECTED,))
+        self.assertFalse(worker.ap_connected)
+        self.assertFalse(worker._wiring.native.ap_connected)

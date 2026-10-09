@@ -3,7 +3,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
-from ..client.context import RACContext
+from ..client.worker import GameWorker
 from ..core.armour import ArmourInventory, ArmourPiece, ArmourSnapshot
 from ..core.core import Core
 from ..core.save_data import RAC5SaveData
@@ -11,7 +11,7 @@ from ..core.weapons import WeaponInventory
 
 
 def context():
-    ctx = RACContext.__new__(RACContext)
+    ctx = GameWorker.__new__(GameWorker)
     ctx.slot, ctx.team = 1, 0
     ctx.pine_connected = True
     ctx._save_data_received = False

@@ -25,7 +25,7 @@ async def main(args: Namespace) -> None:
         ctx.run_gui()
     ctx.run_cli()
 
-    asyncio.create_task(ctx.game_watcher(), name="RAC game watcher")
+    ctx.start_worker()
 
     await ctx.exit_event.wait()
     await ctx.shutdown()
