@@ -5,6 +5,8 @@ from Fill import distribute_items_restrictive
 from test.general import setup_multiworld
 
 from ..constants.challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MODE
+from ..constants.clank_gadgets import SACClankGadgets
+from ..constants.pickups import SACPickups
 from ..constants.nanotech import nanotech_location_name
 from ..constants.weapon_progression import level_location_name
 from ..core.patches.progression import Progression
@@ -80,13 +82,23 @@ class ChallengeModeTests(unittest.TestCase):
             if item.name != PROGRESSIVE_CHALLENGE_MODE:
                 state.collect(item, prevent_sweep=True)
         names = [loc.name for loc in mw.get_locations(1) if loc.name in CHALLENGE_VENDOR_LOCATIONS]
-        names += [nanotech_location_name(61), level_location_name("blaster", 5)]
+        names += [nanotech_location_name(61), level_location_name("blaster", 5),
+                  SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES]
         for name in names:
             self.assertFalse(mw.get_location(name, 1).can_reach(state), name)
         self.assertTrue(mw.get_location(nanotech_location_name(60), 1).can_reach(state))
         state.collect(mw.worlds[1].create_item(PROGRESSIVE_CHALLENGE_MODE))
         for name in names:
             self.assertTrue(mw.get_location(name, 1).can_reach(state), name)
+
+    def test_therm_optic_shades_pickup_is_challenge_mode_only(self):
+        for maximum in range(3):
+            with self.subTest(maximum=maximum):
+                mw = setup_multiworld(SecretAgentClankWorld, options={"ng_plus": maximum})
+                names = {loc.name for loc in mw.get_locations(1)}
+                self.assertEqual(SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES in names, maximum > 0)
+                pool = {item.name for item in (*mw.itempool, *mw.precollected_items[1])}
+                self.assertIn(SACClankGadgets.THERM_OPTIC_SHADES, pool)
 
     def test_shop_unlock_refreshes_without_case_change_or_flag_reset(self):
         mem = Memory()

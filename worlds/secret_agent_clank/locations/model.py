@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from rule_builder.rules import Rule
 
+from ..constants.pickups import CHALLENGE_MODE_PICKUP_LOCATIONS
 from ..constants.planets import CASE_NAME_TO_OPERATIVE, CASE_NAME_TO_PLANET
 from ..constants.skill_point_requirements import EXTRA_SKILL_POINT_OPERATIVES, SKILL_POINT_DIFFICULTY
 from ..constants.vendor import NG_PLUS_VENDOR_LOCATIONS
@@ -70,6 +71,8 @@ class SACLocation:
         match self.type:
             case SACLocationType.VENDOR:
                 return self.name not in NG_PLUS_VENDOR_LOCATIONS or bool(options.ng_plus.value)
+            case SACLocationType.GADGET_PICKUP:
+                return self.name not in CHALLENGE_MODE_PICKUP_LOCATIONS or bool(options.ng_plus.value)
             case SACLocationType.CASE_COMPLETE:
                 return options.all_missions.value != Missions.option_all
             case SACLocationType.MISSION:

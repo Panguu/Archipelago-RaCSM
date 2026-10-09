@@ -19,6 +19,10 @@ class SACPickups:
     MAX_SECURITY_CELLS_WALLOPER = "Prison Planet (Ratchet) - Max-Security Cells: Walloper Pickup"
 
 
+# Pickups that only spawn in challenge mode; the item stays in the pool either way.
+CHALLENGE_MODE_PICKUP_LOCATIONS = frozenset({SACPickups.BOLTAIRE_MUSEUM_THERM_OPTIC_SHADES})
+
+
 # Native WEAPON_ORDER name -> the AP location the client sends when it is picked up.
 PICKUP_LOCATION_BY_INTERNAL: dict[str, str] = {
     WEAPON_ORDER[slot]: name for slot, name in (
