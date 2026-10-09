@@ -2,6 +2,7 @@
 import logging
 from collections.abc import Callable, Sequence
 
+from ..constants.cheats import SACCheats
 from ..constants.missions import CHAPTER_ENTRIES, MISSION_COMPLETE_NAME, SACMissionLocations
 from ..constants.operatives import SACOperatives
 from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
@@ -54,6 +55,8 @@ class Core:
         self.bolt_rewards = BoltRewards(pine, self._debug)
         self.notifications = ItemNotifications(pine)
         self.traps = Traps(pine)
+        self.ratchet_pack = False
+        self._ratchet_pack_pending = False
 
         self.case = CaseInventory(pine)
         self.case.on_transition_start = self._invalidate_level
@@ -155,6 +158,8 @@ class Core:
         self.weapon_mods.received = set(received_names)
         self.wrench.count = min(5, list(received_names).count(PROGRESSIVE_WRENCH))
         self.bolt_rewards.received = list(received_names).count("Bolts")
+        if SACCheats.RATCHET_PACK in received_names and not self.ratchet_pack:
+            self.ratchet_pack = self._ratchet_pack_pending = True
         self._ap_owned = {"ratchet": dict(ratchet), "clank": dict(clank)}
         self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
                                                 progressive_planets=self.progressive_planets)
@@ -365,6 +370,8 @@ class Core:
             if not self.native_runtime.vendor_enabled_for_module(self.case.case_id):
                 self.vendor.set_addr(None)
             self.on_case_ready()
+        if self.ratchet_pack and (became_ready or self._ratchet_pack_pending):
+            self._ratchet_pack_pending = not self.traps.grant_ratchet_pack(self.case.symbols)
         # Read collectible access before updating the menu. AP inventory is
         # refreshed after every tick, so this cannot rely on the prior tick.
         self._report_checks(self.alien_codes, self.alien_codes.check())

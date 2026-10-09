@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from ..constants.cheats import SACTraps
 from ..core.symbols import RuntimeSymbols
-from ..core.traps import TRAP_BITS, Traps
+from ..core.traps import RATCHET_PACK_BIT, TRAP_BITS, Traps
 from .test_runtime import Memory
 
 
@@ -76,6 +76,21 @@ class TrapTests(unittest.TestCase):
         self.traps.restore({})
         self.assertEqual(self.memory.read_int32(0x110000), 0)
         self.assertFalse(self.traps.remaining)
+
+    def test_ratchet_pack_survives_trap_expiry_and_restore(self):
+        self.memory.write_int32(0x100000, 1 << 12)
+        self.assertTrue(self.traps.grant_ratchet_pack({}))
+        self.assertEqual(self.memory.read_int32(0x100000), (1 << 12) | RATCHET_PACK_BIT)
+        self.traps.durations[SACTraps.MIRRORED_LEVELS] = 1
+        self.traps.activate(SACTraps.MIRRORED_LEVELS, {})
+        self.traps.tick({}, True)
+        self.now = 2
+        self.traps.tick({}, True)
+        self.traps.tick({}, True)
+        self.traps.restore({})
+        self.assertEqual(self.memory.read_int32(0x100000), (1 << 12) | RATCHET_PACK_BIT)
+        self.traps.address.return_value = None
+        self.assertFalse(self.traps.grant_ratchet_pack({}))
 
     def test_current_module_capture_layout(self):
 

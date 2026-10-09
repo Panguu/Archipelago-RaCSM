@@ -13,6 +13,8 @@ TRAP_BITS = {
     SACTraps.BOLT_CONFUSION: 1 << 5,
     SACTraps.WEAPON_SWITCHING: 1 << 6,
 }
+# Native cheat id 10: the 65 skill point entry in the cheat menu's table.
+RATCHET_PACK_BIT = 1 << 10
 
 
 def absolute(hi, low):
@@ -81,6 +83,14 @@ class Traps:
         self.managed |= bits
         self.remaining[name] = self.remaining.get(name, 0) + self.durations.get(name, 30)
         self.last_tick = self.clock()
+        return True
+
+    def grant_ratchet_pack(self, symbols):
+        """Switch the Ratchet Pack cheat on; the player can still toggle it off."""
+        address = self.address(symbols)
+        if address is None:
+            return False
+        self.pine.write_int32(address, self.pine.read_int32(address) | RATCHET_PACK_BIT)
         return True
 
     def restore(self, symbols):
