@@ -1,5 +1,6 @@
 import unittest
 
+from BaseClasses import CollectionState
 from Options import OptionError
 from test.general import setup_multiworld
 
@@ -124,11 +125,36 @@ class TestGoalCharacterMismatch(unittest.TestCase):
         with self.assertRaises(OptionError):
             setup_multiworld(SecretAgentClankWorld, options={"goal": "qwark_opera", "operatives": {"Qwark": 0}})
 
-    def test_any_requires_clank_or_qwark(self):
-        with self.assertRaises(OptionError):
+    def test_any_requires_an_achievable_goal(self):
+        # Special Missions alone can complete no goal.
+        with self.assertRaisesRegex(OptionError, "no goal can be completed"):
             setup_multiworld(
-                SecretAgentClankWorld, options={"goal": "any", "operatives": {"Clank": 0, "Qwark": 0}},
+                SecretAgentClankWorld, options={"goal": "any", "operatives": {"Special Missions": 1}},
             )
+
+    def test_any_creates_a_victory_for_every_achievable_goal(self):
+        mw = setup_multiworld(SecretAgentClankWorld, options={
+            "goal": "any", "operatives": {"Ratchet": 1, "Gadgetbots": 1, "Special Missions": 1}})
+        victories = sorted(loc.name for loc in mw.get_locations(1) if loc.name.startswith("Victory:"))
+        self.assertEqual(victories, ["Victory: All Gadgetbots", "Victory: Ratchet Prison Escape"])
+
+    def test_qwark_goals_split_butterqwark_from_every_qwark_case(self):
+        from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
+        for goal, needed in (("qwark_opera", [SACCases.MADAM_BUTTERQWARK]),
+                             ("these_are_the_real_adventures_of_captain_qwark",
+                              [case.name for case in CASES_BY_OPERATIVE[SACOperatives.QWARK]])):
+            with self.subTest(goal=goal):
+                mw = setup_multiworld(SecretAgentClankWorld, options={"goal": goal, "infobots": "cases"})
+                world = mw.worlds[1]
+                victory = next(loc for loc in mw.get_locations(1) if loc.name.startswith("Victory:"))
+                state = CollectionState(mw)
+                for item in mw.precollected_items[1]:
+                    state.remove(item)
+                for case in needed[:-1]:
+                    state.collect(world.create_item(CASE_NAME_TO_INFOBOT[case]))
+                self.assertEqual(victory.can_reach(state), len(needed) == 0)
+                state.collect(world.create_item(CASE_NAME_TO_INFOBOT[needed[-1]]))
+                self.assertTrue(victory.can_reach(state))
 
     def test_any_survives_with_only_clank(self):
         # Operatives replaces the default, so list every operative that stays enabled.

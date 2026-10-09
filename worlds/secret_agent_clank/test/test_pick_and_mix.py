@@ -15,6 +15,35 @@ from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
 
 
+class QwarkGoalDetectionTests(unittest.TestCase):
+    def test_qwark_opera_is_butterqwark_and_real_adventures_is_every_qwark_case(self):
+        from ..constants import CASES_BY_OPERATIVE, SACOperatives
+        core = Core(Memory())
+        core.on_goal = Mock()
+        core.missions._reported.add(MISSION_COMPLETE_NAME[SACCases.MADAM_BUTTERQWARK])
+        core.goal = Goal.option_these_are_the_real_adventures_of_captain_qwark
+        core._check_goal()
+        core.on_goal.assert_not_called()
+        core.goal = Goal.option_qwark_opera
+        core._check_goal()
+        core.on_goal.assert_called_once()
+        core._goal_sent = False
+        core.goal = Goal.option_these_are_the_real_adventures_of_captain_qwark
+        core.missions._reported.update(MISSION_COMPLETE_NAME[case.name]
+                                       for case in CASES_BY_OPERATIVE[SACOperatives.QWARK])
+        core._check_goal()
+        self.assertEqual(core.on_goal.call_count, 2)
+
+    def test_qwark_opera_detects_the_butterqwark_mission(self):
+        from ..constants.missions import SACMissionLocations
+        core = Core(Memory())
+        core.on_goal = Mock()
+        core.goal = Goal.option_qwark_opera
+        core.missions.completed[SACMissionLocations.MADAM_BUTTERQWARK_QWARKOGRAPHY_CH_3] = True
+        core._check_goal()
+        core.on_goal.assert_called_once()
+
+
 class PickAndMixTests(unittest.TestCase):
     def test_option_layout_has_dropdown_and_no_toggle(self):
         self.assertEqual(Goal.from_any('pick_and_mix').value, Goal.option_pick_and_mix)

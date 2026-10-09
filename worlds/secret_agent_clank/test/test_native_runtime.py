@@ -395,7 +395,7 @@ class AlienFlagTests(unittest.TestCase):
         core.keycards.check()
         core.on_goal = Mock()
         for goal in (Goal.option_ratchet_prison_escape, Goal.option_all_gadgetbots,
-                     Goal.option_any, Goal.option_alien_codes):
+                     Goal.option_alien_codes, Goal.option_qwark_opera):
             core.goal = goal
             core._check_goal()
         core.on_goal.assert_not_called()
@@ -403,6 +403,10 @@ class AlienFlagTests(unittest.TestCase):
         core._check_goal()
         core._check_goal()
         core.on_goal.assert_called_once()
+        # Any completes on whichever goal is finished first, the chalice included.
+        core._goal_sent, core.goal = False, Goal.option_any
+        core._check_goal()
+        self.assertEqual(core.on_goal.call_count, 2)
 
     def test_all_27_bits_and_nibble_boundaries(self):
         inv = AlienCodeInventory(Memory())

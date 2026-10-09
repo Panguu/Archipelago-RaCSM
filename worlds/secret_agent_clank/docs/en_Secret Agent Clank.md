@@ -27,12 +27,14 @@ The full option list with all details lives on the [player settings page](../pla
 ## What is the goal?
 The player can specify their goal for the multiworld from the following selection:
 - **Defeat Klunk:** Complete the showdown with Klunk in the Klunk's Lair case file.
-- **Qwark Opera:** Follow Captain Qwark's awesome adventure and complete all Qwark case files.
+- **Qwark Opera:** Complete the Madam Butterqwark case file.
 - **All Gadgetbots:** Complete all Gadgetbot case files.
 - **Ratchet Prison Escape:** Help Ratchet survive the prison life and complete all Ratchet case files.
+- **These Are the Real Adventures of Captain Qwark:** Follow Captain Qwark's awesome adventure and complete all Qwark case files.
 - **Alien Codes:** Scan all 27 alien codes.
 - **Chalice of Power:** Obtain the Chalice of Power (this option can result in a lengthy seed).
-- **Any:** Complete any of the goals above to goal your seed.
+- **Any:** Complete any one of the goals above to goal your seed.
+- **Pick and Mix:** Complete every goal you select in Pick and Mix Goals.
 
 ## What items can be in another player's world?
 
