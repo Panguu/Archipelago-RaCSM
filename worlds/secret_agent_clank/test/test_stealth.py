@@ -72,14 +72,14 @@ class StealthTests(unittest.TestCase):
         self.assertFalse(reachable(museum))
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[museum]))
         self.assertTrue(reachable(museum))
-        # Asyanica Rooftops also needs its case-complete items: Throwtie and Jetboots.
+        # Asyanica Rooftops also needs its case-complete items: Throwtie, Jetboots and the Omnikey.
         rooftops = SACCases.ASYANICA_ROOFTOPS
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[rooftops]))
         self.assertFalse(reachable(rooftops))
         collect_weapon(SACClankWeapons.THROWTIE)
         self.assertFalse(reachable(rooftops))
         state.collect(world.create_item(SACClankGadgets.JETBOOTS))
-        self.assertTrue(reachable(rooftops))
+        self.assertFalse(reachable(rooftops))
         # Galactic Bolt Reserve also needs Cufflink and the Omnikey.
         reserve = SACCases.GALACTIC_BOLT_RESERVE
         state.collect(world.create_item(CASE_NAME_TO_INFOBOT[reserve]))
@@ -87,6 +87,7 @@ class StealthTests(unittest.TestCase):
         collect_weapon(SACClankWeapons.CUFFLINK)
         self.assertFalse(reachable(reserve))
         state.collect(world.create_item(SACClankGadgets.OMNIKEY))
+        self.assertTrue(reachable(rooftops))
         self.assertTrue(reachable(reserve))
 
     def test_native_counter_caps_preserves_arguments_and_tail_calls(self):

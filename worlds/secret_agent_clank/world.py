@@ -295,6 +295,13 @@ class SecretAgentClankWorld(World):
             for character, item_name in PROGRESSIVE_CHARACTER_ITEM_NAME.items():
                 if character in self.options.operatives.value:
                     pool += [item_name] * len(CASES_BY_OPERATIVE.get(character, ()))
+            # The starting case alone can leave too few early locations, and the
+            # starting operative's item gates the rest of their cases; placing it
+            # early stops it landing behind a check needing many early items.
+            starting_character_item = (CHARACTER_ITEM_NAME.get(starting_case.operative)
+                                       or PROGRESSIVE_CHARACTER_ITEM_NAME.get(starting_case.operative))
+            if starting_character_item:
+                self.multiworld.local_early_items[self.player][starting_character_item] = 1
 
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         if len(pool) > unfilled:
