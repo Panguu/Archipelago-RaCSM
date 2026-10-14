@@ -19,7 +19,7 @@ from .model import Completion, LocationOptions, Rac5Categories, Rac5CompletionSo
 _C = Rac5Categories
 _S = Rac5CompletionSources
 def _glitch(world):
-    return Has(GLITCHES_ITEM_NAME) & Has(Rac5Gadgets.SHRINK_RAY) & Has(Rac5Gadgets.HYPERSHOT)
+    return HasAll(GLITCHES_ITEM_NAME, Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT)
 
 LOCATIONS = (
     Rac5Locations(
@@ -43,7 +43,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5TBolts.KALIDON_RAMP,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.BOLT_BITS, None, 512),
         categories=frozenset((_C.TITANIUM_BOLT,)),
         native_planets=(3,),
@@ -52,7 +52,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.KALIDON_CHESTPLATE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.ARMOUR, "sludge", 1),
         categories=frozenset((_C.ARMOUR_PICKUP,)),
         definition_order=24,
@@ -61,8 +61,8 @@ LOCATIONS = (
         C.Rac5Locations.KALIDON_BOOTS,
         C.Rac5Planets.KALIDON,
         lambda world: (
-            Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY)
-            | Has(Rac5Gadgets.SHRINK_RAY) & Has(GLITCHES_ITEM_NAME)
+            HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY)
+            | HasAll(Rac5Gadgets.SHRINK_RAY, GLITCHES_ITEM_NAME)
         ),
         Completion(_S.ARMOUR, "wildfire", 16),
         categories=frozenset((_C.ARMOUR_PICKUP,)),
@@ -71,7 +71,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.KALIDON_CHAMELEON_CHESTPLATE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2) & HasClankPack(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasChallengeMode(world, 2) & HasClankPack(world),
         Completion(_S.ARMOUR, "chameleon", 1),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (2,), "in"),)),
         categories=frozenset((_C.ARMOUR_PICKUP, _C.CHALLENGE_MODE_2_ARMOUR)),
@@ -89,7 +89,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.KALIDON_EXPLOSIVE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.SKILL_BITS, None, 256),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset((_C.SKILL_POINT, _C.EASY_SKILL_POINT)),
@@ -99,7 +99,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.SKILL_BITS, None, 512),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset((_C.SKILL_POINT, _C.HARD_SKILL_POINT)),
@@ -136,7 +136,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.KALIDON_SEARCH,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814024, 4, 3),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset((_C.STORY_MISSION, _C.MISSION)),
@@ -147,7 +147,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.KALIDON_EXPLORE,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.MISSIONS, 32814024, 8, 3),
         options=LocationOptions(
             requirements=(OptionFilter(AllCutscenes, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in")),
@@ -174,7 +174,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.KALIDON_SCORCHER),
         options=LocationOptions(weapon=C.Rac5Weapons.SCORCHER),
         categories=frozenset((_C.WEAPON_VENDOR,)),
-        weapon="scorcher",
+        weapon=C.Rac5Weapons.SCORCHER,
         definition_order=108,
     ),
     Rac5Locations(
@@ -184,7 +184,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5ModVendorLocations.KALIDON_LACERATOR_LOCK),
         options=LocationOptions(weapon=C.Rac5Weapons.LACERATOR),
         categories=frozenset((_C.WEAPON_MOD_VENDOR,)),
-        weapon="lacerator",
+        weapon=C.Rac5Weapons.LACERATOR,
         mod_slot="mod_slot_two",
         definition_order=121,
     ),
@@ -195,7 +195,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5ModVendorLocations.KALIDON_CONCUSSION_SPLIT),
         options=LocationOptions(weapon=C.Rac5Weapons.CONCUSSION_GUN),
         categories=frozenset((_C.WEAPON_MOD_VENDOR,)),
-        weapon="concussion_gun",
+        weapon=C.Rac5Weapons.CONCUSSION_GUN,
         mod_slot="mod_slot_one",
         definition_order=122,
     ),
@@ -208,7 +208,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.AGENTS_OF_DOOM
         ),
         categories=frozenset((_C.WEAPON_MOD_VENDOR, _C.CHALLENGE_MODE_MOD)),
-        weapon="agents_of_doom",
+        weapon=C.Rac5Weapons.AGENTS_OF_DOOM,
         mod_slot="mod_slot_one",
         definition_order=134,
     ),
@@ -221,7 +221,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SCORCHER
         ),
         categories=frozenset((_C.WEAPON_MOD_VENDOR, _C.CHALLENGE_MODE_MOD)),
-        weapon="scorcher",
+        weapon=C.Rac5Weapons.SCORCHER,
         mod_slot="mod_slot_one",
         definition_order=135,
     ),
@@ -234,7 +234,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SUCK_CANNON
         ),
         categories=frozenset((_C.WEAPON_MOD_VENDOR, _C.CHALLENGE_MODE_MOD)),
-        weapon="suck_cannon",
+        weapon=C.Rac5Weapons.SUCK_CANNON,
         mod_slot="mod_slot_one",
         definition_order=136,
     ),
@@ -247,7 +247,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.BEE_MINE_GLOVE
         ),
         categories=frozenset((_C.WEAPON_MOD_VENDOR, _C.CHALLENGE_MODE_MOD)),
-        weapon="bee_mine_glove",
+        weapon=C.Rac5Weapons.BEE_MINE_GLOVE,
         mod_slot="mod_slot_two",
         definition_order=137,
     ),
@@ -260,7 +260,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.STATIC_BARRIER
         ),
         categories=frozenset((_C.WEAPON_MOD_VENDOR, _C.CHALLENGE_MODE_MOD)),
-        weapon="static_barrier",
+        weapon=C.Rac5Weapons.STATIC_BARRIER,
         mod_slot="mod_slot_one",
         definition_order=140,
     ),
@@ -273,7 +273,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SCORCHER
         ),
         categories=frozenset((_C.WEAPON_TITAN_VENDOR,)),
-        weapon="scorcher",
+        weapon=C.Rac5Weapons.SCORCHER,
         definition_order=148,
     ),
     Rac5Locations(
@@ -328,7 +328,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY,
         C.Rac5Planets.KALIDON,
-        lambda world: Has(Rac5Gadgets.HYPERSHOT) & Has(Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack(world) | _glitch(world),
         Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset((_C.SHRINK_RAY_SKIP,)),

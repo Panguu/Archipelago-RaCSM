@@ -29,6 +29,7 @@ class TestVendorRuleParity(RACSizeMatterTestBase):
                 for item in pool:
                     if rng.random() < chance:
                         state.collect(item, prevent_sweep=True)
+                state.sweep_for_advancements()
                 for name in payload["locations"]:
                     location = self.multiworld.get_location(name, self.player)
                     self.assertEqual(location_accessible(payload, name, state.prog_items[self.player]),
@@ -69,21 +70,21 @@ class TestVendorRuleMenu(TestCase):
             self.base: [MENU_REGION, ["has", "Infobot: Outpost Omega", 1]],
             self.titan: [MENU_REGION, ["has", "Progressive Challenge Mode", 1]],
         }})
-        self.assertNotIn("suck_cannon", self.vendor._purchasable_names())
+        self.assertNotIn("Suck Cannon", self.vendor._purchasable_names())
         self.vendor.rule_items = Counter({"Infobot: Outpost Omega": 1})
         self.assertEqual(self.vendor.purchasable_locations(), [self.base])
         self.weapons.vendor_locations[self.base] = True
         self.assertEqual(self.vendor.purchasable_locations(), [])
         self.vendor.rule_items["Progressive Challenge Mode"] = 1
         self.assertEqual(self.vendor.purchasable_locations(), [self.titan])
-        self.weapons.titan_purchased["suck_cannon"] = True
+        self.weapons.titan_purchased["Suck Cannon"] = True
         self.assertEqual(self.vendor.purchasable_locations(), [])
 
     def test_old_seed_fallback_and_reconnect_reset(self):
         self.vendor.configure_rules({"version": 2, "regions": {}, "locations": {}})
         self.assertEqual(self.vendor._purchasable_names(), [])
         self.vendor.configure_rules(None)
-        self.assertIn("suck_cannon", self.vendor._purchasable_names())
+        self.assertIn("Suck Cannon", self.vendor._purchasable_names())
         self.assertEqual(self.vendor.rule_items, {})
 
     def test_unknown_version_is_rejected(self):

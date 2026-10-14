@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import TYPE_CHECKING
 
-from ..constants import Rac5GadgetKeys, Rac5WeaponKeys
+from ..constants import Rac5Gadgets, Rac5Weapons
 from ..data.weapons import (
     GADGET_DATA,
     WEAPON_DATA,
@@ -33,7 +33,7 @@ PROGRESSIVE_MANUAL = 1
 PROGRESSIVE_AUTOMATIC = 2
 
 
-TITAN_ELIGIBLE_WEAPONS: frozenset[str] = frozenset(key for key in WEAPON_DATA if key != Rac5WeaponKeys.RYNO)
+TITAN_ELIGIBLE_WEAPONS: frozenset[str] = frozenset(key for key in WEAPON_DATA if key != Rac5Weapons.RYNO)
 
 
 def exp_threshold_for_level(weapon: str, level: int) -> int | None:
@@ -221,32 +221,32 @@ class GadgetAddresses(InventoryMemory):
 
 
 WEAPON_ORDER: list[str | None] = [
-    Rac5WeaponKeys.LACERATOR,
-    Rac5WeaponKeys.CONCUSSION_GUN,
-    Rac5WeaponKeys.ACID_BOMB_GLOVE,
-    Rac5WeaponKeys.AGENTS_OF_DOOM,
-    Rac5WeaponKeys.BEE_MINE_GLOVE,
-    Rac5WeaponKeys.STATIC_BARRIER,
-    Rac5WeaponKeys.SHOCK_ROCKET,
-    Rac5WeaponKeys.SNIPER_MINE,
-    Rac5WeaponKeys.SCORCHER,
-    Rac5WeaponKeys.LASER_TRACER,
-    Rac5WeaponKeys.SUCK_CANNON,
-    Rac5WeaponKeys.MOOTATOR,
+    Rac5Weapons.LACERATOR,
+    Rac5Weapons.CONCUSSION_GUN,
+    Rac5Weapons.ACID_BOMB_GLOVE,
+    Rac5Weapons.AGENTS_OF_DOOM,
+    Rac5Weapons.BEE_MINE_GLOVE,
+    Rac5Weapons.STATIC_BARRIER,
+    Rac5Weapons.SHOCK_ROCKET,
+    Rac5Weapons.SNIPER_MINE,
+    Rac5Weapons.SCORCHER,
+    Rac5Weapons.LASER_TRACER,
+    Rac5Weapons.SUCK_CANNON,
+    Rac5Weapons.MOOTATOR,
     None,
-    Rac5WeaponKeys.RYNO,
+    Rac5Weapons.RYNO,
 ]
 
 GADGET_ORDER: list[str | None] = [
-    Rac5GadgetKeys.HYPERSHOT,
-    Rac5GadgetKeys.SPROUT_O_MATIC,
-    Rac5GadgetKeys.POLARIZER,
-    Rac5GadgetKeys.PDA,
-    Rac5GadgetKeys.SHRINK_RAY,
-    Rac5GadgetKeys.BOLT_GRABBER,
+    Rac5Gadgets.HYPERSHOT,
+    Rac5Gadgets.SPROUT_O_MATIC,
+    Rac5Gadgets.POLARIZER,
+    Rac5Gadgets.PDA,
+    Rac5Gadgets.SHRINK_RAY,
+    Rac5Gadgets.BOLT_GRABBER,
     None,
-    Rac5GadgetKeys.MAP_O_MATIC,
-    Rac5GadgetKeys.BOX_BREAKER,
+    Rac5Gadgets.MAP_O_MATIC,
+    Rac5Gadgets.BOX_BREAKER,
 ]
 
 

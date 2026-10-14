@@ -20,17 +20,17 @@ class TestPDAVendor(unittest.TestCase):
         self.menu.current = MenuStateValue.PDA
         self.planet = SimpleNamespace(
             menu=self.menu,
-            weapons=SimpleNamespace(weapons={"lacerator": True, "concussion_gun": False}),
+            weapons=SimpleNamespace(weapons={"Lacerator": True, "Concussion Gun": False}),
             check_weapons=Mock(return_value={"gadgets": [], "weapons": [], "levels": [], "titans": []}),
             planet_id=1,
         )
         self.vendor = VendorInventory(
             self.memory, self.planet, None, Mock(),
-            is_weapon_ap_owned=lambda name: name == "lacerator",
+            is_weapon_ap_owned=lambda name: name == "Lacerator",
         )
         self.vendor.native_plan = self.plan
         self.vendor.controller = Mock(side_effect=AssertionError("PDA must not read view controls"))
-        self.vendor._purchasable_names = Mock(return_value=["concussion_gun", "pda"])
+        self.vendor._purchasable_names = Mock(return_value=["Concussion Gun", "PDA"])
 
     def test_pda_uses_ammo_only_and_preserves_native_menu_on_refresh(self):
         self.assertEqual(self.menu.get(), MenuStateValue.PDA)
@@ -40,7 +40,7 @@ class TestPDAVendor(unittest.TestCase):
         self.vendor.force_refresh()
         self.assertEqual(self.memory.read_int32(self.plan.view_mode), 1)
         self.assertEqual(self.menu.update, MenuStateValue.PDA)
-        self.assertEqual(self.vendor._items, ["lacerator"])
+        self.assertEqual(self.vendor._items, ["Lacerator"])
         self.assertEqual(self.memory.read_int32(address_maps.WEAPON_VENDOR_SLOTS), 1)
         self.assertEqual(self.memory.read_int32(address_maps.WEAPON_VENDOR_ITEMS), 2)
         self.vendor.controller.assert_not_called()
@@ -101,7 +101,7 @@ class TestPDAVendor(unittest.TestCase):
         PurchaseChecks(core)._check_vendor_purchases()
         self.assertFalse(self.vendor.show_purchasable_weapons)
         self.assertEqual(self.menu.update, MenuStateValue.PDA)
-        self.assertEqual(self.vendor._items, ["lacerator"])
+        self.assertEqual(self.vendor._items, ["Lacerator"])
 
 
 class TestPDAHints(unittest.IsolatedAsyncioTestCase):

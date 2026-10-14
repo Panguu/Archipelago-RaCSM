@@ -8,6 +8,7 @@ from Options import (
     ItemDict,
     OptionCounter,
     OptionGroup,
+    OptionSet,
     PerGameCommonOptions,
     ProgressionBalancing,
     Range,
@@ -16,14 +17,9 @@ from Options import (
 )
 
 from .constants.options import Rac5Options
-from .data.challenges import (
-    CHALLENGE_GROUP_DERBY,
-    CHALLENGE_GROUP_GADGETBOT,
-    CHALLENGE_GROUP_GADGETBOT_TOSS,
-    DEFAULT_CLANK_CHALLENGE_GROUPS,
-)
+from .data.challenges import DEFAULT_CLANK_CHALLENGE_GROUPS
 from .data.traps import TRAP_DURATIONS
-from .items import DEFAULT_ENABLED_WEAPONS, WEAPON_DISPLAY_TO_INTERNAL
+from .data.weapons import WEAPON_DATA
 
 
 class ClankPack(Toggle):
@@ -80,20 +76,17 @@ class ProgressiveArmour(Choice):
     default = 0
 
 
-class EnabledWeapons(ItemDict):
-    """Selects which weapons are included in generation at all. Set a weapon to 0 to
+class EnabledWeapons(OptionSet):
+    """Selects which weapons are included in generation at all. Leave a weapon out to
     remove it entirely: its own item(s) (including its Progressive Weapon/Mod items),
     its vendor/collectible location, its mod-vendor locations, and its Weapon Level
     Checks locations are all excluded from the pool, exactly as if the weapon didn't
-    exist in this seed. Default 1 includes every weapon. At least one long-range
-    projectile weapon must remain available after applying NG+ Items."""
+    exist in this seed. Defaults to every weapon. At least one long-range projectile
+    weapon must remain available after applying NG+ Items."""
 
     display_name = "Enabled Weapons"
-    verify_item_name = False
-    min = 0
-    max = 1
-    valid_keys = tuple(WEAPON_DISPLAY_TO_INTERNAL.keys())
-    default = DEFAULT_ENABLED_WEAPONS
+    valid_keys = frozenset(WEAPON_DATA)
+    default = frozenset(WEAPON_DATA)
 
 
 class ClankChallenges(Choice):
@@ -108,19 +101,15 @@ class ClankChallenges(Choice):
     default = 1
 
 
-class ClankChallengeGroups(ItemDict):
+class ClankChallengeGroups(OptionSet):
     """Selects which Clank Challenge groups (Metalis/Dayni Moon) are included
-    as location checks, whenever Clank Challenges is on. Set a group to 0 to
+    as location checks, whenever Clank Challenges is on. Leave a group out to
     exclude all of its locations (both the item-reward and individual-
     completion tiers) from generation entirely — the challenge is still
-    playable in-game, it just has no AP checks. Default 1 includes every
-    group."""
+    playable in-game, it just has no AP checks. Defaults to every group."""
 
     display_name = "Clank Challenge Groups"
-    verify_item_name = False
-    min = 0
-    max = 1
-    valid_keys = (CHALLENGE_GROUP_DERBY, CHALLENGE_GROUP_GADGETBOT_TOSS, CHALLENGE_GROUP_GADGETBOT)
+    valid_keys = DEFAULT_CLANK_CHALLENGE_GROUPS
     default = DEFAULT_CLANK_CHALLENGE_GROUPS
 
 

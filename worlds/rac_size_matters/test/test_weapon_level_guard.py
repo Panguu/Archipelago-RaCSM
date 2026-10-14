@@ -4,15 +4,15 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from ..client.pine_mixin import PineMixin
-from ..constants import Rac5WeaponKeys
+from ..constants import Rac5Weapons
 from ..core.save_data import highest_weapon_levels
 from ..core.planets import PlanetInventory
 from ..core.weapons import PROGRESSIVE_AUTOMATIC, PROGRESSIVE_MANUAL, WeaponInventory
 from ..data.weapons import WEAPON_MAX_LEVELS
 from .test_runtime_refactor import Memory
 
-LACERATOR = Rac5WeaponKeys.LACERATOR
-SCORCHER = Rac5WeaponKeys.SCORCHER
+LACERATOR = Rac5Weapons.LACERATOR
+SCORCHER = Rac5Weapons.SCORCHER
 
 
 def _inventory() -> WeaponInventory:

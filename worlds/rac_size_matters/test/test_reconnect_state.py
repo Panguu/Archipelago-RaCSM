@@ -20,7 +20,7 @@ def context():
     ctx._local_weapon_state = {}
     ctx._pushed_weapon_state = {}
     ctx._last_weapon_state_push = 0.0
-    ctx.stored_data = {ctx._save_data_key(): {"weapon_state": {"lacerator": 2}}}
+    ctx.stored_data = {ctx._save_data_key(): {"weapon_state": {"Lacerator": 2}}}
     weapons = Mock()
     weapons.level_snapshot.return_value = {}
     weapons.within_level_ceilings.side_effect = lambda levels: levels
@@ -42,7 +42,7 @@ class ReconnectStateTests(unittest.TestCase):
         ctx._wiring.planet.weapons.restore_levels.assert_not_called()
         ctx._wiring.planet.weapons_available = True
         ctx._try_restore_weapon_state()
-        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"lacerator": 2})
+        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"Lacerator": 2})
 
     def test_restore_waits_for_fresh_storage_reply(self):
         ctx = context()
@@ -51,27 +51,27 @@ class ReconnectStateTests(unittest.TestCase):
         ctx._wiring.planet.weapons.restore_levels.assert_not_called()
         ctx._save_data_received = True
         ctx._try_restore_weapon_state()
-        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"lacerator": 2})
-        self.assertEqual(ctx._local_weapon_state, {"lacerator": 2})
+        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"Lacerator": 2})
+        self.assertEqual(ctx._local_weapon_state, {"Lacerator": 2})
 
     def test_planet_restore_uses_newer_local_levels(self):
         ctx = context()
         ctx._save_data_received = True
         ctx._weapon_state_restored = True
-        ctx._local_weapon_state = {"lacerator": 3}
+        ctx._local_weapon_state = {"Lacerator": 3}
         ctx._try_restore_weapon_state(force=True)
-        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"lacerator": 3})
+        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"Lacerator": 3})
 
     def test_old_save_migrates_levels_and_discards_experience(self):
         data = RAC5SaveData.from_dict({"weapon_state": {
-            "lacerator": [3, 12345], "ryno": 99, "unknown": 2, "scorcher": "bad"}})
-        self.assertEqual(data.to_dict()["weapon_state"], {"lacerator": 3})
+            "Lacerator": [3, 12345], "RYNO": 99, "unknown": 2, "Scorcher": "bad"}})
+        self.assertEqual(data.to_dict()["weapon_state"], {"Lacerator": 3})
 
     def test_wipe_restore_leaves_experience_and_rebaselines_levels(self):
         wi = WeaponInventory.__new__(WeaponInventory)
         addr = SimpleNamespace(unlocked=True, level=3, experience=12345,
                                mod_slot_one=True, mod_slot_two=False, mod_slot_three=False)
-        wi._weapon_addrs = {"lacerator": addr}
+        wi._weapon_addrs = {"Lacerator": addr}
         wi._gadget_addrs = {}
         snapshot = wi.level_snapshot()
         wi.wipe()
@@ -82,17 +82,17 @@ class ReconnectStateTests(unittest.TestCase):
     def test_planet_ap_grants_rebaseline_pickup_detection(self):
         core = Core.__new__(Core)
         wi = WeaponInventory.__new__(WeaponInventory)
-        wi._weapon_addrs = {"lacerator": SimpleNamespace(unlocked=False)}
-        wi._gadget_addrs = {"hypershot": SimpleNamespace(unlocked=False)}
+        wi._weapon_addrs = {"Lacerator": SimpleNamespace(unlocked=False)}
+        wi._gadget_addrs = {"Hypershot": SimpleNamespace(unlocked=False)}
         wi.weapons, wi.gadgets = {}, {}
         wi._raw_weapons, wi._raw_gadgets = {}, {}
         core.planet = SimpleNamespace(weapons=wi)
-        core._ap_owned_weapons = {"lacerator": True}
-        core._ap_owned_gadgets = {"hypershot": True}
+        core._ap_owned_weapons = {"Lacerator": True}
+        core._ap_owned_gadgets = {"Hypershot": True}
         core.send_location = Mock()
         core._sync_weapon_gadget_ownership()
-        self.assertTrue(wi._raw_weapons["lacerator"])
-        self.assertTrue(wi._raw_gadgets["hypershot"])
+        self.assertTrue(wi._raw_weapons["Lacerator"])
+        self.assertTrue(wi._raw_gadgets["Hypershot"])
         core.send_location.assert_not_called()
 
     def test_armour_detection_waits_for_ap_inventory(self):
@@ -114,13 +114,13 @@ class PersistLevelTests(unittest.IsolatedAsyncioTestCase):
         ctx = context()
         ctx._save_data_received = ctx._weapon_state_restored = True
         ctx._last_weapon_state_push = float("inf")
-        ctx._wiring.planet.weapons.level_snapshot.return_value = {"lacerator": 3}
+        ctx._wiring.planet.weapons.level_snapshot.return_value = {"Lacerator": 3}
         ctx._on_weapon_level_up()
         await asyncio.sleep(0)
         packet = ctx.send_msgs.call_args.args[0][0]
         self.assertEqual(packet["operations"], [{"operation": "update", "value": {
-            "weapon_state": {"lacerator": 3}}}])
-        self.assertEqual(ctx._local_weapon_state, {"lacerator": 3})
+            "weapon_state": {"Lacerator": 3}}}])
+        self.assertEqual(ctx._local_weapon_state, {"Lacerator": 3})
 
     async def test_no_publish_before_restore_or_during_vendor(self):
         ctx = context()
@@ -135,7 +135,7 @@ class PersistLevelTests(unittest.IsolatedAsyncioTestCase):
     async def test_force_sync_restores_even_if_already_restored(self):
         ctx = context()
         ctx._save_data_received = ctx._weapon_state_restored = True
-        ctx._local_weapon_state = {"lacerator": 3}
+        ctx._local_weapon_state = {"Lacerator": 3}
         ctx._pine_lock = asyncio.Lock()
         ctx._parse_inventory = Mock(return_value={})
         ctx._sync_vendor_rule_items = Mock()
@@ -145,4 +145,4 @@ class PersistLevelTests(unittest.IsolatedAsyncioTestCase):
         ctx._wiring.restore_armour_from_locations = Mock()
         await ctx.force_sync()
         ctx._wiring.planet.weapons.wipe.assert_called_once()
-        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"lacerator": 3})
+        ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"Lacerator": 3})

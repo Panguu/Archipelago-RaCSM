@@ -49,14 +49,14 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.progressive_weapons.value = world.passthrough[Rac5Options.PROGRESSIVE_WEAPONS]
             world.options.progressive_mods.value = world.passthrough.get(Rac5Options.PROGRESSIVE_MODS, False)
             world.options.progressive_armour.value = world.passthrough[Rac5Options.PROGRESSIVE_ARMOUR]
-            world.options.enabled_weapons.value = world.passthrough.get(
-                Rac5Options.ENABLED_WEAPONS, dict(world.options.enabled_weapons.default)
-            )
+            world.options.enabled_weapons.value = set(world.passthrough.get(
+                Rac5Options.ENABLED_WEAPONS, world.options.enabled_weapons.default
+            ))
             world.options.death_link.value = world.passthrough[Rac5Options.DEATH_LINK]
             world.options.clank_challenges.value = world.passthrough.get(Rac5Options.CLANK_CHALLENGES, 0)
-            world.options.clank_challenge_groups.value = world.passthrough.get(
-                Rac5Options.CLANK_CHALLENGE_GROUPS, dict(world.options.clank_challenge_groups.default)
-            )
+            world.options.clank_challenge_groups.value = set(world.passthrough.get(
+                Rac5Options.CLANK_CHALLENGE_GROUPS, world.options.clank_challenge_groups.default
+            ))
             world.options.skyboard_challenges.value = world.passthrough.get(Rac5Options.SKYBOARD_CHALLENGES, 0)
             world.options.shrink_ray_options.value = world.passthrough.get(Rac5Options.SHRINK_RAY_OPTIONS, 1)
             world.options.skill_points.value = world.passthrough.get(Rac5Options.SKILL_POINTS, True)

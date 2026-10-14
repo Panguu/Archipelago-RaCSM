@@ -1,29 +1,20 @@
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, Or, True_
+from rule_builder.rules import And, Has, HasAll, HasAny, HasAnyCount, HasGroup, Or, True_
 
 from ..constants import Rac5Gadgets, Rac5Infobots
-from ..data.weapons import WEAPON_DATA
 from ..items import (
     ARMOUR_SETS,
     CLANK_PACK_NAME,
+    LONG_PROJECTILE_WEAPONS_GROUP,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_ARMOUR_UNIFIED_NAME,
     PROGRESSIVE_CHALLENGE_MODE_NAME,
     PROGRESSIVE_WEAPON_NAME,
-    WEAPON_DISPLAY_TO_INTERNAL,
+    PROJECTILE_WEAPONS_GROUP,
 )
 if TYPE_CHECKING:
     from ..world import RACSizeMatterWorld
-_PROJECTILE_WEAPONS = [
-    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_DATA[internal].is_projectile
-]
-_LONG_PROJECTILE_WEAPONS = [
-    display for display, internal in WEAPON_DISPLAY_TO_INTERNAL.items() if WEAPON_DATA[internal].is_long_projectile
-]
-_PROJECTILE_WEAPONS_ALL_NAMES = [*_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _PROJECTILE_WEAPONS)]
-_LONG_PROJECTILE_WEAPONS_ALL_NAMES = [*_LONG_PROJECTILE_WEAPONS, *(PROGRESSIVE_WEAPON_NAME[name] for name in _LONG_PROJECTILE_WEAPONS)]
-PROJECTILE_WEAPON_ITEM_NAMES = frozenset(_PROJECTILE_WEAPONS_ALL_NAMES)
 _ARMOUR_PIECE_INDEX: dict[str, int] = {"Chestplate": 1, "Helmet": 2, "Gloves": 3, "Boots": 4}
 _ARMOUR_SET_ORDER_INDEX: dict[str, int] = {display: i for i, (display, _internal) in enumerate(ARMOUR_SETS)}
 
@@ -33,11 +24,11 @@ def _unified_armour_count(set_display: str, piece_name: str) -> int:
     return _ARMOUR_SET_ORDER_INDEX[set_display] * 4 + _ARMOUR_PIECE_INDEX[piece_name]
 
 
-def HasProjectileWeapon() -> HasAny:
-    return HasAny(*_PROJECTILE_WEAPONS_ALL_NAMES)
+def HasProjectileWeapon() -> HasGroup:
+    return HasGroup(PROJECTILE_WEAPONS_GROUP)
 
-def HasLongProjectileWeapon() -> HasAny:
-    return HasAny(*_LONG_PROJECTILE_WEAPONS_ALL_NAMES)
+def HasLongProjectileWeapon() -> HasGroup:
+    return HasGroup(LONG_PROJECTILE_WEAPONS_GROUP)
 
 
 def HasArmourPiece(set_display: str, piece_name: str) -> HasAnyCount:
@@ -91,7 +82,7 @@ def HasGoodExpPlanet() -> Or:
 def HasExpAccess() -> Or:
     return Or(
         HasAll(Rac5Infobots.QUODRONA, Rac5Gadgets.SHRINK_RAY),
-        HasAll(Rac5Infobots.DAYNI_MOON),
+        Has(Rac5Infobots.DAYNI_MOON),
         HasAll(Rac5Infobots.CHALLAX, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         HasAll(Rac5Infobots.METALIS, Rac5Gadgets.POLARIZER),
         HasAll(Rac5Infobots.KALIDON, Rac5Gadgets.HYPERSHOT),

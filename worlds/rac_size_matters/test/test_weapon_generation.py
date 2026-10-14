@@ -7,26 +7,20 @@ from Options import OptionError
 from test.general import setup_multiworld
 
 from ..data.weapons import WEAPON_DATA
-from ..items import NG_PLUS_WEAPONS, PROGRESSIVE_WEAPON_NAME, WEAPON_DISPLAY_TO_INTERNAL
+from ..items import NG_PLUS_WEAPONS, PROGRESSIVE_WEAPON_NAME, WEAPON_ITEM_TABLE
 from ..world import RACSizeMatterWorld
 
 
-PROJECTILES = tuple(
-    name for name, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
-    if WEAPON_DATA[internal].is_projectile
-)
-LONG_PROJECTILES = tuple(
-    name for name, internal in WEAPON_DISPLAY_TO_INTERNAL.items()
-    if WEAPON_DATA[internal].is_long_projectile
-)
+PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.is_projectile)
+LONG_PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.is_long_projectile)
 
 
 class TestWeaponGeneration(unittest.TestCase):
     def test_no_available_long_projectile_rejected(self):
-        non_long = {name: 1 for name in WEAPON_DISPLAY_TO_INTERNAL if name not in LONG_PROJECTILES}
-        short_projectiles = {name: 1 for name in PROJECTILES if name not in LONG_PROJECTILES}
-        for weapons, ng_plus in (({}, 1), (non_long, 1), (short_projectiles, 1), ({"RYNO": 1}, 0),
-                                 ({**non_long, "RYNO": 1}, 0)):
+        non_long = [name for name in WEAPON_DATA if name not in LONG_PROJECTILES]
+        short_projectiles = [name for name in PROJECTILES if name not in LONG_PROJECTILES]
+        for weapons, ng_plus in (([], 1), (non_long, 1), (short_projectiles, 1), (["RYNO"], 0),
+                                 ([*non_long, "RYNO"], 0)):
             with self.subTest(weapons=weapons, ng_plus=ng_plus):
                 with self.assertRaisesRegex(OptionError, "at least one long-range projectile weapon"):
                     setup_multiworld(RACSizeMatterWorld, options={
@@ -38,11 +32,11 @@ class TestWeaponGeneration(unittest.TestCase):
             for progressive in range(3):
                 with self.subTest(weapon=weapon, progressive=progressive):
                     mw = setup_multiworld(RACSizeMatterWorld, seed=42, options={
-                        "enabled_weapons": {weapon: 1}, "progressive_weapons": progressive,
+                        "enabled_weapons": [weapon], "progressive_weapons": progressive,
                     })
                     expected = PROGRESSIVE_WEAPON_NAME[weapon] if progressive else weapon
                     weapons = [item.name for item in mw.precollected_items[1]
-                               if item.name in WEAPON_DISPLAY_TO_INTERNAL
+                               if item.name in WEAPON_ITEM_TABLE
                                or item.name in PROGRESSIVE_WEAPON_NAME.values()]
                     self.assertEqual(weapons, [expected])
                     distribute_items_restrictive(mw)
@@ -57,7 +51,7 @@ class TestWeaponGeneration(unittest.TestCase):
                 seed = index * 1000 + case
                 rng = random.Random(seed)
                 options = {
-                    "enabled_weapons": {weapon: 1},
+                    "enabled_weapons": [weapon],
                     "starting_weapons": case % 3,
                     "starting_gadgets": rng.randrange(9),
                     "progressive_weapons": (case // 3) % 3,

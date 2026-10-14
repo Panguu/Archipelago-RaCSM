@@ -1,5 +1,5 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import Has, HasAll, True_
+from rule_builder.rules import HasAll, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets
@@ -31,7 +31,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5Locations.INSIDE_CLANK_CHESTPLATE,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         Completion(_S.ARMOUR, "mega_bomb", 1),
         categories=frozenset(("armour_pickup",)),
         definition_order=30,
@@ -48,7 +48,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.INSIDE_CLANK_SHOCK,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         Completion(_S.SKILL_BITS, None, 4294967296),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -58,7 +58,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5SkillPoints.INSIDE_CLANK_RATCHET,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         Completion(_S.SKILL_BITS, None, 8589934592),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset(("skill_point", "hard_skill_point")),
@@ -78,7 +78,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.INSIDE_CLANK_TECHNOMITES,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         Completion(_S.MISSIONS, 32814036, 2, 9),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -98,11 +98,11 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.INSIDE_CLANK_STATIC,
         C.Rac5Planets.INSIDE_CLANK,
-        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER) & Has(Rac5Gadgets.SHRINK_RAY),
+        lambda world: HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.POLARIZER, Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5VendorLocations.INSIDE_CLANK_STATIC),
         options=LocationOptions(weapon=C.Rac5Weapons.STATIC_BARRIER),
         categories=frozenset(("weapon_vendor",)),
-        weapon="static_barrier",
+        weapon=C.Rac5Weapons.STATIC_BARRIER,
         definition_order=113,
     ),
     Rac5Locations(
@@ -117,7 +117,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.STATIC_BARRIER
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="static_barrier",
+        weapon=C.Rac5Weapons.STATIC_BARRIER,
         definition_order=154,
     ),
     Rac5Locations(

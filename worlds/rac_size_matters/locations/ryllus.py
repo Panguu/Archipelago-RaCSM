@@ -139,7 +139,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.RYLLUS_AGENTS),
         options=LocationOptions(weapon=C.Rac5Weapons.AGENTS_OF_DOOM),
         categories=frozenset(("weapon_vendor",)),
-        weapon="agents_of_doom",
+        weapon=C.Rac5Weapons.AGENTS_OF_DOOM,
         definition_order=107,
     ),
     Rac5Locations(
@@ -151,7 +151,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.AGENTS_OF_DOOM
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="agents_of_doom",
+        weapon=C.Rac5Weapons.AGENTS_OF_DOOM,
         definition_order=147,
     ),
 )

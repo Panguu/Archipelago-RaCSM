@@ -16,10 +16,10 @@ class TestNoSphereZeroLocations(RACSizeMatterTestBase):
         "progressive_weapons": False,
         "progressive_mods": False,
         "progressive_armour": False,
-        "enabled_weapons": {
-            "RYNO": 1, "Acid Bomb Glove": 1, "Laser Tracer": 1, "Scorcher": 1, "Concussion Gun": 1,
-            "Shock Rocket": 1, "Static Barrier": 1, "Agents of Doom": 1,
-        },
+        "enabled_weapons": [
+            "RYNO", "Acid Bomb Glove", "Laser Tracer", "Scorcher", "Concussion Gun",
+            "Shock Rocket", "Static Barrier", "Agents of Doom",
+        ],
         "clank_challenges": False,
         "skyboard_challenges": "off",
         "enable_skyboard_challenge_skill_points": True,

@@ -95,7 +95,7 @@ LOCATIONS = (
         Completion(_S.SKILL_BITS, None, 4),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),), weapon=C.Rac5Weapons.MOOTATOR),
         categories=frozenset(("skill_point", "easy_skill_point")),
-        weapon="mootator",
+        weapon=C.Rac5Weapons.MOOTATOR,
         native_planets=(1,),
         definition_order=46,
     ),
@@ -137,7 +137,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.POKITARU_LACERATOR),
         options=LocationOptions(weapon=C.Rac5Weapons.LACERATOR),
         categories=frozenset(("weapon_vendor",)),
-        weapon="lacerator",
+        weapon=C.Rac5Weapons.LACERATOR,
         definition_order=104,
     ),
     Rac5Locations(
@@ -147,7 +147,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.POKITARU_ACID),
         options=LocationOptions(weapon=C.Rac5Weapons.ACID_BOMB_GLOVE),
         categories=frozenset(("weapon_vendor",)),
-        weapon="acid_bomb_glove",
+        weapon=C.Rac5Weapons.ACID_BOMB_GLOVE,
         definition_order=105,
     ),
     Rac5Locations(
@@ -157,7 +157,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.POKITARU_CONCUSSION),
         options=LocationOptions(weapon=C.Rac5Weapons.CONCUSSION_GUN),
         categories=frozenset(("weapon_vendor",)),
-        weapon="concussion_gun",
+        weapon=C.Rac5Weapons.CONCUSSION_GUN,
         definition_order=106,
     ),
     Rac5Locations(
@@ -167,7 +167,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.POKITARU_RYNO),
         options=LocationOptions(requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.RYNO),
         categories=frozenset(("weapon_vendor", "challenge_mode_ryno")),
-        weapon="ryno",
+        weapon=C.Rac5Weapons.RYNO,
         definition_order=115,
     ),
     Rac5Locations(
@@ -176,7 +176,7 @@ LOCATIONS = (
         lambda world: True_(),
         Completion(_S.EVENTS, C.Rac5VendorLocations.POKITARU_HYPERSHOT),
         categories=frozenset(("gadget_vendor",)),
-        gadget="hypershot",
+        gadget=C.Rac5Gadgets.HYPERSHOT,
         definition_order=116,
     ),
     Rac5Locations(
@@ -188,7 +188,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.LACERATOR
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="lacerator",
+        weapon=C.Rac5Weapons.LACERATOR,
         definition_order=144,
     ),
     Rac5Locations(
@@ -200,7 +200,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.ACID_BOMB_GLOVE
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="acid_bomb_glove",
+        weapon=C.Rac5Weapons.ACID_BOMB_GLOVE,
         definition_order=145,
     ),
     Rac5Locations(
@@ -212,7 +212,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.CONCUSSION_GUN
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="concussion_gun",
+        weapon=C.Rac5Weapons.CONCUSSION_GUN,
         definition_order=146,
     ),
 )

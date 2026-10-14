@@ -111,7 +111,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.DREAMTIME_SUCK),
         options=LocationOptions(weapon=C.Rac5Weapons.SUCK_CANNON),
         categories=frozenset(("weapon_vendor",)),
-        weapon="suck_cannon",
+        weapon=C.Rac5Weapons.SUCK_CANNON,
         definition_order=109,
     ),
     Rac5Locations(
@@ -123,7 +123,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SUCK_CANNON
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="suck_cannon",
+        weapon=C.Rac5Weapons.SUCK_CANNON,
         definition_order=149,
     ),
 )

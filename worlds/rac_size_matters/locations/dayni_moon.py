@@ -127,7 +127,7 @@ LOCATIONS = (
         Completion(_S.EVENTS, C.Rac5VendorLocations.DAYNI_MOON_SHOCK),
         options=LocationOptions(weapon=C.Rac5Weapons.SHOCK_ROCKET),
         categories=frozenset(("weapon_vendor",)),
-        weapon="shock_rocket",
+        weapon=C.Rac5Weapons.SHOCK_ROCKET,
         definition_order=112,
     ),
     Rac5Locations(
@@ -136,7 +136,7 @@ LOCATIONS = (
         lambda world: True_(),
         Completion(_S.EVENTS, C.Rac5VendorLocations.DAYNI_MOON_MAP),
         categories=frozenset(("gadget_vendor",)),
-        gadget="map_o_matic",
+        gadget=C.Rac5Gadgets.MAP_O_MATIC,
         definition_order=118,
     ),
     Rac5Locations(
@@ -148,7 +148,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.MOOTATOR
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="mootator",
+        weapon=C.Rac5Weapons.MOOTATOR,
         definition_order=152,
     ),
     Rac5Locations(
@@ -160,7 +160,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.SHOCK_ROCKET
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="shock_rocket",
+        weapon=C.Rac5Weapons.SHOCK_ROCKET,
         definition_order=153,
     ),
     Rac5Locations(

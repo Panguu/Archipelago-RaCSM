@@ -99,7 +99,7 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
             core = ctx._wiring
             core.native.enabled = True
             core.native.checked = {"already checked"}
-            core.planet.weapons.ap_weapons = {"lacerator": True}
+            core.planet.weapons.ap_weapons = {"Lacerator": True}
             core.planet.weapons.experience_multiplier = 3
             core.planet.starting_planet_id = 2
             core.native.presentation = Mock()
@@ -128,7 +128,7 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
                     core.planet.set_planet(1)
                     self.assertEqual(core.planet.player.health_addr, health)
                     self.assertEqual(core.planet.small_text._config.base_addr, text)
-                    self.assertEqual(core.planet.weapons.ap_weapons, {"lacerator": True})
+                    self.assertEqual(core.planet.weapons.ap_weapons, {"Lacerator": True})
                     self.assertEqual(core.planet.weapons.experience_multiplier, 3)
                     self.assertEqual(core.planet.starting_planet_id, 2)
                     self.assertIn("already checked", core.native.checked)

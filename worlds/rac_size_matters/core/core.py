@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from ..constants import Rac5Gadgets
 from .address_maps import CURRENT_PLANET_ADDRESS
 from . import address_maps
 from .armour import ArmourInventory
@@ -404,7 +405,7 @@ class Core:
             self.planet.planet_id,
             self.shrink_ray_skips_enabled
             and not self.shrink_ray_locations_enabled
-            and self._ap_owned_gadgets.get("shrink_ray", False),
+            and self._ap_owned_gadgets.get(Rac5Gadgets.SHRINK_RAY, False),
         )
 
         if self.planet.planet_id is not None:

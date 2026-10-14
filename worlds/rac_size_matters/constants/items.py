@@ -72,6 +72,15 @@ class Rac5Infobots:
     QUODRONA = "Infobot: Quodrona"
 
 
+@dataclass(frozen=True)
+class Rac5EventInfobots:
+    """String constants for infobots that only exist as logic events, never as real items"""
+
+    DREAMTIME = "Infobot: Dreamtime"
+    OUTPOST_OMEGA_1 = "Infobot: Outpost Omega 1"
+    INSIDE_CLANK = "Infobot: Inside Clank"
+
+
 class Rac5Filler:
     """String constants for each filler item"""
 

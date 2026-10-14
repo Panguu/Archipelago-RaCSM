@@ -20,16 +20,16 @@ from ..items import (
     ARMOUR_SET_DISPLAY_TO_INTERNAL,
     ARMOUR_SETS,
     CLANK_PACK_NAME,
-    GADGET_DISPLAY_TO_INTERNAL,
+    GADGET_ITEM_TABLE,
     PROGRESSIVE_ARMOUR_NAME,
     PROGRESSIVE_ARMOUR_UNIFIED_NAME,
     PROGRESSIVE_CHALLENGE_MODE_NAME,
     PROGRESSIVE_MOD_NAME,
     PROGRESSIVE_WEAPON_NAME,
-    WEAPON_DISPLAY_TO_INTERNAL,
+    WEAPON_ITEM_TABLE,
     WEAPON_MOD_NAME_TO_SLOT,
 )
-from ..locations import GADGET_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION
+from ..locations import GADGET_TO_LOCATION, WEAPON_TO_LOCATION
 
 PROGRESSIVE_WEAPON_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_WEAPON_NAME.items()}
 PROGRESSIVE_ARMOUR_NAME_REVERSE = {v: k for k, v in PROGRESSIVE_ARMOUR_NAME.items()}
@@ -106,9 +106,7 @@ class InventoryMixin:
                 continue
             if item_name in WEAPON_MOD_NAME_TO_SLOT:
                 mod_display, slot = WEAPON_MOD_NAME_TO_SLOT[item_name]
-                mod_internal = WEAPON_DISPLAY_TO_INTERNAL.get(mod_display)
-                if mod_internal:
-                    weapon_mod_slots.setdefault(mod_internal, set()).add(_SLOT_ATTR[slot])
+                weapon_mod_slots.setdefault(mod_display, set()).add(_SLOT_ATTR[slot])
                 continue
             if item_name == PROGRESSIVE_ARMOUR_UNIFIED_NAME:
                 unified_armour_count += 1
@@ -123,10 +121,10 @@ class InventoryMixin:
 
             if item_name in INFOBOT_ITEM_TO_PLANET:
                 infobot_planets.update(planet.upper() for planet in INFOBOT_ITEM_TO_PLANET[item_name])
-            elif item_name in WEAPON_DISPLAY_TO_INTERNAL:
-                weapon_unlocked[WEAPON_DISPLAY_TO_INTERNAL[item_name]] = True
-            elif item_name in GADGET_DISPLAY_TO_INTERNAL:
-                gadget_unlocked[GADGET_DISPLAY_TO_INTERNAL[item_name]] = True
+            elif item_name in WEAPON_ITEM_TABLE:
+                weapon_unlocked[item_name] = True
+            elif item_name in GADGET_ITEM_TABLE:
+                gadget_unlocked[item_name] = True
             elif item_name in ARMOUR_DISPLAY_TO_INTERNAL:
                 set_key, piece = ARMOUR_DISPLAY_TO_INTERNAL[item_name]
                 armour_unlocked[set_key] = armour_unlocked.get(set_key, 0) | int(piece)
@@ -155,19 +153,13 @@ class InventoryMixin:
 
         weapon_levels: dict[str, int] = {}
         for display, count in weapon_prog_counts.items():
-            internal = WEAPON_DISPLAY_TO_INTERNAL.get(display)
-            if not internal:
-                continue
             if count >= 1:
-                weapon_unlocked[internal] = True
-            weapon_levels[internal] = min(max(0, count - 1), WEAPON_MAX_LEVELS.get(internal, 1) - 1)
+                weapon_unlocked[display] = True
+            weapon_levels[display] = min(max(0, count - 1), WEAPON_MAX_LEVELS.get(display, 1) - 1)
 
         for display, count in weapon_mod_prog_counts.items():
-            internal = WEAPON_DISPLAY_TO_INTERNAL.get(display)
-            if not internal:
-                continue
             slots = {_SLOT_ATTR[i] for i in range(1, count + 1) if i in _SLOT_ATTR}
-            weapon_mod_slots.setdefault(internal, set()).update(slots)
+            weapon_mod_slots.setdefault(display, set()).update(slots)
 
         return {
             "weapons":         weapon_unlocked,
@@ -267,7 +259,7 @@ class InventoryMixin:
         if not self.pine_connected or not self._wiring.planet.is_ready:
             return
         wi = self._wiring.planet.weapons
-        loc = WEAPON_INTERNAL_TO_LOCATION.get(trigger_name)
+        loc = WEAPON_TO_LOCATION.get(trigger_name)
         already_checked = loc is not None and loc in self._checked_location_names()
         if already_checked:
             return
@@ -285,7 +277,7 @@ class InventoryMixin:
         Same already-checked-location guard as _grant_random_bonus_item, for the same reason."""
         if not self.pine_connected or not self._wiring.planet.is_ready:
             return
-        loc = GADGET_INTERNAL_TO_LOCATION.get(trigger_name)
+        loc = GADGET_TO_LOCATION.get(trigger_name)
         if loc is not None and loc in self._checked_location_names():
             return
         if loc:

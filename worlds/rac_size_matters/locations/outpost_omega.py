@@ -1,5 +1,5 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import Has, HasAll, True_
+from rule_builder.rules import Has, True_
 
 from .. import constants as C
 from ..constants import Rac5Gadgets
@@ -61,7 +61,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA_ESCAPE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.MISSIONS, 32814030, 128, 6),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset(("story_mission", "mission")),
@@ -83,7 +83,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5CutsceneLocations.OUTPOST_OMEGA,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.MISSIONS, 32814030, 2, 6),
         options=LocationOptions(requirements=(OptionFilter(AllCutscenes, (1,), "in"),)),
         categories=frozenset(("cutscene", "mission")),
@@ -103,20 +103,20 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5VendorLocations.OUTPOST_OMEGA_BEE,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5VendorLocations.OUTPOST_OMEGA_BEE),
         options=LocationOptions(weapon=C.Rac5Weapons.BEE_MINE_GLOVE),
         categories=frozenset(("weapon_vendor",)),
-        weapon="bee_mine_glove",
+        weapon=C.Rac5Weapons.BEE_MINE_GLOVE,
         definition_order=110,
     ),
     Rac5Locations(
         C.Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5VendorLocations.OUTPOST_OMEGA_BOX_BREAKER),
         categories=frozenset(("gadget_vendor",)),
-        gadget="box_breaker",
+        gadget=C.Rac5Gadgets.BOX_BREAKER,
         definition_order=120,
     ),
     Rac5Locations(
@@ -128,7 +128,7 @@ LOCATIONS = (
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),), weapon=C.Rac5Weapons.BEE_MINE_GLOVE
         ),
         categories=frozenset(("weapon_titan_vendor",)),
-        weapon="bee_mine_glove",
+        weapon=C.Rac5Weapons.BEE_MINE_GLOVE,
         definition_order=150,
     ),
     Rac5Locations(
@@ -174,7 +174,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_GRINDRAIL,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_GRINDRAIL),
         code=BASE_ID + 372,
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
@@ -184,7 +184,7 @@ LOCATIONS = (
     Rac5Locations(
         C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_SECOND_GRINDRAIL,
         C.Rac5Planets.OUTPOST_OMEGA,
-        lambda world: HasAll(Rac5Gadgets.SHRINK_RAY),
+        lambda world: Has(Rac5Gadgets.SHRINK_RAY),
         Completion(_S.EVENTS, C.Rac5ShrinkRayGrindrail.OUTPOST_OMEGA_SECOND_GRINDRAIL),
         code=BASE_ID + 374,
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),

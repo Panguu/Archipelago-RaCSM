@@ -4,7 +4,7 @@ import logging
 from collections import deque
 
 from ..constants import Rac5Locations
-from ..locations import GADGET_INTERNAL_TO_LOCATION, TITAN_INTERNAL_TO_LOCATION, WEAPON_INTERNAL_TO_LOCATION
+from ..locations import GADGET_TO_LOCATION, TITAN_TO_LOCATION, WEAPON_TO_LOCATION
 from . import vendor_presentation
 from . import address_maps
 from .address_maps import CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR, PLANET_ADDRESSES
@@ -159,12 +159,12 @@ class NativeRuntime:
         )
         base_locations = {
             WEAPON_VENDOR_IDS[name]: loc
-            for name, loc in (WEAPON_INTERNAL_TO_LOCATION | GADGET_INTERNAL_TO_LOCATION).items()
+            for name, loc in (WEAPON_TO_LOCATION | GADGET_TO_LOCATION).items()
             if self.allowed_locations is None or loc in self.allowed_locations
         }
         titans = {
             WEAPON_VENDOR_IDS[name]: loc
-            for name, loc in TITAN_INTERNAL_TO_LOCATION.items()
+            for name, loc in TITAN_TO_LOCATION.items()
             if self.allowed_locations is None or loc in self.allowed_locations
         }
         plan = (
@@ -284,7 +284,7 @@ class NativeRuntime:
     def _eligible_titans(self):
         if not self.vendor.planet.is_ready or self.vendor.planet.planet_id != self.module:
             return set()
-        return {WEAPON_VENDOR_IDS[name] for name in TITAN_INTERNAL_TO_LOCATION if self.vendor._is_titan_pending(name)}
+        return {WEAPON_VENDOR_IDS[name] for name in TITAN_TO_LOCATION if self.vendor._is_titan_pending(name)}
 
     def notify(self, text):
         self.notifications.append(text)

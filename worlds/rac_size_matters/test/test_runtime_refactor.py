@@ -12,7 +12,7 @@ from ..core.patches.asm import Patch
 from ..core.patches.plan import Plan
 from ..core.weapons import WEAPON_STRUCT_SIZE, WeaponInventory
 from ..core.vendor import VendorInventory
-from ..locations import TITAN_INTERNAL_TO_LOCATION
+from ..locations import TITAN_TO_LOCATION
 from ..locations import ALL_LOCATIONS
 from ..locations.observation import LocationObservation
 
@@ -57,9 +57,9 @@ class TestRuntimeRefactor(unittest.TestCase):
         memory.write_bytes(0x1045, b"\x01")
         memory.write_bytes(0x102D, (4).to_bytes(4, "little"))
         changed = inventory.check()
-        self.assertEqual(changed["weapons"], ["lacerator"])
-        self.assertEqual(changed["levels"], [("lacerator", level) for level in range(2, 6)])
-        self.assertEqual(changed["titans"], ["lacerator"])
+        self.assertEqual(changed["weapons"], ["Lacerator"])
+        self.assertEqual(changed["levels"], [("Lacerator", level) for level in range(2, 6)])
+        self.assertEqual(changed["titans"], ["Lacerator"])
         self.assertEqual(memory.reads, [(0x1000, 23 * WEAPON_STRUCT_SIZE)])
         self.assertEqual(memory.writes, [])
         self.assertFalse(any(inventory.check().values()))
@@ -67,13 +67,13 @@ class TestRuntimeRefactor(unittest.TestCase):
     def test_grants_and_resync_share_one_read_and_write(self):
         memory, inventory = self.inventory()
         with inventory.memory():
-            inventory.set("lacerator", True)
-            inventory.set_mod("lacerator", "mod_slot_one", True)
+            inventory.set("Lacerator", True)
+            inventory.set_mod("Lacerator", "mod_slot_one", True)
             inventory.sync_slots()
         self.assertEqual(len(memory.reads), 1)
         self.assertEqual(len(memory.writes), 1)
-        self.assertTrue(inventory.entries["lacerator"].raw_owned)
-        self.assertTrue(inventory.entries["lacerator"].raw_mods.mod_slot_one)
+        self.assertTrue(inventory.entries["Lacerator"].raw_owned)
+        self.assertTrue(inventory.entries["Lacerator"].raw_mods.mod_slot_one)
         self.assertFalse(any(inventory.check().values()))
 
     def test_nonprogressive_titan_purchase_preserves_inventory_and_progress(self):
@@ -85,41 +85,41 @@ class TestRuntimeRefactor(unittest.TestCase):
                     memory, inventory = self.inventory()
                     inventory.challenge_mode = 1
                     inventory.progressive_mode = 0
-                    inventory.set("lacerator", owned)
-                    inventory.set_level("lacerator", level)
-                    inventory.set_experience("lacerator", 123)
+                    inventory.set("Lacerator", owned)
+                    inventory.set_level("Lacerator", level)
+                    inventory.set_experience("Lacerator", 123)
                     inventory.sync_slots()
                     vendor = VendorInventory(memory, SimpleNamespace(weapons=inventory), None, lambda _: None)
-                    vendor.record_native_purchase("titan", TITAN_INTERNAL_TO_LOCATION["lacerator"])
+                    vendor.record_native_purchase("titan", TITAN_TO_LOCATION["Lacerator"])
                     for _ in range(2):
                         inventory.update_progression()
                         self.assertFalse(any(inventory.check().values()))
-                    self.assertEqual(inventory.get_level("lacerator"), level)
-                    self.assertEqual(inventory.get_experience("lacerator"), 123)
-                    self.assertEqual(inventory.get("lacerator"), owned)
-                    self.assertEqual(inventory.has_weapon("lacerator"), owned)
+                    self.assertEqual(inventory.get_level("Lacerator"), level)
+                    self.assertEqual(inventory.get_experience("Lacerator"), 123)
+                    self.assertEqual(inventory.get("Lacerator"), owned)
+                    self.assertEqual(inventory.has_weapon("Lacerator"), owned)
 
     def test_nonprogressive_v4_auto_levels_to_v5_on_challenge_mode(self):
         # A weapon reaches V4 at Challenge Mode 0, the tier rises to 1, and it auto-levels
         # to V5 with no Titan purchase.
         _, inventory = self.inventory()
-        inventory.set("lacerator", True)
-        inventory.set("scorcher", False)
-        inventory.set_level("lacerator", 3)
-        inventory.set_level("scorcher", 3)
-        inventory.set_experience("lacerator", 123)
+        inventory.set("Lacerator", True)
+        inventory.set("Scorcher", False)
+        inventory.set_level("Lacerator", 3)
+        inventory.set_level("Scorcher", 3)
+        inventory.set_experience("Lacerator", 123)
         inventory.sync_slots()
         inventory.update_progression()
-        self.assertEqual(inventory.get_level("lacerator"), 3)
+        self.assertEqual(inventory.get_level("Lacerator"), 3)
         inventory.challenge_mode = 1
         inventory.update_progression()
-        self.assertFalse(inventory.titan_purchased["lacerator"])
-        self.assertEqual(inventory.get_level("lacerator"), 4)
-        self.assertEqual(inventory.get_level("scorcher"), 3)
-        self.assertEqual(inventory.get_experience("lacerator"), 0)
+        self.assertFalse(inventory.titan_purchased["Lacerator"])
+        self.assertEqual(inventory.get_level("Lacerator"), 4)
+        self.assertEqual(inventory.get_level("Scorcher"), 3)
+        self.assertEqual(inventory.get_experience("Lacerator"), 0)
         changed = inventory.check()
-        self.assertEqual(changed["levels"], [("lacerator", 5)])
-        self.assertEqual(changed["titans"], ["lacerator"])
+        self.assertEqual(changed["levels"], [("Lacerator", 5)])
+        self.assertEqual(changed["titans"], ["Lacerator"])
 
     def test_progressive_weapons_auto_level_v4_to_v5_on_challenge_mode(self):
         # A weapon reaches V4 at Challenge Mode 0, the tier rises to 1, and it auto-levels
@@ -128,21 +128,21 @@ class TestRuntimeRefactor(unittest.TestCase):
             with self.subTest(mode=mode):
                 _, inventory = self.inventory()
                 inventory.progressive_mode = mode
-                inventory.level_caps["lacerator"] = 4
-                inventory.set("lacerator", True)
-                inventory.set_level("lacerator", 3)
+                inventory.level_caps["Lacerator"] = 4
+                inventory.set("Lacerator", True)
+                inventory.set_level("Lacerator", 3)
                 inventory.sync_slots()
                 inventory.update_progression()
-                self.assertEqual(inventory.get_level("lacerator"), 3)
-                self.assertEqual(inventory.level_ceiling("lacerator"), 3)
+                self.assertEqual(inventory.get_level("Lacerator"), 3)
+                self.assertEqual(inventory.level_ceiling("Lacerator"), 3)
                 self.assertFalse(any(inventory.check().values()))
                 inventory.challenge_mode = 1
                 inventory.update_progression()
-                self.assertFalse(inventory.titan_purchased["lacerator"])
-                self.assertEqual(inventory.get_level("lacerator"), 4)
+                self.assertFalse(inventory.titan_purchased["Lacerator"])
+                self.assertEqual(inventory.get_level("Lacerator"), 4)
                 changed = inventory.check()
-                self.assertEqual(changed["levels"], [("lacerator", 5)])
-                self.assertEqual(changed["titans"], ["lacerator"])
+                self.assertEqual(changed["levels"], [("Lacerator", 5)])
+                self.assertEqual(changed["titans"], ["Lacerator"])
 
     def test_progressive_titan_purchase_does_not_level_without_fifth_copy(self):
         for mode in (1, 2):
@@ -150,32 +150,32 @@ class TestRuntimeRefactor(unittest.TestCase):
                 _, inventory = self.inventory()
                 inventory.progressive_mode = mode
                 inventory.challenge_mode = 1
-                inventory.level_caps["lacerator"] = 3
-                inventory.set("lacerator", True)
-                inventory.set_level("lacerator", 3)
-                inventory.titan_purchased["lacerator"] = True
+                inventory.level_caps["Lacerator"] = 3
+                inventory.set("Lacerator", True)
+                inventory.set_level("Lacerator", 3)
+                inventory.titan_purchased["Lacerator"] = True
                 for _ in range(2):
                     inventory.update_progression()
-                self.assertEqual(inventory.get_level("lacerator"), 3)
-                self.assertEqual(inventory.level_ceiling("lacerator"), 3)
+                self.assertEqual(inventory.get_level("Lacerator"), 3)
+                self.assertEqual(inventory.level_ceiling("Lacerator"), 3)
 
     def test_nonprogressive_titan_reconnect_preserves_unreceived_weapon(self):
         _, inventory = self.inventory()
         inventory.challenge_mode = 1
-        inventory.sync_from_ap({TITAN_INTERNAL_TO_LOCATION["lacerator"]})
+        inventory.sync_from_ap({TITAN_TO_LOCATION["Lacerator"]})
         inventory.update_progression()
-        self.assertEqual(inventory.get_level("lacerator"), 0)
-        self.assertFalse(inventory.get("lacerator"))
+        self.assertEqual(inventory.get_level("Lacerator"), 0)
+        self.assertFalse(inventory.get("Lacerator"))
 
     def test_nonprogressive_v5_kept_without_titan_purchase(self):
         _, inventory = self.inventory()
         inventory.challenge_mode = 1
-        inventory.set("lacerator", True)
-        inventory.set_level("lacerator", 4)
-        inventory.set_experience("lacerator", 123)
+        inventory.set("Lacerator", True)
+        inventory.set_level("Lacerator", 4)
+        inventory.set_experience("Lacerator", 123)
         inventory.update_progression()
-        self.assertEqual(inventory.get_level("lacerator"), 4)
-        self.assertEqual(inventory.get_experience("lacerator"), 123)
+        self.assertEqual(inventory.get_level("Lacerator"), 4)
+        self.assertEqual(inventory.get_experience("Lacerator"), 123)
 
     def test_memory_window_leaves_unrelated_game_changes_untouched(self):
         memory = Memory()
@@ -196,18 +196,18 @@ class TestRuntimeRefactor(unittest.TestCase):
     def test_failed_operation_discards_snapshot(self):
         memory, inventory = self.inventory()
         with self.assertRaises(RuntimeError), inventory.memory():
-            inventory.set("lacerator", True)
+            inventory.set("Lacerator", True)
             raise RuntimeError("interrupted")
         self.assertEqual(memory.writes, [])
-        self.assertIsNone(inventory._weapon_addrs["lacerator"].window)
-        self.assertFalse(inventory.get("lacerator"))
+        self.assertIsNone(inventory._weapon_addrs["Lacerator"].window)
+        self.assertFalse(inventory.get("Lacerator"))
 
     def test_rebinding_does_not_reuse_old_memory(self):
         memory, inventory = self.inventory()
         inventory.sync_slots()
         inventory.set_base(0x2000)
         memory.write_bytes(0x2045, b"\x01")
-        self.assertEqual(inventory.check()["weapons"], ["lacerator"])
+        self.assertEqual(inventory.check()["weapons"], ["Lacerator"])
         self.assertEqual(memory.reads[-1][0], 0x2000)
 
     def test_armour_snapshot_preserves_boot_normalization(self):
