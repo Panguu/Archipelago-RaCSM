@@ -74,6 +74,7 @@ of everything specific to this game:
 | All Missions | On | Adds story mission completions as location checks. |
 | All Cutscenes | Off | Adds cutscene/flag-event triggers as location checks. |
 | Giant Clank | Off | On: the Giant Clank Metalis and Giant Clank Challax sequences become playable and their completion/armour/skill point checks are added. Off: entering either sequence immediately forces a load back out, as in vanilla before this option existed. |
+| Enable HIG Treehouse | Off | Adds the Mini-Gun Turret pickup, four Treehouse Gadgetbot challenges, and the grind rail when Shrink Ray Options is set to Locations. Challenges require Clank Challenges to be on (either tier) and Gadgetbot included in Clank Challenge Groups. Disabling Gadgetbot leaves the other checks enabled. Treehouse remains available in the planet menu even with this toggle off. |
 | Clank Challenges | Item Challenges | Off: none. Item Challenges: only the armour/gadget reward per arena. All: every individual challenge completion is its own check. |
 | Clank Challenge Groups | every group on | Selects which Clank Challenge groups (Demolition Derby / Gadgetbot Toss / Gadgetbot) get location checks at all, once Clank Challenges is on. Setting a group to 0 excludes all of its locations (both tiers) from generation — the challenge itself is still fully playable in-game, it just has no AP check. |
 | Enable Clank Challenge Skill Points | Off | Adds skill points earned from Clank Challenge arenas as checks, regardless of the Clank Challenges option. |

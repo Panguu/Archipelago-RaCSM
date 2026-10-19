@@ -22,6 +22,7 @@ from .pokitaru import LOCATIONS as POKITARU_LOCATIONS
 from .quodrona import LOCATIONS as QUODRONA_LOCATIONS
 from .ryllus import LOCATIONS as RYLLUS_LOCATIONS
 from .weapon_levels import LOCATIONS as WEAPON_LEVEL_RECORDS
+from .hig_treehouse import LOCATIONS as HIG_TREEHOUSE_LOCATIONS
 
 LOCATIONS = tuple(
     sorted(
@@ -39,6 +40,7 @@ LOCATIONS = tuple(
             *NANOTECH_LEVEL_RECORDS,
             *WEAPON_LEVEL_RECORDS,
             *ARMOUR_SET_RECORDS,
+            *HIG_TREEHOUSE_LOCATIONS,
         ),
         key=lambda location: location.definition_order,
     )
@@ -56,6 +58,7 @@ PLANET_ORDER = (
     "Dayni Moon",
     "Inside Clank",
     "Quodrona",
+    "HIG Treehouse",
 )
 ALL_LOCATIONS = {location.name: location for location in LOCATIONS}
 

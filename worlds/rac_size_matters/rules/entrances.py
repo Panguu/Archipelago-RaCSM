@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from rule_builder.rules import Has, Rule
+from rule_builder.rules import Has, Rule, True_
 
 from ..constants import Rac5CutsceneLocations, Rac5EventInfobots, Rac5Infobots, Rac5Planets
 
@@ -38,4 +38,5 @@ def entrance_rules() -> dict[str, Rule]:
         Rac5Planets.DAYNI_MOON: Has(Rac5Infobots.DAYNI_MOON),
         Rac5Planets.INSIDE_CLANK: Has(Rac5EventInfobots.INSIDE_CLANK),
         Rac5Planets.QUODRONA: Has(Rac5Infobots.QUODRONA),
+        Rac5Planets.HIG_TREEHOUSE: True_(),
     }

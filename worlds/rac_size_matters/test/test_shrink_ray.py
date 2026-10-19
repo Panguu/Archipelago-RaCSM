@@ -5,12 +5,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from .test_native_patches import Memory
-from ..constants.shrink_ray import SHRINK_RAY_PUZZLE_BITS, SHRINK_RAY_LOCATION_PLANETS
+from ..constants.shrink_ray import SHRINK_RAY_PUZZLE_BITS, SHRINK_RAY_LOCATION_PLANETS, Rac5ShrinkRayGrindrail
 from ..core.shrink_ray import ShrinkRaySkipInventory
 from ..core.address_maps import SHRINK_RAY_GATE_ADDRESS
 from ..core.patches import shrink_ray
 from ..locations import SHRINK_RAY_SKIP_LOCATIONS
-from ..options import ShrinkRayOptions
+from ..options import ShrinkRayOptions, EnableHIGTreehouse
 
 
 class ShrinkMemory(Memory):
@@ -47,11 +47,13 @@ class TestShrinkRay(unittest.TestCase):
 
     def test_all_puzzles_registered_only_in_locations_mode(self):
         class Options(SimpleNamespace):
-            type_hints = {"shrink_ray_options": ShrinkRayOptions}
+            type_hints = {"shrink_ray_options": ShrinkRayOptions, "enable_hig_treehouse": EnableHIGTreehouse}
 
-        self.assertEqual(set(SHRINK_RAY_SKIP_LOCATIONS), set(SHRINK_RAY_PUZZLE_BITS))
+        # Treehouse uses a native journal because its vanilla bit aliases Kalidon.
+        self.assertEqual(set(SHRINK_RAY_SKIP_LOCATIONS),
+                         {*SHRINK_RAY_PUZZLE_BITS, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
         for mode in (0, 1, 2):
-            options = Options(shrink_ray_options=ShrinkRayOptions(mode))
+            options = Options(shrink_ray_options=ShrinkRayOptions(mode), enable_hig_treehouse=EnableHIGTreehouse(1))
             for location in SHRINK_RAY_SKIP_LOCATIONS.values():
                 self.assertEqual(location.available(options), mode == 1)
 

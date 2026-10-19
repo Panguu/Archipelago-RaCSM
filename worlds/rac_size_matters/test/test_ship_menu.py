@@ -15,11 +15,34 @@ class ShipMenuTests(unittest.TestCase):
                                  code=memory.read_bytes(0xD00000, 0x400000))
         return memory, plan
 
+    def test_special_destination_never_reads_story_statistics_or_atlas(self):
+        for fixture in SHIP_FIXTURES:
+            with self.subTest(fixture=fixture):
+                memory, plan = self.prepare(fixture)
+                stats, atlas = plan.edits[-2].address, plan.edits[-1].address
+                total = (memory.read_int32(stats) & 0x3FFFFFF) << 2
+                plan.install()
+                for planet in (*range(1, 12), 24):
+                    cpu = CPU(memory)
+                    cpu.r[19] = 0x1800000
+                    memory.write_int32(cpu.r[19] + 0xD0, planet)
+                    calls = []
+                    cpu.run(stats, stop=stats + (0x1EC if planet == 24 else 8),
+                            stubs={total: lambda c: calls.append(c.r[4])})
+                    self.assertEqual(calls, [] if planet == 24 else [planet])
+                    cpu = CPU(memory)
+                    cpu.r[3] = 0x1800000
+                    memory.write_int32(cpu.r[3] + 0xD0, planet)
+                    # Stop before the first table lookup for supported rows,
+                    # or at the next iteration for Treehouse.
+                    cpu.run(atlas + 12, stop=atlas + (112 if planet == 24 else 28))
+                    self.assertEqual(cpu.r[4], planet - 1)
+
     def test_menu_rows_and_travel_on_all_snapshots(self):
         for fixture in SHIP_FIXTURES:
             with self.subTest(fixture=fixture):
                 memory, plan = self.prepare(fixture)
-                loop, tail, _, route = (edit.address for edit in plan.edits)
+                loop, tail, _, route = (edit.address for edit in plan.edits[:4])
                 call = lambda address: (memory.read_int32(address) & 0x3FFFFFF) << 2
                 unlock, group, name, add = [call(loop + offset) for offset in (4, 44, 56, 96)]
                 setter = call(route + 36)
@@ -39,7 +62,7 @@ class ShipMenuTests(unittest.TestCase):
                     cpu.run(loop, stop=loop + 120,
                             stubs={unlock: availability, group: lambda c: None, name: title, add: append})
                     expected = [p for p in range(1, 11) for _ in range(2 if p == 6 else 1)
-                                if (6 if p == 5 else p) in unlocked]
+                                if (6 if p == 5 else p) in unlocked] + [24]
                     self.assertEqual([p for p, _, _ in rows], expected)
                     if 6 in unlocked:
                         omega = [row for row in rows if row[0] == 6]

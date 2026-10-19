@@ -450,6 +450,7 @@ class RACSizeMatterWorld(World):
             Rac5Options.ALL_MISSIONS: bool(self.options.all_missions.value),
             Rac5Options.ALL_CUTSCENES: bool(self.options.all_cutscenes.value),
             Rac5Options.GIANT_CLANK: bool(self.options.giant_clank.value),
+            Rac5Options.ENABLE_HIG_TREEHOUSE: bool(self.options.enable_hig_treehouse.value),
             Rac5Options.CLANK_CHALLENGES: self.options.clank_challenges.value,
             Rac5Options.CLANK_CHALLENGE_GROUPS: sorted(self.options.clank_challenge_groups.value),
             Rac5Options.SKYBOARD_CHALLENGES: self.options.skyboard_challenges.value,

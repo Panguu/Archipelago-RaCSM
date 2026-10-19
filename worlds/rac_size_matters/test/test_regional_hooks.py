@@ -122,6 +122,8 @@ class RegionalHookTests(unittest.TestCase):
                 runtime.balance_callback = None
                 runtime.pine = memory
                 runtime.pickup = plan
+                runtime.treehouse_pickup = None
+                runtime.treehouse_grindrail = None
                 runtime.connection_warning = runtime.presentation = None
                 runtime.armour = runtime.toast = None
                 runtime.vendor = SimpleNamespace(planet=SimpleNamespace(is_ready=False), native_plan=None)

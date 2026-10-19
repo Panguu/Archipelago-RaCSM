@@ -20,6 +20,9 @@ from ..core.patches.asm import packed
 
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/native_us.json").read_text())
 SHIP_FIXTURES = json.loads((Path(__file__).parent / "fixtures/ship_menu_us.json").read_text())
+SHIP_PREVIEW_FIXTURES = json.loads((Path(__file__).parent / "fixtures/ship_preview_us.json").read_text())
+for _name, _fixture in SHIP_FIXTURES.items():
+    _fixture["segments"].extend(SHIP_PREVIEW_FIXTURES[_name]["segments"])
 SKIN_EXIT_FIXTURES = json.loads((Path(__file__).parent / "fixtures/skins_exit_us.json").read_text())
 
 

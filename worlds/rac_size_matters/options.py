@@ -101,8 +101,18 @@ class ClankChallenges(Choice):
     default = 1
 
 
+class EnableHIGTreehouse(Toggle):
+    """Include the HIG Treehouse Mini-Gun Turret pickup and its four Gadgetbot
+    challenges as locations, plus its grind rail when Shrink Ray Options is
+    set to Locations. Challenges also require Clank Challenges to be on
+    and Gadgetbot to be included in Clank Challenge Groups. The planet remains
+    available in the ship menu regardless of these settings."""
+
+    display_name = "Enable HIG Treehouse"
+
+
 class ClankChallengeGroups(OptionSet):
-    """Selects which Clank Challenge groups (Metalis/Dayni Moon) are included
+    """Selects which Clank Challenge groups (including enabled HIG Treehouse) are included
     as location checks, whenever Clank Challenges is on. Leave a group out to
     exclude all of its locations (both the item-reward and individual-
     completion tiers) from generation entirely — the challenge is still
@@ -537,6 +547,7 @@ class RACSizeMatterOptions(PerGameCommonOptions):
         Rac5Options.ALL_MISSIONS: AllMissions,
         Rac5Options.ALL_CUTSCENES: AllCutscenes,
         Rac5Options.GIANT_CLANK: GiantClank,
+        Rac5Options.ENABLE_HIG_TREEHOUSE: EnableHIGTreehouse,
         Rac5Options.CLANK_CHALLENGES: ClankChallenges,
         Rac5Options.CLANK_CHALLENGE_GROUPS: ClankChallengeGroups,
         Rac5Options.ENABLE_CLANK_CHALLENGE_SKILL_POINTS: EnableClankChallengeSkillPoints,
@@ -613,6 +624,7 @@ racsm_option_groups = [
         [
             ClankChallenges,
             ClankChallengeGroups,
+            EnableHIGTreehouse,
             EnableClankChallengeSkillPoints,
             SkyboardChallenges,
             EnableSkyboardChallengeSkillPoints,

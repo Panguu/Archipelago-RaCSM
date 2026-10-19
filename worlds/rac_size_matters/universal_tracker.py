@@ -33,6 +33,7 @@ PLANET_ID_TO_REGION: dict[int, str] = {
     0x0A: "Quodrona",
     0x16: "Kalidon",
     0x17: "Outpost Omega",
+    0x18: "HIG Treehouse",
 }
 
 
@@ -46,6 +47,7 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.clank_pack.value = world.passthrough.get(Rac5Options.CLANK_PACK, False)
             world.options.all_cutscenes.value = world.passthrough.get(Rac5Options.ALL_CUTSCENES, False)
             world.options.giant_clank.value = world.passthrough.get(Rac5Options.GIANT_CLANK, False)
+            world.options.enable_hig_treehouse.value = world.passthrough.get(Rac5Options.ENABLE_HIG_TREEHOUSE, False)
             world.options.progressive_weapons.value = world.passthrough[Rac5Options.PROGRESSIVE_WEAPONS]
             world.options.progressive_mods.value = world.passthrough.get(Rac5Options.PROGRESSIVE_MODS, False)
             world.options.progressive_armour.value = world.passthrough[Rac5Options.PROGRESSIVE_ARMOUR]

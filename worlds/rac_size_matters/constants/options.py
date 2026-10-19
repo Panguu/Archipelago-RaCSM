@@ -16,6 +16,7 @@ class Rac5Options:
     ALL_MISSIONS = "all_missions"
     ALL_CUTSCENES = "all_cutscenes"
     GIANT_CLANK = "giant_clank"
+    ENABLE_HIG_TREEHOUSE = "enable_hig_treehouse"
     CLANK_CHALLENGES = "clank_challenges"
     CLANK_CHALLENGE_GROUPS = "clank_challenge_groups"
     ENABLE_CLANK_CHALLENGE_SKILL_POINTS = "enable_clank_challenge_skill_points"

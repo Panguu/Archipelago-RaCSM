@@ -61,6 +61,7 @@ class Planets:
     DAYNI_MOON = Planet("Dayni Moon", 0x08)
     INSIDE_CLANK = Planet("Inside Clank", 0x09)
     QUODRONA = Planet("Quodrona", 0x0A)
+    HIG_TREEHOUSE = Planet("HIG Treehouse", 0x18)
     GIANT_CLANK_METALIS = Planet("Giant Clank (Metalis)", 0x0F)
     GIANT_CLANK_CHALLAX = Planet("Giant Clank (Challax)", 0x15)
     KALIDON_RACE = Planet("Kalidon Race Track", 0x16)

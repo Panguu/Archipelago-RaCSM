@@ -3,7 +3,7 @@
 import logging
 from collections import deque
 
-from ..constants import Rac5Locations
+from ..constants import Rac5Locations, Rac5ShrinkRayGrindrail
 from ..locations import GADGET_TO_LOCATION, TITAN_TO_LOCATION, WEAPON_TO_LOCATION
 from . import vendor_presentation
 from . import address_maps
@@ -22,6 +22,8 @@ from .patches import (
     ship_menu,
     skins,
     sprout_pickup,
+    treehouse_turret,
+    treehouse_grindrail,
     vendor as vendor_patch,
 )
 from .patches.loader_gate import LoaderGate
@@ -51,6 +53,8 @@ class NativeRuntime:
         self.plans = []
         self.module = None
         self.pickup = None
+        self.treehouse_pickup = None
+        self.treehouse_grindrail = None
         self.toast = None
         self.connection_warning = None
         self.ap_connected = False
@@ -101,6 +105,8 @@ class NativeRuntime:
         self._presentation_pending = None
         self.plans = []
         self.pickup = None
+        self.treehouse_pickup = None
+        self.treehouse_grindrail = None
         self.toast = None
         self.connection_warning = None
         self.skin = None
@@ -110,7 +116,7 @@ class NativeRuntime:
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
         self._installed_multiplayer_skins_option = self.patch_options.multiplayer_skins
-        if target not in PLANET_ADDRESSES and not (target == 15 and self.patch_options.balance_patch):
+        if target not in PLANET_ADDRESSES and target != 24 and not (target == 15 and self.patch_options.balance_patch):
             if target == 15:
                 self.module = target
                 self._attach_reload_requested = False
@@ -120,6 +126,26 @@ class NativeRuntime:
         # Include relocated switch tables too (Dayni Moon's ship-menu table
         # lies beyond the old 0x240000-byte executable-only window).
         code = b"".join(p.read_bytes(base + offset, 0x10000) for offset in range(0, 0x280000, 0x10000))
+        if target == 24:
+            if options.ship_menu:
+                self.plans.append(ship_menu.prepare(p, code_start=base, code=code))
+            name = Rac5Locations.HIG_TREEHOUSE_TURRET
+            if self.allowed_locations is None or name in self.allowed_locations:
+                self.treehouse_pickup = treehouse_turret.prepare(
+                    p, code_start=base, code=code, checked=name in self.checked,
+                )
+                self.plans.append(self.treehouse_pickup)
+            name = Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL
+            if self.allowed_locations is None or name in self.allowed_locations:
+                self.treehouse_grindrail = treehouse_grindrail.prepare(
+                    p, code_start=base, code=code, checked=name in self.checked,
+                )
+                self.plans.append(self.treehouse_grindrail)
+            for plan in self.plans:
+                plan.install()
+            self.module = target
+            self._attach_reload_requested = False
+            return
         if options.balance_patch:
             self.balance = balance_patch.prepare(p, planet=target, code_start=base, code=code)
         if target not in PLANET_ADDRESSES:
@@ -295,6 +321,15 @@ class NativeRuntime:
             self.checked.add(name)
 
     def _poll(self):
+        if self.treehouse_grindrail is not None:
+            self.treehouse_grindrail._validate(replacement=True)
+            if self.pine.read_int8(self.treehouse_grindrail.journals[0][0]) == 2:
+                self._report(Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL)
+        if self.treehouse_pickup is not None:
+            self.treehouse_pickup._validate(replacement=True)
+            journal = self.treehouse_pickup.journals[0][0]
+            if self.pine.read_int8(journal) == 2:
+                self._report(Rac5Locations.HIG_TREEHOUSE_TURRET)
         if (self.balance_callback is not None and self.balance_callback.needs_doors
                 and self.vendor.planet.is_ready):
             balance_patch.bind_doors(self.balance_callback)
@@ -396,7 +431,7 @@ class NativeRuntime:
         if self._installed_multiplayer_skins_option != self.patch_options.multiplayer_skins and target in PLANET_ADDRESSES:
             self.module = None
         if self.module == target and (
-            self.vendor.native_plan is not None or not self.patch_options.vendor or target == 15
+            self.vendor.native_plan is not None or not self.patch_options.vendor or target in (15, 24)
         ):
             try:
                 if self.vendor.native_plan is not None:
@@ -411,7 +446,7 @@ class NativeRuntime:
                 self._poll()
                 return False
         balance_flying_level = target == 15 and (self.patch_options.balance_patch or self.balance is not None)
-        if (target in PLANET_ADDRESSES or balance_flying_level) and self.module != target and not self._attach_reload_requested:
+        if (target in PLANET_ADDRESSES or target == 24 or balance_flying_level) and self.module != target and not self._attach_reload_requested:
             if p.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR) == 0xFFFFFFFF:
                 self._attach_reload_requested = True
                 self.vendor.planet.is_ready = False
