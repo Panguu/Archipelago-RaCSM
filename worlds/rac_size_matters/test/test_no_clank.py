@@ -115,6 +115,24 @@ class TestNoClank(unittest.TestCase):
         traps.set_clank_pack_ownership(self.pine, enabled=True, owned=True)
         self.assertEqual(self.pine.read_int32(self.base + 0x5AC), self.objects[1])
 
+    def test_treehouse_pack_ownership_in_all_regions(self):
+        for game in address_maps.SUPPORTED_GAMES:
+            with self.subTest(game=game):
+                address_maps.select_game(game)
+                self.pine = Memory()
+                self.load(24)
+                try:
+                    traps.set_clank_pack_ownership(self.pine, enabled=True, owned=False)
+                    for offset, obj in zip(BACKPACK_SLOTS, self.objects):
+                        self.assertEqual(self.pine.read_int32(self.base + offset), 0)
+                        self.assertTrue(self.pine.read_int32(obj + 0x64) & HIDDEN)
+                    traps.set_clank_pack_ownership(self.pine, enabled=True, owned=True)
+                    for offset, obj in zip(BACKPACK_SLOTS, self.objects):
+                        self.assertEqual(self.pine.read_int32(self.base + offset), obj)
+                        self.assertFalse(self.pine.read_int32(obj + 0x64) & HIDDEN)
+                finally:
+                    traps.close_no_clank_trap(self.pine)
+
     def test_naturally_absent_or_hidden_pack_remains_so(self):
         self.pine.data[self.base + 0x5AC] = 0
         self.pine.data[self.objects[0] + 0x64] |= HIDDEN

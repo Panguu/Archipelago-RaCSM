@@ -12,7 +12,6 @@ from ..core.native_runtime import NativeRuntime
 from ..core.patches import pokitaru_ship, sprout_pickup
 from ..core.patches.loader_gate import LoaderGate
 
-
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/regional_hooks.json").read_text())
 
 

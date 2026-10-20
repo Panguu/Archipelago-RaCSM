@@ -1,4 +1,7 @@
-"""Expose the story destinations and HIG Treehouse in the ship menu."""
+"""Expose the story destinations and HIG Treehouse in the ship menu.
+
+The Treehouse row is gated by a word the client writes (see `plan.treehouse_flag`).
+"""
 
 import struct
 
@@ -7,7 +10,7 @@ from .asm import Patch, branch, j, jump, packed
 from .plan import Plan, supported_game_id
 
 
-def prepare(pine, *, code_start, code):
+def prepare(pine, *, code_start, code, treehouse_unlocked=True):
     game_id = supported_game_id(pine)
     anchor = packed(0x26310001, 0x2E22000C, 0x1440FFE4, 0x0000802D)
     hits = [i for i in range(0, len(code) - len(anchor) + 1, 4) if code[i : i + len(anchor)] == anchor]
@@ -114,6 +117,8 @@ def prepare(pine, *, code_start, code):
         ),
     )
     label = route + 52
+    # Spare word after the routing strings; nonzero shows the Treehouse row.
+    flag = route + 68
     # The first Omega row carries marker 1; the second carries marker 0.
     # Dreamtime (5) uses Outpost's unlock (6), irrespective of its auto-unlock.
     body = [
@@ -150,7 +155,7 @@ def prepare(pine, *, code_start, code):
     continuation = [
         m.addiu(m.V0, m.ZERO, 6),  # No operation; Add signed immediate.
         m.bne(m.S1, m.V0, 3),  # Branch 3 words if S1 != V0.
-        m.NOP,  # Branch if unequal; No operation.
+        m.lui(m.AT, (flag + 0x8000) >> 16),  # Branch delay: prepare the Treehouse flag address.
         m.bne(m.S4, m.ZERO, (loop - (tail + 16)) // 4),
         m.addiu(m.S4, m.ZERO, 0),  # Branch if unequal; Add signed immediate.
         m.addiu(m.S1, m.S1, 1),  # Set S1 to S1 + 1.
@@ -160,8 +165,10 @@ def prepare(pine, *, code_start, code):
         m.addiu(m.V0, m.ZERO, 11),
         m.bne(m.S1, m.V0, (end - (tail + 44)) // 4),
         m.addiu(m.S1, m.ZERO, 24),
-        j(loop + 20),  # Append Treehouse without consulting story unlocks.
-        m.NOP,
+        # Re-enter at the body's availability branch with the client's flag in
+        # place of the story unlock, so a locked Treehouse skips its row.
+        j(loop + 16),
+        m.lw(m.V0, flag & 65535, m.AT),
     ]
     routing = (
         packed(
@@ -182,7 +189,7 @@ def prepare(pine, *, code_start, code):
             m.NOP,  # No operation.
         )
         + b"MOO2\0\0\0\0MOO1\0"
-    )
+    ).ljust(flag - route, b"\0") + packed(int(treehouse_unlocked))
     edits = [
         Patch(loop, original_loop, packed(*body).ljust(120, b"\0")),
         Patch(tail, read(tail, 56), packed(*continuation).ljust(56, b"\0")),
@@ -190,7 +197,10 @@ def prepare(pine, *, code_start, code):
         Patch(route, read(route, 76), routing.ljust(76, b"\0")),
     ]
     edits.extend(_preview_edits(read, require, call, table, code_start, code))
-    return Plan(pine, edits, expected_game_id=game_id)
+    plan = Plan(pine, edits, expected_game_id=game_id)
+    plan.treehouse_flag = flag
+    plan.mutable_data = ((flag, 4),)
+    return plan
 
 
 def _preview_edits(read, require, call, table, code_start, code):

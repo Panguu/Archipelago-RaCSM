@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from ..core.vendor import WEAPON_VENDOR_IDS
-from ..locations import GADGET_TO_LOCATION, WEAPON_TO_LOCATION, TITAN_TO_LOCATION, MOD_TO_LOCATION
+from ..locations import GADGET_TO_LOCATION, MOD_TO_LOCATION, TITAN_TO_LOCATION, WEAPON_TO_LOCATION
 
 
 @dataclass(frozen=True)

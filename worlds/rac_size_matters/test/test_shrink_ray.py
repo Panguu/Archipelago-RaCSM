@@ -4,13 +4,13 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from .test_native_patches import Memory
-from ..constants.shrink_ray import SHRINK_RAY_PUZZLE_BITS, SHRINK_RAY_LOCATION_PLANETS, Rac5ShrinkRayGrindrail
-from ..core.shrink_ray import ShrinkRaySkipInventory
+from ..constants.shrink_ray import SHRINK_RAY_LOCATION_PLANETS, SHRINK_RAY_PUZZLE_BITS, Rac5ShrinkRayGrindrail
 from ..core.address_maps import SHRINK_RAY_GATE_ADDRESS
 from ..core.patches import shrink_ray
+from ..core.shrink_ray import ShrinkRaySkipInventory
 from ..locations import SHRINK_RAY_SKIP_LOCATIONS
-from ..options import ShrinkRayOptions, EnableHIGTreehouse
+from ..options import EnableHIGTreehouse, ShrinkRayOptions
+from .test_native_patches import Memory
 
 
 class ShrinkMemory(Memory):

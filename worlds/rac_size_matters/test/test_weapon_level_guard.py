@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 from ..client.pine_mixin import PineMixin
 from ..constants import Rac5Weapons
-from ..core.save_data import highest_weapon_levels
 from ..core.planets import PlanetInventory
+from ..core.save_data import highest_weapon_levels
 from ..core.weapons import PROGRESSIVE_AUTOMATIC, PROGRESSIVE_MANUAL, WeaponInventory
 from ..data.weapons import WEAPON_MAX_LEVELS
 from .test_runtime_refactor import Memory

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from ...constants import Rac5Gadgets, Rac5Planets
 from ...locations import shared
 from ...locations.model import LocationView

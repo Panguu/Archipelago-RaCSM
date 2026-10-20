@@ -70,6 +70,7 @@ class Rac5Infobots:
     CHALLAX = "Infobot: Challax"
     DAYNI_MOON = "Infobot: Dayni Moon"
     QUODRONA = "Infobot: Quodrona"
+    HIG_TREEHOUSE = "Infobot: HIG Treehouse"
 
 
 @dataclass(frozen=True)

@@ -8,7 +8,6 @@ from ..core import address_maps
 from ..core.ghost_ratchet import GhostRatchetInventory
 from .test_regional_hooks import Memory
 
-
 FIXTURES = json.loads((Path(__file__).parent / 'fixtures/ghost_regions.json').read_text())
 
 

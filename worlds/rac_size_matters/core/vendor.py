@@ -6,11 +6,11 @@ from ..locations import (
     GADGET_TO_LOCATION,
     MOD_TO_LOCATION,
     TITAN_TO_LOCATION,
-    WEAPON_TO_LOCATION,
     WEAPON_LEVEL_LOOKUP,
+    WEAPON_TO_LOCATION,
 )
 from . import address_maps
-from .address_maps import PLANET_ADDRESSES, WEAPON_VENDOR_ITEMS, WEAPON_VENDOR_SLOTS
+from .address_maps import PLANET_ADDRESSES
 from .controller import GlobalButtonState, PauseSelectButtons
 from .menu import MenuStateValue
 from .weapons import TITAN_ELIGIBLE_WEAPONS

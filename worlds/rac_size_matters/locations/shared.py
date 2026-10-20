@@ -1,11 +1,5 @@
 # ruff: noqa: I001 -- import order sets location IDs, see the comment above the location imports.
 from ..constants.options import Rac5Options
-from ..data.challenges import (
-    CHALLENGE_GROUP_DERBY as CHALLENGE_GROUP_DERBY,
-    CHALLENGE_GROUP_GADGETBOT as CHALLENGE_GROUP_GADGETBOT,
-    CHALLENGE_GROUP_GADGETBOT_TOSS as CHALLENGE_GROUP_GADGETBOT_TOSS,
-    DEFAULT_CLANK_CHALLENGE_GROUPS as DEFAULT_CLANK_CHALLENGE_GROUPS,
-)
 # Import order is load-bearing: location IDs are handed out as each module is first imported
 # (see model.py's _LOCATION_IDS), so reordering these renumbers every location after the move.
 from .armour_sets import LOCATIONS as ARMOUR_SET_RECORDS
@@ -16,7 +10,7 @@ from .inside_clank import LOCATIONS as INSIDE_CLANK_LOCATIONS
 from .kalidon import LOCATIONS as KALIDON_LOCATIONS
 from .nanotech_levels import LOCATIONS as NANOTECH_LEVEL_RECORDS
 from .metalis import LOCATIONS as METALIS_LOCATIONS
-from .model import BASE_ID as BASE_ID, LocationView, Rac5Categories
+from .model import TIERED_SKILL_POINT_CATEGORIES, LocationView, Rac5Categories, Rac5CompletionSources
 from .outpost_omega import LOCATIONS as OUTPOST_OMEGA_LOCATIONS
 from .pokitaru import LOCATIONS as POKITARU_LOCATIONS
 from .quodrona import LOCATIONS as QUODRONA_LOCATIONS
@@ -61,6 +55,25 @@ PLANET_ORDER = (
     "HIG Treehouse",
 )
 ALL_LOCATIONS = {location.name: location for location in LOCATIONS}
+
+
+def required_skill_points(options) -> tuple[str, ...]:
+    """Skill point locations the All Skill Points check and goal wait on."""
+    return tuple(
+        location.name
+        for location in LOCATIONS
+        if location.categories & TIERED_SKILL_POINT_CATEGORIES and location.available(options)
+    )
+
+
+def required_clank_challenges(options) -> tuple[str, ...]:
+    """Clank Challenge locations the All Clank Challenges goal waits on."""
+    return tuple(
+        location.name
+        for location in LOCATIONS
+        if location.completed.source == Rac5CompletionSources.CHALLENGES and location.available(options)
+    )
+
 
 _GROUP_CATEGORIES = {
     "Titanium Bolts": Rac5Categories.TITANIUM_BOLT,

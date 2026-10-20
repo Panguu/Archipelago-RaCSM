@@ -13,9 +13,9 @@ from typing import Any
 
 from CommonClient import logger
 
+from ..constants import Rac5CutsceneLocations
 from ..constants.options import Rac5Options
-from ..core import RAC5SaveData, TextColour, colored_text, set_trap_durations
-from ..core import vendor_presentation
+from ..core import RAC5SaveData, TextColour, address_maps, colored_text, set_trap_durations, vendor_presentation
 from ..core.core import Core
 from ..core.notifications import sent_text
 from ..core.options import ClientOptions
@@ -495,7 +495,7 @@ class GameWorker(
         return (
             w.armour, w.bolts, w.player_bolts, w.planet_unlock, w.quick_select,
             w.clank, w.skyboard, w.shrink_ray, w.skill_points, w.missions, w.skin,
-            w.planet, w.planet.weapons, w.planet.player, w.planet.menu,
+              w.planet, w.planet.weapons, w.planet.player, w.planet.menu, w.ghost_ratchet,
             w.weapon_vendor, w.mod_vendor, w.vendor,
         )
 
@@ -507,6 +507,23 @@ class GameWorker(
         options = "\n".join(f"{key}: {value}" for key, value in self.slot_data.items())
         logger.info(f"[RAC] Options:\n{options}")
         logger.info("[RAC] States: " + " ".join(repr(state) for state in self._states()))
+        goal = Rac5CutsceneLocations.QUODRONA_GOAL
+        completion = ALL_LOCATIONS[goal].completed
+        logger.info(
+            "[RAC] Goal: game_id=%s planet_id=%s tracked=%s worker_finished_game=%s",
+            address_maps.GAME_ID, self._wiring.planet.planet_id,
+            goal in self._wiring.missions.completed, self.finished_game,
+        )
+        if self.pine_connected:
+            try:
+                address = address_maps.save_address(completion.key)
+                raw = self.pine.read_int16(address)
+                logger.info(
+                    "[RAC] Goal memory: address=0x%08X raw=0x%04X mask=0x%04X matched=%s",
+                    address, raw, completion.mask, bool(raw & completion.mask),
+                )
+            except Exception as exc:
+                logger.warning("[RAC] Could not read goal memory: %s", exc)
 
     def cmd_vendor_refresh(self) -> None:
         self._wiring.vendor.force_refresh()

@@ -16,7 +16,6 @@ from ..options import BalancePatch
 from .bases import RACSizeMatterTestBase
 from .test_native_patches import CPU, Memory as NativeMemory, plans
 
-
 FIXTURES = json.loads((Path(__file__).parent / "fixtures/balance_patch.json").read_text())
 GAMES = {"us": "SCUS-97615", "eu": "SCES-55019", "jp": "SCPS-15120"}
 BASE = 0xC00000

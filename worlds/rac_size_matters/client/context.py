@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 from typing import Any
@@ -82,10 +80,16 @@ class RACContext(CommonContext):
             msgs = args[0]
             if any(msg.get("cmd") == "StatusUpdate" and msg.get("status") == ClientStatus.CLIENT_GOAL
                    for msg in msgs):
-                if self.finished_game:
-                    return
                 self.finished_game = True
-            asyncio.create_task(self.send_msgs(msgs))
+            # A worker restart/Continue can announce PLAYING after victory.
+            # Keep the AP-side latch authoritative, including for a new worker.
+            if self.finished_game:
+                msgs = [msg for msg in msgs if not (
+                    msg.get("cmd") == "StatusUpdate"
+                    and msg.get("status") == ClientStatus.CLIENT_PLAYING
+                )]
+            if msgs:
+                asyncio.create_task(self.send_msgs(msgs))
         elif kind == protocol.CHECK_LOCATIONS:
             asyncio.create_task(self.check_locations(args[0]))
         elif kind == protocol.SET_NOTIFY:

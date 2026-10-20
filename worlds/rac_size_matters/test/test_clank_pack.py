@@ -2,9 +2,9 @@ import unittest
 from types import SimpleNamespace
 
 from ..client.vendor import InventoryMixin
+from ..constants import Rac5Traps, Rac5VendorLocations
 from ..core.options import ClientOptions
 from ..items import CLANK_PACK_NAME, TRAP_ITEM_TABLE
-from ..constants import Rac5Traps, Rac5VendorLocations
 from .bases import RACSizeMatterTestBase
 
 
@@ -46,6 +46,7 @@ class TestClankPackInventory(unittest.TestCase):
     def test_fill_with_pack_across_starting_options(self):
         from Fill import distribute_items_restrictive
         from test.general import setup_multiworld
+
         from ..world import RACSizeMatterWorld
 
         for start in range(3):

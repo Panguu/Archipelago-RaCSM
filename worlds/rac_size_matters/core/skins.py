@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -85,7 +83,7 @@ class SkinInventory:
     unlocked = SkinSlot("unlocked")
     equipped = SkinSlot("equipped")
 
-    def __init__(self, pine: Pine) -> None:
+    def __init__(self, pine: "Pine") -> None:
         self.pine = pine
         self._skin: Skin = Skin.DEFAULT
         self._apply_pending = False

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import struct as _struct
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -12,10 +10,6 @@ from ..data.weapons import (
     WEAPON_DATA,
     WEAPON_EXP_THRESHOLDS,
     WEAPON_MAX_LEVELS,
-    WEAPON_MOD_COUNTS as WEAPON_MOD_COUNTS,
-    WEAPON_VENDOR_DISPLAY_AMMO as WEAPON_VENDOR_DISPLAY_AMMO,
-    Gadget as Gadget,
-    Weapon as Weapon,
 )
 from .inventory import InventoryEntry, InventoryField
 from .locations import weapon_locations as _weapon_locations
@@ -195,7 +189,7 @@ class WeaponAddresses(InventoryMemory):
     mod_unlock_three = WeaponByteField("mod_unlock_three")
     unlocked = WeaponByteField("unlocked")
 
-    def __init__(self, base: int, pine: Pine) -> None:
+    def __init__(self, base: int, pine: "Pine") -> None:
         self.base = base
         self.pine = pine
 
@@ -212,7 +206,7 @@ class GadgetAddresses(InventoryMemory):
 
     unlocked = WeaponByteField("unlocked")
 
-    def __init__(self, base: int, pine: Pine) -> None:
+    def __init__(self, base: int, pine: "Pine") -> None:
         self.base = base
         self.pine = pine
 
@@ -250,7 +244,7 @@ GADGET_ORDER: list[str | None] = [
 ]
 
 
-def build_weapons(array_base: int | None, pine: Pine) -> tuple[dict[str, WeaponAddresses], dict[str, GadgetAddresses]]:
+def build_weapons(array_base: int | None, pine: "Pine") -> tuple[dict[str, WeaponAddresses], dict[str, GadgetAddresses]]:
     if array_base is None:
         return {}, {}
 
@@ -291,7 +285,7 @@ class WeaponInventory:
     _weapon_addrs = InventoryField("address", gadget=False)
     _gadget_addrs = InventoryField("address", gadget=True)
 
-    def __init__(self, pine: Pine) -> None:
+    def __init__(self, pine: "Pine") -> None:
         self.entries = {
             name: InventoryEntry(name, name in GADGET_DATA)
             for name in (*WEAPON_ORDER, *GADGET_ORDER)
@@ -757,7 +751,7 @@ class WeaponInventory:
                 if getattr(addr, slot):
                     setattr(addr, slot, False)
 
-    def sync_from_ap(self, checked_locations: set[str]) -> None:
+    def sync_from_ap(self, checked_locations: "set[str]") -> None:
         for loc in checked_locations:
             if loc in self.vendor_locations:
                 self.vendor_locations[loc] = True

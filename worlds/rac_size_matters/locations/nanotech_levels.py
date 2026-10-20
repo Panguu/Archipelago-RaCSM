@@ -1,9 +1,7 @@
-from functools import partial
-
 from rule_builder.options import OptionFilter
-from rule_builder.rules import And
+from rule_builder.rules import Rule
 
-from ..options import ChallengeMode
+from ..options import ChallengeMode, NanotechExperienceMultiplier
 from ..rules._helpers import HasChallengeMode, HasExpAccess, HasGoodExpPlanet
 from .model import Completion, LocationOptions, Rac5Categories, Rac5CompletionSources, Rac5Locations
 
@@ -14,13 +12,14 @@ LAST_LEVEL = 75
 FIRST_DEFINITION_ORDER = 243
 
 
-def access_rule(world, *, level):
-    rules = [HasExpAccess()]
-    if level > 20 and world.options.nanotech_experience_multiplier.value <= 8:
-        rules.append(HasGoodExpPlanet())
+def access_rule(level: int) -> Rule:
+    rule = HasExpAccess()
+    if level > 20:
+        # Higher multipliers level fast enough anywhere.
+        rule &= HasGoodExpPlanet(options=[OptionFilter(NanotechExperienceMultiplier, 8, "le")], filtered_resolution=True)
     if level > LAST_NORMAL_LEVEL:
-        rules.append(HasChallengeMode(world, 1))
-    return rules[0] if len(rules) == 1 else And(*rules)
+        rule &= HasChallengeMode(1)
+    return rule
 
 
 def _location(level: int) -> Rac5Locations:
@@ -28,7 +27,7 @@ def _location(level: int) -> Rac5Locations:
     return Rac5Locations(
         f"Nanotech Level: {level}",
         "Menu",
-        partial(access_rule, level=level),
+        access_rule(level),
         Completion(Rac5CompletionSources.NANOTECH_LEVELS, level),
         options=LocationOptions(
             requirements=(OptionFilter(ChallengeMode, (1, 2), "in"),) if challenge_mode else (),

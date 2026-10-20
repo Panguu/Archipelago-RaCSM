@@ -8,9 +8,9 @@ from unittest.mock import Mock
 from BaseClasses import CollectionState
 from NetUtils import decode, encode
 
-from ..constants import Rac5VendorLocations, Rac5TitanVendorLocations
-from ..core.vendor import VendorInventory
 from ..client.vendor import InventoryMixin
+from ..constants import Rac5TitanVendorLocations, Rac5VendorLocations
+from ..core.vendor import VendorInventory
 from ..locations import MENU_REGION
 from ..vendor_rules import build_vendor_rules, location_accessible
 from .bases import RACSizeMatterTestBase

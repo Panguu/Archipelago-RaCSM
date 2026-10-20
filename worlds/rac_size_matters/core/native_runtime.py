@@ -5,9 +5,8 @@ from collections import deque
 
 from ..constants import Rac5Locations, Rac5ShrinkRayGrindrail
 from ..locations import GADGET_TO_LOCATION, TITAN_TO_LOCATION, WEAPON_TO_LOCATION
-from . import vendor_presentation
-from . import address_maps
-from .address_maps import CURRENT_PLANET_ADDRESS, NEW_PLANET_START_LOAD_ADDR, PLANET_ADDRESSES
+from . import address_maps, vendor_presentation
+from .address_maps import PLANET_ADDRESSES
 from .armour import ARMOUR_PICKUPS, ArmourPiece, ArmourStruct
 from .menu import MenuStateValue
 from .patches import (
@@ -22,14 +21,14 @@ from .patches import (
     ship_menu,
     skins,
     sprout_pickup,
-    treehouse_turret,
     treehouse_grindrail,
+    treehouse_turret,
     vendor as vendor_patch,
 )
 from .patches.loader_gate import LoaderGate
 from .patches.starting_planet import StartingPlanet
-from .vendor import WEAPON_VENDOR_IDS
 from .traps import close_no_clank_trap
+from .vendor import WEAPON_VENDOR_IDS
 
 logger = logging.getLogger("CommonClient")
 
@@ -55,6 +54,8 @@ class NativeRuntime:
         self.pickup = None
         self.treehouse_pickup = None
         self.treehouse_grindrail = None
+        self.ship_menu = None
+        self._treehouse_unlocked = True
         self.toast = None
         self.connection_warning = None
         self.ap_connected = False
@@ -67,6 +68,26 @@ class NativeRuntime:
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
         self._installed_multiplayer_skins_option = self.patch_options.multiplayer_skins
+
+    @property
+    def treehouse_unlocked(self):
+        return self._treehouse_unlocked
+
+    @treehouse_unlocked.setter
+    def treehouse_unlocked(self, value):
+        """Show or hide the ship menu's Treehouse row, live if the menu patch is installed."""
+        value = bool(value)
+        if value == self._treehouse_unlocked:
+            return
+        self._treehouse_unlocked = value
+        if self.ship_menu is not None and self.ship_menu.installed:
+            self.pine.write_int32(self.ship_menu.treehouse_flag, int(value))
+
+    def _prepare_ship_menu(self, base, code):
+        self.ship_menu = ship_menu.prepare(
+            self.pine, code_start=base, code=code, treehouse_unlocked=self._treehouse_unlocked,
+        )
+        return self.ship_menu
 
     def close(self):
         if self.pine.get_game_id() != self.gate.game_id:
@@ -107,6 +128,7 @@ class NativeRuntime:
         self.pickup = None
         self.treehouse_pickup = None
         self.treehouse_grindrail = None
+        self.ship_menu = None
         self.toast = None
         self.connection_warning = None
         self.skin = None
@@ -128,7 +150,7 @@ class NativeRuntime:
         code = b"".join(p.read_bytes(base + offset, 0x10000) for offset in range(0, 0x280000, 0x10000))
         if target == 24:
             if options.ship_menu:
-                self.plans.append(ship_menu.prepare(p, code_start=base, code=code))
+                self.plans.append(self._prepare_ship_menu(base, code))
             name = Rac5Locations.HIG_TREEHOUSE_TURRET
             if self.allowed_locations is None or name in self.allowed_locations:
                 self.treehouse_pickup = treehouse_turret.prepare(
@@ -280,7 +302,7 @@ class NativeRuntime:
                 self.armour,
                 *skin_plans,
                 self.balance,
-                ship_menu.prepare(p, code_start=base, code=code) if options.ship_menu else None,
+                self._prepare_ship_menu(base, code) if options.ship_menu else None,
                 plan,
                 *hud_plans,
                 *planet_plans,

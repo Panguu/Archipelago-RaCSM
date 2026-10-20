@@ -2031,6 +2031,11 @@
             "name": "HIG Treehouse: Shrink Ray Grindrail",
             "item_count": 1,
             "icon": "icons/Crate.png"
+          },
+          {
+            "name": "HIG Treehouse: All Skill Points",
+            "item_count": 1,
+            "icon": "icons/Crate.png"
           }
         ]
       }

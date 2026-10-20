@@ -10,10 +10,9 @@ from ..core.armour import ArmourPiece, ArmourSnapshot, ArmourStruct
 from ..core.memory import MemoryWindow
 from ..core.patches.asm import Patch
 from ..core.patches.plan import Plan
-from ..core.weapons import WEAPON_STRUCT_SIZE, WeaponInventory
 from ..core.vendor import VendorInventory
-from ..locations import TITAN_TO_LOCATION
-from ..locations import ALL_LOCATIONS
+from ..core.weapons import WEAPON_STRUCT_SIZE, WeaponInventory
+from ..locations import ALL_LOCATIONS, TITAN_TO_LOCATION
 from ..locations.observation import LocationObservation
 
 

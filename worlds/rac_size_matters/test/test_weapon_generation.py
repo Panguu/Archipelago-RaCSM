@@ -3,13 +3,13 @@ import random
 import unittest
 
 from Fill import distribute_items_restrictive
-from Options import OptionError
 from test.general import setup_multiworld
+
+from Options import OptionError
 
 from ..data.weapons import WEAPON_DATA
 from ..items import NG_PLUS_WEAPONS, PROGRESSIVE_WEAPON_NAME, WEAPON_ITEM_TABLE
 from ..world import RACSizeMatterWorld
-
 
 PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.is_projectile)
 LONG_PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.is_long_projectile)

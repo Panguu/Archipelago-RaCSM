@@ -101,10 +101,37 @@ class ClankChallenges(Choice):
     default = 1
 
 
+class Goal(Choice):
+    """Determines what the player needs to complete to achieve their goal.
+    - Defeat Otto: Defeat Otto Destruct on Quodrona.
+    - All Skill Points: Complete every skill point of the Skill Points tier (Easy, or Easy and Hard).
+      Clank/Skyboard Challenge skill points don't count. Requires Skill Points to be on.
+    - All Clank Challenges: Complete every Clank Challenge check in the seed. Requires Clank Challenges to be on.
+    - Pick and Mix: Complete every goal you select in Pick and Mix Goals."""
+
+    display_name = "Goal"
+    option_defeat_otto = 0
+    option_all_skill_points = 1
+    option_all_clank_challenges = 2
+    option_pick_and_mix = 3
+    default = 0
+
+
+class PickAndMixGoals(OptionSet):
+    """Add or remove victory conditions. All selected conditions must be completed.
+    At least one must be selected when Goal is Pick and Mix.
+    The valid options are: defeat_otto, all_skill_points, all_clank_challenges"""
+
+    display_name = "Pick and Mix Goals"
+    valid_keys = {"defeat_otto", "all_skill_points", "all_clank_challenges"}
+    default = frozenset()
+
+
 class EnableHIGTreehouse(Toggle):
     """Include the HIG Treehouse Mini-Gun Turret pickup and its four Gadgetbot
     challenges as locations, plus its grind rail when Shrink Ray Options is
-    set to Locations. Challenges also require Clank Challenges to be on
+    set to Locations and an All Skill Points check when Skill Points is on
+    (every skill point of the chosen Easy/Hard tier). Challenges also require Clank Challenges to be on
     and Gadgetbot to be included in Clank Challenge Groups. The planet remains
     available in the ship menu regardless of these settings."""
 
@@ -533,6 +560,8 @@ class ApIcon(Choice):
 class RACSizeMatterOptions(PerGameCommonOptions):
     __annotations__ = {
         Rac5Options.START_INVENTORY_FROM_POOL: StartInventoryPool,
+        Rac5Options.GOAL: Goal,
+        Rac5Options.PICK_AND_MIX_GOALS: PickAndMixGoals,
         Rac5Options.PROGRESSIVE_WEAPONS: ProgressiveWeapons,
         Rac5Options.CLANK_PACK: ClankPack,
         Rac5Options.PROGRESSIVE_MODS: ProgressiveMods,
@@ -588,6 +617,7 @@ racsm_option_groups = [
             BalancePatch,
         ],
     ),
+    OptionGroup("RACSM Goal Options", [Goal, PickAndMixGoals]),
     OptionGroup(
         "RACSM Game Links",
         [

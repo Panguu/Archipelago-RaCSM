@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from CommonClient import logger
@@ -18,7 +16,7 @@ if TYPE_CHECKING:
 class RACCommandProcessor(ClientCommandProcessor):
     """Parses commands here; anything touching the game runs as a cmd_* method in the PCSX2 worker."""
 
-    ctx: RACContext
+    ctx: "RACContext"
 
     def _cmd_reconnect(self) -> bool:
         """Reconnect to PCSX2 and re-apply received Archipelago items."""

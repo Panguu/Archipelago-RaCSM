@@ -2,6 +2,8 @@ class Rac5Options:
     """Shared option keys for world definitions, requirements, and slot data."""
 
     START_INVENTORY_FROM_POOL = "start_inventory_from_pool"
+    GOAL = "goal"
+    PICK_AND_MIX_GOALS = "pick_and_mix_goals"
     PROGRESSIVE_WEAPONS = "progressive_weapons"
     CLANK_PACK = "clank_pack"
     PROGRESSIVE_MODS = "progressive_mods"

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -7,14 +5,9 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, NamedTuple
 
 from ..constants import Rac5CutsceneLocations, Rac5Locations
-from ..data.planets import INFOBOT_ITEM_TO_PLANET as INFOBOT_ITEM_TO_PLANET
 from . import address_maps
 from .address_maps import (
-    CURRENT_PLANET_ADDRESS,
     MENU_ADDR_BY_PLANET_ID,
-    NEW_PLANET_START_LOAD_ADDR,
-    PLANET_LOAD_IDLE_VALUE,
-    PLANET_STATE_OFFSET,
     PLANET_UNLOCK_ADDRESSES,
     WEAPON_ARRAY_BASE_BY_PLANET,
 )
@@ -156,9 +149,9 @@ class PlanetInventory:
 
     def __init__(
         self,
-        pine: Pine,
-        armour: ArmourInventory,
-        quick_select: QuickSelectState,
+        pine: "Pine",
+        armour: "ArmourInventory",
+        quick_select: "QuickSelectState",
     ) -> None:
         self.pine = pine
         self.armour = armour
@@ -451,7 +444,7 @@ _COUNT = len(PLANET_UNLOCK_ORDER)
 
 
 class PlanetUnlockState(BaseState):
-    def __init__(self, pine: Pine) -> None:
+    def __init__(self, pine: "Pine") -> None:
         super().__init__()
         self.pine = pine
         self.unlocked: dict[str, bool] = dict.fromkeys(PLANET_UNLOCK_ORDER, False)

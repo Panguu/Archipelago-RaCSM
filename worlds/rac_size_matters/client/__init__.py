@@ -1,6 +1,4 @@
 """Archipelago client for Ratchet & Clank: Size Matters via PCSX2 PINE."""
-from __future__ import annotations
-
 import asyncio
 import sys
 from argparse import Namespace

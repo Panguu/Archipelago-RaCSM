@@ -24,7 +24,7 @@ class TestOutpostRules(unittest.TestCase):
             if location.planet != Rac5Planets.OUTPOST_OMEGA or _is_free(location):
                 continue
             with self.subTest(location=location.name):
-                rule = location.rule(world).resolve(world)
+                rule = location.rule.resolve(world)
                 items = Counter({name: 1 for name in rule.item_dependencies()})
                 items[Rac5Gadgets.SHRINK_RAY] = 0
                 state = SimpleNamespace(prog_items={1: items})
@@ -40,5 +40,5 @@ class TestOutpostRules(unittest.TestCase):
             if location.planet != Rac5Planets.OUTPOST_OMEGA or not _is_free(location):
                 continue
             with self.subTest(location=location.name):
-                rule = location.rule(world).resolve(world)
+                rule = location.rule.resolve(world)
                 self.assertTrue(rule(SimpleNamespace(prog_items={1: Counter()})))

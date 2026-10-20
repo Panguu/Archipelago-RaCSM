@@ -1,13 +1,11 @@
-from functools import partial
-
 from rule_builder.options import OptionFilter
-from rule_builder.rules import Has, HasAny
+from rule_builder.rules import Rule
 
 from ..constants import Rac5Weapons
 from ..data.weapons import WEAPONS
-from ..items import NG_PLUS_WEAPONS, PROGRESSIVE_WEAPON_NAME
+from ..items import NG_PLUS_WEAPONS
 from ..options import ChallengeMode, NgPlusItems, WeaponLevelChecks
-from ..rules._helpers import HasChallengeMode, HasExpAccess, HasGoodExpPlanet
+from ..rules._helpers import HasChallengeMode, HasExpAccess, HasGoodExpPlanet, HasWeaponLevel
 from .model import Completion, LocationOptions, Rac5Categories, Rac5CompletionSources, Rac5Locations
 
 _C = Rac5Categories
@@ -19,16 +17,12 @@ NORMAL_MAX_LEVEL = 4
 _NEEDS_GOOD_EXP_PLANET = frozenset((Rac5Weapons.RYNO, Rac5Weapons.LASER_TRACER, Rac5Weapons.STATIC_BARRIER))
 
 
-def access_rule(world, *, weapon, level):
-    rule = (
-        Has(PROGRESSIVE_WEAPON_NAME[weapon], level)
-        if world.options.progressive_weapons
-        else HasAny(weapon, PROGRESSIVE_WEAPON_NAME[weapon])
-    ) & HasExpAccess()
+def access_rule(weapon: str, level: int) -> Rule:
+    rule = HasWeaponLevel(weapon, level) & HasExpAccess()
     if level >= 5:
-        rule = rule & HasChallengeMode(world, 1)
+        rule &= HasChallengeMode(1)
     if weapon in _NEEDS_GOOD_EXP_PLANET:
-        rule = rule & HasGoodExpPlanet()
+        rule &= HasGoodExpPlanet()
     return rule
 
 
@@ -68,7 +62,7 @@ def _location(weapon: str, level: int, definition_order: int) -> Rac5Locations:
     return Rac5Locations(
         f"Weapon Level: {weapon} V{level}",
         "Menu",
-        partial(access_rule, weapon=weapon, level=level),
+        access_rule(weapon, level),
         Completion(Rac5CompletionSources.WEAPON_LEVELS, (weapon, level)),
         options=LocationOptions(requirements=_requirements(weapon, level), weapon=weapon),
         categories=_categories(weapon, level),

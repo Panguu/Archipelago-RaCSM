@@ -4,7 +4,8 @@ Dictionary identities stay stable for inventories that import lookup tables.
 Selection is synchronous and must run under the client's PINE lock.
 """
 import os as _os
-from . import us_addresses, eu_addresses, jp_addresses
+
+from . import eu_addresses, jp_addresses, us_addresses
 
 SUPPORTED_GAMES = {"SCUS-97615": "US", "SCES-55019": "EU", "SCPS-15120": "JP"}
 _MAPS = {"SCUS-97615": us_addresses, "SCES-55019": eu_addresses, "SCPS-15120": jp_addresses}

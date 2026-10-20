@@ -48,7 +48,12 @@ class ShipMenuTests(unittest.TestCase):
                 setter = call(route + 36)
                 original = bytes(memory.data)
                 plan.install()
-                for unlocked in ({1, 2, 5, 6, 9}, set(range(1, 11)), {1}, {1, 5}, {1, 6}):
+                cases = [(unlocked, treehouse)
+                         for unlocked in ({1, 2, 5, 6, 9}, set(range(1, 11)), {1}, {1, 5}, {1, 6})
+                         for treehouse in (1, 0)]
+                for unlocked, treehouse in cases:
+                    # The client flips the flag at runtime as the Treehouse infobot arrives.
+                    memory.write_int32(plan.treehouse_flag, treehouse)
                     rows = []
                     cpu = CPU(memory)
                     cpu.r[17], cpu.r[18], cpu.r[19], cpu.r[20] = 1, 0xFFFFFFFF, 0x1800000, 1
@@ -62,7 +67,7 @@ class ShipMenuTests(unittest.TestCase):
                     cpu.run(loop, stop=loop + 120,
                             stubs={unlock: availability, group: lambda c: None, name: title, add: append})
                     expected = [p for p in range(1, 11) for _ in range(2 if p == 6 else 1)
-                                if (6 if p == 5 else p) in unlocked] + [24]
+                                if (6 if p == 5 else p) in unlocked] + [24] * treehouse
                     self.assertEqual([p for p, _, _ in rows], expected)
                     if 6 in unlocked:
                         omega = [row for row in rows if row[0] == 6]
@@ -85,6 +90,17 @@ class ShipMenuTests(unittest.TestCase):
                 for edit in plan.edits:
                     self.assertEqual(memory.read_bytes(edit.address, len(edit.original)),
                                      original[edit.address:edit.address + len(edit.original)])
+
+    def test_treehouse_flag_initial_value(self):
+        for unlocked in (True, False):
+            memory = Memory()
+            memory.data[:] = bytes(len(memory.data))
+            for address, data in SHIP_FIXTURES["pokitaru"]["segments"]:
+                memory.data[address:address + len(data) // 2] = bytes.fromhex(data)
+            plan = ship_menu.prepare(memory, code_start=0xD00000, code=memory.read_bytes(0xD00000, 0x400000),
+                                     treehouse_unlocked=unlocked)
+            plan.install()
+            self.assertEqual(memory.read_int32(plan.treehouse_flag), int(unlocked))
 
     def test_changed_instructions_rejected_without_writes(self):
         memory, plan = self.prepare("pokitaru")

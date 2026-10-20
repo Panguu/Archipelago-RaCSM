@@ -4,10 +4,10 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from .test_native_patches import Memory
-from ..client.vendor_scouts import VendorScouts, VendorReward
+from ..client.vendor_scouts import VendorReward, VendorScouts
 from ..core import vendor_presentation as native
 from ..core.patches.asm import packed
+from .test_native_patches import Memory
 
 
 class TestVendorPresentation(unittest.TestCase):

@@ -7,10 +7,10 @@ from unittest.mock import Mock
 from ..constants import Rac5CutsceneLocations, Rac5SkyboardChallenges
 from ..core.challenges import SkyboardInventory
 from ..core.location_checks import LocationChecks
-from ..locations import ALL_LOCATIONS
-from .test_runtime_refactor import Memory
 from ..core.locations.mission_locations import LOCATION_TO_PLANET_ID, VALIDATED_MISSION_MAP
 from ..core.missions import MissionInventory
+from ..locations import ALL_LOCATIONS
+from .test_runtime_refactor import Memory
 
 
 class FakePine:

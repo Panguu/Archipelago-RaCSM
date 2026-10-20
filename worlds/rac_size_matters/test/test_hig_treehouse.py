@@ -2,14 +2,16 @@ import json
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from ..constants import Rac5Locations, Rac5Planets, Rac5ShrinkRayGrindrail
+from ..constants import Rac5Infobots, Rac5Locations, Rac5Planets, Rac5ShrinkRayGrindrail
+from ..core.location_checks import LocationChecks
 from ..core.native_runtime import NativeRuntime
-from ..core.patches import PatchOptions, ship_menu, treehouse_turret, treehouse_grindrail
+from ..core.patches import PatchOptions, ship_menu, treehouse_grindrail, treehouse_turret
 from ..locations import ALL_LOCATIONS
 from ..locations.hig_treehouse import CHALLENGE_NAMES
 from ..locations.observation import LocationObservation
+from ..locations.shared import required_skill_points
 from ..options import RACSizeMatterOptions
 from ..universal_tracker import setup_options_from_slot_data
 from .bases import RACSizeMatterTestBase
@@ -18,8 +20,9 @@ from .test_native_patches import CPU, Memory
 
 class TreehouseOptionsTests(unittest.TestCase):
     def test_new_ids_follow_existing_catalog(self):
-        treehouse = {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL}
-        self.assertEqual({ALL_LOCATIONS[name].code for name in treehouse}, set(range(77700375, 77700381)))
+        treehouse = {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL,
+                     Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS}
+        self.assertEqual({ALL_LOCATIONS[name].code for name in treehouse}, set(range(77700375, 77700382)))
         self.assertTrue(all(location.code < 77700375 for name, location in ALL_LOCATIONS.items()
                             if name not in treehouse))
 
@@ -27,7 +30,20 @@ class TreehouseOptionsTests(unittest.TestCase):
         tracker = json.loads((Path(__file__).parent.parent / "tracker/locations.json").read_text())
         treehouse = next(child for child in tracker[0]["children"] if child["name"] == "11")
         self.assertEqual({section["name"] for section in treehouse["sections"]},
-                         {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
+                         {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL,
+                          Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS})
+
+    def test_all_skill_points_option_combinations(self):
+        for enabled in (0, 1):
+            for skill_points in (0, 1, 2):
+                with self.subTest(enabled=enabled, skill_points=skill_points):
+                    values = dict(enable_hig_treehouse=enabled, skill_points=skill_points)
+                    options = RACSizeMatterOptions(**{
+                        name: cls.from_any(values.get(name, cls.default))
+                        for name, cls in RACSizeMatterOptions.type_hints.items()
+                    })
+                    self.assertEqual(ALL_LOCATIONS[Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS].available(options),
+                                     bool(enabled and skill_points))
 
     def test_option_combinations(self):
         for enabled in (0, 1):
@@ -74,8 +90,14 @@ class TestTreehouseEnabled(RACSizeMatterTestBase):
         region = self.multiworld.get_region(Rac5Planets.HIG_TREEHOUSE, self.player)
         self.assertEqual({loc.name for loc in region.locations},
                          {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
+        self.assertFalse(region.can_reach(self.multiworld.state))
+        self.collect_by_name(Rac5Infobots.HIG_TREEHOUSE)
         self.assertTrue(region.can_reach(self.multiworld.state))
         self.assertTrue(self.world.fill_slot_data()["enable_hig_treehouse"])
+
+    def test_infobot_in_pool_once(self):
+        self.assertEqual([item.name for item in self.multiworld.itempool
+                          if item.name == Rac5Infobots.HIG_TREEHOUSE], [Rac5Infobots.HIG_TREEHOUSE])
 
     def test_tracker_restores_treehouse_option(self):
         slot = self.world.fill_slot_data()
@@ -87,9 +109,65 @@ class TestTreehouseEnabled(RACSizeMatterTestBase):
     def test_grindrail_requires_shrink_ray(self):
         from ..constants import Rac5Gadgets
         location = self.multiworld.get_location(Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL, self.player)
+        self.collect_by_name(Rac5Infobots.HIG_TREEHOUSE)
         self.assertFalse(location.can_reach(self.multiworld.state))
         self.collect_by_name(Rac5Gadgets.SHRINK_RAY)
         self.assertTrue(location.can_reach(self.multiworld.state))
+
+
+class TestTreehouseAllSkillPointsEasy(RACSizeMatterTestBase):
+    options = {"enable_hig_treehouse": 1, "skill_points": 1, "enable_clank_challenge_skill_points": 1,
+               "enable_skyboard_challenge_skill_points": 1}
+
+    def test_requires_only_easy_skill_points(self):
+        required = required_skill_points(self.world.options)
+        self.assertTrue(required)
+        self.assertTrue(all("easy_skill_point" in ALL_LOCATIONS[name].categories for name in required))
+        self.assertEqual(set(required), {location.name for location in self.multiworld.get_locations(self.player)
+                                         if location.name in ALL_LOCATIONS
+                                         and "easy_skill_point" in ALL_LOCATIONS[location.name].categories})
+
+    def test_reachable_only_once_every_skill_point_is(self):
+        location = self.multiworld.get_location(Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS, self.player)
+        state = self.multiworld.get_all_state()
+        self.assertTrue(location.can_reach(state))
+        self.assertEqual(location.can_reach(self.multiworld.state), all(
+            self.multiworld.get_location(name, self.player).can_reach(self.multiworld.state)
+            for name in required_skill_points(self.world.options)
+        ))
+
+
+class TestTreehouseAllSkillPointsHard(RACSizeMatterTestBase):
+    options = {"enable_hig_treehouse": 1, "skill_points": 2}
+
+    def test_requires_easy_and_hard_skill_points(self):
+        required = set(required_skill_points(self.world.options))
+        categories = set().union(*(ALL_LOCATIONS[name].categories for name in required))
+        self.assertIn("easy_skill_point", categories)
+        self.assertIn("hard_skill_point", categories)
+        self.assertEqual(required, {location.name for location in self.multiworld.get_locations(self.player)
+                                    if location.name in ALL_LOCATIONS and ALL_LOCATIONS[location.name].categories
+                                    & {"easy_skill_point", "hard_skill_point"}})
+
+
+class AllSkillPointsClientTests(unittest.TestCase):
+    def check(self, allowed, completed):
+        sent = []
+        core = SimpleNamespace(native=SimpleNamespace(allowed_locations=allowed),
+                               skill_points=SimpleNamespace(completed=completed), send_location=sent.append)
+        LocationChecks(core).all_skill_points()
+        return sent
+
+    def test_waits_for_every_skill_point_in_the_seed(self):
+        easy = {name for name, location in ALL_LOCATIONS.items() if "easy_skill_point" in location.categories}
+        hard = {name for name, location in ALL_LOCATIONS.items() if "hard_skill_point" in location.categories}
+        name = Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS
+        self.assertEqual(self.check({name, *easy}, set(easy)), [name])
+        self.assertEqual(self.check({name, *easy}, set(easy) - {next(iter(easy))}), [])
+        self.assertEqual(self.check({name, *easy, *hard}, set(easy)), [])
+        self.assertEqual(self.check({name, *easy, *hard}, easy | hard), [name])
+        self.assertEqual(self.check(set(easy), set(easy)), [])
+        self.assertEqual(self.check(None, set(easy)), [])
 
 
 class TestTreehouseWithoutGadgetbots(RACSizeMatterTestBase):
@@ -98,6 +176,7 @@ class TestTreehouseWithoutGadgetbots(RACSizeMatterTestBase):
     def test_turret_and_destination_remain(self):
         region = self.multiworld.get_region(Rac5Planets.HIG_TREEHOUSE, self.player)
         self.assertEqual({loc.name for loc in region.locations}, {Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
+        self.collect_by_name(Rac5Infobots.HIG_TREEHOUSE)
         self.assertTrue(region.can_reach(self.multiworld.state))
 
 
@@ -108,6 +187,58 @@ class TestTreehouseDisabled(RACSizeMatterTestBase):
         region = self.multiworld.get_region(Rac5Planets.HIG_TREEHOUSE, self.player)
         self.assertEqual(list(region.locations), [])
         self.assertTrue(region.can_reach(self.multiworld.state))
+        self.assertNotIn(Rac5Infobots.HIG_TREEHOUSE, {item.name for item in self.multiworld.itempool})
+
+
+class TreehouseStartingPlanetTests(unittest.TestCase):
+    def generate(self, enabled, seed):
+        from test.general import setup_multiworld
+
+        from ..world import RACSizeMatterWorld
+        return setup_multiworld(RACSizeMatterWorld, seed=seed, options={
+            "enable_hig_treehouse": enabled, "random_starting_planet": "unweighted"})
+
+    def test_treehouse_can_start_only_when_enabled(self):
+        starts = {enabled: set() for enabled in (0, 1)}
+        for enabled in (0, 1):
+            for seed in range(40):
+                world = self.generate(enabled, seed).worlds[1]
+                starts[enabled].add(world.starting_planet_id)
+                if world.starting_planet_id == 24:
+                    self.assertIn(Rac5Infobots.HIG_TREEHOUSE, world.preplaced_items)
+        self.assertNotIn(24, starts[0])
+        self.assertIn(24, starts[1])
+
+
+class TreehouseClientUnlockTests(unittest.TestCase):
+    def sync(self, enabled, planets, runtime):
+        from ..core.inventory_sync import InventorySync
+        from ..core.options import ClientOptions
+        core = SimpleNamespace(
+            _refresh_main_menu_state=lambda: False, _ap_inventory_ready=False, pine=None,
+            options=ClientOptions(hig_treehouse_enabled=enabled), native=runtime,
+            planet_unlock=SimpleNamespace(set_unlocked_planets=Mock()),
+            progressive_challenge_mode_enabled=False, armour=SimpleNamespace(set_ap_armour=Mock()),
+            vendor_active=False,
+            planet=SimpleNamespace(is_ready=False, weapons_available=False, weapons=SimpleNamespace()),
+        )
+        with patch("worlds.rac_size_matters.core.inventory_sync.set_clank_pack_ownership"):
+            InventorySync(core).apply_inventory(weapons={}, gadgets={}, weapon_levels={}, weapon_mods={},
+                                                armour_unlocked={}, infobot_planets=planets)
+
+    def test_flag_follows_infobot_and_writes_live(self):
+        memory = SimpleNamespace(write_int32=Mock())
+        runtime = NativeRuntime.__new__(NativeRuntime)
+        runtime.pine, runtime._treehouse_unlocked = memory, True
+        runtime.ship_menu = SimpleNamespace(installed=True, treehouse_flag=0x1234)
+        self.sync(True, set(), runtime)
+        self.assertFalse(runtime.treehouse_unlocked)
+        memory.write_int32.assert_called_once_with(0x1234, 0)
+        self.sync(True, {"HIG_TREEHOUSE"}, runtime)
+        self.assertTrue(runtime.treehouse_unlocked)
+        memory.write_int32.assert_called_with(0x1234, 1)
+        self.sync(False, set(), runtime)
+        self.assertTrue(runtime.treehouse_unlocked)
 
 
 class TreehousePickupTests(unittest.TestCase):
@@ -134,6 +265,7 @@ class TreehousePickupTests(unittest.TestCase):
                 runtime.pine = memory
                 runtime.patch_options = PatchOptions()
                 runtime.vendor = SimpleNamespace(planet=SimpleNamespace())
+                runtime._treehouse_unlocked = True
                 runtime.checked = {Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL}
                 runtime.allowed_locations = runtime.checked if enabled else set()
                 runtime._prepare(24, 0xD00000)

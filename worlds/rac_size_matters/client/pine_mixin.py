@@ -1,14 +1,12 @@
-from __future__ import annotations
-
 import asyncio
 import time
 
 from CommonClient import logger
 
 from ..core import TextColour, colored_text, reconcile_traps
-from ..universal_tracker import PLANET_ID_TO_REGION
 from ..core.address_maps import SUPPORTED_GAMES
 from ..core.save_data import highest_weapon_levels
+from ..universal_tracker import PLANET_ID_TO_REGION
 from .constants import PINE_CONNECT_SETTLE_DELAY_S, POLL_INTERVAL
 from .other_ratchet_games import GAME_ID_TO_OTHER_RATCHET
 

@@ -1,11 +1,11 @@
-from .constants.options import Rac5Options
-
 """Universal Tracker integration for Ratchet & Clank: Size Matters"""
 
 from typing import TYPE_CHECKING, Any
 
+from .constants.options import Rac5Options
+
 if TYPE_CHECKING:
-    from worlds.rac_size_matters.world import RACSizeMatterWorld
+    from .world import RACSizeMatterWorld
 
 PLANET_TO_MAP_INDEX: dict[str, int] = {
     "Pokitaru": 1,
@@ -43,6 +43,8 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
         if world.game in world.multiworld.re_gen_passthrough:
             world.using_ut = True
             world.passthrough = world.multiworld.re_gen_passthrough[world.game]
+            world.options.goal.value = world.passthrough.get(Rac5Options.GOAL, 0)
+            world.options.pick_and_mix_goals.value = set(world.passthrough.get(Rac5Options.PICK_AND_MIX_GOALS, ()))
             world.options.all_missions.value = world.passthrough.get(Rac5Options.ALL_MISSIONS, True)
             world.options.clank_pack.value = world.passthrough.get(Rac5Options.CLANK_PACK, False)
             world.options.all_cutscenes.value = world.passthrough.get(Rac5Options.ALL_CUTSCENES, False)

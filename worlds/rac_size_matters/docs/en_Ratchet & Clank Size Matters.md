@@ -55,6 +55,8 @@ of everything specific to this game:
 
 | Option | Default | What it does |
 |---|---|---|
+| Goal | Defeat Otto | Defeat Otto, All Skill Points, All Clank Challenges, or Pick and Mix. See [What is the goal?](#what-is-the-goal). |
+| Pick and Mix Goals | none | With Goal set to Pick and Mix, every selected goal must be completed. |
 | Starting Weapons | 2 | Number of random weapons precollected at the start. |
 | Starting Gadgets | 1 | Number of random gadgets precollected at the start (1 grants the Hypershot). |
 | Clank Pack | Off | Adds one Clank Pack unlock item. Ratchet starts without Clank's backpack abilities and regains them when it arrives. This is not a progressive item. |
@@ -74,7 +76,7 @@ of everything specific to this game:
 | All Missions | On | Adds story mission completions as location checks. |
 | All Cutscenes | Off | Adds cutscene/flag-event triggers as location checks. |
 | Giant Clank | Off | On: the Giant Clank Metalis and Giant Clank Challax sequences become playable and their completion/armour/skill point checks are added. Off: entering either sequence immediately forces a load back out, as in vanilla before this option existed. |
-| Enable HIG Treehouse | Off | Adds the Mini-Gun Turret pickup, four Treehouse Gadgetbot challenges, and the grind rail when Shrink Ray Options is set to Locations. Challenges require Clank Challenges to be on (either tier) and Gadgetbot included in Clank Challenge Groups. Disabling Gadgetbot leaves the other checks enabled. Treehouse remains available in the planet menu even with this toggle off. |
+| Enable HIG Treehouse | Off | Adds the Mini-Gun Turret pickup, four Treehouse Gadgetbot challenges, the grind rail when Shrink Ray Options is set to Locations, and an All Skill Points check when Skill Points is on (completes once every Easy skill point, or every Easy and Hard skill point on Hard, is done; Clank/Skyboard Challenge skill points don't count). Challenges require Clank Challenges to be on (either tier) and Gadgetbot included in Clank Challenge Groups. Disabling Gadgetbot leaves the other checks enabled. Treehouse remains available in the planet menu even with this toggle off. |
 | Clank Challenges | Item Challenges | Off: none. Item Challenges: only the armour/gadget reward per arena. All: every individual challenge completion is its own check. |
 | Clank Challenge Groups | every group on | Selects which Clank Challenge groups (Demolition Derby / Gadgetbot Toss / Gadgetbot) get location checks at all, once Clank Challenges is on. Setting a group to 0 excludes all of its locations (both tiers) from generation — the challenge itself is still fully playable in-game, it just has no AP check. |
 | Enable Clank Challenge Skill Points | Off | Adds skill points earned from Clank Challenge arenas as checks, regardless of the Clank Challenges option. |
@@ -127,7 +129,14 @@ etc.) shared across every game.
 
 ## What is the goal?
 
-Defeat **Otto Destruct** on Quodrona. The client detects the end-boss cutscene completing and automatically sends goal completion to the Archipelago server.
+Set by the **Goal** option (default: Defeat Otto):
+
+- **Defeat Otto:** Defeat **Otto Destruct** on Quodrona.
+- **All Skill Points:** Complete every skill point of your Skill Points tier: every Easy skill point on Easy, or every Easy and Hard skill point on Hard. Clank/Skyboard Challenge skill points don't count. Requires Skill Points to be on.
+- **All Clank Challenges:** Complete every Clank Challenge check in your seed (the reward challenges on Item Challenges, every challenge on All, filtered by Clank Challenge Groups and including HIG Treehouse when enabled). Requires Clank Challenges to be on.
+- **Pick and Mix:** Complete every goal you select in **Pick and Mix Goals** (`defeat_otto`, `all_skill_points`, `all_clank_challenges`). At least one must be selected.
+
+The client detects completion and automatically sends goal completion to the Archipelago server.
 
 ## What items can be in another player's world?
 

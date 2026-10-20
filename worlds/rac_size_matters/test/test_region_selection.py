@@ -2,10 +2,10 @@
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 
 
 class RegionSelectionTests(unittest.TestCase):
@@ -54,6 +54,7 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
     async def test_connect_and_live_swaps_keep_ap_state_and_reject_other_games(self):
         import asyncio
         from unittest.mock import AsyncMock, Mock, patch
+
         from ..client.pine_mixin import PineMixin
         from ..core import address_maps
         from ..core.core import Core
@@ -148,6 +149,7 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
 class RegionalSaveAddressTests(unittest.TestCase):
     def test_challenge_tier_follows_region_changes_and_planet_loads(self):
         from unittest.mock import Mock
+
         from ..core import address_maps
         from ..core.challenge_mode import ChallengeModeState
 
@@ -180,10 +182,10 @@ class RegionalSaveAddressTests(unittest.TestCase):
     def test_save_fields_and_completion_reads_follow_region_after_import(self):
         from ..core import address_maps
         from ..core.armour import ArmourStruct
+        from ..core.missions import _NAME_TO_ADDR_MASK, MissionInventory
         from ..core.skill_points import SkillPointInventory
+        from ..core.skins import Skin, SkinInventory
         from ..core.titanium_bolts import TitaniumBoltInventory
-        from ..core.skins import SkinInventory, Skin
-        from ..core.missions import MissionInventory, _NAME_TO_ADDR_MASK
         from ..locations.observation import LocationObservation, source_addresses
         from .test_runtime_refactor import Memory
 

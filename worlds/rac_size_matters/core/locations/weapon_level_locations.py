@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from ...constants import Rac5Weapons, Rac5WeaponLevels
+from ...constants import Rac5WeaponLevels, Rac5Weapons
 
 WEAPON_LEVEL_NAMES: dict[str, dict[int, str]] = {
     Rac5Weapons.LACERATOR: {

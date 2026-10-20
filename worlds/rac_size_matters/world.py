@@ -8,17 +8,17 @@ from worlds.AutoWorld import WebWorld, World
 from .constants import Rac5Infobots
 from .constants.options import Rac5Options
 from .core.starting_planet import PLANET_TO_ID, PLANET_TO_INFOBOT, choose_starting_planets
-from .core.weapons import WEAPON_MOD_COUNTS
-from .data.models import RACItem as RACItem, RACLocation as RACLocation
-from .data.weapons import WEAPON_DATA
+from .data.models import RACItem
+from .data.weapons import WEAPON_DATA, WEAPON_MOD_COUNTS
+from .goals import validate_goals
 from .items import (
     ALL_ITEMS,
-    CLANK_PACK_NAME,
     ARMOUR_DISPLAY_TO_INTERNAL,
     ARMOUR_ITEM_TABLE,
     ARMOUR_PROGRESSIVE_ITEM_TABLE,
     ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE,
     ARMOUR_SETS,
+    CLANK_PACK_NAME,
     GADGET_ITEM_TABLE,
     GLITCHES_ITEM_NAME,
     INFOBOT_ITEM_TABLE,
@@ -45,8 +45,8 @@ from .options import (
     AllMissions,
     ArmourSetChecks,
     ClankChallenges,
-    EnabledWeapons,
     EnableClankChallengeSkillPoints,
+    EnabledWeapons,
     EnableSkyboardChallengeSkillPoints,
     ExperimentalSkins,
     ProgressiveArmour,
@@ -102,7 +102,7 @@ class RACSizeMatterWorld(World):
     """Ratchet & Clank: Size Matters is a 2007 PSP/PS2 action platformer following
     Ratchet and Clank as they unravel the mystery of the Technomites across ten planets.
     Weapons, gadgets, and armour pieces are shuffled across all locations.
-    Defeat Otto Destruct on Quodrona to complete your goal."""
+    Defeat Otto Destruct on Quodrona, or complete your chosen goals, to finish."""
 
     game = "Ratchet & Clank: Size Matters"
     web = RACWeb()
@@ -155,6 +155,7 @@ class RACSizeMatterWorld(World):
         setup_options_from_slot_data(self)
         self._validate_weapon_options()
         self._validate_skin_options()
+        validate_goals(self)
         self._clamp_nanotech_level_max()
 
     def _clamp_nanotech_level_max(self) -> None:
@@ -315,7 +316,10 @@ class RACSizeMatterWorld(World):
         pool += list(GADGET_ITEM_TABLE)
         if self.options.clank_pack:
             pool.append(CLANK_PACK_NAME)
-        pool += list(INFOBOT_ITEM_TABLE)
+        pool += [
+            name for name in INFOBOT_ITEM_TABLE
+            if name != Rac5Infobots.HIG_TREEHOUSE or self.options.enable_hig_treehouse
+        ]
 
         if self.options.progressive_challenge_mode:
             pool += [PROGRESSIVE_CHALLENGE_MODE_NAME] * self.options.challenge_mode.value
@@ -442,6 +446,8 @@ class RACSizeMatterWorld(World):
         return {
             "vendor_rules": build_vendor_rules(self),
             "split_infobots": True,
+            Rac5Options.GOAL: self.options.goal.value,
+            Rac5Options.PICK_AND_MIX_GOALS: sorted(self.options.pick_and_mix_goals.value),
             Rac5Options.DEATH_LINK: bool(self.options.death_link.value),
             Rac5Options.AMMO_LINK: bool(self.options.ammo_link.value),
             Rac5Options.BOLT_LINK: bool(self.options.bolt_link.value),
