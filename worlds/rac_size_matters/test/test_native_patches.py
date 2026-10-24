@@ -168,6 +168,26 @@ def plans(memory):
 
 
 class NativePatchTests(unittest.TestCase):
+    def test_reload_request_blocks_core_until_loader_starts(self):
+        from ..core import address_maps
+
+        p = Memory()
+        planet = SimpleNamespace(is_ready=True, planet_id=8, starting_planet_id=None)
+        vendor = SimpleNamespace(planet=planet, native_plan=None)
+        runtime = NativeRuntime(p, vendor, lambda _: None, lambda _: None)
+        runtime.enabled = True
+        runtime.module = 8
+        runtime.gate.arm = Mock()
+        runtime.gate.held_module = Mock(return_value=None)
+        p.write_int32(runtime.gate.STATE, 6)
+        p.write_int32(address_maps.CURRENT_PLANET_ADDRESS, 1)
+        p.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, 0xFFFFFFFF)
+        for _ in range(3):
+            self.assertTrue(runtime.tick())
+            self.assertTrue(runtime.waiting)
+            self.assertFalse(planet.is_ready)
+        self.assertEqual(p.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR), 1)
+
     def test_vendor_display_survives_post_relocation_loading(self):
         p = Memory()
         planet = SimpleNamespace(

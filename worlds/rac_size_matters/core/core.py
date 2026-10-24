@@ -138,7 +138,7 @@ class Core:
         self._planet_settle_until: float = float("inf")
         self._main_menu_state_known: bool = False
 
-    def select_game(self, game_id: str) -> bool:
+    def select_game(self, game_id: str, *, reset_connection: bool = False) -> bool:
         """Bind a detected region before ticking; retain AP state and callbacks.
 
         The caller holds the PINE lock. Old native objects keep their original
@@ -146,10 +146,13 @@ class Core:
         """
         if game_id not in address_maps.SUPPORTED_GAMES:
             raise ValueError(f"Unsupported Size Matters serial: {game_id!r}")
-        if self.native.gate.game_id == game_id and address_maps.GAME_ID == game_id:
+        if not reset_connection and self.native.gate.game_id == game_id and address_maps.GAME_ID == game_id:
             return False
         previous_native = self.native
-        previous_native.close()
+        # Teardown already attempted cleanup. Never retry stale patch restores
+        # while discarding a failed connection's memory bindings.
+        if not reset_connection:
+            previous_native.close()
         address_maps.select_game(game_id)
 
         # Recreate live planet caches, preserving the AP-owned weapon inventory

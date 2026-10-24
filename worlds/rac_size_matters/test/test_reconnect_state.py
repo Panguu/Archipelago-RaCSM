@@ -32,6 +32,35 @@ def context():
 
 
 class ReconnectStateTests(unittest.TestCase):
+    def test_disconnect_discards_dayni_bindings_but_keeps_ap_inventory(self):
+        from ..core import address_maps
+
+        pine = Mock()
+        core = Core(pine)
+        core.planet.set_planet(8)
+        core.planet.is_ready = True
+        core.planet.weapons.ap_weapons = {"Lacerator": True}
+        core.planet.weapons.level_caps = {"Lacerator": 2}
+        core.planet.weapons._prev_experience = {"Lacerator": 100}
+        core.native.enabled = True
+        core.native.checked = {"already checked"}
+        core.native.skin = Mock()
+        core.native.close = Mock(side_effect=RuntimeError("Native code changed at 0xdcd7ac"))
+        old_native = core.native
+        core.select_game(address_maps.GAME_ID, reset_connection=True)
+        old_native.close.assert_not_called()
+        pine.assert_not_called()
+        self.assertEqual(pine.mock_calls, [])
+        self.assertIsNone(core.native.skin)
+        self.assertIsNone(core.native.module)
+        self.assertTrue(core.native.enabled)
+        self.assertEqual(core.native.checked, {"already checked"})
+        self.assertFalse(core.planet.is_ready)
+        self.assertEqual(core.planet.weapons._weapon_addrs, {})
+        self.assertEqual(core.planet.weapons._prev_experience, {})
+        self.assertEqual(core.planet.weapons.ap_weapons, {"Lacerator": True})
+        self.assertEqual(core.planet.weapons.level_caps, {"Lacerator": 2})
+
     def test_restore_waits_until_weapons_are_available_after_race(self):
         ctx = context()
         ctx._save_data_received = True

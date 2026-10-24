@@ -132,6 +132,12 @@ class NativeRuntime:
         self.skin = None
         self.armour = None
         self.vendor.native_plan = None
+        # The old overlay is gone. Special levels return before bind(), so
+        # retaining its Shrink Ray plan would validate stale code and reload
+        # the new level indefinitely. Do not restore into the new overlay.
+        if self.shrink_ray is not None:
+            self.shrink_ray.plan = None
+            self.shrink_ray.planet = None
         self.balance = None
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
@@ -466,4 +472,6 @@ class NativeRuntime:
                 p.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, target)
                 self.log("[RAC] Reloading this planet once to install native checks before object initialization.")
                 return True
-        return False
+        # The game can remain in state 6 for several polls after a reload is
+        # requested. Do not run Core against the previous overlay in that gap.
+        return self._attach_reload_requested

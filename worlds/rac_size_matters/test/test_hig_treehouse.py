@@ -258,15 +258,40 @@ class TreehouseRuntimeTests(unittest.TestCase):
                 runtime.pine = memory
                 runtime.patch_options = PatchOptions()
                 runtime.vendor = SimpleNamespace(planet=SimpleNamespace())
+                old_shrink = Mock()
+                old_shrink._validate.side_effect = RuntimeError("Previous overlay was unloaded")
+                runtime.shrink_ray = SimpleNamespace(plan=old_shrink, planet=8)
                 runtime._treehouse_unlocked = True
                 runtime.checked = {Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL}
                 runtime.allowed_locations = runtime.checked if enabled else set()
                 runtime._prepare(24, 0xD00000)
+                self.assertIsNone(runtime.shrink_ray.plan)
+                self.assertIsNone(runtime.shrink_ray.planet)
+                old_shrink.restore.assert_not_called()
                 self.assertEqual(runtime.module, 24)
                 self.assertTrue(all(plan.installed for plan in runtime.plans))
                 self.assertEqual(runtime.treehouse_grindrail is not None, enabled)
                 if enabled:
                     self.assertEqual(memory.read_int8(runtime.treehouse_grindrail.journals[0][0]), 2)
+                # Gameplay must stay ready rather than request another load
+                # because the previous planet's Shrink Ray signature changed.
+                from ..core import address_maps
+                runtime.enabled = True
+                runtime.starting_planet = Mock()
+                runtime.vendor.planet.starting_planet_id = None
+                runtime.gate = Mock(STATE=0x1000)
+                runtime.gate.armed = False
+                runtime.gate.held_module.return_value = None
+                runtime._released = False
+                runtime._poll = Mock()
+                memory.write_int32(runtime.gate.STATE, 6)
+                memory.write_int32(address_maps.CURRENT_PLANET_ADDRESS, 24)
+                memory.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, 0xFFFFFFFF)
+                for _ in range(3):
+                    self.assertFalse(runtime.tick())
+                    self.assertEqual(runtime.module, 24)
+                    self.assertEqual(memory.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR), 0xFFFFFFFF)
+                old_shrink._validate.assert_not_called()
 
     def test_treehouse_menu_uses_native_treehouse_title(self):
         memory = Memory()
