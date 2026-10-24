@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 from ..constants import Rac5Infobots, Rac5Locations, Rac5Planets, Rac5ShrinkRayGrindrail
 from ..core.location_checks import LocationChecks
 from ..core.native_runtime import NativeRuntime
-from ..core.patches import PatchOptions, ship_menu, treehouse_grindrail, treehouse_turret
+from ..core.patches import PatchOptions, ship_menu, treehouse_grindrail
 from ..locations import ALL_LOCATIONS
 from ..locations.hig_treehouse import CHALLENGE_NAMES
 from ..locations.observation import LocationObservation
@@ -20,9 +20,9 @@ from .test_native_patches import CPU, Memory
 
 class TreehouseOptionsTests(unittest.TestCase):
     def test_new_ids_follow_existing_catalog(self):
-        treehouse = {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL,
+        treehouse = {*CHALLENGE_NAMES, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL,
                      Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS}
-        self.assertEqual({ALL_LOCATIONS[name].code for name in treehouse}, set(range(77700375, 77700382)))
+        self.assertEqual({ALL_LOCATIONS[name].code for name in treehouse}, set(range(77700375, 77700382)) - {77700379})
         self.assertTrue(all(location.code < 77700375 for name, location in ALL_LOCATIONS.items()
                             if name not in treehouse))
 
@@ -30,7 +30,7 @@ class TreehouseOptionsTests(unittest.TestCase):
         tracker = json.loads((Path(__file__).parent.parent / "tracker/locations.json").read_text())
         treehouse = next(child for child in tracker[0]["children"] if child["name"] == "11")
         self.assertEqual({section["name"] for section in treehouse["sections"]},
-                         {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL,
+                         {*CHALLENGE_NAMES, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL,
                           Rac5Locations.HIG_TREEHOUSE_ALL_SKILL_POINTS})
 
     def test_all_skill_points_option_combinations(self):
@@ -59,8 +59,6 @@ class TreehouseOptionsTests(unittest.TestCase):
                         for name in CHALLENGE_NAMES:
                             self.assertEqual(ALL_LOCATIONS[name].available(options),
                                              bool(enabled and clank and gadgetbot))
-                        self.assertEqual(ALL_LOCATIONS[Rac5Locations.HIG_TREEHOUSE_TURRET].available(options),
-                                         bool(enabled))
 
     def test_counters_are_independent(self):
         for name in CHALLENGE_NAMES:
@@ -89,7 +87,7 @@ class TestTreehouseEnabled(RACSizeMatterTestBase):
     def test_locations_and_slot_data(self):
         region = self.multiworld.get_region(Rac5Planets.HIG_TREEHOUSE, self.player)
         self.assertEqual({loc.name for loc in region.locations},
-                         {*CHALLENGE_NAMES, Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
+                         {*CHALLENGE_NAMES, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
         self.assertFalse(region.can_reach(self.multiworld.state))
         self.collect_by_name(Rac5Infobots.HIG_TREEHOUSE)
         self.assertTrue(region.can_reach(self.multiworld.state))
@@ -173,9 +171,9 @@ class AllSkillPointsClientTests(unittest.TestCase):
 class TestTreehouseWithoutGadgetbots(RACSizeMatterTestBase):
     options = {"enable_hig_treehouse": 1, "clank_challenge_groups": {"Demolition Derby"}}
 
-    def test_turret_and_destination_remain(self):
+    def test_grindrail_and_destination_remain(self):
         region = self.multiworld.get_region(Rac5Planets.HIG_TREEHOUSE, self.player)
-        self.assertEqual({loc.name for loc in region.locations}, {Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
+        self.assertEqual({loc.name for loc in region.locations}, {Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL})
         self.collect_by_name(Rac5Infobots.HIG_TREEHOUSE)
         self.assertTrue(region.can_reach(self.multiworld.state))
 
@@ -241,17 +239,10 @@ class TreehouseClientUnlockTests(unittest.TestCase):
         self.assertTrue(runtime.treehouse_unlocked)
 
 
-class TreehousePickupTests(unittest.TestCase):
-    def prepare(self):
-        memory = Memory()
-        fixture = json.loads((Path(__file__).parent / "fixtures/treehouse_turret_us.json").read_text())
-        for address, data in fixture["segments"]:
-            memory.data[address:address + len(data) // 2] = bytes.fromhex(data)
-        plan = treehouse_turret.prepare(memory, code_start=0xD00000,
-                                       code=memory.read_bytes(0xD00000, 0x400000))
-        return memory, plan
-
+class TreehouseRuntimeTests(unittest.TestCase):
     def test_runtime_installs_only_checks_in_the_seed(self):
+        from .test_treehouse_addresses import FIXTURES, relocated_references
+
         for enabled in (False, True):
             with self.subTest(enabled=enabled):
                 memory = Memory()
@@ -261,24 +252,24 @@ class TreehousePickupTests(unittest.TestCase):
                 preview = json.loads((Path(__file__).parent / "fixtures/ship_preview_us.json").read_text())["treehouse"]
                 for address, data in [*fixture["segments"], *fixture["menu_segments"], *preview["segments"], *grind["segments"]]:
                     memory.data[address:address + len(data) // 2] = bytes.fromhex(data)
+                for address, raw in relocated_references(FIXTURES['us'], FIXTURES['us']['relocation_delta']):
+                    memory.data[address:address + len(raw)] = raw
                 runtime = NativeRuntime.__new__(NativeRuntime)
                 runtime.pine = memory
                 runtime.patch_options = PatchOptions()
                 runtime.vendor = SimpleNamespace(planet=SimpleNamespace())
                 runtime._treehouse_unlocked = True
-                runtime.checked = {Rac5Locations.HIG_TREEHOUSE_TURRET, Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL}
+                runtime.checked = {Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL}
                 runtime.allowed_locations = runtime.checked if enabled else set()
                 runtime._prepare(24, 0xD00000)
                 self.assertEqual(runtime.module, 24)
                 self.assertTrue(all(plan.installed for plan in runtime.plans))
-                self.assertEqual(runtime.treehouse_pickup is not None, enabled)
                 self.assertEqual(runtime.treehouse_grindrail is not None, enabled)
                 if enabled:
-                    self.assertEqual(memory.read_int8(runtime.treehouse_pickup.journals[0][0]), 2)
                     self.assertEqual(memory.read_int8(runtime.treehouse_grindrail.journals[0][0]), 2)
 
     def test_treehouse_menu_uses_native_treehouse_title(self):
-        memory, _ = self.prepare()
+        memory = Memory()
         memory.data[0xD00000:0x1100000] = bytes(0x400000)
         fixture = json.loads((Path(__file__).parent / "fixtures/treehouse_turret_us.json").read_text())
         preview = json.loads((Path(__file__).parent / "fixtures/ship_preview_us.json").read_text())["treehouse"]
@@ -304,37 +295,6 @@ class TreehousePickupTests(unittest.TestCase):
         })
         self.assertEqual(rows, [24])
         self.assertEqual(title_ids, [0xC5])
-
-    def test_pickup_records_and_reports_once(self):
-        memory, plan = self.prepare()
-        plan.install()
-        journal = plan.journals[0][0]
-        self.assertEqual(memory.read_int8(journal), 1)
-        entry = plan.edits[0].address
-        CPU(memory).run(entry, stop=entry + 12)
-        self.assertEqual(memory.read_int8(journal), 2)
-        runtime = NativeRuntime.__new__(NativeRuntime)
-        runtime.pine, runtime.treehouse_pickup = memory, plan
-        runtime.balance_callback = runtime.connection_warning = runtime.presentation = None
-        runtime.pickup = runtime.armour = runtime.toast = None
-        runtime.vendor = SimpleNamespace(planet=SimpleNamespace(is_ready=False), native_plan=None)
-        runtime.checked, runtime.allowed_locations = set(), {Rac5Locations.HIG_TREEHOUSE_TURRET}
-        runtime.treehouse_grindrail = None
-        runtime.send_location = Mock()
-        runtime._poll()
-        runtime._poll()
-        runtime.send_location.assert_called_once_with(Rac5Locations.HIG_TREEHOUSE_TURRET)
-        plan.restore()
-        self.assertEqual(memory.read_int8(journal), 0)
-
-    def test_changed_signature_rejected(self):
-        memory, plan = self.prepare()
-        memory.write_int32(plan.edits[0].address, 0)
-        memory.writes.clear()
-        with self.assertRaises(RuntimeError):
-            treehouse_turret.prepare(memory, code_start=0xD00000,
-                                     code=memory.read_bytes(0xD00000, 0x400000))
-        self.assertEqual(memory.writes, [])
 
 
 class TreehouseGrindrailTests(unittest.TestCase):
@@ -363,7 +323,7 @@ class TreehouseGrindrailTests(unittest.TestCase):
         self.assertEqual(cpu.r[2], 1)
         runtime = NativeRuntime.__new__(NativeRuntime)
         runtime.pine, runtime.treehouse_grindrail = memory, plan
-        runtime.treehouse_pickup = runtime.balance_callback = runtime.connection_warning = None
+        runtime.balance_callback = runtime.connection_warning = None
         runtime.presentation = runtime.pickup = runtime.armour = runtime.toast = None
         runtime.vendor = SimpleNamespace(planet=SimpleNamespace(is_ready=False), native_plan=None)
         name = Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL

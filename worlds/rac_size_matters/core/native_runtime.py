@@ -22,7 +22,6 @@ from .patches import (
     skins,
     sprout_pickup,
     treehouse_grindrail,
-    treehouse_turret,
     vendor as vendor_patch,
 )
 from .patches.loader_gate import LoaderGate
@@ -52,7 +51,6 @@ class NativeRuntime:
         self.plans = []
         self.module = None
         self.pickup = None
-        self.treehouse_pickup = None
         self.treehouse_grindrail = None
         self.ship_menu = None
         self._treehouse_unlocked = True
@@ -68,6 +66,7 @@ class NativeRuntime:
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
         self._installed_multiplayer_skins_option = self.patch_options.multiplayer_skins
+        self._installed_skins_option = self.patch_options.skins
 
     @property
     def treehouse_unlocked(self):
@@ -126,7 +125,6 @@ class NativeRuntime:
         self._presentation_pending = None
         self.plans = []
         self.pickup = None
-        self.treehouse_pickup = None
         self.treehouse_grindrail = None
         self.ship_menu = None
         self.toast = None
@@ -138,6 +136,7 @@ class NativeRuntime:
         self.balance_callback = None
         self._installed_balance_option = self.patch_options.balance_patch
         self._installed_multiplayer_skins_option = self.patch_options.multiplayer_skins
+        self._installed_skins_option = self.patch_options.skins
         if target not in PLANET_ADDRESSES and target != 24 and not (target == 15 and self.patch_options.balance_patch):
             if target == 15:
                 self.module = target
@@ -149,14 +148,9 @@ class NativeRuntime:
         # lies beyond the old 0x240000-byte executable-only window).
         code = b"".join(p.read_bytes(base + offset, 0x10000) for offset in range(0, 0x280000, 0x10000))
         if target == 24:
+            address_maps.bind_treehouse(base, code)
             if options.ship_menu:
                 self.plans.append(self._prepare_ship_menu(base, code))
-            name = Rac5Locations.HIG_TREEHOUSE_TURRET
-            if self.allowed_locations is None or name in self.allowed_locations:
-                self.treehouse_pickup = treehouse_turret.prepare(
-                    p, code_start=base, code=code, checked=name in self.checked,
-                )
-                self.plans.append(self.treehouse_pickup)
             name = Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL
             if self.allowed_locations is None or name in self.allowed_locations:
                 self.treehouse_grindrail = treehouse_grindrail.prepare(
@@ -347,11 +341,6 @@ class NativeRuntime:
             self.treehouse_grindrail._validate(replacement=True)
             if self.pine.read_int8(self.treehouse_grindrail.journals[0][0]) == 2:
                 self._report(Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL)
-        if self.treehouse_pickup is not None:
-            self.treehouse_pickup._validate(replacement=True)
-            journal = self.treehouse_pickup.journals[0][0]
-            if self.pine.read_int8(journal) == 2:
-                self._report(Rac5Locations.HIG_TREEHOUSE_TURRET)
         if (self.balance_callback is not None and self.balance_callback.needs_doors
                 and self.vendor.planet.is_ready):
             balance_patch.bind_doors(self.balance_callback)
@@ -449,8 +438,10 @@ class NativeRuntime:
         target = p.read_int32(address_maps.CURRENT_PLANET_ADDRESS)
         if self._installed_balance_option != self.patch_options.balance_patch:
             self.module = None
-        # Only planets with a skin patch need reloading to add or drop the multiplayer loader.
-        if self._installed_multiplayer_skins_option != self.patch_options.multiplayer_skins and target in PLANET_ADDRESSES:
+        # Only planets with a skin patch need reloading to add or drop the skin or multiplayer loader.
+        if ((self._installed_skins_option != self.patch_options.skins
+             or self._installed_multiplayer_skins_option != self.patch_options.multiplayer_skins)
+                and target in PLANET_ADDRESSES):
             self.module = None
         if self.module == target and (
             self.vendor.native_plan is not None or not self.patch_options.vendor or target in (15, 24)

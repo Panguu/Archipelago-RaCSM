@@ -89,6 +89,14 @@ def save_address(canonical_address: int) -> int:
     return canonical_address + ARMOUR_BASE - 0x1F4B354
 
 
+def bind_treehouse(code_start: int, code: bytes) -> None:
+    """Publish verified live overlay addresses before Treehouse inventory access."""
+    from .treehouse import resolve
+
+    PLANET_ADDRESSES[24] = resolve(GAME_ID, PLANET_ADDRESSES[24], code_start, code)
+    _derive_tables()
+
+
 class Address:
     """Resolve a class-level MemoryStruct address from the current map."""
     def __init__(self, name, offset=0):

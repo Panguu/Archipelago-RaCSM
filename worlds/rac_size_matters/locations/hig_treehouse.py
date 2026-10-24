@@ -38,14 +38,6 @@ LOCATIONS = tuple(
     for index, name in enumerate(CHALLENGE_NAMES)
 ) + (
     Rac5Locations(
-        Rac5LocationNames.HIG_TREEHOUSE_TURRET, Rac5Planets.HIG_TREEHOUSE, True_(),
-        Completion("events", Rac5LocationNames.HIG_TREEHOUSE_TURRET),
-        code=BASE_ID + 379,
-        options=LocationOptions(requirements=(OptionFilter(EnableHIGTreehouse, 1),)),
-        categories=frozenset(("gadget_pickup",)),
-        native_planets=(24,), definition_order=379,
-    ),
-    Rac5Locations(
         Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL, Rac5Planets.HIG_TREEHOUSE,
         Has(Rac5Gadgets.SHRINK_RAY),
         Completion("events", Rac5ShrinkRayGrindrail.HIG_TREEHOUSE_GRINDRAIL),

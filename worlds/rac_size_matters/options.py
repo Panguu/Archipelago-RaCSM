@@ -128,8 +128,7 @@ class PickAndMixGoals(OptionSet):
 
 
 class EnableHIGTreehouse(Toggle):
-    """Include the HIG Treehouse Mini-Gun Turret pickup and its four Gadgetbot
-    challenges as locations, plus its grind rail when Shrink Ray Options is
+    """Include the HIG Treehouse's four Gadgetbot challenges as locations, plus its grind rail when Shrink Ray Options is
     set to Locations and an All Skill Points check when Skill Points is on
     (every skill point of the chosen Easy/Hard tier). Challenges also require Clank Challenges to be on
     and Gadgetbot to be included in Clank Challenge Groups. The planet remains

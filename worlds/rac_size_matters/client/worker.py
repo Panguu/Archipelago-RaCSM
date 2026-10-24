@@ -164,11 +164,13 @@ class GameWorker(
                 self.pine_connected = False
 
     def _set_skin_patch(self, enabled: bool) -> None:
-        """Switch the multiplayer skin patch; NativeRuntime reloads the planet to apply it."""
+        """Switch the skin patch and its multiplayer loader, equipping the default skin when disabling;
+        NativeRuntime reloads the planet, which reloads its code without (or with) the patch."""
         native = self._wiring.native
         if not enabled and self.pine_connected:
-            self._wiring.skin.clear_multiplayer()
-        native.patch_options = replace(native.patch_options, multiplayer_skins=enabled)
+            self._wiring.skin.set(Skin.DEFAULT)
+        self._multiplayer_skins_override = enabled
+        native.patch_options = replace(native.patch_options, skins=enabled, multiplayer_skins=enabled)
 
     def _filler_applied_key(self) -> str:
         return f"racsm_filler_applied_{self.team}_{self.slot}"
@@ -395,7 +397,7 @@ class GameWorker(
             on_initial_load=lambda: asyncio.create_task(self._send_playing_status()),
         )
         checked = self._checked_location_names()
-        starting_skin = self._starting_skin_option
+        starting_skin = self._starting_skin_option if self._wiring.native.patch_options.skins else Skin.DEFAULT.equip_id
         skin_patch = self._wiring.native.patch_options.multiplayer_skins
         asyncio.create_task(
             self._guarded_wiring_call(
@@ -540,16 +542,18 @@ class GameWorker(
         logger.info("[RAC] Skin queued: %s. Applies when gameplay is ready.", skin.name)
 
     async def cmd_skin_patch(self, enabled: bool | None) -> None:
-        current = self._wiring.native.patch_options.multiplayer_skins
+        options = self._wiring.native.patch_options
         if enabled is None:
-            logger.info(f"[RAC] Skin patch {'enabled' if current else 'disabled'}. Use /skin_patch on|off.")
+            state = ("enabled" if options.multiplayer_skins else "enabled without multiplayer skins") \
+                if options.skins else "disabled"
+            logger.info(f"[RAC] Skin patch {state}. Use /skin_patch on|off.")
             return
-        self._multiplayer_skins_override = enabled
-        if enabled == current:
+        if (options.skins and options.multiplayer_skins) if enabled else not options.skins:
             logger.info(f"[RAC] Skin patch already {'enabled' if enabled else 'disabled'}.")
             return
         await self._guarded_wiring_call(lambda: self._set_skin_patch(enabled))
-        logger.info(f"[RAC] Skin patch {'enabled' if enabled else 'disabled'}. Reloading the planet to apply it.")
+        logger.info(f"[RAC] Skin patch {'enabled' if enabled else 'disabled and default skin equipped'}. "
+                    "Reloading the planet to apply it.")
 
     def cmd_apicon(self, style: str) -> None:
         if not style:

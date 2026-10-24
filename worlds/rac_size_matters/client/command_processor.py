@@ -57,8 +57,9 @@ class RACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_skin_patch(self, state: str = "") -> bool:
-        """Enable or disable the multiplayer skin patch: /skin_patch on|off. Reloads the current planet.
-        Disabling switches to the default skin if a multiplayer skin is equipped."""
+        """Enable or disable the skin patch, including multiplayer skins: /skin_patch on|off.
+        Reloads the current planet. Disabling equips Ratchet's default skin; item toasts and
+        the connection warning share the skin hook, so they stop too while it is off."""
         choices = {"on": True, "enable": True, "off": False, "disable": False}
         state = state.lower().strip()
         if state and state not in choices:
