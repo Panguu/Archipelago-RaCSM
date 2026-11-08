@@ -19,7 +19,7 @@ _OMNIKEY = HasAll(*_BASE_ITEMS, SACClankGadgets.OMNIKEY)
 REGION = CaseRegion(SACCases.GONDOLA_ASCENT, (
     SACLocation(SACTitaniumBoltLocations.GONDOLA_ASCENT_1, SACLocationType.TITANIUM_BOLT, _BASE, flag_bit=0),
     SACLocation(SACMissionLocations.GONDOLA_ASCENT_COMPLETE, SACLocationType.CASE_COMPLETE, _BASE),
-    SACLocation(SACMissionLocations.GONDOLA_ASCENT_GET_A_LIFT, SACLocationType.MISSION, _BASE),
+    SACLocation(SACMissionLocations.GONDOLA_ASCENT_GET_A_LIFT, SACLocationType.MISSION, _OMNIKEY),
     SACLocation(SACSkillPointLocations.GONDOLA_ASCENT_STEEL_RAIN,
                 SACLocationType.SKILL_POINT, HasAll(*_BASE_ITEMS, SACClankWeapons.HOLOKNUCKLES)),
     SACLocation(SACCutsceneLocations.GONDOLA_ASCENT_FINISH_GONDOLA_CUTSCENE, SACLocationType.CUTSCENE, _OMNIKEY),

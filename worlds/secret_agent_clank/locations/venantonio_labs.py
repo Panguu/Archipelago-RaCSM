@@ -28,7 +28,8 @@ _CHALLENGE_VENDOR = _VENDOR & ProgressiveChallengeModeRule()
 
 REGION = CaseRegion(SACCases.VENANTONIO_LABS, (
     SACLocation(SACPickups.VENANTONIO_LABS_BLOWTORCH_BRIEFCASE, SACLocationType.CLANK_WEAPON, _BASE),
-    SACLocation(SACTitaniumBoltLocations.VENANTONIO_LABS_1, SACLocationType.TITANIUM_BOLT, _BASE, flag_bit=0),
+    SACLocation(SACTitaniumBoltLocations.VENANTONIO_LABS_1, SACLocationType.TITANIUM_BOLT,
+                HasAll(*_BASE_ITEMS, SACClankWeapons.FLAMETHROWERPEN), flag_bit=0),
     SACLocation(SACTitaniumBoltLocations.VENANTONIO_LABS_2, SACLocationType.TITANIUM_BOLT, _BRIEFCASE_JETBOOTS,
                 flag_bit=1),
     SACLocation(SACMissionLocations.VENANTONIO_LABS_COMPLETE, SACLocationType.CASE_COMPLETE, _FINISH),

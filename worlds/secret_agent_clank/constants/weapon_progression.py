@@ -64,7 +64,7 @@ def checked_levels(internal, mode, ng_plus):
     return tuple(level for level in candidates if level <= cap)
 
 
-WEAPON_LEVEL_NAME = "Weapon: {weapon_name} Level: {level}"
+WEAPON_LEVEL_NAME = "Weapon Level: {weapon_name} V{level}"
 
 
 def level_location_name(internal, level):

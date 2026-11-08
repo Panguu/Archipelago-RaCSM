@@ -15,7 +15,7 @@ from ..constants import (
 from ..rules import ProgressiveChallengeModeRule, VendorCaseRule
 from .model import CaseRegion, SACLocation, SACLocationType
 
-_FINISH_MISSION = Has(SACClankGadgets.BLACK_OUT_PEN) & HasAny(SACClankWeapons.THROWTIE, SACClankGadgets.JETBOOTS)
+_FINISH_MISSION = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.JETBOOTS)
 
 
 _VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM)

@@ -1,4 +1,4 @@
-from rule_builder.rules import HasAll
+from rule_builder.rules import Has, HasAll, HasAny
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -12,7 +12,10 @@ from ..constants import (
 from .model import CaseRegion, SACLocation, SACLocationType
 
 _BASE_ITEMS = (SACClankGadgets.JETBOOTS, SACClankGadgets.OMNIKEY, SACClankWeapons.THROWTIE)
-_BASE = HasAll(*_BASE_ITEMS)
+_VESSUPS_SECRET_LOGIC = (Has(SACClankGadgets.THERM_OPTIC_SHADES) &
+                         HasAny(SACClankWeapons.FLAMETHROWERPEN, SACClankGadgets.BLACK_OUT_PEN))
+_BASE = HasAll(*_BASE_ITEMS) & HasAny(SACClankWeapons.FLAMETHROWERPEN, SACClankGadgets.BLACK_OUT_PEN)
+_BASE_SHADES = _BASE & Has(SACClankGadgets.THERM_OPTIC_SHADES)
 
 REGION = CaseRegion(SACCases.UNDERWATER_BUNKER, (
     SACLocation(SACTitaniumBoltLocations.UNDERWATER_BUNKER_1, SACLocationType.TITANIUM_BOLT, _BASE, flag_bit=0),
@@ -23,9 +26,9 @@ REGION = CaseRegion(SACCases.UNDERWATER_BUNKER, (
     SACLocation(SACSkillPointLocations.UNDERWATER_BUNKER_IM_NOT_THERE,
                 SACLocationType.SKILL_POINT, HasAll(*_BASE_ITEMS, SACClankGadgets.BLACK_OUT_PEN)),
     SACLocation(SACAlienCodeLocations.UNDERWATER_BUNKER_VESSUPS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=0),
+                SACLocationType.ALIEN_CODE, _VESSUPS_SECRET_LOGIC, flag_bit=0),
     SACLocation(SACAlienCodeLocations.UNDERWATER_BUNKER_ADAMS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=1),
+                SACLocationType.ALIEN_CODE, _BASE_SHADES, flag_bit=1),
     SACLocation(SACAlienCodeLocations.UNDERWATER_BUNKER_JEFFS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=2),
+                SACLocationType.ALIEN_CODE, _BASE_SHADES, flag_bit=2),
 ))
