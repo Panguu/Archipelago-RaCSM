@@ -15,10 +15,3 @@ ALL_OPERATIVES: tuple[str, ...] = (
     SACOperatives.GADGETBOTS, SACOperatives.SPECIAL_MISSIONS,
 )
 OPTIONAL_OPERATIVES: tuple[str, ...] = tuple(op for op in ALL_OPERATIVES if op != SACOperatives.CLANK)
-
-PROGRESSIVE_CHARACTER_ITEM_NAME: dict[str, str] = {
-    SACOperatives.RATCHET:    "Progressive Ratchet",
-    SACOperatives.CLANK:      "Progressive Clank",
-    SACOperatives.QWARK:      "Progressive Qwark",
-    SACOperatives.GADGETBOTS: "Progressive Gadgetbots",
-}

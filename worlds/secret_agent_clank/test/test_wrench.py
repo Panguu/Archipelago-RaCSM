@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from ..core import Core
 from ..core.patches import WrenchProgression
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
 
 
 class WrenchTests(unittest.TestCase):
@@ -24,25 +24,29 @@ class WrenchTests(unittest.TestCase):
             self.assertEqual(self.w.prepare(symbols, module), [])
             symbols.get.assert_not_called()
 
-    def test_first_copy_restores_only_wrench_button_mask(self):
+    def test_first_copy_changes_only_ownership_data(self):
         self.w.module = 3
+        self.w.ownership_address = 0x110000
+        self.w.power_address = 0x110004
         self.w.sites = [(0x100000, 0x30A20020)]
         self.p.batch_write_int32([(0x206328, 3), (0x206324, 0xFFFFFFFF), (0x100000, 0x30A20020)])
         self.w.sync()
-        self.assertEqual(self.p.read_int32(0x100000), 0x30A20000)
+        self.assertEqual(self.p.read_int32(0x110000), 0)
         self.w.count = 1
         self.w.sync()
         self.assertEqual(self.p.read_int32(0x100000), 0x30A20020)
+        self.assertEqual(self.p.read_int32(0x110000), 1)
 
-    def test_unknown_instruction_is_not_overwritten(self):
+    def test_unbound_ownership_never_falls_back_to_instruction_writes(self):
         self.w.module = 3
         self.w.sites = [(0x100000, 0x30A20020)]
         self.p.batch_write_int32([(0x206328, 3), (0x206324, 0xFFFFFFFF)])
-        with self.assertRaises(RuntimeError):
-            self.w.sync()
+        self.p.writes.clear()
+        self.w.sync()
+        self.assertEqual(self.p.writes, [])
 
     def test_received_copies_override_individual_mods(self):
-        c = Core(self.p)
+        c = Core(self.p, permanent_build=TEST_BUILD)
         c.wrench.enabled = True
         c.apply_inventory(ratchet={}, clank={}, received_names=["Progressive Wrench"] * 3)
         e = c._entitlements()

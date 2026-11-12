@@ -187,7 +187,7 @@ def _collectibles(goal: int, keycard_hunt=False) -> tuple:
     return ()
 
 
-def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_operatives: set[str], keycard_hunt=False) -> "str | None":
+def _goal_unavailable(goal: int, case_regions: dict[str, Region], disabled_operatives: set[str], keycard_hunt=False) -> str | None:
     """Why `goal` cannot be completed with these options, or None when it can."""
     operative = _GOAL_OPERATIVES.get(goal)
     if operative in disabled_operatives:

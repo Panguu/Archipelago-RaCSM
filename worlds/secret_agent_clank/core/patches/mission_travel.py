@@ -1,4 +1,3 @@
-"""Return mission completion to the current level, including Ratchet movies."""
 from ...constants import NATIVE_FINISH_CASES, NativeFunctions as Functions
 from ..batch_io import read_blocks
 from ..symbols import require

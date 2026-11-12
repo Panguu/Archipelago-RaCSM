@@ -1,4 +1,3 @@
-"""Read native checks before applying the received AP inventory."""
 import logging
 from collections.abc import Callable, Sequence
 
@@ -17,7 +16,6 @@ from .inventories import (
     resolve_owned_cases,
 )
 from .main_menu import MainMenuNotice
-from .native_runtime import NativeRuntime
 from .notifications import ItemNotifications
 from ..constants import (
     CASES_BY_OPERATIVE,
@@ -28,24 +26,31 @@ from ..constants import (
     MISSION_COMPLETE_NAME,
     PICKUP_LOCATIONS,
     PICKUP_LOCATION_BY_INTERNAL,
+    PROGRESSIVE_WRENCH,
     VENDOR_LOCATIONS,
     VENDOR_LOCATION_NAMES,
     WEAPON_ORDER,
     GoalOptions,
     SACCases,
     SACCheats,
+    SACFiller,
     SACMissionLocations,
     SACOperatives,
+    SACTraps,
     vendor_unlocked_cases,
 )
-from .patches import MARKER, PROGRESSIVE_WRENCH, LocationHooks, Progression, WeaponMods, WrenchProgression
+from .patches import LocationHooks, Progression, WeaponMods, WrenchProgression
+from .permanent_runtime import PermanentRuntime
 from .quick_select import QuickSelectState
+from .ring_link import RingLink
 from .skill_points import SkillPointState
 from .skins import Skins
 from .stealth import StealthState
 from .titanium_bolts import TitaniumBoltState
 from .traps import Traps
 from .vendor_rewards import VendorRewards
+from .xp_fillers import boost_nanotech, boost_weapon, equipped_weapon
+from ..patcher.release import load_runtime_build
 
 logger = logging.getLogger("CommonClient")
 
@@ -55,12 +60,14 @@ _HOOKED_PICKUP_NAMES = frozenset(WEAPON_ORDER[slot] for slot in PICKUP_LOCATIONS
 class Core:
 
     def __init__(self, pine, log: Callable[[str], None] | None = None,
-                 debug: Callable[[str], None] | None = None) -> None:
+                 debug: Callable[[str], None] | None = None, *, permanent_build=None) -> None:
         self.pine = pine
         self._log = log or logger.info
         self._debug = debug or logger.debug
         self.main_menu = MainMenuNotice(pine, self._debug)
         self.bolt_rewards = BoltRewards(pine, self._debug)
+        self.ring_link = RingLink(pine, lambda: self.progression.ng_plus)
+        self.bolt_rewards.on_balance_changed = self.ring_link.record
         self.notifications = ItemNotifications(pine)
         self.traps = Traps(pine)
         self.ratchet_pack = False
@@ -74,7 +81,10 @@ class Core:
         self.case_unlocks  = CaseUnlockInventory(pine)
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
-        self.native_runtime = NativeRuntime(pine, self.location_hooks, self._log, self._debug)
+        self.location_hooks.permanent = True
+        if permanent_build is None:
+            permanent_build = load_runtime_build()
+        self.native_runtime = PermanentRuntime(pine, self.location_hooks, self._log, self._debug, permanent_build)
         self.skins = Skins(pine)
         self.native_runtime.skins = self.skins
         self.vendor_rewards = VendorRewards(pine, self.vendor, self._debug)
@@ -88,7 +98,6 @@ class Core:
         self.native_runtime.progression = self.progression
         self.weapon_mods = WeaponMods(pine)
         self.native_runtime.weapon_mods = self.weapon_mods
-        self._native_pause_notice = False
         self.missions      = MissionInventory(pine)
         self.native_runtime.on_mission_complete = self._record_mission_completion
         self.cutscenes      = CutsceneInventory(pine)
@@ -102,7 +111,6 @@ class Core:
         self.native_runtime.keycard_hunt = self.keycards.hunt
         self.goal = GoalOptions.DEFEAT_KLUNK
         self.pick_and_mix_goals = None
-        self.character_unlocks = False
         self.planet_cases: dict[str, list[str]] | None = None
         self._goal_sent = False
         self.quick_select   = QuickSelectState(pine)
@@ -158,12 +166,11 @@ class Core:
         self.keycards.hunt.receive(received_names)
         self.weapon_mods.received = set(received_names)
         self.wrench.count = min(5, list(received_names).count(PROGRESSIVE_WRENCH))
-        self.bolt_rewards.received = list(received_names).count("Bolts")
+        self.bolt_rewards.received = list(received_names).count(SACFiller.BOLTS)
         if SACCheats.RATCHET_PACK in received_names and not self.ratchet_pack:
             self.ratchet_pack = self._ratchet_pack_pending = True
         self._ap_owned = {"ratchet": dict(ratchet), "clank": dict(clank)}
-        self._owned_cases = resolve_owned_cases(list(received_names), character_unlocks=self.character_unlocks,
-                                                planet_cases=self.planet_cases)
+        self._owned_cases = resolve_owned_cases(list(received_names), planet_cases=self.planet_cases)
         if self.alien_codes.all_found:
             self._owned_cases.add(SACCases.HIGH_TREEHOUSE)
         self.native_runtime.owned_cases = frozenset(self._owned_cases)
@@ -183,7 +190,6 @@ class Core:
         self.titanium_bolts.valid = False
         self.keycards.flags.pointer_address = None
         self.keycards.root_pointer = None
-        self._native_pause_notice = False
 
     def _owned_equipment(self) -> dict[str, bool]:
         owned = dict(self._ap_owned["ratchet"])
@@ -198,44 +204,18 @@ class Core:
         return {slot: bool(owned[name]) for slot, name in enumerate(WEAPON_ORDER) if name in owned}
 
     def close(self):
-        """Release resident loader code before dropping the PINE connection."""
+        """Detach session data; the permanent ISO loader remains installed."""
         try:
             if (self.traps.managed and self.case.is_ready
                     and self.pine.get_game_id() == "SCUS-97623"):
                 self.traps.restore(self.case.symbols)
         finally:
             try:
-                if self.vendor_rewards.icon.installed and self.case.is_ready and self.pine.get_game_id() == "SCUS-97623":
+                if self.case.is_ready and self.pine.get_game_id() == "SCUS-97623":
                     self.vendor_rewards.close()
             finally:
                 self.native_runtime.close()
         self.main_menu.shown = False
-
-    def _bind_native_locations(self) -> bool:
-        hooks = self.location_hooks
-        if hooks.installed and hooks.is_current():
-            hooks.sync_checked(self._checked_items)
-            return True
-        hooks.installed = False
-        screen = self.case.case_menu.screen_address
-        if screen is None or self.pine.read_int32(screen) not in (8, 14, 16):
-            if not self._native_pause_notice:
-                self._debug("[SAC] Open Case Files to activate native vendor/pickup checks for this level.")
-                self._native_pause_notice = True
-            return False
-        if (hooks.module == self.case.case_id and hooks.marker_address is not None
-                and self.pine.read_bytes(hooks.marker_address, len(MARKER)) == MARKER):
-            hooks.installed = True
-            hooks.sync_checked(self._checked_items)
-            return True
-        vendor_enabled = self.native_runtime.vendor_enabled_for_module(self.case.case_id)
-        hooks.prepare(self.case.symbols, pickup_locations=PICKUP_LOCATIONS,
-                      vendor_locations=VENDOR_LOCATIONS if vendor_enabled else {}, checked=self._checked_items,
-                      vendor_enabled=vendor_enabled)
-        hooks.install(screen)
-        self._native_pause_notice = False
-        self._debug("[SAC] Native vendor/pickup checks active for this level.")
-        return True
 
     def _send_once(self, name: str) -> None:
         """Send a location check unless already sent; a rejected send is retried on a later tick."""
@@ -271,10 +251,72 @@ class Core:
         self.titanium_bolts.sync_from_ap(checked_locations)
         self.keycards.sync_from_ap(checked_locations)
 
-    def activate_trap(self, trap_name: str) -> bool:
+    def activate_effect(self, name: str) -> bool:
+        """False if it can't be applied yet, so it's retried later."""
         if not self.case.is_ready or not self._inventory_initialized:
             return False
-        return self.traps.activate(trap_name, self.case.symbols)
+        if name == SACTraps.GADGETRON_DEBT:
+            debt = self.traps.gadgetron_debt()
+            self.ring_link.record("traps", -debt)
+            self._log(f"[SAC] Gadgetron Debt Trap! Gadgetron took {debt:,} bolts.")
+            return True
+        if name == SACTraps.ONE_HP:
+            if not self.case.active_player.lower_health(1.0):
+                return False
+            self._log("[SAC] One HP Trap! You're down to 1 HP.")
+            return True
+        if name == SACFiller.NANOTECH_XP:
+            return self._nanotech_xp()
+        if name == SACFiller.WEAPON_XP:
+            return self._weapon_xp()
+        return self.traps.activate(name, self.case.symbols)
+
+    def _nanotech_xp(self) -> bool:
+        # Ratchet's cases give Ratchet the XP; every other case gives it to Clank.
+        case = CASE_ID_TO_CASE.get(self.case.case_id)
+        operative = SACOperatives.RATCHET if case and case.operative == SACOperatives.RATCHET else SACOperatives.CLANK
+        try:
+            gained = boost_nanotech(self.pine, self.case.symbols, operative)
+        except ValueError:
+            return False  # still loading
+        if gained:
+            self._log(f"[SAC] Nanotech XP: {operative} gained {gained:,} XP.")
+        else:
+            self._log(f"[SAC] Nanotech XP: {operative}'s nanotech is already at its cap.")
+        return True
+
+    def _weapon_xp(self) -> bool:
+        player = self.case.active_player.current_player()
+        if player is None:
+            return False
+        weapon = equipped_weapon(self.pine, self.case.symbols, player)
+        if weapon is None:
+            self._log("[SAC] Weapon XP: you aren't holding a weapon that levels up, so it had no effect.")
+            return True
+        name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(weapon.internal, weapon.internal)
+        progression = self.progression
+        # Manual progressive weapons only keep XP below the received level.
+        if progression.enabled and (not progression.manual
+                                    or weapon.level >= progression.levels.get(weapon.internal, 0) - 1):
+            self._log(f"[SAC] Weapon XP: {name} levels up from Progressive Weapons, so it had no effect.")
+            return True
+        gained = boost_weapon(self.pine, weapon)
+        if gained:
+            self._log(f"[SAC] Weapon XP: {name} gained {gained:,} XP.")
+        else:
+            self._log(f"[SAC] Weapon XP: {name} can't gain any more XP right now.")
+        return True
+
+    def bolt_balance(self) -> int | None:
+        if not self.case.is_ready or not self._inventory_initialized:
+            return None
+        return self.pine.read_int32(BOLTS_ADDRESS)
+
+    def receive_ring_link(self, amount: int) -> bool:
+        if not self.case.is_ready or not self._inventory_initialized:
+            return False
+        self.ring_link.receive(amount)
+        return True
 
     def reset_traps(self) -> bool:
         if not self.case.is_ready:
@@ -354,7 +396,7 @@ class Core:
             self.alien_codes.sync()
             hunt = self.keycards.hunt
             self.alien_codes.bind(self.case.symbols, flag_pointer_address=(
-                hunt.pointer_address if hunt.enabled and self.case.case_id == 31 else None))
+                hunt.pointer_address if (hunt.enabled or hunt.enable_address is not None) and self.case.case_id == 31 else None))
             self.ratchet_challenges.bind(self.case.symbols)
             self.titanium_bolts.bind(self.case.symbols)
             if not self.notifications.bind(self.case.symbols):

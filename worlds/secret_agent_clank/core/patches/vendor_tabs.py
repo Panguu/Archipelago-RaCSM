@@ -1,4 +1,3 @@
-"""Native D-pad tabs, retaining the retail ammo builder and transaction paths."""
 import hashlib
 
 from ..batch_io import read_blocks

@@ -1,4 +1,3 @@
-"""Location/ownership patch plan consumed by LocationHooks."""
 from dataclasses import dataclass, field
 
 from .asm import Patch
@@ -12,6 +11,6 @@ class PatchPlan:
     reported: set = field(default_factory=set)
     marker_address: int = 0
     module: int = 0
-    entitlement_table: "int | None" = None
-    gadget_base: "int | None" = None
+    entitlement_table: int | None = None
+    gadget_base: int | None = None
     extra_ranges: list[tuple[int, int]] = field(default_factory=list)

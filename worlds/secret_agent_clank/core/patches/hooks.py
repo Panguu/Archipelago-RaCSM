@@ -1,7 +1,6 @@
-"""Native location interception: picks the patch plan for the loaded module and installs, polls and restores it."""
 from ...constants import EQUIPMENT_INTERNAL_TO_DISPLAY, NativeFunctions, vendor_location_name
-from ..batch_io import read_blocks, write_blocks
-from .asm import MARKER, packed
+from ..batch_io import read_blocks
+from .asm import MARKER
 from .entitlements import GADGET_OWNED_OFFSET, GADGET_STRIDE
 from .vendor_only import VendorOnly
 from .weapon_pickup import WeaponPickup
@@ -21,6 +20,7 @@ class LocationHooks:
         self.locations = {}
         self.reported = set()
         self.installed = False
+        self.permanent = False
         self.entitlement_table = None
         self.gadget_base = None
         self.extra_ranges = []
@@ -30,11 +30,13 @@ class LocationHooks:
     def prepare(self, symbols, *, pickup_locations, vendor_locations, checked=(), entitlements=None,
                 vendor_enabled=True):
         """Build a complete, signature-checked patch plan without writing RAM."""
+        if self.permanent:
+            raise RuntimeError("Disc-installed hooks cannot use the build-time patch planner")
         self.extra_ranges = []
         self.gain_storage_prepared = False
         self.catalog_only_ranges = []
         if self.installed:
-            raise RuntimeError("Restore installed hooks before preparing a new plan")
+            raise RuntimeError("Cannot prepare a build plan on bound runtime hooks")
         pickup_locations = {slot: EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name)
                             for slot, name in pickup_locations.items()}
         vendor_locations = {slot: vendor_location_name(EQUIPMENT_INTERNAL_TO_DISPLAY.get(name, name))
@@ -62,61 +64,13 @@ class LocationHooks:
         self.extra_ranges = plan.extra_ranges
         return len(self.patches)
 
-    def install(self, screen_address):
-        """Research-only: install in an idle vendor/Case Files, without input."""
-        p = self.pine
-        if not self.patches or self.installed:
-            raise RuntimeError("No fresh patch plan")
-        assert p.get_game_id() == "SCUS-97623"
-        module, status, screen = p.batch_read_int32([0x206328, 0x206324, screen_address])
-        assert module == self.module and status == 0xFFFFFFFF
-        assert screen in (8, 14, 16), "Open vendor or Case Files before installing"
-        self._install_plan()
-
-    def install_at_loader_gate(self, gate):
-        """Experimental installation before the native level thread starts."""
-        if gate.pine is not self.pine:
-            raise RuntimeError("Loader barrier must share this PINE connection")
-        target = gate.held_module()
-        if target is None:
-            raise RuntimeError("New level is not held before startup")
-        if not self.patches or self.installed:
-            raise RuntimeError("No fresh patch plan")
-        self.module = target
-        self._install_plan()
-
-    def _install_plan(self):
-        p = self.pine
-        originals = [patch.original for patch in self.patches]
-        replacements = [patch.replacement for patch in self.patches]
-        current = read_blocks(p, [(patch.address, len(patch.original)) for patch in self.patches])
-        assert current == originals, "Code changed since planning"
-        tables = list(self.tables.items())
-        try:
-            write_blocks(p, [(patch.address, patch.replacement) for patch in self.patches])
-            readback = read_blocks(p, [*((patch.address, len(patch.replacement)) for patch in self.patches),
-                                       *((table, 40) for _, table in tables)])
-            assert readback[:len(self.patches)] == replacements
-            for (kind, _), flags in zip(tables, readback[len(self.patches):]):
-                for slot, name in self.locations[kind].items():
-                    unchecked = 3 if kind == "titan" else 1
-                    assert flags[slot] == (2 if name in self.reported else unchecked)
-        except Exception as err:
-            # Caller keeps native execution parked throughout installation.
-            # Undo even a partially transmitted write before releasing it.
-            write_blocks(p, [(patch.address, patch.original) for patch in reversed(self.patches)])
-            if read_blocks(p, [(patch.address, len(patch.original)) for patch in self.patches]) != originals:
-                raise RuntimeError("Hook installation rollback readback failed") from err
-            raise
-        self.installed = True
-
     def poll(self):
         if not self.installed:
             return []
         tables = self._read_if_current([(table, 40) for table in self.tables.values()])
         if tables is None:
             # A savestate or same-level reload can replace code without
-            # changing the module id. The client must install again.
+            # changing the module id. The client must reload and bind the disc-installed tables.
             self.installed = False
             return []
         found = []
@@ -175,14 +129,3 @@ class LocationHooks:
                 for slot, flag in enumerate(flags) if flag and flag != current[0][slot]]
         if live:
             self.pine.batch_write_int32(live)
-
-    def restore(self):
-        if not self.installed:
-            return
-        p = self.pine
-        assert p.get_game_id() == "SCUS-97623"
-        assert self._read_if_current([(0x206324, 4)]) == [packed([0xFFFFFFFF])]
-        # Restore entry calls before reclaiming their routines, and restore
-        # the original pickup tail branch last.
-        write_blocks(p, [(patch.address, patch.original) for patch in reversed(self.patches)])
-        self.installed = False

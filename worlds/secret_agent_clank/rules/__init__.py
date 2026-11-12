@@ -3,8 +3,6 @@ from .nanotech import ClankNanotechRule, RatchetNanotechRule
 from .rule_helpers import (
     CLANK_ENEMY_CASES,
     HasCase,
-    HasCharacter,
-    HasPlanet,
     HasProjectileWeapon,
     ProgressiveChallengeModeRule,
     ProgressiveWrenchRule,
@@ -24,8 +22,6 @@ __all__ = [
     "CaseAccessRule",
     "ClankNanotechRule",
     "HasCase",
-    "HasCharacter",
-    "HasPlanet",
     "HasProjectileWeapon",
     "ProgressiveChallengeModeRule",
     "ProgressiveWrenchRule",

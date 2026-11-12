@@ -1,4 +1,3 @@
-"""AP ownership snapshot applied before native object initialization."""
 from . import mips as m
 from .asm import jump, packed
 from .patch import Patch

@@ -1,5 +1,3 @@
-"""Cheat unlocks, gated by cumulative skill point count in vanilla."""
-
 from dataclasses import dataclass
 
 
@@ -43,6 +41,15 @@ class SACTraps:
     MIRRORED_LEVELS = "Mirrored Levels Trap"
     BOLT_CONFUSION = "Bolt Confusion Trap"
     BIG_HEADED = "Big Headed Trap"
+    GADGETRON_DEBT = "Gadgetron Debt Trap"
+    ONE_HP = "One HP Trap"
+
+
+ALL_TRAPS: tuple[str, ...] = (
+    SACTraps.WEAPON_SWITCHING, SACTraps.MIRRORED_LEVELS, SACTraps.BOLT_CONFUSION,
+    SACTraps.BIG_HEADED, SACTraps.GADGETRON_DEBT, SACTraps.ONE_HP,
+)
+GADGETRON_DEBT_PERCENT = 8
 
 
 TRAP_CHEATS: dict[str, tuple[str, ...]] = {
@@ -52,4 +59,5 @@ TRAP_CHEATS: dict[str, tuple[str, ...]] = {
     SACTraps.BIG_HEADED: (SACCheats.BIG_HEADED_CLANK, SACCheats.BIG_HEADED_RATCHET),
 }
 
+# Only the cheat traps last a while; Gadgetron Debt and One HP happen once.
 TRAP_DURATIONS: dict[str, int] = dict.fromkeys(TRAP_CHEATS, 30)

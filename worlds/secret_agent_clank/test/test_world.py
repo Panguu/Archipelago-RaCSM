@@ -7,6 +7,21 @@ from test.general import setup_multiworld
 from ..locations import ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
 from ..world import SecretAgentClankWorld
 from .bases import SecretAgentClankTestBase
+from ..options import SecretAgentClankOptions
+from ..universal_tracker import setup_options_from_slot_data
+from ..constants import CASE_NAME_TO_OPERATIVE, SACOperatives
+from ..constants.operatives import OPTIONAL_OPERATIVES
+from BaseClasses import PlandoOptions
+from ..options import Operatives, enabled_operatives
+from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
+from argparse import Namespace
+from BaseClasses import MultiWorld
+from test.general import gen_steps
+from worlds.AutoWorld import call_all
+from ..constants.ratchet_challenges import SACRatchetChallengeLocations
+from ..constants import PROGRESSIVE_WRENCH
+from ..locations import ALL_ALIEN_CODES_EVENT
+from ..constants.planets import SACCases
 
 
 class TestGeneration(SecretAgentClankTestBase):
@@ -21,22 +36,13 @@ class TestGenerationWithCutscenes(SecretAgentClankTestBase):
     options = {"all_cutscenes": True}
 
 
-class TestGenerationInfobotsPlanets(SecretAgentClankTestBase):
-    options = {"skill_points": "hard", "infobots": "planets"}
-
-
 class TestGenerationProgressivePlanet(SecretAgentClankTestBase):
     options = {"skill_points": "hard", "infobots": "progressive_planet"}
 
 
-class TestGenerationCharacterItems(SecretAgentClankTestBase):
-    options = {"skill_points": "hard", "infobots": "character_unlocks"}
-
-
-class TestGenerationCharacterDisabled(SecretAgentClankTestBase):
+class TestGenerationOperativeDisabled(SecretAgentClankTestBase):
     options = {
         "skill_points": "hard",
-        "infobots": "character_unlocks",
         "operatives": {"Ratchet": 1, "Clank": 1, "Gadgetbots": 1},
     }
 
@@ -52,7 +58,7 @@ class TestGenerationGoalAny(SecretAgentClankTestBase):
 class TestGenerationEverythingOn(SecretAgentClankTestBase):
     options = {
         "skill_points": "hard",
-        "infobots": "character_unlocks",
+        "infobots": "progressive_planet",
         "goal": "any",
     }
 
@@ -63,8 +69,6 @@ class TestGenerationWithKeycards(SecretAgentClankTestBase):
 
 class TestCombinedCollectibles(unittest.TestCase):
     def test_toggle_controls_both_categories_and_tracker_restores_it(self):
-        from ..options import SecretAgentClankOptions
-        from ..universal_tracker import setup_options_from_slot_data
         self.assertNotIn('all_keycards', SecretAgentClankOptions.type_hints)
         self.assertNotIn('all_alien_codes', SecretAgentClankOptions.type_hints)
         for enabled in (False, True):
@@ -81,8 +85,6 @@ class TestCombinedCollectibles(unittest.TestCase):
             self.assertEqual(world.options.alien_code_checks_enabled, enabled)
 
     def test_collectibles_of_disabled_operatives_are_excluded(self):
-        from ..constants import CASE_NAME_TO_OPERATIVE, SACOperatives
-        from ..constants.operatives import OPTIONAL_OPERATIVES
         for disabled in (SACOperatives.GADGETBOTS, SACOperatives.QWARK):
             with self.subTest(disabled=disabled):
                 operatives = {operative: int(operative != disabled) for operative in OPTIONAL_OPERATIVES}
@@ -99,8 +101,6 @@ class TestCombinedCollectibles(unittest.TestCase):
 
 class TestGoalCharacterMismatch(unittest.TestCase):
     def test_clank_cannot_be_configured(self):
-        from BaseClasses import PlandoOptions
-        from ..options import Operatives, enabled_operatives
         for value in ({"Clank": 0}, {"Clank": 1, "Qwark": 1}):
             with self.subTest(value=value), self.assertRaises(OptionError):
                 Operatives.from_any(value).verify(SecretAgentClankWorld, "Tester", PlandoOptions.none)
@@ -128,7 +128,6 @@ class TestGoalCharacterMismatch(unittest.TestCase):
                                      "Victory: Defeat Klunk", "Victory: Ratchet Prison Escape"])
 
     def test_qwark_goals_split_butterqwark_from_every_qwark_case(self):
-        from ..constants import CASE_NAME_TO_INFOBOT, CASES_BY_OPERATIVE, SACCases, SACOperatives
         for goal, needed in (("qwark_opera", [SACCases.MADAM_BUTTERQWARK]),
                              ("these_are_the_real_adventures_of_captain_qwark",
                               [case.name for case in CASES_BY_OPERATIVE[SACOperatives.QWARK]])):
@@ -177,10 +176,6 @@ class TestCollectibleGoals(unittest.TestCase):
 class TestUniversalTrackerRegeneration(unittest.TestCase):
     @staticmethod
     def regenerate(slot, seed):
-        from argparse import Namespace
-        from BaseClasses import MultiWorld
-        from test.general import gen_steps
-        from worlds.AutoWorld import call_all
         mw = MultiWorld(1)
         mw.game = {1: SecretAgentClankWorld.game}
         mw.player_name = {1: "Tester1"}
@@ -196,25 +191,21 @@ class TestUniversalTrackerRegeneration(unittest.TestCase):
         return mw
 
     def test_progressive_wrench_keeps_mess_hall_challenges_gated(self):
-        from ..constants.ratchet_challenges import SACRatchetChallengeLocations
-        from ..items import PROGRESSIVE_WRENCH_ITEM_NAME
         original = setup_multiworld(SecretAgentClankWorld, seed=1, options={"progressive_wrench": True})
         mw = self.regenerate(original.worlds[1].fill_slot_data(), seed=2)
         self.assertTrue(mw.worlds[1].options.progressive_wrench)
         self.assertEqual({l.name for l in mw.get_locations(1)}, {l.name for l in original.get_locations(1)})
         location = mw.get_location(SACRatchetChallengeLocations.THE_MESS_HALL_NAILS_FOR_BREAKFAST, 1)
         state = mw.get_all_state(False)
-        while state.has(PROGRESSIVE_WRENCH_ITEM_NAME, 1):
-            state.remove(mw.worlds[1].create_item(PROGRESSIVE_WRENCH_ITEM_NAME))
+        while state.has(PROGRESSIVE_WRENCH, 1):
+            state.remove(mw.worlds[1].create_item(PROGRESSIVE_WRENCH))
         self.assertFalse(location.can_reach(state))
-        state.collect(mw.worlds[1].create_item(PROGRESSIVE_WRENCH_ITEM_NAME))
+        state.collect(mw.worlds[1].create_item(PROGRESSIVE_WRENCH))
         self.assertTrue(location.can_reach(state))
 
 
 class TestTreehouseEvent(unittest.TestCase):
     def test_treehouse_is_received_once_every_alien_code_is_reachable(self):
-        from ..locations import ALL_ALIEN_CODES_EVENT
-        from ..constants.planets import SACCases
         for codes_enabled in (False, True):
             with self.subTest(keycards_and_alien_codes=codes_enabled):
                 mw = setup_multiworld(SecretAgentClankWorld, options={"keycards_and_alien_codes": codes_enabled})

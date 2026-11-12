@@ -1,4 +1,3 @@
-"""Nonmodal AP sent/received messages using SAC's native timed one-liner HUD."""
 import struct
 from collections import deque
 

@@ -1,4 +1,3 @@
-"""Persistent Alien Code bits, independently read from native save flags."""
 from ...locations import ALIEN_CODE_FLAGS
 from ..global_flags import GlobalFlags, module_bit, module_counts, read_module_counts
 

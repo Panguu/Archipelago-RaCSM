@@ -1,4 +1,3 @@
-"""Separate Titan transactions from gameplay levels at native vendor call sites."""
 from ...constants import TITAN_LOCATIONS, WEAPON_ORDER, NativeFunctions
 from ..symbols import require
 from ..batch_io import read_blocks

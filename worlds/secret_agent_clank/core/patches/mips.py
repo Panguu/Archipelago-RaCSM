@@ -1,5 +1,3 @@
-"""Encoders for the few MIPS instructions the patches emit, so routines read as lbu(T3, 0, T0) rather than hex."""
-
 ZERO, AT, V0, V1, A0, A1, A2, A3 = range(8)
 T0, T1, T2, T3, T4, T5, T6, T7 = range(8, 16)
 S0, S1, S2, S3, S4, S5, S6, S7 = range(16, 24)

@@ -12,7 +12,7 @@ from ..constants import (
 )
 from ..core import Core, RuntimeSymbols
 from ..core.patches import MissionTravel
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
 
 
 class QuasarCompletionTests(unittest.TestCase):
@@ -24,7 +24,7 @@ class QuasarCompletionTests(unittest.TestCase):
         for all_missions in (False, True):
             with self.subTest(all_missions=all_missions):
                 p = Memory()
-                core = Core(p)
+                core = Core(p, permanent_build=TEST_BUILD)
                 case = CASE_NAME_TO_CASE[self.CASE_NAME]
                 entry = CHAPTER_ENTRIES[case.name][0]
                 inv = core.missions
@@ -45,15 +45,16 @@ class QuasarCompletionTests(unittest.TestCase):
         for all_missions in (False, True):
             with self.subTest(all_missions=all_missions):
                 p = Memory()
-                core = Core(p)
+                core = Core(p, permanent_build=TEST_BUILD)
                 core.missions_all = lambda: all_missions
                 sent = []
                 core.send_location = lambda name: sent.append(name) or True
                 runtime = core.native_runtime
-                runtime.starting_case = Mock()
-                runtime.starting_case.service.return_value = False
-                runtime.gate = Mock(armed=True, STATE=0x100)
-                runtime.gate.held_module.return_value = None
+                runtime.bound = (self.MODULE, 0x328B00)
+                runtime.verify = Mock(return_value=runtime.bound)
+                runtime._sync_configuration = Mock()
+                runtime.startup_barrier = Mock(attached=True, STATE=0x100)
+                runtime.startup_barrier.held_module.return_value = None
                 runtime.hooks = Mock(installed=True, module=self.MODULE, entitlement_table=None)
                 runtime.hooks.is_current.return_value = True
                 runtime.mission_travel = Mock(completion_mailbox=0x110000)
@@ -81,7 +82,7 @@ class QuasarCompletionTests(unittest.TestCase):
 
     def test_server_check_restores_completion_on_reconnect(self):
         p = Memory()
-        inv = Core(p).missions
+        inv = Core(p, permanent_build=TEST_BUILD).missions
         case = CASE_NAME_TO_CASE[self.CASE_NAME]
         entry = CHAPTER_ENTRIES[case.name][0]
         inv._resolved_cases = {case.name: [0x12000C]}
@@ -128,7 +129,7 @@ class QuasarCompletionTests(unittest.TestCase):
         self.assertEqual(p.writes, [(travel.completion_mailbox, 1)])
 
     def test_rejected_check_is_retained_for_retry(self):
-        core = Core(Memory())
+        core = Core(Memory(), permanent_build=TEST_BUILD)
         core.send_location = Mock(return_value=False)
         core.missions_all = lambda: True
         core._record_mission_completion(self.CASE_NAME)

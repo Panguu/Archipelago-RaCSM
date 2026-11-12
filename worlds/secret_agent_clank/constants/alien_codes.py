@@ -1,4 +1,3 @@
-"""27 Alien Codes: three each in nine native modules."""
 from dataclasses import dataclass
 
 

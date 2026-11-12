@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan
 import struct
 import unittest
 from pathlib import Path
@@ -123,7 +124,7 @@ class VendorCatalogTests(unittest.TestCase):
             hooks.patches.extend(progression.prepare(symbols, hooks, 3))
             spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
             self.assertTrue(all(b <= c for (_, b), (c, _) in zip(spans, spans[1:])))
-            hooks._install_plan()
+            load_plan(hooks)
             if ng == 1:
                 self.check_purchase_paths(p, symbols, hooks)
             for change in reversed(hooks.patches):

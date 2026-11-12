@@ -1,4 +1,3 @@
-"""Resolve the USA SNR2 module's resident exports without executing game code."""
 import struct
 
 

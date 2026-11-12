@@ -1,17 +1,14 @@
 import math
 import struct
-from typing import TYPE_CHECKING
 
 from .case_menu import ee_pointer
-
-if TYPE_CHECKING:
-    from ..pypine import Pine
+from ..pypine import Pine
 
 
 class CharacterState:
     DEAD_STATE_VALUES: frozenset[int] = frozenset()
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.state_addr:  int | None = None
         self.health_addr: int | None = None
@@ -153,3 +150,18 @@ class ActivePlayer:
             return False
         self.pine.write_int32(sample[0] + 0x274, 0)
         return True
+
+    def lower_health(self, value):
+        """False if there's no player yet."""
+        sample = self.health_sample()
+        if sample is None:
+            return False
+        if sample[1] > value:
+            self.pine.write_float(sample[0] + 0x274, value)
+        return True
+
+    def current_player(self):
+        if self.pointer_address is None:
+            return None
+        player = self.pine.read_int32(self.pointer_address)
+        return player if ee_pointer(player, 0x348) else None

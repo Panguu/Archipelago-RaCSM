@@ -1,4 +1,3 @@
-"""Native AP weapon tiers and gain multipliers, installed at the loader gate."""
 import struct
 from collections import Counter
 
@@ -107,6 +106,7 @@ class Progression(PatchSet):
         self.save_pointer_address = None
         self.module = None
         self.pending_definitions = ()
+        self.config_address = None
 
     def configure(self, data):
         mode = int(data.get("progressive_weapons", ProgressiveWeaponsOptions.OFF))
@@ -194,7 +194,7 @@ class Progression(PatchSet):
         return tuple(ratchet_nanotech_location_name(level) for level in ratchet_nanotech_levels(self.ng_plus)
                      if level <= data['xp_nanotech'])
 
-    def prepare(self, symbols, hooks, module, *, vendor_enabled=True):
+    def prepare(self, symbols, hooks, module, *, vendor_enabled=True, arena=None):
         self.patches = []
         p = self.pine
         self.ng_address = None
@@ -203,6 +203,8 @@ class Progression(PatchSet):
         self.cap_address = None
         self.pickup_challenge_address = None
         self.module = module
+        permanent = arena is not None
+        self.config_address = arena.allocate(packed([1, 1, 1])) if permanent else None
         self.base = symbols.get("GADGET_g_GadgetList")
         replay = require(symbols, NativeFunctions.GLOBALVARS_IS_IN_REPLAY_MODE)
         level_getter = symbols.get(NativeFunctions.GADGET_GET_CURRENT_POWER_LEVEL)
@@ -239,7 +241,7 @@ class Progression(PatchSet):
         if buy is not None and vendor_enabled:
             ranges.append((buy + 0x1FC, buy + 0x338))
         edits = self.replay_xp_patches(symbols)
-        if (self.enabled and not self.manual) or (module == 31 and self.max_challenge_mode):
+        if (self.enabled and not self.manual and not permanent) or (module == 31 and self.max_challenge_mode):
             xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
             if entry[xp] != packed([0x27BDFFB0, 0xFFB30028]):
                 raise RuntimeError("Weapon XP entry changed")
@@ -252,7 +254,7 @@ class Progression(PatchSet):
         # Challenge-only pickups are discarded during object initialization,
         # before sync() can set the save's challenge level. Give that one gate
         # the AP level directly, without changing other replay-mode semantics.
-        pickup_init = symbols.get("WeaponPickup_Init__FP4Moby") if self.max_challenge_mode else None
+        pickup_init = symbols.get("WeaponPickup_Init__FP4Moby") if self.max_challenge_mode or permanent else None
         if pickup_init is not None:
             pickup_gate = p.read_bytes(pickup_init + 0x38, 24)
             if pickup_gate != packed([0x9042001C, 0x10400007, 0x8E510058,
@@ -269,7 +271,7 @@ class Progression(PatchSet):
                                    packed([jump(routine, True)])))
             if vendor_enabled:
                 edits.extend(TitanPrice(p).prepare(symbols, allocate))
-            if self.manual and module != 31:
+            if (self.manual or permanent) and module != 31:
                 xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
                 original = entry[xp]
                 if original != packed([0x27BDFFB0, 0xFFB30028]):
@@ -289,22 +291,27 @@ class Progression(PatchSet):
                 if symbols.get(NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE) is not None:
                     targets.append((NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE,
                                     self.health_xp, 4, 0x27BDFFF0, 0xFFB00000))
-                if (not self.enabled or self.manual) and self.weapon_xp != 1:
+                if permanent or ((not self.enabled or self.manual) and self.weapon_xp != 1):
                     xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
                     award = p.read_bytes(xp + 0xFC, 16)
                     if award != packed([0x0050182B, 0x0043900B, 0x16A00005, 0x8E840064]):
                         raise RuntimeError("Weapon XP award layout changed")
-                    address = allocate(self.weapon_gain_wrapper(xp, self.weapon_xp))
+                    wrapper = (self.dynamic_weapon_gain_wrapper(xp, self.config_address)
+                               if permanent else self.weapon_gain_wrapper(xp, self.weapon_xp))
+                    address = allocate(wrapper)
                     edits.append(Patch(xp + 0x104, award[8:], packed([jump(address), 0])))
             for name, multiplier, register, first, second in targets:
-                if multiplier == 1:
+                if multiplier == 1 and not permanent:
                     continue
                 target = require(symbols, name)
                 original = entry[target]
                 a, b = struct.unpack("<2I", original)
                 if a != first or (b != second if second is not None else b & 0xFFFF0000 != 0x3C020000):
                     raise RuntimeError(f"Gain routine changed: {name}")
-                address = allocate(self.gain_wrapper(target, original, register, multiplier))
+                wrapper = (self.dynamic_gain_wrapper(target, original, register,
+                           self.config_address + (8 if name == NativeFunctions.PLAYER_GRANT_BOLTS else 4))
+                           if permanent else self.gain_wrapper(target, original, register, multiplier))
+                address = allocate(wrapper)
                 edits.append(Patch(target, original, packed([jump(address), 0])))
             if self.stealth is not None:
                 # Shared DLLs can contain Clank code even on another operative's
@@ -318,6 +325,11 @@ class Progression(PatchSet):
 
             if self.mission_failure is not None:
                 edits.extend(self.mission_failure.prepare(symbols, allocate))
+
+        if permanent:
+            build(arena.allocate)
+            self.patches = edits
+            return edits
 
         # First measure all code and data, including stealth. Placeholder
         # addresses are used only to encode fixed-size instructions; no RAM
@@ -335,7 +347,10 @@ class Progression(PatchSet):
             occupied += guards
             ranges.extend(extra_ranges)
             addresses = plan_storage(ranges, occupied, sizes)
-        if addresses is None and not vendor_enabled:
+        if addresses is None:
+            # Vendor modules without pickup bodies can exhaust or fragment
+            # the ordinary arenas too (notably 19, 22 and 29 in manual NG+).
+            # This independently verified no-op stub is safe in either case.
             guards, extra_ranges = GainStorage(p).prepare_line(symbols)
             base_edits.extend(guards)
             occupied += guards
@@ -404,7 +419,8 @@ class Progression(PatchSet):
                        if not self.manual or self.levels.get(internal, 0) >= 5]
         levelled = [(self.base + WEAPON_ORDER.index(internal) * 0x74, max(0, level - 1))
                     for internal, level in self.levels.items()]
-        caps = (bytes(self.levels.get(internal, 0) for internal in WEAPON_ORDER)
+        caps = (bytes((self.levels.get(internal, 0) if self.manual else
+                       0 if self.enabled else 255) for internal in WEAPON_ORDER)
                 if self.cap_address is not None else b"")
         words = [*((self.ng_address,) if self.ng_address is not None else ()),
                  *((self.pickup_challenge_address,) if self.pickup_challenge_address is not None else ()),
@@ -436,7 +452,26 @@ class Progression(PatchSet):
             if (self.enabled or current < native) and value[base + 0x64]:
                 writes.append((base + 0x64, 0))
         blocks = [(address, data.to_bytes(4, "little")) for address, data in writes]
+        if self.config_address is not None:
+            blocks.append((self.config_address, packed([self.weapon_xp, self.health_xp, self.bolts])))
         if caps and current_caps != caps:
             blocks.insert(0, (self.cap_address, caps))
         if blocks:
             write_blocks(self.pine, blocks)
+
+    @staticmethod
+    def dynamic_gain_wrapper(target, original, register, config):
+        first, second = struct.unpack("<2I", original)
+        return packed([0x18000005 | register << 21, 0,
+                       0x3C030000 | ((config + 0x8000) >> 16),
+                       0x8C630000 | (config & 65535),
+                       register << 21 | 3 << 16 | 0x18,
+                       register << 11 | 0x12,
+                       first, jump(target + 8), second])
+
+    @staticmethod
+    def dynamic_weapon_gain_wrapper(target, config):
+        return packed([0x3C030000 | ((config + 0x8000) >> 16),
+                       0x8C630000 | (config & 65535), 0x02430019, 0x00009012,
+                       0x16A00003, 0x8E840064, jump(target + 0x10C), 0,
+                       jump(target + 0x11C), 0])

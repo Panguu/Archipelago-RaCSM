@@ -1,4 +1,3 @@
-"""Archipelago world for Secret Agent Clank (PS2, SCUS-97623)"""
 from worlds.LauncherComponents import (
     Component,
     SuffixIdentifier,
@@ -7,22 +6,23 @@ from worlds.LauncherComponents import (
     icon_paths,
     launch_subprocess,
 )
-from worlds.secret_agent_clank.world import (
-    SecretAgentClankWorld,  # noqa: F401 — registers world
-)
+from .patcher import SACPatch  # noqa: F401 (registers .apsac with Patch.py)
+from .world import SecretAgentClankWorld  # noqa: F401 (registers the world)
 
 
-def run_client(_url: str | None = None):
-    from worlds.secret_agent_clank.client import run_client as _run
-    launch_subprocess(_run, name="SACClient")
+def run_client(*args: str):
+    # Imported when launched, so generating seeds doesn't load the client and Kivy.
+    from .client import run_client as client_main
+    launch_subprocess(client_main, name="SACClient", args=args)
 
 
 components.append(Component(
     "Secret Agent Clank Client",
     func=run_client,
     component_type=Type.CLIENT,
-    file_identifier=SuffixIdentifier(".apsac"),
-    description="Launch the Client for connecting to Secret Agent Clank",
+    file_identifier=SuffixIdentifier(SACPatch.patch_file_ending),
+    description="Launch the Client for connecting to Secret Agent Clank. "
+                "Open a .apsac to patch the ISO (first time per build) and connect as that slot.",
     icon="sac_icon",
 ))
 

@@ -1,4 +1,5 @@
-from typing import Any
+import os
+from typing import Any, ClassVar
 
 from BaseClasses import CollectionState, Tutorial
 from Options import OptionError
@@ -7,44 +8,48 @@ from worlds.AutoWorld import WebWorld, World
 
 from .constants import (
     ALL_CASES,
-    CASES_BY_OPERATIVE,
+    ALL_FILLER,
     CASES_BY_PLANET,
     CASE_NAME_TO_INFOBOT,
     EQUIPMENT_DISPLAY_TO_INTERNAL,
     GADGETS_FROM_WEAPON_TABLE,
     LEVELLED_INTERNALS,
     NG_PLUS_VENDOR_ITEMS,
-    PLANET_ACCESS_ITEM_NAME,
     PLANET_NAMES,
     PROGRESSIVE_CHALLENGE_MODE,
-    PROGRESSIVE_CHARACTER_ITEM_NAME,
     PROGRESSIVE_PLANET_ITEM_NAME,
     PROGRESSIVE_TO_INTERNAL,
     PROGRESSIVE_TO_UNLOCK,
+    PROGRESSIVE_WRENCH,
     RATCHET_WEAPONS,
     UNLOCK_TO_PROGRESSIVE,
     InfobotsOptions,
+    ProgressiveWeaponsOptions,
     SACCases,
+    SACFiller,
     SACOperatives,
     WeaponMod,
     enabled_challenge_mods,
     max_level,
 )
-from .entities import SACItem
+from .entities import SACItem, SACProgressiveItem
 from .items import (
     ALL_ITEMS,
-    FILLER_ITEM_NAME,
-    GADGET_ITEM_TABLE,
+    CASE_GADGET_ITEM_TABLE,
+    ITEM_NAME_GROUPS,
     KEYCARD_ITEM_TABLE,
+    RATCHET_WEAPON_ITEM_TABLE,
     RATCHET_PACK_ITEM_TABLE,
     TRAP_ITEM_TABLE,
-    WEAPON_ITEM_TABLE,
+    EQUIPMENT_ITEM_TABLE,
 )
 from .locations import CASE_REGIONS, LOCATIONS, LOCATION_NAME_TO_ID, stealth_case_counts
-from .options import SecretAgentClankOptions, enabled_operatives, sac_option_groups
+from .patcher import SACPatch, add_release_patch
+from .options import SLOT_DATA_OPTIONS, SecretAgentClankOptions, enabled_operatives, sac_option_groups
 from .regions import create_regions
 from .rules import VENDOR_ONLY_ITEM_NAMES, region_names, set_entrance_rules
 from .universal_tracker import setup_options_from_slot_data
+from .settings import SecretAgentClankSettings
 from .vendor_logic import export_vendor_rules
 
 try:
@@ -83,8 +88,11 @@ class SecretAgentClankWorld(World):
     web = SACWeb()
     options_dataclass = SecretAgentClankOptions
     options: SecretAgentClankOptions
+    settings: ClassVar[SecretAgentClankSettings]
+    settings_key = "secret_agent_clank_options"  # the default would be "secret_agent_clank.world_options"
 
     item_name_to_id: dict[str, int] = {name: data.code for name, data in ALL_ITEMS.items()}
+    item_name_groups = ITEM_NAME_GROUPS
     location_name_to_id: dict[str, int] = LOCATION_NAME_TO_ID
     dynamic_pine = _DYNAMIC_PINE_SPEC
 
@@ -99,7 +107,25 @@ class SecretAgentClankWorld(World):
 
     def create_item(self, name: str) -> SACItem:
         data = ALL_ITEMS[name]
+        stages = self.progressive_stages(name)
+        if stages is not None:
+            return SACProgressiveItem(name, data.classification, data.code, self.player, stages)
         return SACItem(name, data.classification, data.code, self.player)
+
+    def progressive_stages(self, name: str) -> list[str] | None:
+        """What each copy of a progressive item unlocks, in order. None if `name` isn't progressive."""
+        if name in PROGRESSIVE_TO_UNLOCK:
+            weapon = PROGRESSIVE_TO_UNLOCK[name]
+            levels = max_level(PROGRESSIVE_TO_INTERNAL[name], self.options.ng_plus.value)
+            return [weapon] + [f"{weapon} V{level}" for level in range(2, levels + 1)]
+        for planet, item in PROGRESSIVE_PLANET_ITEM_NAME.items():
+            if name == item:
+                return self.planet_cases.get(planet, [])  # shuffled per seed
+        if name == PROGRESSIVE_WRENCH:
+            return [f"Wrench Level {level}" for level in range(1, 6)]
+        if name == PROGRESSIVE_CHALLENGE_MODE:
+            return [f"Challenge Mode {level}" for level in range(1, self.options.ng_plus.value + 1)]
+        return None
 
     def collect(self, state, item):
         changed = super().collect(state, item)
@@ -178,9 +204,6 @@ class SecretAgentClankWorld(World):
                 order = planet_cases[case.planet]
                 counts[case.planet] = max(counts.get(case.planet, 0), order.index(case.name) + 1)
             return [PROGRESSIVE_PLANET_ITEM_NAME[planet] for planet, count in counts.items() for _ in range(count)]
-        if self.options.infobots == InfobotsOptions.PLANETS:
-            return list(dict.fromkeys(
-                PLANET_ACCESS_ITEM_NAME.get(case.planet, CASE_NAME_TO_INFOBOT[case.name]) for case in cases))
         return [CASE_NAME_TO_INFOBOT[case.name] for case in cases]
 
     def _choose_starting_cases(self, candidates):
@@ -220,10 +243,10 @@ class SecretAgentClankWorld(World):
         pool += [mod.name for mod in enabled_challenge_mods(enabled_operatives(self.options))]
         ratchet_enabled = SACOperatives.RATCHET in enabled_operatives(self.options)
         if ratchet_enabled and self.options.progressive_wrench:
-            pool += ["Progressive Wrench"] * 5
+            pool += [PROGRESSIVE_WRENCH] * 5
 
-        for name in WEAPON_ITEM_TABLE:
-            if not name.endswith("(Clank)") and not ratchet_enabled:
+        for name in EQUIPMENT_ITEM_TABLE:
+            if name in RATCHET_WEAPON_ITEM_TABLE and not ratchet_enabled:
                 continue
             if name in NG_PLUS_VENDOR_ITEMS and not self.options.ng_plus.value:
                 continue
@@ -234,7 +257,7 @@ class SecretAgentClankWorld(World):
                 pool += [progressive] * max_level(PROGRESSIVE_TO_INTERNAL[progressive], self.options.ng_plus.value)
             else:
                 pool.append(name)
-        pool += list(GADGET_ITEM_TABLE)
+        pool += list(CASE_GADGET_ITEM_TABLE)
         if ratchet_enabled:
             pool += list(RATCHET_PACK_ITEM_TABLE)
 
@@ -243,7 +266,7 @@ class SecretAgentClankWorld(World):
              [name for name in RATCHET_WEAPONS
               if EQUIPMENT_DISPLAY_TO_INTERNAL[name] in LEVELLED_INTERNALS or EQUIPMENT_DISPLAY_TO_INTERNAL[name] == "hypnowatch"]),
             (SACOperatives.CLANK, self.options.starting_gadgets.value,
-             list(dict.fromkeys([*GADGETS_FROM_WEAPON_TABLE, *GADGET_ITEM_TABLE]))),
+             list(dict.fromkeys([*GADGETS_FROM_WEAPON_TABLE, *CASE_GADGET_ITEM_TABLE]))),
         )
         for character, count, eligible in starting_groups:
             if character not in enabled_operatives(self.options):
@@ -274,25 +297,11 @@ class SecretAgentClankWorld(World):
             for planet, cases in self.planet_cases.items():
                 item = PROGRESSIVE_PLANET_ITEM_NAME[planet]
                 pool += [item] * (len(cases) - starting_items.count(item))
-        elif self.options.infobots == InfobotsOptions.CASES:
+        else:
             pool += [
                 CASE_NAME_TO_INFOBOT[case.name] for case in active_cases
                 if case.name not in starting_cases
             ]
-        elif self.options.infobots == InfobotsOptions.PLANETS:
-            active_planets = {case.planet for case in active_cases}
-            pool += [item for planet, item in PLANET_ACCESS_ITEM_NAME.items()
-                     if planet in active_planets and item not in starting_items]
-            if CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM] not in starting_items:
-                pool.append(CASE_NAME_TO_INFOBOT[SACCases.BOLTAIRE_MUSEUM])
-
-        if self.options.infobots == InfobotsOptions.CHARACTER_UNLOCKS:
-            for character, item_name in PROGRESSIVE_CHARACTER_ITEM_NAME.items():
-                if character in enabled_operatives(self.options):
-                    pool += [item_name] * len(CASES_BY_OPERATIVE.get(character, ()))
-            starting_character_item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(starting_case.operative)
-            if starting_character_item:
-                self.multiworld.local_early_items[self.player][starting_character_item] = 1
 
         unfilled = len(self.multiworld.get_unfilled_locations(self.player))
         if len(pool) > unfilled:
@@ -311,48 +320,27 @@ class SecretAgentClankWorld(World):
 
     def fill_slot_data(self) -> dict[str, Any]:
         return {
+            "iso_patch_abi": 1,
             "vendor_rules": export_vendor_rules(self),
             "planet_cases": self.planet_cases,
             "starting_case": self.starting_case,
             "second_starting_case": self.second_starting_case,
-            "infobots": self.options.infobots.value,
             "weapon_mod_ids": [mod.mod_id for mod in self.weapon_mod_catalog],
             "operatives": dict.fromkeys(sorted(enabled_operatives(self.options)), 1),
-            "death_link": bool(self.options.death_link.value),
-            "death_amnesty": self.options.death_amnesty.value,
-            "all_missions": self.options.all_missions.value,
-            "all_cutscenes": bool(self.options.all_cutscenes.value),
-            "skill_points": self.options.skill_points.value,
-            "random_skill_points": bool(self.options.random_skill_points),
-            "skill_point_count": self.options.skill_point_count.value,
             "selected_skill_points": sorted(self.selected_skill_points),
-            "keycard_hunt": bool(self.options.keycard_hunt),
-            "keycards_and_alien_codes": bool(self.options.keycards_and_alien_codes),
-            "send_scouted_locations": bool(self.options.send_scouted_locations.value),
-            "goal": self.options.goal.value,
-            "pick_and_mix_goals": sorted(self.options.pick_and_mix_goals.value),
-            "progressive_wrench": bool(self.options.progressive_wrench.value),
-            "progressive_weapons": self.options.progressive_weapons.value,
-            "weapon_level_checks": self.options.weapon_level_checks.value,
-            "nanotech_checks": bool(self.options.nanotech_checks),
-            "ratchet_nanotech_checks": bool(self.options.ratchet_nanotech_checks),
-            "stealth_takedown_checks": self.options.stealth_takedown_checks.value,
             "stealth_cases": stealth_case_counts(self),
-            "weapon_xp_multiplier": self.options.weapon_xp_multiplier.value,
-            "health_xp_multiplier": self.options.health_xp_multiplier.value,
-            "bolt_multiplier": self.options.bolt_multiplier.value,
-            "ng_plus": self.options.ng_plus.value,
-            "progressive_challenge_mode": bool(self.options.progressive_challenge_mode),
-            "starting_weapons": self.options.starting_weapons.value,
-            "starting_gadgets": self.options.starting_gadgets.value,
-            "starting_bolts": self.options.starting_bolts.value,
-            "clank_skin": self.options.clank_skin.value,
-            "ratchet_skin": self.options.ratchet_skin.value,
-            "qwark_skin": self.options.qwark_skin.value,
-            "trap_chance": self.options.trap_chance.value,
-            "trap_weight": dict(self.options.trap_weight.value),
-            "trap_duration": dict(self.options.trap_duration.value),
+            **self.options.as_dict(*SLOT_DATA_OPTIONS, toggles_as_bools=True),
         }
+
+    @staticmethod
+    def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
+        return slot_data
+
+    def generate_output(self, output_directory: str) -> None:
+        patch = SACPatch(player=self.player, player_name=self.player_name)
+        add_release_patch(patch)
+        file_name = self.multiworld.get_out_file_name_base(self.player) + patch.patch_file_ending
+        patch.write(os.path.join(output_directory, file_name))
 
     def get_filler_item_name(self) -> str:
         trap_chance = self.options.trap_chance.value
@@ -361,4 +349,7 @@ class SecretAgentClankWorld(World):
             names = [name for name in TRAP_ITEM_TABLE if weights.get(name, 0) > 0]
             if names:
                 return self.random.choices(names, weights=[weights[name] for name in names])[0]
-        return FILLER_ITEM_NAME
+        filler = list(ALL_FILLER)
+        if self.options.progressive_weapons == ProgressiveWeaponsOptions.AUTOMATIC:
+            filler.remove(SACFiller.WEAPON_XP)  # weapons only level up from Progressive Weapons
+        return self.random.choice(filler)

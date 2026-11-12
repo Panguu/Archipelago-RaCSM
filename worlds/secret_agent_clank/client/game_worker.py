@@ -4,30 +4,32 @@ import traceback
 
 from rule_builder.rules import False_
 
-from ..constants import CASE_ID_TO_CASE, GoalOptions, InfobotsOptions, MissionsOptions
+from ..constants import CASE_ID_TO_CASE, GoalOptions, MissionsOptions, RingLinkBehaviorOptions
 from ..core import Core
 from ..locations import LOCATION_NAME_TO_ID
 from ..options import Goal
 from ..pypine import Pine
 from ..rules import VENDOR_REQUIREMENTS
+from ..patcher.release import load_runtime_build
 from ..vendor_logic import VendorLogic
 from .constants import EXPECTED_GAME_ID
 from .vendor_scouts import VendorScouts
 
 
 class GameRuntime:
-    def __init__(self, emit):
+    def __init__(self, emit, *, permanent_build=None):
         self.emit = emit
         self.identity = None
         self.connected = False
         self.allowed = set()
         self.data = {}
         self.pine = Pine()
+        self.permanent_build = load_runtime_build() if permanent_build is None else permanent_build
         self._make_core()
 
     def _make_core(self):
         self.core = Core(self.pine, log=lambda message: self.event('log', message),
-                         debug=lambda message: self.event('debug', message))
+                         debug=lambda message: self.event('debug', message), permanent_build=self.permanent_build)
         self.scouts = VendorScouts(LOCATION_NAME_TO_ID)
         self.core.vendor_rewards.scouts = self.scouts
         self.core.native_runtime.configure_vendors(
@@ -58,15 +60,33 @@ class GameRuntime:
     def disconnect(self):
         try:
             if self.connected:
+                self.core.native_runtime.verify()
                 self.core.close()
         finally:
             self.pine.disconnect()
             self.connected = False
+            self.core.case.is_ready = False
 
     def dispatch(self, command, payload):
         w = self.core
+        if self.connected:
+            try:
+                identity = w.native_runtime.verify()
+            except Exception:
+                # Never restore session data or run commands on unverified RAM.
+                w.native_runtime.close(disarm=False)
+                w.case.is_ready = False
+                self.pine.disconnect()
+                self.connected = False
+                raise
+            if identity != w.native_runtime.bound or not w.native_runtime._gameplay_settled(require_current=False):
+                w.case.is_ready = False
+                if command in ('effect', 'reset_traps', 'death', 'ring_link'):
+                    return False
         if command == 'configure':
             identity, data, allowed = payload
+            if data.get('iso_patch_abi', 1) != self.permanent_build['abi']:
+                raise RuntimeError('This seed requires a different SAC ISO patch ABI; update the world and client.')
             changed = identity != self.identity
             if changed and self.identity is not None:
                 self.disconnect()
@@ -81,6 +101,8 @@ class GameRuntime:
             w.native_runtime.ap_connected = True
             w.native_runtime.starting_case.configure(data)
             w.progression.configure(data)
+            w.ring_link.configure(int(data.get('ring_link_behavior', RingLinkBehaviorOptions.ITEMS)),
+                                  int(data.get('bolt_multiplier', 1)))
             w.vendor_logic = VendorLogic(data['vendor_rules']) if 'vendor_rules' in data else None
             w.native_runtime.available_vendor_locations = frozenset() if w.vendor_logic is not None else None
             w.keycards.hunt.enabled = bool(data.get("keycard_hunt", False))
@@ -88,7 +110,6 @@ class GameRuntime:
             w.weapon_mods.configure(data)
             w.wrench.enabled = bool(data.get('progressive_wrench', False))
             w.planet_cases = data.get('planet_cases')
-            w.character_unlocks = int(data.get('infobots', InfobotsOptions.CASES)) == InfobotsOptions.CHARACTER_UNLOCKS
             w.traps.durations.update(data.get('trap_duration', {}))
             w.goal = int(data.get('goal', GoalOptions.DEFEAT_KLUNK))
             w.pick_and_mix_goals = (tuple(Goal.from_any(name).value for name in data.get('pick_and_mix_goals', ()))
@@ -106,6 +127,8 @@ class GameRuntime:
                 game_id = self.pine.get_game_id()
                 if game_id != EXPECTED_GAME_ID:
                     raise RuntimeError(f'Wrong game: {game_id!r}; expected {EXPECTED_GAME_ID}')
+                w.native_runtime.verify()
+                self.event('log', f"[SAC] Verified patched ISO {self.permanent_build['build_id']}. Native patches are installed on disc.")
                 self.connected = True
                 return game_id
             except Exception:
@@ -124,7 +147,7 @@ class GameRuntime:
             return {'vendor_active': w.vendor.active, 'vendor_cases': tuple(w.vendor_cases),
                     'vendor_locations': (tuple(w.native_runtime.available_vendor_locations)
                                          if w.native_runtime.available_vendor_locations is not None else None),
-                    'case_id': w.case.case_id}
+                    'case_id': w.case.case_id, 'ring_link': w.ring_link.poll(w.bolt_balance())}
         elif command == 'sync':
             w.sync_from_ap(set(payload))
         elif command == 'items':
@@ -134,8 +157,10 @@ class GameRuntime:
                 w.notifications.enqueue(*notification)
         elif command == 'sent':
             w.notifications.enqueue_sent(*payload)
-        elif command == 'trap':
-            return w.activate_trap(payload) if self.connected else False
+        elif command == 'effect':
+            return w.activate_effect(payload) if self.connected else False
+        elif command == 'ring_link':
+            return w.receive_ring_link(payload) if self.connected else False
         elif command == 'reset_traps':
             return w.reset_traps() if self.connected else False
         elif command == 'death':
@@ -164,18 +189,18 @@ class GameRuntime:
     def diagnostic(self, command):
         w = self.core
         if command == 'sac_info':
-            gate = w.native_runtime.gate
+            barrier = w.native_runtime.startup_barrier
             loader = None
             if self.connected:
-                addresses = (gate.SITE, gate.STATE, gate.STATUS, gate.TARGET, gate.HANDLE,
+                addresses = (barrier.SIGNATURE_START, barrier.STATE, barrier.STATUS, barrier.TARGET, barrier.HANDLE,
                              0x206324, 0x206328, 0x206338)
                 loader = dict(zip(
-                    ('instruction', 'state', 'status', 'target', 'handle',
+                    ('barrier_instruction', 'state', 'status', 'target', 'handle',
                      'requested_module', 'current_module', 'game_state'),
                     (f'0x{value:08X}' for value in self.pine.batch_read_int32(addresses))))
             return {'case_id': w.case.case_id, 'inventory_initialized': w._inventory_initialized,
                     'hooks_installed': w.location_hooks.installed,
-                    'loader': loader, 'barrier_armed': gate.armed,
+                    'loader': loader, 'startup_barrier_attached': barrier.attached,
                     'reload_requested': w.native_runtime.reload_requested,
                     'stealth_loaded': w.stealth.loaded,
                     'stealth_cases': len(w.stealth.cases),

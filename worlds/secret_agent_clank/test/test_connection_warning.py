@@ -7,6 +7,7 @@ from ..core import read_blocks
 from ..core.patches import HEARTBEAT_FRAMES, ConnectionWarning, mips as m, packed
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
+import asyncio
 
 
 def fake_storage(storage, original):
@@ -123,6 +124,5 @@ class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(SACContext.__bases__[-1], 'connection_closed', new_callable=AsyncMock) as closed:
             await context.connection_closed()
         closed.assert_awaited_once()
-        import asyncio
         await asyncio.sleep(0)
         context._worker.request.assert_awaited_once_with("ap_connected", False)

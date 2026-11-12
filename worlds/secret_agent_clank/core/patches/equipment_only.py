@@ -1,4 +1,3 @@
-"""Pre-object-init ownership without rewriting pickup or vendor routines."""
 from ...constants import NativeFunctions
 from ..symbols import require
 from . import mips as m

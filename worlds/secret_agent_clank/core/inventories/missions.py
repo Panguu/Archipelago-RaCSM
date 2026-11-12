@@ -1,6 +1,4 @@
-"""Read 32-bit mission states by native case label and mission title ID."""
 import struct
-from typing import TYPE_CHECKING
 
 from ...constants import (
     CASE_NAME_TO_CASE,
@@ -15,10 +13,8 @@ from ...constants import (
 )
 from ..case_menu import CASE_LABELS
 from ..symbols import RuntimeSymbols
-
-if TYPE_CHECKING:
-    from ...constants.planets import Case
-    from ...pypine import Pine
+from ...constants.planets import Case
+from ...pypine import Pine
 
 
 _CHAPTER_TABLE_OFFSET = 0
@@ -32,13 +28,13 @@ _PLAUSIBLE_PTR_RANGE: tuple[int, int] = (0x00100000, 0x02000000)
 _PLAUSIBLE_MAX_COUNT = 10
 
 
-def find_mission_level_list(pine: "Pine") -> "int | None":
+def find_mission_level_list(pine: Pine) -> int | None:
     symbols = RuntimeSymbols(pine)
     symbols.refresh()
     return symbols.get("g_MISSION_LEVEL_LIST")
 
 
-def resolve_chapter_table(pine: "Pine", base: int | None = None) -> "dict[int, tuple[int, int]]":
+def resolve_chapter_table(pine: Pine, base: int | None = None) -> dict[int, tuple[int, int]]:
     """Read the chapter table's slots as {slot: (pointer, count)}, keeping only plausible ones."""
     if base is None:
         base = find_mission_level_list(pine)
@@ -59,7 +55,7 @@ def resolve_chapter_table(pine: "Pine", base: int | None = None) -> "dict[int, t
 
 class MissionInventory:
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.table_base: int | None = None
         self.completed: dict[str, bool] = dict.fromkeys(MISSION_NAMES, False)
@@ -116,7 +112,7 @@ class MissionInventory:
                 found.extend(self.check(case, all_missions=all_missions))
         return found
 
-    def _resolve_case_addresses(self, case: "Case") -> "list[int] | None":
+    def _resolve_case_addresses(self, case: Case) -> list[int] | None:
         """Resolve this case by label and verify its native title IDs."""
         self._resolve_labels()
         addresses = (self._resolved_cases or {}).get(case.name)
@@ -176,7 +172,7 @@ class MissionInventory:
         if name in _REPORTABLE_NAMES:
             self._reported.add(name)
 
-    def enforce_owned_first_missions(self, owned_cases: "set[str]") -> int:
+    def enforce_owned_first_missions(self, owned_cases: set[str]) -> int:
         """Set each owned case's first mission back to UNLOCKED if it is disabled; returns the write count."""
         first_addresses: list[int] = []
         for case_name in owned_cases:

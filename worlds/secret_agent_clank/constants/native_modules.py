@@ -1,4 +1,3 @@
-"""USA case/module mapping verified from the native mission table."""
 from .planets import SACCases
 
 CASE_MODULES = {SACCases.BOLTAIRE_MUSEUM: 1,

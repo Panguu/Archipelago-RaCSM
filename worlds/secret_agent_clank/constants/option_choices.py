@@ -52,10 +52,15 @@ class SkillPointsOptions:
 
 @dataclass(frozen=True)
 class InfobotsOptions:
-    PLANETS = 0
     CASES = 1
     PROGRESSIVE_PLANET = 2
-    CHARACTER_UNLOCKS = 3
+
+
+@dataclass(frozen=True)
+class RingLinkBehaviorOptions:
+    ITEMS = 0
+    ITEMS_AND_TRAPS = 1
+    NEITHER = 2
 
 
 @dataclass(frozen=True)

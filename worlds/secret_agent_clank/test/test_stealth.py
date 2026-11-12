@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -218,7 +219,7 @@ class StealthTests(unittest.TestCase):
                     hooks.patches.extend(VendorPresentation(mem).prepare(symbols, hooks))
                     spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
                     self.assertTrue(all(b <= c for (a,b),(c,d) in zip(spans, spans[1:])))
-                    hooks._install_plan()
+                    load_plan(hooks)
                     for change in reversed(hooks.patches):
                         mem.write_bytes(change.address, change.original)
                     self.assertEqual(mem.data, raw)

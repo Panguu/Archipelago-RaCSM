@@ -1,4 +1,3 @@
-"""Clank and Ratchet nanotech locations; XP tables and caps are read natively (see core/nanotech.py)."""
 CLANK_START_NANOTECH = 15
 CLANK_NG_CAP = 60
 CLANK_NG_PLUS_CAP = 85

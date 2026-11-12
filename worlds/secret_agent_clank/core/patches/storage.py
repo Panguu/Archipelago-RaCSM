@@ -1,6 +1,3 @@
-"""Aligned best-fit allocation within explicitly verified hook storage only."""
-
-
 def free_blocks(ranges, patches):
     occupied = sorted((p.address, p.address + len(p.replacement)) for p in patches)
     blocks = []

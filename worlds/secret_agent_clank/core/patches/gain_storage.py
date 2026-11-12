@@ -1,4 +1,3 @@
-"""Verified storage in retail debug-print stubs that already do nothing."""
 from ..batch_io import read_blocks
 from ..symbols import require
 from . import mips as m
@@ -42,7 +41,7 @@ class GainStorage(PatchSet):
         return edits, ranges
 
     def prepare_line(self, symbols):
-        """Extra storage when vendor bodies are unavailable.
+        """Extra storage when the ordinary hook arenas cannot fit the plan.
 
         The retail VEC4 line stub copies vertices onto its own stack and sets
         a stack-local color. It submits no geometry and changes no game data.

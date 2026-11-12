@@ -1,4 +1,3 @@
-"""Native pickup/vendor location flags, separate from gameplay ownership."""
 from . import mips as m
 from .asm import jump, packed
 from .patch import Patch

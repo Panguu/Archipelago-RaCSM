@@ -1,4 +1,3 @@
-"""Resolve the current save's flag bytes from GLOBAL_GetFlag, read-only."""
 import struct
 from collections import Counter
 

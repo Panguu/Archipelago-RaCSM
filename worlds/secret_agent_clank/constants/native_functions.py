@@ -1,6 +1,3 @@
-"""Native export names for SCUS-97623; addresses resolve per loaded module."""
-
-
 class DebugDrawFunctions:
     PRINT_TEXT = "DEBUGDRAW_PrintText__FiiUie"
     PRINT_VECTOR_TEXT = "DEBUGDRAW_PrintText__FPC4VEC3Uie"
@@ -11,6 +8,7 @@ class DebugDrawFunctions:
 class NativeFunctions:
     ARENA_GET_LEVEL_TO_LOAD = "Arena_GetLevelToLoad__Fv"
     GADGET_GET_CURRENT_POWER_LEVEL = "GADGET_GetCurrentPowerLevel__FUi"
+    GADGET_GET_DATA = "GADGET_GetData__FUi"
     GADGET_GET_DATA_DEF = "GADGET_GetDataDef__FUi"
     GADGET_GET_DEF_AT_LEVEL = "GADGET_GetDefAtLevel__FUiUi"
     GADGET_GETS_XP = "GADGET_GetsXP__FUiUib"
@@ -40,6 +38,7 @@ class NativeFunctions:
     SET_NEXT_LEVEL = "SetNextLevel__Fi"
     UPDATE_CHANGE_TO_LEVEL_OR_MAP_IF_ALREADY_COMPLETED = "UPDATE_ChangeToLevelOrMapIfAlreadyCompleted__Fi"
     UPDATE_CHANGE_TO_LEVEL = "UPDATE_ChangeToLevel__Fib"
+    WEAPON_GET_CURRENT_WEAPON = "WEAPON_GetCurrWeap__FP6PLAYER"
     WEAPON_PICKUP_GIVE_WEAPON = "WeaponPickup_GiveWeapon__FP4Moby"
     WEAPON_PICKUP_UPDATE_WAIT_FOR_PICKUP = "WeaponPickup_UpdateWaitForPickup__FP4Moby"
     WEAPON_PICKUP_UPDATE_WAIT = "WeaponPickup_UpdateWait__FP4Moby"

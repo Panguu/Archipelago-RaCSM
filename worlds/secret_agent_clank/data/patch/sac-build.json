@@ -1,0 +1,149 @@
+{
+ "build_id": "sac-iso-v1-05cc8bbd0479f525fcf1f783",
+ "abi": 1,
+ "source_sha256": "128abfa2fb8eb4dc253513d3beb9029dfb8698966ecc7b8266230e8739b8e908",
+ "result_sha256": {
+  "archipelago": "060398c8004d6c2f53c0d8aaac8af66f277302022d22b5989f8b8a2221a969c5",
+  "multiworldgg": "17ac968fc5c891df0b98980e22b18475dfd1c5bd62a1178439699f6ac8cd0de1"
+ },
+ "files": [
+  {
+   "path": "/BIN/FE.REL;1",
+   "payload": "files/00.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL1.REL;1",
+   "payload": "files/01.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL10.REL;1",
+   "payload": "files/02.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL11.REL;1",
+   "payload": "files/03.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL13.REL;1",
+   "payload": "files/04.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL14.REL;1",
+   "payload": "files/05.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL15.REL;1",
+   "payload": "files/06.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL16.REL;1",
+   "payload": "files/07.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL17.REL;1",
+   "payload": "files/08.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL18.REL;1",
+   "payload": "files/09.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL19.REL;1",
+   "payload": "files/10.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL2.REL;1",
+   "payload": "files/11.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL20.REL;1",
+   "payload": "files/12.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL21.REL;1",
+   "payload": "files/13.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL22.REL;1",
+   "payload": "files/14.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL23.REL;1",
+   "payload": "files/15.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL24.REL;1",
+   "payload": "files/16.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL25.REL;1",
+   "payload": "files/17.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL26.REL;1",
+   "payload": "files/18.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL27.REL;1",
+   "payload": "files/19.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL28.REL;1",
+   "payload": "files/20.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL29.REL;1",
+   "payload": "files/21.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL3.REL;1",
+   "payload": "files/22.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL30.REL;1",
+   "payload": "files/23.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL31.REL;1",
+   "payload": "files/24.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL32.REL;1",
+   "payload": "files/25.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL4.REL;1",
+   "payload": "files/26.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL5.REL;1",
+   "payload": "files/27.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL7.REL;1",
+   "payload": "files/28.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL8.REL;1",
+   "payload": "files/29.bsdiff4"
+  },
+  {
+   "path": "/BIN/LEVEL9.REL;1",
+   "payload": "files/30.bsdiff4"
+  },
+  {
+   "path": "/SCUS_976.23;1",
+   "payload": "files/31.bsdiff4"
+  },
+  {
+   "path": "/IMAGE.ZIP;1",
+   "payload": "files/32.bsdiff4",
+   "branding": "archipelago"
+  },
+  {
+   "path": "/IMAGE.ZIP;1",
+   "payload": "files/33.bsdiff4",
+   "branding": "multiworldgg"
+  }
+ ]
+}

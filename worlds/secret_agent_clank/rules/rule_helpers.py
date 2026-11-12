@@ -8,19 +8,16 @@ from typing_extensions import override
 
 from ..constants import (
     ALL_OPERATIVES,
-    CASES_BY_OPERATIVE,
     CASE_NAME_TO_CASE,
     CASE_NAME_TO_INFOBOT,
-    PLANET_ACCESS_ITEM_NAME,
     PROGRESSIVE_CHALLENGE_MODE,
-    PROGRESSIVE_CHARACTER_ITEM_NAME,
     PROGRESSIVE_PLANET_ITEM_NAME,
+    PROGRESSIVE_WRENCH,
     InfobotsOptions,
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
 )
-from ..items import PROGRESSIVE_WRENCH_ITEM_NAME
 from ..options import enabled_operatives
 
 if TYPE_CHECKING:
@@ -29,18 +26,6 @@ if TYPE_CHECKING:
 
 def region_names(world: "SecretAgentClankWorld") -> set[str]:
     return {region.name for region in world.multiworld.get_regions(world.player)}
-
-
-@dataclass
-class HasPlanet(Rule[TWorld], game="Secret Agent Clank"):
-    planet: str
-
-    @override
-    def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        rule = True_()
-        if world.options.infobots == InfobotsOptions.PLANETS and self.planet in PLANET_ACCESS_ITEM_NAME:
-            rule = Has(PLANET_ACCESS_ITEM_NAME[self.planet])
-        return rule.resolve(world)
 
 
 @dataclass
@@ -164,19 +149,6 @@ class HasProjectileWeapon(Rule[TWorld], game="Secret Agent Clank"):
                       SACClankWeapons.CUFFLINK).resolve(world)
 
 
-@dataclass
-class HasCharacter(Rule[TWorld], game="Secret Agent Clank"):
-    cases: str
-
-    @override
-    def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        case = CASE_NAME_TO_CASE[self.cases]
-        item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(case.operative)
-        if world.options.infobots != InfobotsOptions.CHARACTER_UNLOCKS or item is None:
-            return True_().resolve(world)
-        return Has(item, list(CASES_BY_OPERATIVE[case.operative]).index(case) + 1).resolve(world)
-
-
 def disabled_operatives(world: "SecretAgentClankWorld") -> set[str]:
     return {
         operative for operative in ALL_OPERATIVES
@@ -196,5 +168,5 @@ class ProgressiveChallengeModeRule(Rule[TWorld], game="Secret Agent Clank"):
 class ProgressiveWrenchRule(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        rule = Has(PROGRESSIVE_WRENCH_ITEM_NAME) if world.options.progressive_wrench else True_()
+        rule = Has(PROGRESSIVE_WRENCH) if world.options.progressive_wrench else True_()
         return rule.resolve(world)

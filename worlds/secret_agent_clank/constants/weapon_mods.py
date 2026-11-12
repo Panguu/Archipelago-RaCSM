@@ -1,4 +1,3 @@
-"""Native mod IDs, GadgetData slots and English labels from the USA mod catalog."""
 from typing import NamedTuple
 
 from .clank_gadgets import SACClankWeapons

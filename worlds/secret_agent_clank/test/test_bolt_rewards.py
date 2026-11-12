@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from ..core.address_maps import BOLTS_ADDRESS
 from ..core import MAX_BOLTS, MAX_BOLTS_PER_PACK, BoltRewards, Core, reward_balance
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
 
 
 class FakeServerStorage:
@@ -110,7 +110,7 @@ class BoltRewardTests(unittest.TestCase):
         self.assertEqual(self.p.read_int32(BOLTS_ADDRESS), 600)
 
     def test_delivery_waits_for_game_readiness(self):
-        core = Core(self.p)
+        core = Core(self.p, permanent_build=TEST_BUILD)
         core.bolt_rewards = self.r
         core.native_runtime.service = Mock(return_value=False)
         core.case.check_transition = Mock(return_value=False)

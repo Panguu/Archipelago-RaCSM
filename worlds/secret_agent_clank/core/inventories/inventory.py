@@ -1,13 +1,9 @@
-"""Byte-addressed item flags. Shared GadgetData equipment uses WeaponInventory."""
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ...pypine import Pine
+from ...pypine import Pine
 
 
 class ItemInventory:
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.item_addrs: dict[str, int] = {}
         self.owned: dict[str, bool] = {}

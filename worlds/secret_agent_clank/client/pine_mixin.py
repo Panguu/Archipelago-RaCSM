@@ -95,6 +95,7 @@ class PineMixin:
     async def _poll_game(self) -> None:
         async with self._pine_lock:
             self._store_game_state(await self._worker.request("tick", self._checked_location_names()))
+            await self._sync_ring_link(self._game_state.get("ring_link", 0))
         self._maybe_scout_vendor()
         await self._apply_received_items()
 

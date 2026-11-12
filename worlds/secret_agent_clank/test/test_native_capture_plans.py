@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan
 """Full hook installation regressions against local read-only research captures."""
 import unittest
 from itertools import product
@@ -171,7 +172,7 @@ class NativeCapturePlansTests(unittest.TestCase):
                     spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
                     self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
                     self.assertEqual(p.data, raw, "Planning must not write RAM")
-                    hooks._install_plan()
+                    load_plan(hooks)
                     self.assertTrue(ItemNotifications(p).bind(symbols), "Receipt HUD must bind after install")
                     if not vendor:
                         for name, size in ((NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE, 0x350),

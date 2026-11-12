@@ -5,6 +5,10 @@ from ..constants import SACOperatives
 from ..core import RuntimeSymbols, read_nanotech
 from .test_runtime import Memory
 from ..core.patches import Progression
+from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
+from test.general import setup_multiworld
+from ..world import SecretAgentClankWorld
+from ..universal_tracker import setup_options_from_slot_data
 
 
 class RatchetNanotechTests(unittest.TestCase):
@@ -46,7 +50,6 @@ class RatchetNanotechTests(unittest.TestCase):
         self.p.write_int32(self.save + 0x198FC, 333600)
         self.p.write_int32(self.save + 0xED4, 1)
         self.assertEqual(len(progression.ratchet_nanotech_checks(self.symbols)), 40)
-        from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
         progression.receive([PROGRESSIVE_CHALLENGE_MODE])
         self.assertEqual(len(progression.ratchet_nanotech_checks(self.symbols)), 70)
         self.p.write_int32(self.save + 0x198FC, 700)
@@ -65,9 +68,6 @@ class RatchetNanotechTests(unittest.TestCase):
 
 class RatchetNanotechGenerationTests(unittest.TestCase):
     def test_option_caps_tracker_and_disabled_operative(self):
-        from test.general import setup_multiworld
-        from ..world import SecretAgentClankWorld
-        from ..universal_tracker import setup_options_from_slot_data
         for ng, enabled, operatives, expected in (
                 (0, True, {'Ratchet': 1}, 40), (1, True, {'Ratchet': 1}, 70),
                 (2, True, {'Ratchet': 1}, 70), (0, False, {'Ratchet': 1}, 0),
@@ -88,9 +88,6 @@ class RatchetNanotechGenerationTests(unittest.TestCase):
                 self.assertEqual(bool(world.options.ratchet_nanotech_checks), enabled)
 
     def test_challenge_checks_require_challenge_item(self):
-        from test.general import setup_multiworld
-        from ..world import SecretAgentClankWorld
-        from ..constants.challenge_mode import PROGRESSIVE_CHALLENGE_MODE
         mw = setup_multiworld(SecretAgentClankWorld, options={
             'ratchet_nanotech_checks': True, 'ng_plus': 1, 'progressive_challenge_mode': True})
         state = mw.get_all_state(False)

@@ -1,15 +1,12 @@
-from typing import TYPE_CHECKING
 
 from ..constants import SKILL_POINT_FLAGS
 from .inventories import EventFlagInventory
-
-if TYPE_CHECKING:
-    from ..pypine import Pine
+from ..pypine import Pine
 
 
 class SkillPointState(EventFlagInventory):
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         super().__init__(pine, SKILL_POINT_FLAGS)
         self.allowed_locations = None
 

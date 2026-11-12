@@ -1,4 +1,3 @@
-"""Game-side heartbeat watchdog, independent of the client after installation."""
 from ..notifications import ItemNotifications
 from ..symbols import require
 from . import mips as m

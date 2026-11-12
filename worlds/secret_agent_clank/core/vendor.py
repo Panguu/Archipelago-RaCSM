@@ -1,5 +1,5 @@
 import struct
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 from .address_maps import VENDOR_ITEM_MAX_COUNT, VENDOR_ITEM_STRIDE
 from .address_maps.ps2 import (
@@ -10,9 +10,7 @@ from .address_maps.ps2 import (
     _ITEM_OFFSET_WEAPON_ID,
 )
 from ..constants import WEAPON_ORDER
-
-if TYPE_CHECKING:
-    from ..pypine import Pine
+from ..pypine import Pine
 
 
 class VendorItem(NamedTuple):
@@ -46,7 +44,7 @@ def purchased_base_item(before: VendorSnapshot, after: VendorSnapshot) -> str | 
 
 class VendorState:
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.menu_addr: int | None = None
         self.items_addr: int | None = None

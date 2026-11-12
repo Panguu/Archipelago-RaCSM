@@ -13,9 +13,14 @@ from ..constants import (
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from ..core import Core, RuntimeSymbols, VendorState
 from ..core.inventories import CaseInventory, MissionInventory, WeaponInventory
-from ..core.patches import LoaderGate
-from ..items import ALL_ITEMS, GADGET_ITEM_TABLE, WEAPON_ITEM_TABLE
+from ..core.patches import LoaderStateReader
+from ..items import ALL_ITEMS, CASE_GADGET_ITEM_TABLE, EQUIPMENT_ITEM_TABLE
 from ..locations import ALL_LOCATIONS
+from ..patcher.release import load_runtime_build
+
+# The shipped build plus a loader routine address, for tests on fake memory.
+# (The shipped build only gains a real one when data/ is rebuilt from the ISO.)
+TEST_BUILD = {"loader_routine": 0x1C0000, **load_runtime_build()}
 
 
 class Memory:
@@ -46,6 +51,10 @@ class Memory:
     def write_int32(self, address, value):
         self.batch_write_int32([(address, value)])
 
+    def write_float(self, address, value):
+        self.writes.append((address, value))
+        struct.pack_into("<f", self.data, address, value)
+
     def batch_write_int8(self, writes):
         for address, value in writes:
             self.writes.append((address, value))
@@ -72,7 +81,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_blackout_pen_receipt_writes_shared_slot_without_a_check(self):
         memory = Memory()
-        core = Core(memory)
+        core = Core(memory, permanent_build=TEST_BUILD)
         core.case.ratchet_items.set_base(0x100000)
         core.apply_inventory(ratchet={}, clank={SACClankGadgets.BLACK_OUT_PEN: True})
         core._reapply_all_inventories()
@@ -80,28 +89,28 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(core.case.ratchet_items.check(), [])
 
     def test_all_equipment_names_write_matching_native_slots(self):
-        self.assertEqual(set(EQUIPMENT_DISPLAY_TO_INTERNAL), set(WEAPON_ITEM_TABLE))
-        self.assertEqual(set(CLANK_PICKUP_TO_INTERNAL), set(GADGET_ITEM_TABLE))
+        self.assertEqual(set(EQUIPMENT_DISPLAY_TO_INTERNAL), set(EQUIPMENT_ITEM_TABLE))
+        self.assertEqual(set(CLANK_PICKUP_TO_INTERNAL), set(CASE_GADGET_ITEM_TABLE))
         for display, internal in {**EQUIPMENT_DISPLAY_TO_INTERNAL, **CLANK_PICKUP_TO_INTERNAL}.items():
             with self.subTest(item=display):
-                core = Core(Memory())
+                core = Core(Memory(), permanent_build=TEST_BUILD)
                 core.case.ratchet_items.set_base(0x100000)
                 core.apply_inventory(
                     ratchet={name: display == item for item, name in EQUIPMENT_DISPLAY_TO_INTERNAL.items()},
-                    clank={item: display == item for item in GADGET_ITEM_TABLE})
+                    clank={item: display == item for item in CASE_GADGET_ITEM_TABLE})
                 core._reapply_all_inventories()
                 slot = WEAPON_ORDER.index(internal)
                 self.assertTrue(core._entitlements()[slot])
                 self.assertEqual(core.pine.read_int32(0x100000 + slot * 0x74 + 0x70), 1)
                 self.assertEqual(core.case.ratchet_items.check(), [])
                 core.apply_inventory(ratchet=dict.fromkeys(EQUIPMENT_DISPLAY_TO_INTERNAL.values(), False),
-                                     clank=dict.fromkeys(GADGET_ITEM_TABLE, False))
+                                     clank=dict.fromkeys(CASE_GADGET_ITEM_TABLE, False))
                 core._reapply_all_inventories()
                 self.assertFalse(core._entitlements()[slot])
                 self.assertEqual(core.pine.read_int32(0x100000 + slot * 0x74 + 0x70), 0)
 
     def test_legacy_pickup_names_use_same_hook_and_write_ownership(self):
-        core = Core(Memory())
+        core = Core(Memory(), permanent_build=TEST_BUILD)
         core.case.ratchet_items.set_base(0x100000)
         core.apply_inventory(ratchet={"fountainpen": True, "sunglasses": True}, clank={})
         core._reapply_all_inventories()
@@ -170,7 +179,7 @@ class RuntimeTests(unittest.TestCase):
             with self.subTest(loader=loader, game=game):
                 memory = Memory()
                 memory.batch_write_int32([(CURRENT_CASE_ADDRESS, 1), (FORCE_CASE_ADDRESS, 0xFFFFFFFF),
-                                          (LoaderGate.STATE, loader), (0x206338, game)])
+                                          (LoaderStateReader.STATE, loader), (0x206338, game)])
                 case = CaseInventory(memory)
                 case._prev_case_id = 1
                 case.is_ready = True
@@ -186,12 +195,12 @@ class RuntimeTests(unittest.TestCase):
     def test_loading_started_during_symbol_scan_discards_binding(self):
         memory = Memory()
         memory.batch_write_int32([(CURRENT_CASE_ADDRESS, 1), (FORCE_CASE_ADDRESS, 0xFFFFFFFF),
-                                  (LoaderGate.STATE, 5), (0x206338, 3)])
+                                  (LoaderStateReader.STATE, 5), (0x206338, 3)])
         case = CaseInventory(memory)
         case._prev_case_id = 1
         def scan():
             case.symbols.values['GADGET_g_GadgetList'] = 0x100000
-            memory.write_int32(LoaderGate.STATE, 4)
+            memory.write_int32(LoaderStateReader.STATE, 4)
         case.symbols.refresh = scan
         case._valid_weapon_table = Mock(return_value=True)
         case.set_case = Mock()
@@ -204,7 +213,7 @@ class RuntimeTests(unittest.TestCase):
     def test_native_startup_blocks_binding_even_when_game_flags_look_ready(self):
         memory = Memory()
         memory.batch_write_int32([(CURRENT_CASE_ADDRESS, 1), (FORCE_CASE_ADDRESS, 0xFFFFFFFF),
-                                  (LoaderGate.STATE, 5), (0x206338, 3)])
+                                  (LoaderStateReader.STATE, 5), (0x206338, 3)])
         case = CaseInventory(memory)
         case._prev_case_id = 1
         case.is_ready = True
@@ -217,7 +226,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_inventory_packet_only_updates_snapshot(self):
         memory = Memory()
-        core = Core(memory)
+        core = Core(memory, permanent_build=TEST_BUILD)
         core.case.is_ready = True
         core.send_location = Mock()
         core.apply_inventory(ratchet={"blaster": True}, clank={})

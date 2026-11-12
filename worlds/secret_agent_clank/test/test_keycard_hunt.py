@@ -14,7 +14,7 @@ from ..locations import ALIEN_CODE_FLAGS, ALL_ALIEN_CODES_EVENT
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
 from .mips_cpu import CPU
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
 
 
 class KeycardHuntTests(unittest.TestCase):
@@ -73,7 +73,7 @@ class KeycardHuntTests(unittest.TestCase):
             setup_multiworld(SecretAgentClankWorld, seed=1, options={**options, "keycard_hunt": False})
 
     def test_receipts_never_complete_physical_checks(self):
-        core = Core(Memory())
+        core = Core(Memory(), permanent_build=TEST_BUILD)
         cards = core.keycards
         cards.hunt.enabled = True
         values = {0xAA: b"\0", 0xCB: b"\0"}

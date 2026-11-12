@@ -1,4 +1,3 @@
-"""Vendor transaction flags are independent of AP mod ownership."""
 from ...constants import (
     EQUIPMENT_DISPLAY_TO_INTERNAL,
     WEAPON_MODS,

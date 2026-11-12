@@ -1,4 +1,3 @@
-"""Build the shared shop from AP transaction flags, not the native save roster."""
 import struct
 
 from ...constants import (

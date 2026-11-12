@@ -1,4 +1,3 @@
-"""Exact retail no-op debug stubs eligible for reclaimed hook storage."""
 from dataclasses import dataclass
 
 from ...constants import DebugDrawFunctions

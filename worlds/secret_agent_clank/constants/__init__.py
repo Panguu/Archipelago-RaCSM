@@ -1,6 +1,13 @@
 from .alien_codes import SACAlienCodeLocations
 from .challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MODE
-from .cheats import CHEAT_SKILL_POINT_THRESHOLD, TRAP_DURATIONS, SACCheats, SACTraps
+from .cheats import (
+    ALL_TRAPS,
+    CHEAT_SKILL_POINT_THRESHOLD,
+    GADGETRON_DEBT_PERCENT,
+    TRAP_DURATIONS,
+    SACCheats,
+    SACTraps,
+)
 from .clank_gadgets import (
     CLANK_GADGET_BY_CASE_ID,
     CLANK_GADGETS,
@@ -10,6 +17,7 @@ from .clank_gadgets import (
     SACProtoWeapons,
 )
 from .cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
+from .filler import ALL_FILLER, NANOTECH_XP_PERCENT, WEAPON_XP_PERCENT, SACFiller
 from .gadgetbot_challenges import GADGETBOT_CHALLENGE_FLAGS, SACGadgetbotChallengeLocations
 from .keycards import KEYCARD_BITS, KEYCARD_ITEMS, SACKeycardLocations
 from .missions import (
@@ -40,10 +48,11 @@ from .option_choices import (
     ProgressiveWeaponsOptions,
     QwarkSkinOptions,
     RatchetSkinOptions,
+    RingLinkBehaviorOptions,
     SkillPointsOptions,
     WeaponLevelChecksOptions,
 )
-from .operatives import ALL_OPERATIVES, OPTIONAL_OPERATIVES, PROGRESSIVE_CHARACTER_ITEM_NAME, SACOperatives
+from .operatives import ALL_OPERATIVES, OPTIONAL_OPERATIVES, SACOperatives
 from .pickups import CHALLENGE_MODE_PICKUP_LOCATIONS, PICKUP_LOCATION_BY_INTERNAL, PICKUP_LOCATIONS, SACPickups
 from .planets import (
     ALL_CASES,
@@ -55,7 +64,6 @@ from .planets import (
     CASE_NAME_TO_OPERATIVE,
     CASE_NAME_TO_PLANET,
     OPERATIVE_NAMES,
-    PLANET_ACCESS_ITEM_NAME,
     PLANET_NAMES,
     PROGRESSIVE_PLANET_ITEM_NAME,
     Case,
@@ -112,6 +120,7 @@ from .weapon_order import WEAPON_ORDER
 from .weapon_progression import (
     LEVELLED_INTERNALS,
     PROGRESSIVE_TO_INTERNAL,
+    PROGRESSIVE_WRENCH,
     PROGRESSIVE_TO_UNLOCK,
     TITAN_ITEMS,
     TITAN_LOCATIONS,
@@ -178,13 +187,12 @@ __all__ = [
     "OPTIONAL_OPERATIVES",
     "PICKUP_LOCATIONS",
     "PICKUP_LOCATION_BY_INTERNAL",
-    "PLANET_ACCESS_ITEM_NAME",
     "PLANET_NAMES",
     "PROGRESSIVE_CHALLENGE_MODE",
-    "PROGRESSIVE_CHARACTER_ITEM_NAME",
     "PROGRESSIVE_PLANET_ITEM_NAME",
     "PROGRESSIVE_TO_INTERNAL",
     "PROGRESSIVE_TO_UNLOCK",
+    "PROGRESSIVE_WRENCH",
     "QWARK_GIANT_SKINS",
     "QWARK_SKINS",
     "RATCHET_CHALLENGES_BY_CASE",
@@ -204,6 +212,11 @@ __all__ = [
     "TITAN_ITEMS",
     "TITAN_LOCATIONS",
     "TRAP_DURATIONS",
+    "ALL_TRAPS",
+    "ALL_FILLER",
+    "GADGETRON_DEBT_PERCENT",
+    "NANOTECH_XP_PERCENT",
+    "WEAPON_XP_PERCENT",
     "UNLOCK_TO_PROGRESSIVE",
     "UNSUPPORTED_RATCHET_SKIN",
     "VENDOR_CASES",
@@ -227,9 +240,11 @@ __all__ = [
     "ProgressiveWeaponsOptions",
     "QwarkSkinOptions",
     "RatchetSkinOptions",
+    "RingLinkBehaviorOptions",
     "SACAlienCodeLocations",
     "SACCases",
     "SACCheats",
+    "SACFiller",
     "SACClankGadgets",
     "SACClankWeapons",
     "SACCutsceneLocations",

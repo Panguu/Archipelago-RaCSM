@@ -4,7 +4,6 @@ from ..constants import (
     CASES_BY_PLANET,
     CASE_ID_TO_CASE,
     CASE_NAME_TO_INFOBOT,
-    PLANET_ACCESS_ITEM_NAME,
     PLANET_NAMES,
     PROGRESSIVE_PLANET_ITEM_NAME,
     SACCases,
@@ -141,13 +140,6 @@ class TestResolveOwnedCases(unittest.TestCase):
         infobot = CASE_NAME_TO_INFOBOT[SACCases.LARGER_THAN_LIFE]
         owned = resolve_owned_cases([infobot])
         self.assertIn(SACCases.LARGER_THAN_LIFE, owned)
-
-    def test_planet_access_item_grants_every_case_on_that_planet(self):
-        planet = PLANET_NAMES[1]
-        item = PLANET_ACCESS_ITEM_NAME[planet]
-        owned = resolve_owned_cases([item])
-        for case in CASES_BY_PLANET[planet]:
-            self.assertIn(case.name, owned)
 
     def test_progressive_planet_unlocks_that_planets_cases_in_order(self):
         planet = PLANET_NAMES[0]

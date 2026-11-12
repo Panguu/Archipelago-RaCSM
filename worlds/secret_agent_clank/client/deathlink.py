@@ -15,39 +15,25 @@ class DeathLinkMixin:
     def _send_death_link_from_sync(self, death: dict[str, str | None]) -> None:
         if death['planet']:
             self.current_planet = death['planet']
-        cause = death['cause'] or 'died'
         if not self._death_link_enabled:
             return
-        now = time.time()
-        if now - self._last_death_link < 1:
+        if time.time() - self.last_death_link < 1:  # one death can be reported more than once
             return
-        self._last_death_link = now
-        source = self.auth or "Ratchet"
-        planet_name = self.current_planet or "an unknown planet"
-        message = f"{source} {cause} on {planet_name}."
-        self._debug_log("[SAC] DeathLink sent.")
-        async_start(
-            self.send_msgs([{
-                "cmd": "Bounce",
-                "tags": ["DeathLink"],
-                "data": {
-                    "time": now,
-                    "source": source,
-                    "cause": message,
-                },
-            }])
-        )
+        message = f"{self.auth or 'Ratchet'} {death['cause'] or 'died'} on {self.current_planet or 'an unknown planet'}."
+        async_start(self.send_death(message))
         async_start(self._worker.request("death_sent", message))
+
+    def on_deathlink(self, data: dict[str, Any]) -> None:
+        if data.get("time", 0) <= self.last_death_link:  # old, or one we sent
+            return
+        super().on_deathlink(data)
+        if self._death_link_enabled:
+            async_start(self._receive_death_link(data))
 
     async def _receive_death_link(self, data: dict[str, Any]) -> None:
         if not self.pine_connected:
             return
-        timestamp = float(data.get("time", 0))
-        if timestamp and timestamp <= self._last_death_link:
-            return
-        self._last_death_link = max(timestamp, time.time())
         source = data.get("source", "Unknown")
         cause = data.get("cause") or f"{source} died"
-        self._debug_log(f"[SAC] DeathLink received: {cause}")
         async with self._pine_lock:
             await self._worker.request("death", (source, cause))

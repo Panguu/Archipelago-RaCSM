@@ -64,6 +64,8 @@ def checked_levels(internal, mode, ng_plus):
     return tuple(level for level in candidates if level <= cap)
 
 
+PROGRESSIVE_WRENCH = "Progressive Wrench"
+
 WEAPON_LEVEL_NAME = "Weapon Level: {weapon_name} V{level}"
 
 

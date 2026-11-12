@@ -1,4 +1,3 @@
-"""Location patch plan for modules with a vendor but no WeaponPickup code, such as High Impact Treehouse."""
 from ...constants import NativeFunctions
 from ..symbols import forbid, require
 from .asm import MARKER, branch, capture, jump, packed, words

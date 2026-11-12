@@ -53,7 +53,7 @@ def setup_vendor_world(world_type, options=None):
 
 class VendorAccessTests(unittest.TestCase):
     def test_ratchet_vendor_stock_requires_pda_and_has_reachable_stock(self):
-        for mode in range(4):
+        for mode in ("cases", "progressive_planet"):
             with self.subTest(mode=mode):
                 m = setup_multiworld(SecretAgentClankWorld, seed=12345, options={
                     'operatives': {'Ratchet': 1}, 'goal': 'ratchet_prison_escape',
@@ -149,7 +149,7 @@ class VendorAccessTests(unittest.TestCase):
         self.assertFalse(state.has(CASE_NAME_TO_INFOBOT[SACCases.INSIDE_THE_A_EYE], 1))
 
     def test_all_catalog_gates_match_client_case_ownership_in_every_access_mode(self):
-        for mode in range(4):
+        for mode in ("cases", "progressive_planet"):
             m = setup_multiworld(SecretAgentClankWorld, seed=12345,
                                  options={"ng_plus": 1, "infobots": mode})
             world = m.worlds[1]
@@ -162,13 +162,12 @@ class VendorAccessTests(unittest.TestCase):
             state = CollectionState(m)
             received = [item.name for item in m.precollected_items[1]]
             items = [item for item in m.itempool if item.name.startswith("Case File")
-                     or "Access" in item.name or item.name.startswith("Progressive")]
+                     or item.name.startswith("Progressive")]
             for item in [None, *items]:
                 if item is not None:
                     state.collect(item)
                     received.append(item.name)
-                owned = resolve_owned_cases(received, character_unlocks=mode == 3,
-                                            planet_cases=world.planet_cases)
+                owned = resolve_owned_cases(received, planet_cases=world.planet_cases)
                 for loc in locations:
                     self.assertEqual(loc.access_rule(state), VENDOR_CASES[loc.name] in owned,
                                      (mode, loc.name, received))
@@ -193,18 +192,6 @@ class VendorAccessTests(unittest.TestCase):
         for count in (1, 4, 8):
             self.assertEqual(vendor_unlocked_cases(
                 owned, [SACClankGadgets.HOLOMONOCLE] + [progressive] * count), owned)
-
-    def test_planet_mode_can_unlock_museum_stock_from_another_start(self):
-        m = setup_multiworld(SecretAgentClankWorld, steps=("generate_early", "create_regions"), seed=12345,
-                             options={"infobots": "planets", "ng_plus": 1})
-        with pick_starting_cases(m.worlds[1], lambda name: name != SACCases.BOLTAIRE_MUSEUM):
-            for step in gen_steps[2:]:
-                call_all(m, step)
-        world = m.worlds[1]
-        self.assertNotIn(SACCases.BOLTAIRE_MUSEUM, (world.starting_case, world.second_starting_case))
-        self.assertIn(SACCases.BOLTAIRE_MUSEUM, [item.name for item in m.itempool])
-        distribute_items_restrictive(m)
-        self.assertTrue(m.fulfills_accessibility())
 
     def test_reported_four_checks_reachable_with_all_items(self):
         m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})

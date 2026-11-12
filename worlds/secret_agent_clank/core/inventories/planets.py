@@ -1,28 +1,25 @@
-"""Case-transition detection, plus the per-case accessors that set_case() rebinds on each transition."""
 import logging
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from ...constants import CASE_ID_TO_CASE, SACOperatives
 from ..address_maps import CASE_ADDRESSES, CASE_IDLE_VALUE, CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from ..case_menu import CaseMenu
 from ..mission_failure import MissionFailure
 from ..player import ActivePlayer, CharacterState
-from ..patches import LoaderGate
+from ..patches import LoaderStateReader
 from ..symbols import RuntimeSymbols
 from ..vendor import VendorState
 from .inventory import ItemInventory
 from .weapons import WeaponInventory
+from ...pypine import Pine
 
-if TYPE_CHECKING:
-    from ...pypine import Pine
 
 logger = logging.getLogger("CommonClient")
 
 
 class CaseInventory:
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
 
         self.ratchet = CharacterState(pine)
@@ -74,7 +71,7 @@ class CaseInventory:
 
     def check_transition(self, *, allow_bind=True) -> bool:
         """Bind overlay addresses only after the loader and gameplay settle."""
-        addresses = (CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS, LoaderGate.STATE, 0x206338)
+        addresses = (CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS, LoaderStateReader.STATE, 0x206338)
         state = self.pine.batch_read_int32(addresses)
         current, requested, loader, game = state
         changing = (not allow_bind or current != self._prev_case_id or requested != 0xFFFFFFFF
@@ -165,7 +162,7 @@ class CaseInventory:
         # Recheck loader state: the worker can receive a network death between
         # ticks, after the old overlay has already started unloading.
         if (not self.is_ready or self.pine.batch_read_int32(
-                (CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS, LoaderGate.STATE, 0x206338))
+                (CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS, LoaderStateReader.STATE, 0x206338))
                 != [self.case_id, 0xFFFFFFFF, 5, 3]):
             return False
         if not self.active_player.kill():

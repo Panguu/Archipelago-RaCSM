@@ -1,7 +1,3 @@
-"""Location patch plan for modules with WeaponPickup code.
-
-Intercepts pickup grants, ownership gates and vendor purchases.
-"""
 from ...constants import NativeFunctions
 from ..symbols import require
 from .asm import MARKER, branch, capture, jump, packed, words

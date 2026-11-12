@@ -1,4 +1,3 @@
-"""Arena win counters resolved from the native arena table and current save."""
 import struct
 
 from ...constants import RATCHET_CHALLENGES_BY_CASE

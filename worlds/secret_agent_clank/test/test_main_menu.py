@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from ..core import Core, MainMenuNotice, is_main_menu
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
 
 
 class MainMenuTests(unittest.TestCase):
@@ -42,7 +42,7 @@ class MainMenuTests(unittest.TestCase):
 
     def test_core_shows_notice_without_ap_and_skips_gameplay_reads(self):
         log, debug = Mock(), Mock()
-        core = Core(self.p, log, debug)
+        core = Core(self.p, log, debug, permanent_build=TEST_BUILD)
         core._read_native_locations = Mock()
         core.case.check_transition = Mock()
         core.tick()

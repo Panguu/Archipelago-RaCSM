@@ -65,7 +65,33 @@ class SACCommandProcessor(ClientCommandProcessor):
         else:
             logger.warning("[SAC] Could not reset traps; load into a case first.")
 
-    def _cmd_toggle_deathlink(self) -> bool:
+    def _cmd_ringlink(self, mode: str = "toggle") -> bool:
+        """Turn Ring Link on or off for this session. /ringlink [toggle|on|off|status]"""
+        mode = mode.lower()
+        if mode not in ("toggle", "on", "off", "status"):
+            logger.warning("[SAC] Usage: /ringlink [toggle|on|off|status]")
+            return False
+        if mode == "status":
+            logger.info(f"[SAC] Ring Link is {'enabled' if self.ctx._ring_link_enabled else 'disabled'}.")
+            return True
+        enable = not self.ctx._ring_link_enabled if mode == "toggle" else mode == "on"
+        async_start(self.ctx._set_ring_link_enabled(enable))
+        return True
+
+    def _cmd_deathlink_mode(self, mode: str) -> bool:
         """Turn DeathLink on or off for this session."""
-        async_start(self.ctx._set_death_link_enabled(not self.ctx._death_link_enabled))
+        if mode.lower() not in ("toggle", "on", "off", "status"):
+            logger.warning("[SAC] Usage: /deathlink [toggle|on|off|status]")
+            return False
+        mode = mode.lower()
+        if mode == "on":
+            enable = True
+        elif mode == "off":
+            enable = False
+        elif mode == "toggle":
+            enable = not self.ctx._death_link_enabled
+        else:
+            logger.info(f"[SAC] DeathLink is {'enabled' if self.ctx._death_link_enabled else 'disabled'}.")
+            return True
+        async_start(self.ctx._set_death_link_enabled(enable))
         return True

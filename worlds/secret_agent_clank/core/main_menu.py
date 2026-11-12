@@ -1,9 +1,9 @@
-"""Resident title-module detection; CURRENT_CASE stays stale on the title screen."""
-from .patches import LoaderGate
+"""CURRENT_CASE stays stale on the title screen."""
+from .patches import LoaderStateReader
 
 
 def is_main_menu(pine):
-    addresses = (LoaderGate.TARGET, LoaderGate.STATE, LoaderGate.STATUS,
+    addresses = (LoaderStateReader.TARGET, LoaderStateReader.STATE, LoaderStateReader.STATUS,
                  0x206324, 0x206338)
     expected = [0, 5, 1, 0xFFFFFFFF, 3]
     return (pine.batch_read_int32(addresses) == expected

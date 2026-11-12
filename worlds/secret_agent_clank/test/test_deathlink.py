@@ -7,13 +7,19 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from ..client import DeathLinkMixin, SACContext
 from ..core import ActivePlayer, Core, RuntimeSymbols
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
+from ..core.patches.loader_state import LoaderStateReader
+from ..core.patches.asm import packed, jump
+from .mips_cpu import CPU
+from ..core.mission_failure import MissionFailure
+from ..client.context import SACContext
+from ..client.command_processor import SACCommandProcessor
 
 
 class DeathDetectionTests(unittest.TestCase):
     def setUp(self):
         self.memory = Memory()
-        self.core = Core(self.memory)
+        self.core = Core(self.memory, permanent_build=TEST_BUILD)
         self.case = self.core.case
         self.core._strip_all_inventories = Mock()
         self.core._reapply_all_inventories = Mock()
@@ -23,8 +29,7 @@ class DeathDetectionTests(unittest.TestCase):
         self.case.active_player.pointer_address = 0x110000
         self.memory.write_int32(0x110000, 0x120000)
         self.memory.batch_write_int32([(0x206328, 1), (0x206324, 0xFFFFFFFF)])
-        from ..core.patches.loader_gate import LoaderGate
-        self.memory.write_int32(LoaderGate.STATE, 5)
+        self.memory.write_int32(LoaderStateReader.STATE, 5)
         self.memory.write_int32(0x206338, 3)
         self.health(10)
         self.bind_ratchet_state()
@@ -41,7 +46,6 @@ class DeathDetectionTests(unittest.TestCase):
         self.memory.write_bytes(0x120274, struct.pack('<2f', value, maximum))
 
     def install_failure_hook(self):
-        from ..core.patches.asm import packed, jump
         render = 0x140000
         self.memory.write_bytes(render + 0x14, packed([jump(0x160000, True), 0x240403A6]))
         cursor = 0x150000
@@ -58,7 +62,6 @@ class DeathDetectionTests(unittest.TestCase):
         return render + 0x14
 
     def render_failure(self, render):
-        from .mips_cpu import CPU
         cpu = CPU(self.memory)
         sp = cpu.r[29]
         cpu.run(render, stop=0x160000)
@@ -273,7 +276,6 @@ class DeathDetectionTests(unittest.TestCase):
                 player.bind_runtime(symbols)
                 self.assertIsNotNone(player.pointer_address)
                 self.assertIn(player.state_kind, ('Ratchet', 'Clank'))
-                from ..core.mission_failure import MissionFailure
                 failure = MissionFailure(memory)
                 failure.prepare(symbols, lambda data: 0x150000)
                 if 'CLANK_MissionFailedText__FPv' in symbols:
@@ -286,9 +288,9 @@ class DeathDetectionTests(unittest.TestCase):
 class DeathNotificationTests(unittest.TestCase):
     def test_worker_event_sends_archipelago_deathlink_bounce(self):
         ctx = SimpleNamespace(_notification_slot=('seed', 0, 1),
-            _death_link_enabled=True, _last_death_link=0,
-            auth='Clank player', current_planet='',
-            _debug_log=Mock(), send_msgs=AsyncMock(), _worker=SimpleNamespace(request=Mock()))
+            _death_link_enabled=True, last_death_link=0,
+            auth='Clank player', current_planet='', _worker=SimpleNamespace(request=Mock()))
+        ctx.send_death = AsyncMock()
         ctx._send_death_link_from_sync = lambda value: DeathLinkMixin._send_death_link_from_sync(ctx, value)
         tasks = []
         with patch('worlds.secret_agent_clank.client.deathlink.async_start',
@@ -296,30 +298,35 @@ class DeathNotificationTests(unittest.TestCase):
             SACContext._worker_event(ctx, 'death', {'cause': 'drowned', 'planet': 'Boltaire Museum'}, ('seed', 0, 1))
         self.assertEqual(len(tasks), 2)
         ctx._worker.request.assert_called_once_with('death_sent', 'Clank player drowned on Boltaire Museum.')
-        # send_msgs is an AsyncMock which completes without yielding; exercise
-        # the packet without starting a Windows Proactor loop for this test.
-        with self.assertRaises(StopIteration):
-            tasks[0].send(None)
-        packet = ctx.send_msgs.call_args.args[0][0]
-        self.assertEqual(packet['cmd'], 'Bounce')
-        self.assertEqual(packet['tags'], ['DeathLink'])
-        self.assertEqual(packet['data']['source'], 'Clank player')
-        self.assertEqual(packet['data']['cause'], 'Clank player drowned on Boltaire Museum.')
+        ctx.send_death.assert_called_once_with('Clank player drowned on Boltaire Museum.')
         self.assertEqual(ctx.current_planet, 'Boltaire Museum')
-        self.assertGreater(packet['data']['time'], 0)
+        for task in tasks:
+            task.close()
 
 
 class DeathLinkReceiveTests(unittest.IsolatedAsyncioTestCase):
     async def test_received_deathlink_sends_source_and_cause_to_the_game(self):
-        ctx = SimpleNamespace(pine_connected=True, _last_death_link=0, _debug_log=Mock(),
-                              _pine_lock=asyncio.Lock(), _worker=SimpleNamespace(request=AsyncMock()))
+        ctx = SimpleNamespace(pine_connected=True, _pine_lock=asyncio.Lock(),
+                              _worker=SimpleNamespace(request=AsyncMock()))
         await DeathLinkMixin._receive_death_link(ctx, {'time': 1, 'source': 'Bob', 'cause': 'Bob fell.'})
         ctx._worker.request.assert_awaited_once_with('death', ('Bob', 'Bob fell.'))
 
 
+    async def test_only_newer_deathlinks_reach_the_game(self):
+        ctx = SACContext.__new__(SACContext)
+        ctx.last_death_link, ctx._death_link_enabled = 5.0, True
+        with patch('worlds.secret_agent_clank.client.deathlink.async_start') as start:
+            ctx.on_deathlink({'time': 5.0, 'source': 'Me', 'cause': 'Me died.'})  # the one we sent
+            ctx.on_deathlink({'time': 4.0, 'source': 'Bob', 'cause': 'Bob fell.'})
+            start.assert_not_called()
+            ctx.on_deathlink({'time': 6.0, 'source': 'Bob', 'cause': 'Bob fell.'})
+            start.assert_called_once()
+            start.call_args.args[0].close()
+        self.assertEqual(ctx.last_death_link, 6.0)
+
+
 class DeathLinkCommandTests(unittest.TestCase):
     def test_toggle_deathlink_flips_the_current_setting(self):
-        from ..client.command_processor import SACCommandProcessor
         for current in (False, True):
             with self.subTest(current=current):
                 ctx = SimpleNamespace(_death_link_enabled=current, _set_death_link_enabled=Mock())

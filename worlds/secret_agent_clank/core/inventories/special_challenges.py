@@ -1,15 +1,12 @@
-from typing import TYPE_CHECKING
 
 from ...constants import SPECIAL_CHALLENGE_FLAGS
 from .case_events import EventFlagInventory
-
-if TYPE_CHECKING:
-    from ...pypine import Pine
+from ...pypine import Pine
 
 
 class SpecialChallengeInventory(EventFlagInventory):
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         super().__init__(pine, SPECIAL_CHALLENGE_FLAGS)
 
     def sync(self) -> None:

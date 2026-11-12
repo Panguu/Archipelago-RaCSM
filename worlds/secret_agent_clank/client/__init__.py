@@ -1,7 +1,5 @@
-"""Archipelago client for Secret Agent Clank via PCSX2 PINE."""
 import asyncio
 import logging
-import sys
 from argparse import Namespace
 
 import colorama
@@ -9,6 +7,7 @@ import colorama
 from CommonClient import get_base_parser, gui_enabled, handle_url_arg, server_loop
 from Utils import async_start, init_logging
 
+from ..patcher.launch import prepare_iso, start_game
 from .command_processor import SACCommandProcessor
 from .context import SACContext, tracker_loaded
 from .deathlink import DeathLinkMixin
@@ -28,7 +27,21 @@ __all__ = [
 ]
 
 
+async def _open_patch(args: Namespace) -> None:
+    """Patch (once per build) and boot the ISO; connect as the patch's slot unless told otherwise."""
+    try:
+        patch, iso = await prepare_iso(args.patch_file, gui_enabled)
+    except Exception as exc:
+        logging.getLogger("Client").error(f"[SAC] Could not patch the ISO: {exc}")
+        return
+    args.name = args.name or patch.player_name or None
+    args.connect = args.connect or patch.server or None
+    start_game(iso)
+
+
 async def main(args: Namespace) -> None:
+    if args.patch_file:
+        await _open_patch(args)
     ctx = SACContext(args.connect, args.password)
     ctx.auth = args.name
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
@@ -55,17 +68,12 @@ def run_client(*args: str) -> None:
     init_logging("SACClient")
     parser = get_base_parser(description="Secret Agent Clank Archipelago Client")
     parser.add_argument("--name", default=None, help="Slot Name to connect as.")
-    parser.add_argument("url", nargs="?", help="Archipelago connection url")
-    parsed_args = handle_url_arg(parser.parse_args(args))
-
-    if not gui_enabled:
-        if not parsed_args.connect and sys.stdin and sys.stdin.isatty():
-            parsed_args.connect = input("Archipelago server address (host:port): ").strip() or None
-        if not parsed_args.name and sys.stdin and sys.stdin.isatty():
-            parsed_args.name = input("Slot name: ").strip() or None
-        if not parsed_args.password and sys.stdin and sys.stdin.isatty():
-            password = input("Password (leave blank if none): ").strip()
-            parsed_args.password = password or None
+    parser.add_argument("url", nargs="?", help="Archipelago connection url, or a .apsac patch file")
+    parsed_args = parser.parse_args(args)
+    parsed_args.patch_file = None
+    if parsed_args.url and parsed_args.url.lower().endswith(".apsac"):
+        parsed_args.patch_file, parsed_args.url = parsed_args.url, None
+    parsed_args = handle_url_arg(parsed_args, parser)
 
     colorama.just_fix_windows_console()
     asyncio.run(main(parsed_args))

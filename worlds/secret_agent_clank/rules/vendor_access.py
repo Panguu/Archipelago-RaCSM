@@ -5,11 +5,7 @@ from typing_extensions import override
 
 from ..constants import (
     ALL_CASES,
-    CASES_BY_OPERATIVE,
-    CASE_NAME_TO_CASE,
     EQUIPMENT_DISPLAY_TO_INTERNAL,
-    PLANET_ACCESS_ITEM_NAME,
-    PROGRESSIVE_CHARACTER_ITEM_NAME,
     VENDOR_REQUIREMENT_ITEMS,
     InfobotsOptions,
 )
@@ -36,16 +32,8 @@ class CaseOwnershipRule(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         rule = Has(self.cases)
-        case = CASE_NAME_TO_CASE[self.cases]
-        mode = world.options.infobots
-        if mode == InfobotsOptions.CHARACTER_UNLOCKS:
-            item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(case.operative)
-            if item:
-                rule = rule | Has(item, list(CASES_BY_OPERATIVE[case.operative]).index(case) + 1)
-        elif mode == InfobotsOptions.PROGRESSIVE_PLANET:
+        if world.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             rule = rule | HasProgressivePlanet(world, self.cases)
-        elif mode != InfobotsOptions.CASES and case.planet in PLANET_ACCESS_ITEM_NAME:
-            rule = rule | Has(PLANET_ACCESS_ITEM_NAME[case.planet])
         return rule.resolve(world)
 
 

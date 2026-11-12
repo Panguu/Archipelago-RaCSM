@@ -1,6 +1,4 @@
-"""Secret Agent Clank PS2 (SCUS-97623) RAM addresses.
-
-GadgetData and pause state come from runtime exports instead. The historical case-unlock
+"""GadgetData and pause state come from runtime exports instead. The historical case-unlock
 anchors below overlap mission state fields and must NOT be applied by the normal client;
 see docs/address_research.md.
 """

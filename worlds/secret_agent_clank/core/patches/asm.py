@@ -1,4 +1,3 @@
-"""Word packing, jump/branch encoding, and the Patch record used by every patch plan."""
 import struct
 from dataclasses import dataclass
 

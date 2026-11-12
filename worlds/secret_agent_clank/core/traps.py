@@ -1,8 +1,8 @@
-"""Timed native cheats, resolved from the current module rather than fixed RAM."""
 import struct
 import time
 
-from ..constants import TRAP_DURATIONS, SACTraps
+from ..constants import GADGETRON_DEBT_PERCENT, TRAP_DURATIONS, SACTraps
+from .address_maps import BOLTS_ADDRESS
 from .case_menu import ee_pointer
 
 TRAP_BITS = {
@@ -83,6 +83,13 @@ class Traps:
         self.remaining[name] = self.remaining.get(name, 0) + self.durations.get(name, 30)
         self.last_tick = self.clock()
         return True
+
+    def gadgetron_debt(self):
+        """Take GADGETRON_DEBT_PERCENT of the player's bolts, rounded down. Returns how many were taken."""
+        bolts = self.pine.read_int32(BOLTS_ADDRESS)
+        debt = bolts * GADGETRON_DEBT_PERCENT // 100
+        self.pine.write_int32(BOLTS_ADDRESS, bolts - debt)
+        return debt
 
     def grant_ratchet_pack(self, symbols):
         """Switch the Ratchet Pack cheat on; the player can still toggle it off."""

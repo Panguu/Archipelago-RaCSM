@@ -48,7 +48,7 @@ class KlunksLairAccessTests(unittest.TestCase):
                 self.assertTrue(entrance.access_rule(_state(mw, everything)))
 
     def test_klunks_lair_is_never_a_starting_case(self):
-        for mode in ("cases", "planets", "progressive_planet", "character_unlocks"):
+        for mode in ("cases", "progressive_planet"):
             for seed in range(10):
                 with self.subTest(mode=mode, seed=seed):
                     world = setup_multiworld(SecretAgentClankWorld, seed=seed, options={"infobots": mode}).worlds[1]

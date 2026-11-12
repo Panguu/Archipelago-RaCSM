@@ -1,0 +1,8 @@
+# Keep private disc captures, generated ISOs and session state out of releases.
+/.research/
+/.client_state/
+/build/
+/apworld.ignore
+*.iso
+*.rel
+*.apworld

@@ -7,11 +7,11 @@ from ..core.patches import Progression
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 from .test_runtime import Memory
+from ..core.patches.asm import packed
 
 
 class ProgressionTests(unittest.TestCase):
     def replay_fixture(self):
-        from ..core.patches.asm import packed
         p = CaptureMemory()
         arena, moby = 0x110000, 0x120000
         p.write_bytes(arena + 0x98, packed([
