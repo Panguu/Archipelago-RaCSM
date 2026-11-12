@@ -1,4 +1,3 @@
-import struct
 import unittest
 
 from ..core.patches.asm import packed
@@ -53,7 +52,7 @@ class TestPermanentRoutines(unittest.TestCase):
     def test_gain_settings_change_without_code_writes(self):
         memory = Memory()
         original = packed([0x27BDFFF0, 0xFFB00000])
-        code = Progression.dynamic_gain_wrapper(0x120000, original, 4, 0x138000)
+        code = Progression.gain_wrapper(0x120000, original, 0x138000)
         memory.write_bytes(0x110000, code)
         for multiplier in (1, 2, 3, 10):
             memory.write_int32(0x138000, multiplier)
@@ -68,7 +67,7 @@ class TestPermanentRoutines(unittest.TestCase):
 
     def test_weapon_gain_preserves_both_native_paths(self):
         memory = Memory()
-        code = Progression.dynamic_weapon_gain_wrapper(0x120000, 0x138000)
+        code = Progression.weapon_gain_wrapper(0x120000, 0x138000)
         memory.write_bytes(0x110000, code)
         memory.write_int32(0x140064, 777)
         for multiplier in (1, 2, 3, 10):

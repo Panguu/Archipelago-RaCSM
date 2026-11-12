@@ -1,8 +1,8 @@
 from ...constants import NativeFunctions
 from ..symbols import forbid, require
-from .asm import MARKER, branch, capture, jump, packed, words
+from .asm import MARKER, branch, capture, check, jump, packed, words
 from .entitlements import Entitlements
-from .gameFlags import GameFlags
+from .game_flags import GameFlags
 from .patch import PatchSet
 from .plan import PatchPlan
 
@@ -20,17 +20,17 @@ class VendorOnly(PatchSet):
         )
         module, sellable_gate, purchase_grant, *purchase_tail, call = p.batch_read_int32([
             0x206328, sell + 12, buy + 0x1EC, buy + 0x1F4, buy + 0x1F8, buy + 0x338])
-        assert sellable_gate == jump(get, True)
-        assert purchase_grant == jump(put, True)
-        assert purchase_tail == [0x8E430010, 0x24020026]
-        assert call >> 26 == 3
+        check(sellable_gate == jump(get, True), "Sellable gate changed")
+        check(purchase_grant == jump(put, True), "Purchase grant changed")
+        check(purchase_tail == [0x8E430010, 0x24020026], "Purchase tail changed")
+        check(call >> 26 == 3, "Vendor rebuild call changed")
         builder = (call & 0x3FFFFFF) << 2
         body = words(p.read_bytes(builder, 0x800))
-        assert body[0] == 0x27BDFF70
+        check(body[0] == 0x27BDFF70, "Vendor builder changed")
         sites = [builder + i * 4 for i, w in enumerate(body) if w == jump(get, True)
                  and next((body[j] for j in range(i - 1, max(-1, i - 7), -1)
                            if body[j] >> 26 == 3), None) == jump(sell, True)]
-        assert len(sites) == 4
+        check(len(sites) == 4, f"Unexpected base-offer gates: {len(sites)}")
         reported = set(checked)
         plan_locations = {"vendor": dict(locations)} if locations else {}
         arena = buy + 0x1FC
@@ -59,8 +59,6 @@ class VendorOnly(PatchSet):
             entitlement_table = arena + len(data)
             snapshot = bytearray(44)
             for slot, value in entitlements.items():
-                if not 0 <= slot < 40 or type(value) is not bool:
-                    raise ValueError("Invalid AP entitlement")
                 snapshot[slot] = 2 if value else 1
             data.extend(snapshot)
             routine = arena + len(data)
@@ -68,9 +66,9 @@ class VendorOnly(PatchSet):
                 address=routine, table=entitlement_table, gadget_base=base,
                 fallback=init).replacement)
             sites_words = p.batch_read_int32([load + 0x2F0, load + 0x2F4, restart + 0x12C, restart + 0x130])
-            assert sites_words == [jump(init, True), 0] * 2
+            check(sites_words == [jump(init, True), 0] * 2, "Object init call changed")
             init_edits = [(site, packed([jump(routine, True)])) for site in (load + 0x2F0, restart + 0x12C)]
-        assert arena + len(data) <= buy + 0x338
+        check(arena + len(data) <= buy + 0x338, "Vendor hooks exceed the purchase tail")
         edits = [(buy + 0x1F4, packed([branch(buy + 0x1F4, buy + 0x338), 0])),
                  (arena, bytes(data))]
         if locations:

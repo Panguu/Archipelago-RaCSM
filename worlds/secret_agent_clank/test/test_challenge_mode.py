@@ -1,5 +1,4 @@
 import unittest
-from types import SimpleNamespace
 
 from BaseClasses import CollectionState
 from Fill import distribute_items_restrictive
@@ -8,12 +7,14 @@ from test.general import setup_multiworld
 from ..constants import (
     CHALLENGE_VENDOR_LOCATIONS,
     PROGRESSIVE_CHALLENGE_MODE,
+    NativeFunctions,
     SACClankGadgets,
     SACPickups,
     level_location_name,
     nanotech_location_name,
 )
 from ..core.patches import Progression, VendorCatalog, jump, packed
+from ..core.patches.module_arena import ModuleArena
 from ..options import BoltMultiplier, HealthXPMultiplier, NgPlus, WeaponXPMultiplier
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
@@ -37,12 +38,16 @@ class ChallengeModeTests(unittest.TestCase):
                 mem.write_bytes(getter + 0x20, packed([0x8C42005C]))
                 mem.write_bytes(init + 0x38, packed([0x9042001C, 0x10400007, 0x8E510058,
                     jump(replay, True), 0, 0x14400004, 0x3C05005F]))
+                xp, bolts = 0x170000, 0x170100
+                mem.write_bytes(xp, packed([0x27BDFFB0, 0xFFB30028]))
+                mem.write_bytes(bolts, packed([0x27BDFFF0, 0xFFB00000]))
                 symbols = {'GLOBALVARS_IsInReplayMode__Fv': replay,
                     'GADGET_GetCurrentPowerLevel__FUi': getter,
-                    'GADGET_g_GadgetList': 0x100000, 'WeaponPickup_Init__FP4Moby': init}
-                patches = p.prepare(symbols, SimpleNamespace(patches=[],
-                    extra_ranges=[(0x180000, 0x180100)]), 1, vendor_enabled=False)
-                for patch in patches:
+                    'GADGET_g_GadgetList': 0x100000, 'WeaponPickup_Init__FP4Moby': init,
+                    NativeFunctions.GADGET_GETS_XP: xp, NativeFunctions.PLAYER_GRANT_BOLTS: bolts}
+                arena = ModuleArena(0x180000, bytes(4096), 128)
+                patches = p.prepare(symbols, 31, arena, vendor_enabled=False)
+                for patch in patches + arena.patches:
                     mem.write_bytes(patch.address, patch.replacement)
                 # The native save pointer is still null, just as at the loader
                 # gate. Object initialization must already see the AP setting.

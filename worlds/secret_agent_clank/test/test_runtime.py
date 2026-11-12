@@ -3,7 +3,6 @@ import unittest
 from unittest.mock import Mock
 
 from ..constants import (
-    CASE_ID_TO_CASE,
     CLANK_PICKUP_TO_INTERNAL,
     EQUIPMENT_DISPLAY_TO_INTERNAL,
     WEAPON_ORDER,
@@ -12,7 +11,7 @@ from ..constants import (
 )
 from ..core.address_maps import CURRENT_CASE_ADDRESS, FORCE_CASE_ADDRESS
 from ..core import Core, RuntimeSymbols, VendorState
-from ..core.inventories import CaseInventory, MissionInventory, WeaponInventory
+from ..core.inventories import CaseInventory, WeaponInventory
 from ..core.patches import LoaderStateReader
 from ..items import ALL_ITEMS, CASE_GADGET_ITEM_TABLE, EQUIPMENT_ITEM_TABLE
 from ..locations import ALL_LOCATIONS
@@ -232,12 +231,3 @@ class RuntimeTests(unittest.TestCase):
         core.apply_inventory(ratchet={"blaster": True}, clank={})
         self.assertEqual(memory.writes, [])
         core.send_location.assert_not_called()
-
-    def test_mission_unlock_does_not_complete_it(self):
-        memory = Memory()
-        missions = MissionInventory(memory)
-        missions._resolved_cases = {CASE_ID_TO_CASE[1].name: [0x100000, 0x100060, 0x1000C0]}
-        memory.data[0x100000] = 1
-        self.assertEqual(missions.enforce_owned_first_missions({CASE_ID_TO_CASE[1].name}), 1)
-        self.assertEqual(memory.data[0x100000], 2)
-        self.assertEqual(missions.check(CASE_ID_TO_CASE[1]), [])

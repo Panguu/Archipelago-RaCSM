@@ -3,8 +3,7 @@ T0, T1, T2, T3, T4, T5, T6, T7 = range(8, 16)
 S0, S1, S2, S3, S4, S5, S6, S7 = range(16, 24)
 T8, T9, K0, K1, GP, SP, FP, RA = range(24, 32)
 
-# Coprocessor 1 (FPU) registers -- PS2's EE core has single-precision float
-# hardware only (no SDC1/LDC1 double support), so only swc1/lwc1 exist here.
+# FPU registers. The EE only has single-precision floats, so there's no ldc1/sdc1.
 F0, F1, F2, F3, F4, F5, F6, F7 = range(8)
 F8, F9, F10, F11, F12, F13, F14, F15 = range(8, 16)
 F16, F17, F18, F19, F20, F21, F22, F23 = range(16, 24)
@@ -19,9 +18,8 @@ _OP_LBU = 0x24
 _OP_LW = 0x23
 _OP_SB = 0x28
 _OP_SW = 0x2B
-_OP_LD = 0x37  # MIPS-III 64-bit load -- the EE core's GPRs are 64-bit
-_OP_SD = 0x3F  # MIPS-III 64-bit store, same reason
-_OP_LWC1 = 0x31
+_OP_LD = 0x37  # 64-bit, the EE's registers are 64-bit
+_OP_SD = 0x3F
 _OP_SWC1 = 0x39
 _OP_BEQ = 0x04
 _OP_BNE = 0x05
@@ -33,12 +31,10 @@ _FUNCT_SUBU = 0x23
 _FUNCT_OR = 0x25
 _FUNCT_AND = 0x24
 _FUNCT_JR = 0x08
-_FUNCT_JALR = 0x09
 _FUNCT_SLL = 0x00
 _FUNCT_SRL = 0x02
 _FUNCT_SLTU = 0x2B
-_FUNCT_DADDU = 0x2D  # MIPS-III 64-bit ADDU; with rt=ZERO this is the EE
-                     # toolchain's 64-bit register-move idiom (see dmove()).
+_FUNCT_DADDU = 0x2D
 
 
 def _itype(opcode, rs, rt, imm):
@@ -98,10 +94,6 @@ def jr(rs):
     return _rtype(rs, 0, 0, _FUNCT_JR)
 
 
-def jalr(rs, rd=RA):
-    return _rtype(rs, 0, rd, _FUNCT_JALR)
-
-
 def lw(rt, offset, base):
     return _itype(_OP_LW, base, rt, offset)
 
@@ -144,17 +136,11 @@ def sltu(rd, rs, rt):
 
 
 def ld(rt, offset, base):
-    """MIPS-III 64-bit load -- the EE core's GPRs are 64-bit."""
     return _itype(_OP_LD, base, rt, offset)
 
 
 def sd(rt, offset, base):
-    """MIPS-III 64-bit store, same reason."""
     return _itype(_OP_SD, base, rt, offset)
-
-
-def lwc1(ft, offset, base):
-    return _itype(_OP_LWC1, base, ft, offset)
 
 
 def swc1(ft, offset, base):
@@ -166,5 +152,5 @@ def daddu(rd, rs, rt):
 
 
 def dmove(rd, rs):
-    """Pseudo-op: DADDU rd, rs, ZERO -- the EE toolchain's 64-bit register move."""
+    """DADDU rd, rs, ZERO: a 64-bit register move."""
     return daddu(rd, rs, ZERO)

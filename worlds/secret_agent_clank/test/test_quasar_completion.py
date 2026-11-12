@@ -56,7 +56,6 @@ class QuasarCompletionTests(unittest.TestCase):
                 runtime.startup_barrier = Mock(attached=True, STATE=0x100)
                 runtime.startup_barrier.held_module.return_value = None
                 runtime.hooks = Mock(installed=True, module=self.MODULE, entitlement_table=None)
-                runtime.hooks.is_current.return_value = True
                 runtime.mission_travel = Mock(completion_mailbox=0x110000)
                 runtime.connection_warning = Mock()
                 p.batch_write_int32([(0x206328, self.MODULE), (0x206324, 0xFFFFFFFF),

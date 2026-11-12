@@ -11,7 +11,6 @@ class ReadOnlyPine:
         self.crc = "1234abcd"
         self.code = b"native code"
         self.game = "SCUS-97623"
-        self.module = 4
 
     def _send_request(self, request):
         if request != struct.pack("<IB", 5, 13):
@@ -23,9 +22,6 @@ class ReadOnlyPine:
 
     def read_bytes(self, address, size):
         return self.code[:size]
-
-    def read_int32(self, address):
-        return self.module
 
 
 class TestISOIdentity(unittest.TestCase):
@@ -51,14 +47,6 @@ class TestISOIdentity(unittest.TestCase):
             with self.subTest(attribute=attribute), self.assertRaises(WrongPatchedGame):
                 guard.verify(pine)
             setattr(pine, attribute, original)
-
-    def test_level_identity(self):
-        pine = ReadOnlyPine()
-        PatchedGameGuard.verify_level(pine, module=4, base=0x328B00, probes=((128, pine.code),))
-        with self.assertRaises(WrongPatchedGame):
-            PatchedGameGuard.verify_level(pine, module=5, base=0x328B00, probes=((128, pine.code),))
-        with self.assertRaises(WrongPatchedGame):
-            PatchedGameGuard.verify_level(pine, module=4, base=0x328B00, probes=((128, b"other code"),))
 
     def test_malformed_uuid(self):
         pine = ReadOnlyPine()

@@ -1,9 +1,9 @@
 import struct
 import unittest
-from types import SimpleNamespace
 
-from ..constants import PROGRESSIVE_TO_INTERNAL, WEAPON_ORDER, ProgressiveWeaponsOptions
+from ..constants import PROGRESSIVE_TO_INTERNAL, WEAPON_ORDER, NativeFunctions, ProgressiveWeaponsOptions
 from ..core.patches import Progression
+from ..core.patches.module_arena import ModuleArena
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
 from .test_runtime import Memory
@@ -41,8 +41,9 @@ class ProgressionTests(unittest.TestCase):
                 cpu.set_float(20, 100.0)
                 cpu.run(moby + 0x188, stop=moby + 0x1A0)
                 self.assertEqual(cpu.float(20), 100.0)
+                p.write_bytes(0x130000, Progression.weapon_gain_wrapper(0x140000, 0x138000))
                 for multiplier in (1, 5, 10):
-                    p.write_bytes(0x130000, Progression.weapon_gain_wrapper(0x140000, multiplier))
+                    p.write_int32(0x138000, multiplier)
                     cpu.r[18], cpu.r[20], cpu.r[21] = int(cpu.float(20)), 0x150000, 1
                     cpu.run(0x130000, stop=0x14011C)
                     self.assertEqual(cpu.r[18], 100 * multiplier)
@@ -62,7 +63,8 @@ class ProgressionTests(unittest.TestCase):
                 for allow_level_up in (0, 1):
                     with self.subTest(multiplier=multiplier, award=award, allow_level_up=allow_level_up):
                         p = CaptureMemory()
-                        p.write_bytes(0x110000, Progression.weapon_gain_wrapper(0x120000, multiplier))
+                        p.write_bytes(0x110000, Progression.weapon_gain_wrapper(0x120000, 0x138000))
+                        p.write_int32(0x138000, multiplier)
                         p.write_int32(0x130064, 777)
                         cpu = CPU(p)
                         cpu.r[18], cpu.r[20], cpu.r[21] = award, 0x130000, allow_level_up
@@ -72,17 +74,18 @@ class ProgressionTests(unittest.TestCase):
                         self.assertEqual(cpu.r[20:22], [0x130000, allow_level_up])
                         self.assertEqual(cpu.r[31], CPU.STOP)
 
-    def test_compact_gain_wrapper_replays_prologue_in_jump_delay_slot(self):
-        for register in (4, 5):
-            for value in (-100, 0, 1, 12345):
-                for second in (0xFFB00000, 0x3C020050):
+    def test_gain_wrapper_replays_prologue_in_jump_delay_slot(self):
+        for value in (-100, 0, 1, 12345):
+            for second in (0xFFB00000, 0x3C020050):
+                with self.subTest(value=value, second=hex(second)):
                     p = CaptureMemory()
                     original = struct.pack("<2I", 0x27BDFFF0, second)
-                    p.write_bytes(0x110000, Progression.gain_wrapper(0x120000, original, register, 4))
+                    p.write_bytes(0x110000, Progression.gain_wrapper(0x120000, original, 0x138000))
+                    p.write_int32(0x138000, 4)
                     cpu = CPU(p)
-                    cpu.r[29], cpu.r[16], cpu.r[register] = 0x700000, 123, value & 0xFFFFFFFF
+                    cpu.r[29], cpu.r[16], cpu.r[4] = 0x700000, 123, value & 0xFFFFFFFF
                     cpu.run(0x110000, stop=0x120008)
-                    self.assertEqual(cpu.r[register], (value * 4 if value > 0 else value) & 0xFFFFFFFF)
+                    self.assertEqual(cpu.r[4], (value * 4 if value > 0 else value) & 0xFFFFFFFF)
                     self.assertEqual(cpu.r[29], 0x6FFFF0)
                     self.assertEqual(cpu.r[31], CPU.STOP)
                     if second == 0xFFB00000:
@@ -96,11 +99,14 @@ class ProgressionTests(unittest.TestCase):
         replay, pointer = 0x110000, 0x208000
         for offset, word in enumerate((0x3C020021, 0x8C448000, 0x8C830ED4, 0x0003182B)):
             mem.batch_write_int32([(replay + 0x1C + offset * 4, word)])
-        symbols = {"GADGET_g_GadgetList": 0x100000, "GLOBALVARS_IsInReplayMode__Fv": replay}
-        self.assertEqual(pr.prepare(symbols, SimpleNamespace(patches=[]), 1, vendor_enabled=False), [])
+        bolts = 0x120000
+        mem.write_bytes(bolts, packed([0x27BDFFF0, 0xFFB00000]))
+        symbols = {"GADGET_g_GadgetList": 0x100000, "GLOBALVARS_IsInReplayMode__Fv": replay,
+                   NativeFunctions.PLAYER_GRANT_BOLTS: bolts}
+        pr.prepare(symbols, 31, ModuleArena(0x180000, bytes(4096), 128), vendor_enabled=False)
         self.assertEqual(pr.save_pointer_address, pointer)
         self.assertIsNone(pr.ng_address)
-        mem.batch_write_int32([(0x206328, 1), (0x206324, 0xFFFFFFFF), (0x206338, 3)])
+        mem.batch_write_int32([(0x206328, 31), (0x206324, 0xFFFFFFFF), (0x206338, 3)])
         mem.writes.clear()
         return mem, pr, pointer
 
@@ -184,33 +190,3 @@ class ProgressionTests(unittest.TestCase):
             for value in (0, 11):
                 with self.assertRaises(ValueError):
                     Progression(Memory()).configure({key: value})
-
-    def test_emitted_gain_instructions_preserve_deductions(self):
-        original = struct.pack("<2I", 0x27BDFFF0, 0xFFB00000)
-        for reg in (4, 5):
-            for value in (-100, 0, 1, 12345):
-                code = struct.unpack("<7I", Progression.gain_wrapper(0x200000, original, reg, 10))
-                regs = [0] * 32
-                regs[reg] = value
-                pc = 0
-                lo = 0
-                while pc < 4:
-                    word = code[pc]
-                    op, rs, rt = word >> 26, (word >> 21) & 31, (word >> 16) & 31
-                    if op == 6:
-                        delay = code[pc + 1]
-                        self.assertEqual(delay >> 26, 9)
-                        regs[(delay >> 16) & 31] = delay & 65535
-                        pc = pc + 1 + (word & 65535) if regs[rs] <= 0 else pc + 2
-                    elif op == 0 and word & 63 == 24:
-                        lo = regs[rs] * regs[rt]
-                        pc += 1
-                    elif op == 0 and word & 63 == 18:
-                        regs[(word >> 11) & 31] = lo
-                        pc += 1
-                    else:
-                        self.fail(hex(word))
-                self.assertEqual(pc, 4)
-                self.assertEqual(regs[reg], value * 10 if value > 0 else value)
-                self.assertEqual(struct.pack("<2I", code[4], code[6]), original)
-                self.assertEqual((code[5] & 0x3FFFFFF) << 2, 0x200008)

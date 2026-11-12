@@ -36,9 +36,8 @@ class SACProgressiveRatchetWeapons:
 
 @dataclass(frozen=True)
 class SACTitanWeapons:
-    """Fully-upgraded (NG+ Titan Vendor) counterpart to SACRatchetWeapons -- only the
-    weapons with a Titan tier get a member here, matched by shared attribute name to
-    the SACRatchetWeapons entry it upgrades (see constants/weapon_progression.py)."""
+    """The NG+ Titan upgrades, for the Ratchet weapons that have one. Each shares its
+    attribute name with the SACRatchetWeapons entry it upgrades."""
     SHOCKROCKET  = "Titan Electro Rocket (Ratchet)"
     PLASMAWHIP   = "Titan Plasma Cord (Ratchet)"
     PORKBOMB     = "Titan Meat Mortar (Ratchet)"

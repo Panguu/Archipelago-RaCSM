@@ -9,6 +9,13 @@ from .patch import PatchSet
 WRENCH_MODS = ("wrenchpower_firebomb", "wrenchpower_triplewave",
               "wrenchpower_crystallix", "wrenchpower_wildburst")
 RATCHET_MODULES = {3, 9, 14, 21, 25}
+# Input handler, its size, its first instruction, the wrench button mask, and
+# how many times that mask appears.
+INPUT_HANDLERS = (
+    (NativeFunctions.RATCHET_UPDATE_CONTROLS_NORMAL_ACTION_BUTTONS, 0x538, 0x27BDFFC0, 0x30A20020, 2),
+    (NativeFunctions.RATCHET_UPDATE_CONTROLS_CROUCH_ACTION_BUTTONS, 0x228, 0x27BDFFE0, 0x30420020, 1),
+    (NativeFunctions.RATCHET_CHECK_JUMP_ATTACK, 0x158, 0x27BDFFE0, 0x30420020, 1),
+)
 
 
 class WrenchProgression(PatchSet):
@@ -17,68 +24,34 @@ class WrenchProgression(PatchSet):
         self.enabled = False
         self.count = 0
         self.module = None
-        self.sites = []
         self.power_address = None
         self.ownership_address = None
 
     def entitlements(self):
         return {name: self.count >= index + 2 for index, name in enumerate(WRENCH_MODS)} if self.enabled else {}
 
-    def prepare(self, symbols, module):
-        self.ownership_address = None
-        self.patches = []
-        self.module, self.sites = module, []
-        self.power_address = None
-        if not self.enabled or module not in RATCHET_MODULES:
-            return []
-        # These masks consume only the wrench button. Gun, movement, jump,
-        # and camera masks are untouched. Resolve each Ratchet-only export.
-        specs = (
-            (NativeFunctions.RATCHET_UPDATE_CONTROLS_NORMAL_ACTION_BUTTONS, 0x538, 0x27BDFFC0, 0x30A20020, 2),
-            (NativeFunctions.RATCHET_UPDATE_CONTROLS_CROUCH_ACTION_BUTTONS, 0x228, 0x27BDFFE0, 0x30420020, 1),
-            (NativeFunctions.RATCHET_CHECK_JUMP_ATTACK, 0x158, 0x27BDFFE0, 0x30420020, 1),
-        )
-        addresses = [require(symbols, name) for name, *_ in specs]
-        blocks = read_blocks(self.pine, [(address, size) for address, (_, size, *_) in zip(addresses, specs)])
-        for address, block, (name, size, prologue, mask, expected) in zip(addresses, blocks, specs):
-            code = struct.unpack("<" + "I" * (size // 4), block)
-            if code[0] != prologue:
-                raise RuntimeError(f"Unrecognized Ratchet wrench gate: {name}")
-            sites = [(address + i * 4, word) for i, word in enumerate(code) if word == mask]
-            if len(sites) != expected:
-                raise RuntimeError(f"Ratchet wrench input layout changed: {name}")
-            self.sites.extend(sites)
-        self.power_address = require(symbols, "g_wrench_wrenchPower")
-        self.patches = [Patch(a, struct.pack("<I", word), struct.pack("<I", word if self.count else word & 0xFFFF0000))
-                for a, word in self.sites]
-        return self.patches
+    def prepare(self, symbols, module, arena):
+        """Clone each input handler with the wrench masks cleared, and pick the
+        clone or the original from one flag word the client sets.
 
-    def prepare_permanent(self, symbols, module, arena):
-        """Compile both input paths; runtime ownership changes only one word.
-
-        Cloning whole functions preserves the ANDI instructions in branch
-        delay slots. Internal branches retain their displacement and internal
-        direct jumps are rebased. Reject unmodelled escaping branches rather
-        than silently generating an unsafe clone.
+        Whole functions are cloned so masks in delay slots come along. Branches
+        must stay inside the function; jumps within it are moved to the clone.
         """
-        enabled, count = self.enabled, self.count
-        try:
-            self.enabled, self.count = True, 0
-            self.prepare(symbols, module)
-        finally:
-            self.enabled, self.count = enabled, count
         self.patches = []
+        self.module = module
+        self.power_address = self.ownership_address = None
         if module not in RATCHET_MODULES:
             return []
+        addresses = [require(symbols, name) for name, *_ in INPUT_HANDLERS]
+        blocks = read_blocks(self.pine, [(address, size) for address, (_, size, *_) in zip(addresses, INPUT_HANDLERS)])
+        self.power_address = require(symbols, "g_wrench_wrenchPower")
         self.ownership_address = arena.allocate(bytes(4))
-        sites = dict(self.sites)
-        specs = ((NativeFunctions.RATCHET_UPDATE_CONTROLS_NORMAL_ACTION_BUTTONS, 0x538),
-                 (NativeFunctions.RATCHET_UPDATE_CONTROLS_CROUCH_ACTION_BUTTONS, 0x228),
-                 (NativeFunctions.RATCHET_CHECK_JUMP_ATTACK, 0x158))
-        for name, size in specs:
-            target = require(symbols, name)
-            original = self.pine.read_bytes(target, size)
+        for target, original, (name, size, prologue, mask, expected) in zip(addresses, blocks, INPUT_HANDLERS):
             code = list(struct.unpack("<" + "I" * (size // 4), original))
+            if code[0] != prologue:
+                raise RuntimeError(f"Unrecognized Ratchet wrench gate: {name}")
+            if code.count(mask) != expected:
+                raise RuntimeError(f"Ratchet wrench input layout changed: {name}")
             clone = (arena.base + arena.cursor + 15) & ~15
             for index, instruction in enumerate(code):
                 pc = target + index * 4
@@ -95,7 +68,7 @@ class WrenchProgression(PatchSet):
                         code[index] = jump(clone + destination - target, opcode == 3)
                 elif opcode == 0 and instruction & 63 == 8 and (instruction >> 21) & 31 != 31:
                     raise RuntimeError(f"Wrench clone contains an indirect jump: {name}")
-                if pc in sites:
+                if instruction == mask:
                     code[index] &= 0xFFFF0000
             if arena.allocate(packed(code)) != clone:
                 raise RuntimeError("Wrench clone allocation changed")
@@ -106,17 +79,15 @@ class WrenchProgression(PatchSet):
                 0x8C420000 | (flag & 65535),
                 0x10400003, 0, jump(tail), 0, jump(clone), 0]))
             self.patches.append(Patch(target, original[:8], packed([jump(dispatcher), 0])))
-        self.sites = []
         return self.patches
 
     def sync(self):
-        if self.ownership_address is not None:
-            module, loading, selected = self.pine.batch_read_int32(
-                [0x206328, 0x206324, self.power_address])
-            if module != self.module or loading != 0xFFFFFFFF:
-                return
-            writes = [(self.ownership_address, int(not self.enabled or self.count > 0))]
-            if self.enabled and selected > max(0, self.count - 1):
-                writes.append((self.power_address, 0))
-            self.pine.batch_write_int32(writes)
+        if self.ownership_address is None:
             return
+        module, loading, selected = self.pine.batch_read_int32([0x206328, 0x206324, self.power_address])
+        if module != self.module or loading != 0xFFFFFFFF:
+            return
+        writes = [(self.ownership_address, int(not self.enabled or self.count > 0))]
+        if self.enabled and selected > max(0, self.count - 1):
+            writes.append((self.power_address, 0))
+        self.pine.batch_write_int32(writes)

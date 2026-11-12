@@ -333,5 +333,5 @@ class DeathLinkCommandTests(unittest.TestCase):
                 processor = SACCommandProcessor.__new__(SACCommandProcessor)
                 processor.ctx = ctx
                 with patch('worlds.secret_agent_clank.client.command_processor.async_start'):
-                    self.assertTrue(processor._cmd_toggle_deathlink())
+                    self.assertTrue(processor._cmd_deathlink_mode("toggle"))
                 ctx._set_death_link_enabled.assert_called_once_with(not current)

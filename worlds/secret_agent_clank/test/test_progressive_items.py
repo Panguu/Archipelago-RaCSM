@@ -29,7 +29,7 @@ class TestProgressiveItems(unittest.TestCase):
                 self.assertIsInstance(item, SACProgressiveItem)
                 self.assertEqual(item.stages[0], SACRatchetWeapons.BLASTER)
                 self.assertEqual(len(item.stages), levels)
-                self.assertEqual(item.unlocked_by(2), (SACRatchetWeapons.BLASTER, f"{SACRatchetWeapons.BLASTER} V2"))
+                self.assertEqual(item.stages[:2], (SACRatchetWeapons.BLASTER, f"{SACRatchetWeapons.BLASTER} V2"))
 
     def test_planet_stages_are_the_seeds_case_order(self):
         world = self.world(infobots="progressive_planet")

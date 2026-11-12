@@ -7,9 +7,8 @@ from .starting_case import StartingCase
 
 
 RETAIL_BASE = 0x328B00
-# The resident lookup routine at 0x174F60 returns zero at 0x174FE8 when a
-# name is absent. FE references these level-only globals but does not export
-# them. Keep this explicit and frontend-only; unexpected imports still fail.
+# The frontend imports these level-only globals. The loader resolves names it
+# can't find to 0, so they're allowed here; any other missing import is an error.
 FRONTEND_NULL_IMPORTS = frozenset(("G_levelId", "g_pActivePlayer"))
 
 

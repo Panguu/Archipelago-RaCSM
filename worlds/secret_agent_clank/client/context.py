@@ -259,11 +259,8 @@ class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
     def _maybe_scout_vendor(self) -> None:
         if self.slot is None or not self._game_state.get("vendor_active", False):
             return
-        server_locations = getattr(self, "server_locations", None)
-        if server_locations is None:
-            return
         request = self.vendor_scouts.request(
-            server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
+            self.server_locations, hint=bool(self.slot_data.get("send_scouted_locations", True)),
             vendor_cases=self._game_state.get("vendor_cases", ()),
             vendor_locations=self._game_state.get("vendor_locations"),
         )

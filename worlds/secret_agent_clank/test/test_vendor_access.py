@@ -172,6 +172,15 @@ class VendorAccessTests(unittest.TestCase):
                     self.assertEqual(loc.access_rule(state), VENDOR_CASES[loc.name] in owned,
                                      (mode, loc.name, received))
 
+    def test_every_purchase_needs_enemy_access(self):
+        with patch.object(vendor_access, "HasEnemyAccess", False_):
+            m = setup_vendor_world(SecretAgentClankWorld, options={"ng_plus": 1})
+        state = m.get_all_state(False)
+        locations = [loc for loc in m.get_locations(1) if loc.name in VENDOR_CASES]
+        self.assertTrue(locations)
+        for location in locations:
+            self.assertFalse(location.can_reach(state), location.name)
+
     def test_client_vendor_table_matches_generation_requirements(self):
         for case in ALL_CASES:
             has_vendor = not isinstance(vendor_access.VENDOR_REQUIREMENTS[case.name], False_)

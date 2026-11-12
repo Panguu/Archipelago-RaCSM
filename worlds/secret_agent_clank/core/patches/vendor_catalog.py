@@ -22,6 +22,15 @@ class VendorCatalog(PatchSet):
     ROW_SIZE = 0x1C
     ICON = 73
 
+    def __init__(self, pine):
+        super().__init__(pine)
+        self.challenge_level = 1
+        self.case_descriptors = []
+        self.location_descriptors = []
+        self.challenge_descriptors = set()
+        self._synced_cases = None
+        self._synced_locations = None
+
     @staticmethod
     def entries(hooks):
         mods = {mod.mod_id: WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon])
@@ -49,8 +58,7 @@ class VendorCatalog(PatchSet):
                      jump(add_item, True), m.addu(m.T2, m.ZERO, m.ZERO)]
             code[skip] = m.bne(m.V0, m.T3, len(code) - skip - 1)
             code += [m.addiu(m.S1, m.S1, 8), m.bne(m.S1, m.S2, loop - len(code) - 2), 0]
-        # The browse routine still checks the selected item's actual price.
-        # Read the number added (not the number of descriptors) for an empty shop.
+        # Count the rows actually added, not the descriptors, to spot an empty shop.
         code += [m.lw(m.V1, 0x54, m.S3), m.sltu(m.V1, m.ZERO, m.V1)]
         for flag in (has_items, affordable):
             code += [*m.li32(m.T0, flag), m.sb(m.V1, 0, m.T0)]
@@ -58,17 +66,16 @@ class VendorCatalog(PatchSet):
         return packed(code)
 
     def sync_cases(self, owned_cases):
-        # Change only the descriptor comparison byte. Transaction flags remain
-        # untouched, so unlocking a purchased slot cannot resurrect its check.
+        # Only the descriptor's comparison byte changes. Purchase flags are left
+        # alone, so unlocking a bought row can't bring its check back.
         owned_cases = frozenset(owned_cases)
-        state = (owned_cases, getattr(self, "challenge_level", 1))
-        if getattr(self, "_synced_cases", None) == state:
+        state = (owned_cases, self.challenge_level)
+        if self._synced_cases == state:
             return
         writes = []
         current = self.pine.batch_read_int8([address for address, _, _ in self.case_descriptors])
         for (address, case, unchecked), value in zip(self.case_descriptors, current):
-            allowed = case in owned_cases and (state[1] > 0 or
-                address not in getattr(self, "challenge_descriptors", set()))
+            allowed = case in owned_cases and (state[1] > 0 or address not in self.challenge_descriptors)
             desired = unchecked if allowed else 255
             if value != desired:
                 writes.append((address, desired))
@@ -77,9 +84,9 @@ class VendorCatalog(PatchSet):
         self._synced_cases = state
 
     def sync_locations(self, available):
-        """Use the seed's resolved location rules; never change purchase flags."""
+        """Show only the offers the seed's logic allows. Purchase flags are left alone."""
         state = frozenset(available)
-        if getattr(self, "_synced_locations", None) == state:
+        if self._synced_locations == state:
             return
         current = self.pine.batch_read_int8([address for address, _, _ in self.location_descriptors])
         writes = []
@@ -147,20 +154,19 @@ class VendorCatalog(PatchSet):
         payload = bytearray(original[:self.START]) + dispatch + code
         for entry in entries:
             payload.extend(struct.pack("<2I", *entry))
-        # Give ICONMENU its own bounded array in the replaced builder body.
-        # This supports the full NG+ catalog without overrunning native storage.
-        # The same array serves both tabs. Retail iterates 40 gadget slots and
-        # can append a buy-all row, independently of the AP location count.
+        # A row buffer for ICONMENU inside the replaced builder, big enough for
+        # the full NG+ catalog. Both tabs share it, and the retail ammo tab needs
+        # up to 41 rows (40 gadgets plus "buy all").
         payload.extend(bytes(max(41, len(entries)) * self.ROW_SIZE))
         if len(payload) > self.END:
             raise RuntimeError("AP vendor catalog exceeds verified storage")
         struct.pack_into("<I", payload, 0x0C, m.lui(m.A1, (buffer + 0x8000) >> 16))
         struct.pack_into("<I", payload, 0x1C, m.addiu(m.A1, m.A1, buffer & 65535))
-        # The old individual offer gates are superseded; purchase recorders
-        # and their flag tables remain installed outside this function.
+        # The per-offer gate patches inside the builder aren't needed any more.
+        # The purchase recorders and flag tables live elsewhere and stay.
         hooks.patches[:] = [patch for patch in hooks.patches
                            if not builder <= patch.address < builder + self.END]
-        for start, end in getattr(hooks, "catalog_only_ranges", ()):
+        for start, end in hooks.catalog_only_ranges:
             patch = next(patch for patch in hooks.patches
                          if patch.address <= start and end <= patch.address + len(patch.replacement))
             hooks.patches.remove(patch)
@@ -168,11 +174,5 @@ class VendorCatalog(PatchSet):
                 if low < high:
                     a, b = low - patch.address, high - patch.address
                     hooks.patches.append(Patch(low, patch.original[a:b], patch.replacement[a:b]))
-            hooks.extra_ranges.append((start, end))
         self.patches = tab_patches + [Patch(builder, original[:len(payload)], bytes(payload))]
-        # The replacement branches straight to END, bypassing this tail.
-        # Reserve the complete row buffer above before sharing any space.
-        free_start = builder + ((len(payload) + 3) & ~3)
-        if free_start < builder + self.END:
-            hooks.extra_ranges.append((free_start, builder + self.END))
         return self.patches

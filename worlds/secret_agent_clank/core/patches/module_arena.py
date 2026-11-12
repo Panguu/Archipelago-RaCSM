@@ -1,6 +1,4 @@
-"""The arena is appended before rebuilding relocation tables. It never occupies
-retail instructions or metadata, and allocation never writes emulator memory.
-"""
+"""Free space added to the end of a level module for new code and data."""
 import struct
 
 from .asm import Patch

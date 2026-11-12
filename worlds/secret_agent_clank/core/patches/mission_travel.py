@@ -29,6 +29,7 @@ class MissionTravel(PatchSet):
     def __init__(self, pine):
         super().__init__(pine)
         self._expected = []
+        self.completion_mailbox = None
 
     def prepare(self, symbols, *, module=None):
         self.patches = []
@@ -42,9 +43,9 @@ class MissionTravel(PatchSet):
         story_patches = self._prepare_story_routes(symbols, helper, change)
         extra = []
         if module in NATIVE_FINISH_CASES:
-            # These task predicates are the *next* case's intro flag. Record
-            # the actual finish here and let the host capture it before reload
-            # can discard this DLL. Returning success leaves the game running.
+            # These cases' completion checks look at the next case's intro flag.
+            # Record the finish here instead, for the client to read before the
+            # level unloads, and return success so the game carries on.
             mailbox = helper + 0x70
             self._expect(helper + 0x68, (0xDFBF0008, 0x03E00008, 0x27BD0010),
                          "Mission completion mailbox")
@@ -121,10 +122,8 @@ class MissionTravel(PatchSet):
         for offset, expected in checks:
             self._expect(helper + offset, expected, "Mission-end travel")
         self._verify()
-        # Tail-call the native reload with the resident current module, not the
-        # story destination passed by the caller or left by SetNextLevel.
-        # Do not call SetLevelEnder: its mandatory map exit can travel onward.
-        # The shared-module operative flags are left intact.
+        # Reload the current module rather than the story's next level. Don't
+        # call SetLevelEnder: its map exit can send the player onwards.
         return packed([0x3C040020, 0x8C846328, jump(change), 0x24050001])
 
     def _prepare_arena_routes(self, symbols, helper):
@@ -156,7 +155,7 @@ class MissionTravel(PatchSet):
         ]
 
     def _validate_registered_callback(self, update, callback):
-        """Check the signed LUI/ADDIU pair points to the validated movie callback."""
+        """Check the LUI/ADDIU pair points at the movie callback."""
         high = (callback + 0x8000) >> 16
         self._expect(update + TravelLayout.CALLBACK_HIGH,
                      (0x3C060000 | high,), "Ratchet movie callback")

@@ -15,7 +15,6 @@ class GameFlags(Patch):
         self.record = None
 
     def prepare(self, *, address, table, fallback, record):
-        """Prepare a routine in storage already verified by the enclosing plan."""
         self.address = self.table = self.record = None
         self.original = self.replacement = b""
         if type(record) is not bool:
@@ -37,7 +36,6 @@ class GameFlags(Patch):
         return self
 
     def read(self):
-        """Return all 40 raw flag bytes; this never confirms AP locations."""
         if self.table is None:
             raise RuntimeError("Prepare GameFlags before reading its table")
         result = self.pine.read_bytes(self.table, self.SLOT_COUNT)
@@ -47,7 +45,7 @@ class GameFlags(Patch):
 
     @staticmethod
     def _build_routine(table, fallback, *, record):
-        """a0=gadget id."""
+        # a0 = gadget id
         code = [
             m.sltiu(m.V0, m.A0, 40),           # v0 = (a0 < 40) ? 1 : 0
             0, 0,                              # [1]=beq placeholder, [2]=its delay slot

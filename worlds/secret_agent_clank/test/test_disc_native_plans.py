@@ -8,22 +8,17 @@ from pathlib import Path
 import struct
 import unittest
 
-from ..constants import PICKUP_LOCATIONS, VENDOR_LOCATIONS, WEAPON_MODS, STEALTH_CASES, STEALTH_MAX_PER_CASE
-from ..core import MissionFailure, StealthState
 from ..core.native_runtime import CLANK_MODULES
-from ..core.patches import (
-    ConnectionWarning, KeycardHunt, LocationHooks, MissionTravel, Progression,
-    TitanOffers, TitanVendor, VendorCatalog, VendorPresentation, WeaponMods, WrenchProgression,
-)
+from ..core.patches import Progression
 from ..patcher.iso import ISOImage
 from ..core.patches.snr2 import SNR2Module, resident_exports
 from ..core.patches.module_compiler import ModuleEdit, compile_module
 from ..core.patches.plan_compiler import compile_native_plan
-from ..core.skins import Skins
 from ..patcher.filenames import EXECUTABLE, LEVEL_FILES, FRONTEND
 from .test_runtime import Memory
 from ..core.patches.frontend_build import compile_frontend
-from ..core.patches.level_build import compile_level
+from ..core.patches.level_build import compile_level, prepare_level
+from ..core.patches.module_arena import reserve_arena
 from ..core.patches.iso_startup_barrier import patch_resident_loader
 
 
@@ -131,61 +126,19 @@ class TestDiscNativePlans(unittest.TestCase):
             iso = ISOImage(source)
             imports = resident_exports(iso.read_file(EXECUTABLE))
             for module, path in LEVEL_FILES.items():
-                rel = SNR2Module(iso.read_file(path))
+                data, start = reserve_arena(iso.read_file(path))
+                rel = SNR2Module(data)
+                vendors = (False, True) if module in (4, 11) else (
+                    module in CLANK_MODULES or module in (3, 9, 14, 21, 25),)
                 for base in (0x800000, 0x908000):
                     loaded, symbols = rel.relocate(base, imports)
-                    for ng, mode, multiplier in ((0, 0, 1), (2, 1, 3), (2, 2, 4)):
-                        vendors = (False, True) if module in (4, 11) else (
-                            module in CLANK_MODULES or module in (3, 9, 14, 21, 25),)
-                        for vendor in vendors:
-                            with self.subTest(module=module, base=hex(base), ng=ng, mode=mode, vendor=vendor):
-                                memory = Memory()
-                                memory.data = bytearray(0x2000000)
-                                memory.data[base:base + len(loaded)] = loaded
-                                struct.pack_into("<I", memory.data, 0x206328, module)
-                                patches = self._prepare(memory, symbols, module, vendor, ng, mode, multiplier)
-                                self.assertFalse(memory.writes, "Preparing patches must not write memory")
-                                spans = sorted((p.address, p.address + len(p.replacement)) for p in patches)
-                                self.assertTrue(all(b <= c for (_, b), (c, _) in zip(spans, spans[1:])),
-                                                "Patch allocations overlap")
-                                for patch in patches:
-                                    self.assertEqual(memory.read_bytes(patch.address, len(patch.original)), patch.original)
-                                    self.assertEqual(len(patch.original), len(patch.replacement))
-
-    @staticmethod
-    def _prepare(memory, symbols, module, vendor, ng, mode, multiplier):
-        hooks = LocationHooks(memory)
-        hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
-                      vendor_locations=VENDOR_LOCATIONS if vendor else {}, entitlements={}, vendor_enabled=vendor)
-        wrench = WrenchProgression(memory)
-        wrench.enabled = True
-        hooks.patches.extend(wrench.prepare(symbols, module))
-        hooks.patches.extend(MissionTravel(memory).prepare(symbols, module=module))
-        skins = Skins(memory)
-        skins.configure({})
-        hooks.patches.extend(skins.prepare(symbols))
-        mods = WeaponMods(memory)
-        mods.configure({"operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng,
-                        "weapon_mod_ids": [mod.mod_id for mod in WEAPON_MODS]})
-        hooks.patches.extend(mods.prepare(symbols, hooks, module, set(), vendor))
-        progression = Progression(memory)
-        progression.mission_failure = MissionFailure(memory)
-        progression.configure({"ng_plus": ng, "progressive_weapons": mode,
-                               "weapon_xp_multiplier": multiplier, "health_xp_multiplier": multiplier,
-                               "bolt_multiplier": multiplier})
-        progression.stealth = StealthState(memory)
-        progression.stealth.configure(dict.fromkeys(STEALTH_CASES, STEALTH_MAX_PER_CASE))
-        progression.stealth.load({})
-        if vendor:
-            if ng:
-                hooks.patches.extend(TitanVendor(memory).prepare(symbols, hooks, set()))
-            else:
-                hooks.patches.extend(TitanOffers(memory).prepare(symbols))
-            hooks.patches.extend(VendorCatalog(memory).prepare(symbols, hooks))
-            hooks.patches.extend(VendorPresentation(memory).prepare(symbols, hooks))
-        hooks.patches.extend(ConnectionWarning(memory).prepare(symbols, hooks))
-        hunt = KeycardHunt(memory)
-        hunt.enabled = True
-        hooks.patches.extend(hunt.prepare(symbols, hooks, module))
-        hooks.patches.extend(progression.prepare(symbols, hooks, module, vendor_enabled=vendor))
-        return hooks.patches
+                    for vendor in vendors:
+                        with self.subTest(module=module, base=hex(base), vendor=vendor):
+                            patches, _ = prepare_level(base, loaded, symbols, module, vendor, start)
+                            spans = sorted((p.address, p.address + len(p.replacement)) for p in patches)
+                            self.assertTrue(all(b <= c for (_, b), (c, _) in zip(spans, spans[1:])),
+                                            "Patch allocations overlap")
+                            for patch in patches:
+                                offset = patch.address - base
+                                self.assertEqual(loaded[offset:offset + len(patch.original)], patch.original)
+                                self.assertEqual(len(patch.original), len(patch.replacement))

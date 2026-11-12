@@ -172,32 +172,6 @@ class MissionInventory:
         if name in _REPORTABLE_NAMES:
             self._reported.add(name)
 
-    def enforce_owned_first_missions(self, owned_cases: set[str]) -> int:
-        """Set each owned case's first mission back to UNLOCKED if it is disabled; returns the write count."""
-        first_addresses: list[int] = []
-        for case_name in owned_cases:
-            entries = CHAPTER_ENTRIES.get(case_name)
-            if not entries:
-                continue
-            case = CASE_NAME_TO_CASE.get(case_name)
-            if case is None:
-                continue
-            addresses = self._resolve_case_addresses(case)
-            if addresses is None:
-                continue
-            first_addresses.append(addresses[0])
-        if not first_addresses:
-            return 0
-        current_values = self.pine.batch_read_int8(first_addresses)
-        writes = [
-            (address, MissionFlag.UNLOCKED)
-            for address, value in zip(first_addresses, current_values)
-            if value in (MissionFlag.DISABLED, MissionFlag.ENABLED)
-        ]
-        if writes:
-            self.pine.batch_write_int8(writes)
-        return len(writes)
-
     def __repr__(self) -> str:
         seen = sum(self.completed.values())
         return f"MissionInventory(completed={seen}/{len(self.completed)})"

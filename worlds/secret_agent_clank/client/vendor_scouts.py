@@ -25,10 +25,6 @@ class VendorReward:
         return bool(self.flags & 1)
 
     @property
-    def title_color(self):
-        return "orange" if self.progression else "white"
-
-    @property
     def description(self):
         return f"{self.item_name}\nFor {self.recipient_name}"
 

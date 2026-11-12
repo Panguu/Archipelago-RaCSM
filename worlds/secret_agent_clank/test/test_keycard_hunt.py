@@ -1,5 +1,4 @@
 import unittest
-from types import SimpleNamespace
 
 from BaseClasses import CollectionState
 from Fill import distribute_items_restrictive
@@ -10,6 +9,7 @@ from ..constants import KEYCARD_BITS, KEYCARD_ITEMS, SACClankGadgets
 from ..core import Core, module_counts
 from ..core.inventories import AlienCodeInventory, KeycardInventory
 from ..core.patches import KeycardHunt, packed
+from ..core.patches.module_arena import ModuleArena
 from ..locations import ALIEN_CODE_FLAGS, ALL_ALIEN_CODES_EVENT
 from ..universal_tracker import setup_options_from_slot_data
 from ..world import SecretAgentClankWorld
@@ -104,11 +104,12 @@ class KeycardHuntTests(unittest.TestCase):
         hunt = KeycardHunt(p)
         hunt.enabled = True
         hunt.receive(["Red Keycard", "Yellow Keycard", "Red Keycard"])
-        hooks = SimpleNamespace(extra_ranges=[(entry, entry + 256)], patches=[], gain_storage_prepared=False)
+        arena = ModuleArena(entry - 128, bytes(128 + 256), 128)
         symbols = {"GLOBAL_GetFlag__FUiUc": getter}
-        edits = hunt.prepare(symbols, hooks, 31)
+        edits = hunt.prepare(symbols, 31, arena) + arena.patches
         for edit in edits:
             p.data[edit.address:edit.address + len(edit.replacement)] = edit.replacement
+        hunt.sync()
         cards = KeycardInventory(p)
         cards.hunt = hunt
         cards.bind(symbols)
@@ -137,16 +138,16 @@ class KeycardHuntTests(unittest.TestCase):
         cpu.run(getter)
         self.assertEqual(cpu.r[2], 7)
         self.assertEqual(p.read_int8(save + 0x4E0 + 0xAA), 2)
-        self.assertEqual(hunt.prepare({}, hooks, 4), [])
+        self.assertEqual(hunt.prepare({}, 4, arena), [])
         self.assertIsNone(hunt.table)
 
     def test_unrecognized_getter_and_stale_patch_fail_without_writes(self):
         p = Memory()
         hunt = KeycardHunt(p)
         hunt.enabled = True
-        hooks = SimpleNamespace(extra_ranges=[], patches=[], gain_storage_prepared=False)
+        arena = ModuleArena(0x140000, bytes(512), 128)
         with self.assertRaisesRegex(RuntimeError, "getter layout changed"):
-            hunt.prepare({"GLOBAL_GetFlag__FUiUc": 0x110000}, hooks, 31)
+            hunt.prepare({"GLOBAL_GetFlag__FUiUc": 0x110000}, 31, arena)
         self.assertEqual(p.writes, [])
         hunt.entry, hunt.table, hunt.code = 0x110000, 0x120000, b"changed"
         p.write_int32(0x206328, 31)

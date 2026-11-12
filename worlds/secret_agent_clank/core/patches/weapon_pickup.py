@@ -1,8 +1,8 @@
 from ...constants import NativeFunctions
 from ..symbols import require
-from .asm import MARKER, branch, capture, jump, packed, words
+from .asm import MARKER, branch, capture, check, jump, packed, words
 from .entitlements import Entitlements
-from .gameFlags import GameFlags
+from .game_flags import GameFlags
 from .patch import PatchSet
 from .plan import PatchPlan
 
@@ -10,15 +10,9 @@ from .plan import PatchPlan
 class WeaponPickup(PatchSet):
     def prepare(self, symbols, give, *, pickup_locations, vendor_locations, checked, entitlements,
                 vendor_enabled=True):
+        """`give` is the address of WeaponPickup_GiveWeapon."""
         self.patches = []
         p = self.pine
-        """Build a complete, signature-checked patch plan without writing RAM.
-
-        `give` is WeaponPickup_GiveWeapon__FP4Moby's resolved address -- the
-        caller (patches/hooks.py's LocationHooks.prepare()) already confirmed
-        it exists before dispatching here; a missing export means this module
-        has no pickup code at all, and VendorOnly.prepare() applies instead.
-        """
         wait, wait_pickup, getter, setter = require(symbols,
             NativeFunctions.WEAPON_PICKUP_UPDATE_WAIT,
             NativeFunctions.WEAPON_PICKUP_UPDATE_WAIT_FOR_PICKUP,
@@ -29,29 +23,28 @@ class WeaponPickup(PatchSet):
          *epilogue) = p.batch_read_int32([
             0x206328, give, give + 0x50, give + 0x54, give + 0x58, wait + 0x50, wait + 0x54,
             wait_pickup + 0x48, wait_pickup + 0x4C, *range(give + 0x278, give + 0x294, 4)])
-        assert prologue == 0x27BDFF90, "Pickup prologue changed"
-        assert grant == jump(setter, True), "Pickup grant call changed"
-        assert grant_args == 0x2CC60002, "Pickup grant arguments changed"
-        assert tail == 0x8E450000, "Pickup tail changed"
-        assert epilogue == [
-            0xDFB00040, 0xDFB10048, 0xDFB20050, 0xDFB30058,
-            0xDFBF0060, 0x03E00008, 0x27BD0070], "Pickup epilogue changed"
-        assert gate == jump(getter, True), "Pickup ownership gate changed"
-        assert gate_args == 0x8E640000, "Pickup gate arguments changed"
-        assert collect == jump(getter, True), "Collection ownership gate changed"
-        assert collect_args == 0x8E040000, "Collection gate arguments changed"
+        check(prologue == 0x27BDFF90, "Pickup prologue changed")
+        check(grant == jump(setter, True), "Pickup grant call changed")
+        check(grant_args == 0x2CC60002, "Pickup grant arguments changed")
+        check(tail == 0x8E450000, "Pickup tail changed")
+        check(epilogue == [0xDFB00040, 0xDFB10048, 0xDFB20050, 0xDFB30058,
+                           0xDFBF0060, 0x03E00008, 0x27BD0070], "Pickup epilogue changed")
+        check(gate == jump(getter, True), "Pickup ownership gate changed")
+        check(gate_args == 0x8E640000, "Pickup gate arguments changed")
+        check(collect == jump(getter, True), "Collection ownership gate changed")
+        check(collect_args == 0x8E040000, "Collection gate arguments changed")
         if vendor_enabled:
             sellable, purchase = require(symbols, NativeFunctions.GADGET_IS_SELLABLE,
                                          NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE)
             sellable_gate, purchase_grant, *purchase_tail, builder_call = p.batch_read_int32([
                 sellable + 12, purchase + 0x1EC, purchase + 0x1F4, purchase + 0x1F8, purchase + 0x338])
-            assert sellable_gate == jump(getter, True), "Sellable gate changed"
-            assert purchase_grant == jump(setter, True), "Purchase grant changed"
-            assert purchase_tail == [0x8E430010, 0x24020026]
-            assert builder_call >> 26 == 3, "Vendor rebuild call changed"
+            check(sellable_gate == jump(getter, True), "Sellable gate changed")
+            check(purchase_grant == jump(setter, True), "Purchase grant changed")
+            check(purchase_tail == [0x8E430010, 0x24020026], "Purchase tail changed")
+            check(builder_call >> 26 == 3, "Vendor rebuild call changed")
             builder = (builder_call & 0x03FFFFFF) << 2
             body = words(p.read_bytes(builder, 0x800))
-            assert body[0] == 0x27BDFF70, "Vendor builder changed"
+            check(body[0] == 0x27BDFF70, "Vendor builder changed")
             # Only base-offer ownership calls immediately following IsSellable.
             # Ammo and mod ownership calls retain their gameplay semantics.
             sites = []
@@ -62,7 +55,7 @@ class WeaponPickup(PatchSet):
                                       if body[j] >> 26 == 3), None)
                 if previous_call == jump(sellable, True):
                     sites.append(builder + i * 4)
-            assert len(sites) == 4, f"Unexpected base-offer gates: {len(sites)}"
+            check(len(sites) == 4, f"Unexpected base-offer gates: {len(sites)}")
 
         locations = {"pickup": dict(pickup_locations)}
         if vendor_enabled:
@@ -74,7 +67,6 @@ class WeaponPickup(PatchSet):
         arena = give + 0x60
         tables = {}
         data = bytearray(MARKER)
-        assert len(data) == 16
         for kind in locations:
             tables[kind] = arena + len(data)
             # AP ownership can leave pickup-only weapons unowned. Do not let
@@ -92,13 +84,11 @@ class WeaponPickup(PatchSet):
         init_edits = []
         entitlement_table = base = None
         if entitlements is not None:
-            if any(not 0 <= slot < 40 or type(value) is not bool for slot, value in entitlements.items()):
-                raise ValueError("Entitlements require gadget ids 0..39 and boolean ownership")
             base, init, load, restart = require(symbols,
                 "GADGET_g_GadgetList", NativeFunctions.MOBY_INIT_MOBYS, NativeFunctions.LEVEL_LOAD_LEVEL, NativeFunctions.LEVEL_RESTART,
             )
             sites_words = p.batch_read_int32([load + 0x2F0, load + 0x2F4, restart + 0x12C, restart + 0x130])
-            assert sites_words == [jump(init, True), 0] * 2, "Object init call changed"
+            check(sites_words == [jump(init, True), 0] * 2, "Object init call changed")
             entitlement_table = arena + len(data)
             flags = bytearray(44)  # 40 slots, invocation byte, alignment padding
             for slot, value in entitlements.items():
@@ -110,7 +100,7 @@ class WeaponPickup(PatchSet):
                 fallback=init).replacement)
             init_edits = [(site, packed([jump(routine, True)]))
                           for site in (load + 0x2F0, restart + 0x12C)]
-        assert arena + len(data) <= give + 0x278, "Replacement exceeds intercepted tail"
+        check(arena + len(data) <= give + 0x278, "Replacement exceeds intercepted tail")
         edits = [(give + 0x58, packed([branch(give + 0x58, give + 0x278), 0])),
                  (arena, bytes(data)),
                  (give + 0x50, packed([jump(routines["pickup", True], True)])),

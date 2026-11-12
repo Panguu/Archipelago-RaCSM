@@ -2,7 +2,7 @@ from .asm import MARKER, Patch, branch, jump, packed, words
 from .connection_warning import HEARTBEAT_FRAMES, ConnectionWarning
 from .entitlements import Entitlements
 from .gain_storage import GainStorage
-from .gameFlags import GameFlags
+from .game_flags import GameFlags
 from .hooks import LocationHooks
 from .keycard_hunt import KeycardHunt
 from .loader_state import StartupBarrierLost, LoaderStateReader
@@ -11,7 +11,7 @@ from .patch import PatchSet
 from .plan import PatchPlan
 from .progression import Progression
 from .starting_case import StartingCase
-from .storage import free_blocks, plan_storage, storage_address
+from .storage import free_blocks, storage_address
 from .titan_vendor import TitanOffers, TitanPrice, TitanVendor
 from .vendor_catalog import VendorCatalog
 from .vendor_presentation import VendorPresentation
@@ -48,7 +48,6 @@ __all__ = [
     "free_blocks",
     "jump",
     "packed",
-    "plan_storage",
     "storage_address",
     "words",
 ]

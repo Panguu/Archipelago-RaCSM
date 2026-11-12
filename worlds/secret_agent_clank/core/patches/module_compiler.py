@@ -1,6 +1,5 @@
-"""Every new address operand needs an explicit fixup. Existing relocations under
-replacement bytes are removed, including import calls. The game loader then
-relocates the new operands; no observed PCSX2 RAM base is baked into the disc.
+"""Writes patches into a level module and rebuilds its relocation tables, so the
+game's loader relocates the new code wherever the module loads.
 """
 from dataclasses import dataclass
 import struct
@@ -42,12 +41,8 @@ def encode_local_relocations(relocations: tuple[Relocation, ...]) -> bytes:
 
 
 def compile_module(data: bytes, edits: tuple[ModuleEdit, ...], *, arena_start: int | None = None) -> bytes:
-    """Replace existing code/data and rebuild relocation tables at the file end.
-
-    Original code, exports and symbol offsets retain their positions. Enlarged
-    files must be installed using the ISO file replacement writer. Unrelated
-    bytes are preserved. Callers must verify the emitted code at multiple load
-    addresses before releasing a build.
+    """Apply the edits and write fresh relocation tables at the end of the file.
+    Existing code and symbols don't move.
     """
     module = SNR2Module(data)
     if not edits:
@@ -55,8 +50,7 @@ def compile_module(data: bytes, edits: tuple[ModuleEdit, ...], *, arena_start: i
     edits = tuple(sorted(edits, key=lambda edit: edit.offset))
     metadata_start = min(word(data, 4), word(data, 12), word(data, 52) or len(data))
     if arena_start is not None:
-        # The caller must reserve a zero-filled extension after every original
-        # table. Never permit an arena declaration to expose existing metadata.
+        # The arena has to be empty space after all the original tables.
         metadata_end = max(word(data, 4) + word(data, 8) * 12,
                            word(data, 12) + word(data, 16) * 12,
                            module.local_stream_end)
@@ -77,9 +71,8 @@ def compile_module(data: bytes, edits: tuple[ModuleEdit, ...], *, arena_start: i
     removed = {offset for edit in edits for offset in range(edit.offset, edit.offset + len(edit.original), 4)}
     imports = [r for r in module.import_relocations if r.offset not in removed]
     locals_ = []
-    # A surviving HI16 can refer to a LO16 inside replaced code. Keeping that
-    # HI16 in the compressed stream would pair it with a different LO16. Turn
-    # just those endangered records into explicit symbol+addend relocations.
+    # A kept HI16 whose LO16 was replaced would pair with the wrong LO16 in the
+    # compressed stream, so turn those into explicit symbol+addend relocations.
     anchor = next((i for i, s in enumerate(module.symbols) if s.kind in (2, 3)), None)
     low = None
     pairs = {}
@@ -131,5 +124,5 @@ def compile_module(data: bytes, edits: tuple[ModuleEdit, ...], *, arena_start: i
         struct.pack_into("<I", result, 56, local_start)
     elif word(data, 56):
         raise InvalidModule("Unsupported secondary relocation stream")
-    SNR2Module(bytes(result))  # Structural validation before returning bytes.
+    SNR2Module(bytes(result))  # parse it to catch a malformed result
     return bytes(result)

@@ -30,8 +30,6 @@ class EquipmentOnly:
             table = storage + len(data)
             flags = bytearray(44)
             for slot, value in entitlements.items():
-                if not 0 <= slot < 40 or type(value) is not bool:
-                    raise ValueError("Invalid AP entitlement")
                 flags[slot] = 2 if value else 1
             data.extend(flags)
             routine = storage + len(data)
@@ -41,11 +39,10 @@ class EquipmentOnly:
                 if call != packed([jump(init, True), 0]):
                     raise RuntimeError("Object init call changed")
                 edits.append(Patch(site, packed([jump(init, True)]), packed([jump(routine, True)])))
-        # ConnectionWarning uses the tail of the same verified no-op routine.
+        # The connection warning uses the end of the same routine.
         if len(data) > 152:
             raise RuntimeError("Equipment initialization overlaps connection warning storage")
         edits.insert(0, Patch(storage, original[:len(data)], bytes(data)))
         return PatchPlan(patches=edits, locations={}, tables={}, reported=set(checked),
                          marker_address=marker, module=int.from_bytes(module, "little"),
-                         entitlement_table=table, gadget_base=base,
-                         extra_ranges=[(storage + len(data), storage + 152)])
+                         entitlement_table=table, gadget_base=base)

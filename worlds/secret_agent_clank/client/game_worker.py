@@ -1,4 +1,4 @@
-"""The child process exclusively owns Core and the one PINE connection."""
+"""Runs in a child process that owns Core and the PINE connection."""
 import logging
 import traceback
 
@@ -73,7 +73,7 @@ class GameRuntime:
             try:
                 identity = w.native_runtime.verify()
             except Exception:
-                # Never restore session data or run commands on unverified RAM.
+                # Don't touch memory that failed verification.
                 w.native_runtime.close(disarm=False)
                 w.case.is_ready = False
                 self.pine.disconnect()

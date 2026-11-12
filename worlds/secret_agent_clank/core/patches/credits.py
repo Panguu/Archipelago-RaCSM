@@ -30,12 +30,11 @@ ROW_TICKS = tuple(0 if i + 1 in SUBTITLE_ROWS else LINE_TICKS for i in range(len
 
 
 def prepare_schedule(base, loaded, arena):
-    """Extend the authored rail's end event before allowing its movie handoff.
+    """Show the extra lines before the credits hand off to the ending movie.
 
-    The retail rail emits exactly 113 lines. Increasing the selector's modulus
-    alone cannot schedule more waves. Retain native name/subtitle configurations
-    and emit paired rows from the normal gameplay update, with a reading
-    interval after each group (including the last), then resume retail completion.
+    The retail credits spawn exactly 113 lines, so the extra ones are spawned
+    from the gameplay update instead, with a pause after each name/subtitle
+    group, and the retail ending runs once they're done.
     """
     # Name configuration, argument, active, timer, subtitle configuration.
     state = arena.allocate(bytes(20))
@@ -46,8 +45,8 @@ def prepare_schedule(base, loaded, arena):
         m.addiu(m.SP, m.SP, -0x20), m.swc1(m.F20, 0x10, m.SP),
         jump(base + 0xBD900), m.NOP,
     ]))
-    # Preserve the authored Dan Johnson / Lead Modeler name and subtitle
-    # configurations, instead of using the final single-line heading for both.
+    # Save the name and subtitle styles from the retail lines, so the extra
+    # lines use them instead of the final heading style.
     capture = arena.allocate(packed([
         *m.li32(m.T0, state), *m.li32(m.T1, base + 0x21EA18),
         m.lw(m.T1, 0, m.T1), m.addiu(m.T2, m.ZERO, 110),
@@ -61,7 +60,7 @@ def prepare_schedule(base, loaded, arena):
     begin = arena.allocate(packed([
         *m.li32(m.T0, state), m.lw(m.T1, 0, m.T0),
         m.bne(m.T1, m.ZERO, 3), m.NOP,
-        jump(base + 0xBA650), m.NOP,  # no captured wave: retain retail behavior
+        jump(base + 0xBA650), m.NOP,  # nothing captured yet: run the retail code
         m.addiu(m.T1, m.ZERO, 1), m.sw(m.T1, 8, m.T0),
         m.addiu(m.T1, m.ZERO, LINE_TICKS),
         m.jr(m.RA), m.sw(m.T1, 12, m.T0),
@@ -90,8 +89,8 @@ def prepare_schedule(base, loaded, arena):
          m.addiu(m.T0, m.T0, 1 - RETAIL_COUNT),
          m.lw(m.A0, 0, m.S0), m.addiu(m.T1, m.ZERO, LINE_TICKS),
          m.sw(m.T1, 12, m.S0), m.sltiu(m.T1, m.T0, len(LINES)))
-    # A particle-budget skip can leave the retail selector behind its rail.
-    # Finish those rows with the name style, without indexing before styles.
+    # If the particle budget skipped a retail line, the index can still be
+    # below ours. Show those in the name style.
     branch(m.T1, m.ZERO, 'spawn')
     emit(m.sll(m.T0, m.T0, 3),
          *m.li32(m.T1, styles), m.addu(m.T1, m.T1, m.T0),
@@ -145,8 +144,7 @@ def prepare_credits(base, loaded, symbols, arena):
     original = base + TABLE_OFFSET
     count = RETAIL_COUNT + len(entries)
     edits = (
-        # Setup uppercases every entry in place; the wave selector must use
-        # this same writable table and wrap after the appended entries.
+        # Point the setup and the line selector at the extended table copy.
         (0xBB43C, m.lui(m.V0, (original + 0x8000) >> 16), m.lui(m.V0, (target + 0x8000) >> 16)),
         (0xBB444, m.addiu(m.S2, m.V0, original), m.addiu(m.S2, m.V0, target)),
         (0xBB598, m.lui(m.A0, (original + 0x8000) >> 16), m.lui(m.A0, (target + 0x8000) >> 16)),

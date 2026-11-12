@@ -89,9 +89,8 @@ class PermanentRuntime(NativeRuntime):
         checked = set(checked)
         for kind, table in hooks.tables.items():
             count = 32 if kind == "mods" else 20 if kind == "titan" else 40
-            # Unmapped slots have native fallback/suppression sentinels (0 or
-            # 4). Preserve those; treating every slot as a completed AP check
-            # would silently suppress ordinary game pickups.
+            # Slots without a location keep their 0 or 4. Marking them checked
+            # would hide normal game pickups.
             flags = bytearray(p.read_bytes(table, count))
             for slot, name in hooks.locations[kind].items():
                 available = kind == "pickup" or self.vendor_locations is None or name in self.vendor_locations
@@ -103,8 +102,6 @@ class PermanentRuntime(NativeRuntime):
         if hooks.entitlement_table is not None:
             flags = bytearray(41)
             for slot, owned in entitlements.items():
-                if type(slot) is not int or not 0 <= slot < 40 or type(owned) is not bool:
-                    raise ValueError("Invalid AP entitlement")
                 flags[slot] = 2 if owned else 1
             p.write_bytes(hooks.entitlement_table, bytes(flags))
         self._sync_configuration()
@@ -167,9 +164,8 @@ class PermanentRuntime(NativeRuntime):
         if not self._gameplay_settled(require_current=False):
             return False
         if self.bound != identity or not self.hooks.installed:
-            # Connecting mid-level must reinitialize on the game thread before
-            # any pickups spawn; writing tables into an already running level
-            # cannot safely recreate those initialization decisions.
+            # Pickups decide whether to spawn when the level loads, so
+            # connecting mid-level means reloading the level.
             self._reload_current_level()
             return False
         if self.hooks.entitlement_table is not None and not self.pine.read_int8(self.hooks.entitlement_table + 40):

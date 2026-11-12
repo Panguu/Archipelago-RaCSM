@@ -1,6 +1,5 @@
-"""The local stream format follows SCUS-97623's loader at 0x175930; imported
-relocations follow 0x175AC8 and the relocation writer at 0x175010.
-This is a build/verification tool, not a PINE runtime memory writer.
+"""Reads and relocates SNR2 level modules, matching the SCUS-97623 loader
+(local relocations at 0x175930, imports at 0x175AC8, writer at 0x175010).
 """
 from dataclasses import dataclass
 import struct

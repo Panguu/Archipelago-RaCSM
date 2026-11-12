@@ -1,31 +1,11 @@
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
 
-from ..constants import NativeFunctions
-from ..core.patches import Patch, Progression, VendorCatalog, free_blocks, jump, plan_storage, storage_address
+from ..core.patches import Patch, Progression, free_blocks, storage_address
 from .mips_cpu import CPU
 from .test_native_capture_plans import CaptureMemory
-from .test_runtime import Memory
 
 
 class HookStorageTests(unittest.TestCase):
-    def test_plan_reserves_large_blocks_before_small_counter(self):
-        ranges = [(0x1000, 0x1020), (0x2000, 0x2008)]
-        self.assertEqual(plan_storage(ranges, [], [4, 32]), [0x2000, 0x1000])
-
-    def test_plan_backtracks_instead_of_stranding_final_hook(self):
-        ranges = [(0x1000, 0x101C), (0x2000, 0x2020)]
-        sizes = [24, 20, 8, 8]
-        addresses = plan_storage(ranges, [], sizes)
-        self.assertIsNotNone(addresses)
-        spans = sorted((address, address + size) for address, size in zip(addresses, sizes))
-        self.assertTrue(all(b <= c for (_, b), (c, _) in zip(spans, spans[1:])))
-        self.assertTrue(all(any(start <= a < b <= end for start, end in ranges) for a, b in spans))
-
-    def test_impossible_plan_returns_no_partial_allocation(self):
-        self.assertIsNone(plan_storage([(0x1000, 0x1020)], [], [20, 16]))
-
     def test_split_manual_guard_rejects_invalid_slots_without_touching_stack(self):
         p = CaptureMemory()
         def allocate(code):
@@ -56,32 +36,3 @@ class HookStorageTests(unittest.TestCase):
                          [(0x1004, 0x1008), (0x101C, 0x1028)])
         self.assertEqual(storage_address([(0x1001, 0x1028)], patches, 12), 0x101C)
         self.assertIsNone(storage_address([(0x1001, 0x1028)], patches, 16))
-
-    def test_catalog_shares_only_tail_after_full_row_buffer(self):
-        p = Memory()
-        buy, builder, begin, add, end = 0x100000, 0x110000, 0x120000, 0x130000, 0x140000
-        symbols = {NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE: buy,
-                   "ICONMENU_BeginAddingMenuItems__FP9tICONMENUPvUi": begin,
-                   "ICONMENU_AddItem__FP9tICONMENUUiUiUiUiUiUi": add,
-                   "ICONMENU_EndAddingMenuItems__FP9tICONMENU": end}
-        guards = {0: 0x27BDFF70, 0x4C: jump(begin, True), 0x54: 0x27A20010,
-                  0x70: 0x24020011, 0x300: jump(add, True), 0x43C: jump(add, True),
-                  0x4DC: jump(add, True), 0x660: jump(add, True), 0x6FC: jump(add, True),
-                  0x24: 0x24840000, 0x58: 0x3C030000, 0x60: 0x3C020000,
-                  0x64: 0xA0600000, 0x68: 0xA0400000, 0x740: jump(end, True)}
-        p.batch_write_int32([(builder + offset, word) for offset, word in guards.items()])
-        p.write_int32(buy + 0x338, jump(builder, True))
-        hooks = SimpleNamespace(patches=[], locations={}, tables={}, extra_ranges=[])
-        p.writes.clear()
-        catalog = VendorCatalog(p)
-        with patch('worlds.secret_agent_clank.core.patches.vendor_catalog.VendorTabs.prepare',
-                   return_value=([], bytes(8))):
-            hooks.patches.extend(catalog.prepare(symbols, hooks))
-        payload = catalog.patches[0]
-        self.assertEqual(hooks.extra_ranges,
-                         [(builder + len(payload.replacement), builder + catalog.END)])
-        self.assertEqual(payload.replacement[-41 * catalog.ROW_SIZE:], bytes(41 * catalog.ROW_SIZE))
-        address = storage_address(hooks.extra_ranges, hooks.patches, 120)
-        self.assertEqual(address, builder + len(payload.replacement))
-        self.assertLessEqual(address + 120, builder + catalog.END)
-        self.assertEqual(p.writes, [])

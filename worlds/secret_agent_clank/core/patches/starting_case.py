@@ -8,7 +8,7 @@ class StartingCase:
     CHANGE_LEVEL = 0x330388
 
     def __init__(self):
-        self.case_name = None  # Older slot data retains the native start.
+        self.case_name = None
 
     def configure(self, slot_data):
         name = slot_data.get("starting_case")

@@ -167,8 +167,8 @@ class CaseInventory:
             return False
         if not self.active_player.kill():
             return False
-        # Suppress this entire death, regardless of how long its animation or
-        # reload takes. It must never echo back to the other DeathLink players.
+        # Ignore this whole death, however long it takes, so it isn't sent back
+        # out to the other DeathLink players.
         self._prev_dead = True
         self._death_armed = True
         self._awaiting_remote_death = True

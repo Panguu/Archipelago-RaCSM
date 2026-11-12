@@ -25,66 +25,12 @@ from ..nanotech import read_nanotech
 from ..symbols import require
 from ..batch_io import read_blocks, write_blocks
 from .asm import Patch, jump, packed
-from .gain_storage import GainStorage
-from .mips import A0, RA, T0, T1, T2, V0, ZERO, addiu, addu, beq, jr, lbu, li32, lui, lw, sll, sltiu, sltu
+from .mips import A0, RA, T0, T1, T2, V0, ZERO, addiu, addu, beq, jr, lbu, li32, lui, lw, sltiu, sltu
 from .patch import PatchSet
-from .storage import free_blocks, plan_storage
 from .titan_vendor import TitanPrice
 
 
 class Progression(PatchSet):
-    def replay_xp_patches(self, symbols):
-        """Keep first-clear XP budgets on repeat challenges and enemy kills."""
-        edits = []
-        arena = symbols.get("Arena_PreCalcXPForChallenge__FP4Moby")
-        if arena is not None:
-            code = self.pine.read_bytes(arena + 0x98, 24)
-            words = struct.unpack("<6I", code)
-            if (words[:3] != (0x3C013F80, 0x4481A000, 0x10400003)
-                    or words[3] & 0xFFFF0000 != 0x8E440000
-                    or words[4:] != (0x3C013E80, 0x4481A000)):
-                raise RuntimeError("Arena repeat XP layout changed")
-            # f20 is 1.0 for a first clear, 0.25 after a previous win.
-            edits.append(Patch(arena + 0xA8, code[16:20], packed([0x3C013F80])))
-        moby = symbols.get("MOBY_ComputeWeaponXP__FPC4MobyRC10DamageInfo")
-        if moby is not None:
-            code = self.pine.read_bytes(moby + 0x188, 32)
-            if code != packed([0x14400005, 0, 0x3C013E80, 0x44810000,
-                               0, 0x4600A502, 0x4600A024, 0x44080000]):
-                raise RuntimeError("Enemy repeat XP layout changed")
-            # The shared reward helper reduces repeat kills to one quarter.
-            # Change only the factor; preserve death counts and reward dispatch.
-            edits.append(Patch(moby + 0x190, code[8:12], packed([0x3C013F80])))
-        return edits
-
-    @staticmethod
-    def weapon_gain_wrapper(target, multiplier):
-        # s2 now contains the native award, after level scaling and the per-hit
-        # cap. Multiplying a1 at entry lets that cap erase the AP bonus.
-        scale = ([sll(18, 18, multiplier.bit_length() - 1)]
-                 if multiplier & (multiplier - 1) == 0 else
-                 [0x24030000 | multiplier, 0x02430019, 0x00009012])
-        # Replay bnez s5 and its delay slot. Keep the native no-level-up clamp
-        # on the fallthrough path; a2's original meaning must not change.
-        return packed([*scale, 0x16A00003, 0x8E840064,
-                       jump(target + 0x10C), 0, jump(target + 0x11C), 0])
-
-    @staticmethod
-    def gain_wrapper(target, original, register, multiplier):
-        # Preserve nonpositive adjustments (e.g. deductions). v1 and HI/LO are
-        # caller-saved; original prologues below do not consume their old values.
-        first, second = struct.unpack("<2I", original)
-        if multiplier > 0 and multiplier & (multiplier - 1) == 0:
-            # The verified stack adjustment is safe on both paths. A shift
-            # replaces loading the multiplier and using HI/LO.
-            return packed([0x18000002 | (register << 21), first,
-                           sll(register, register, multiplier.bit_length() - 1),
-                           second, jump(target + 8), 0])
-        return packed([0x18000003 | (register << 21), 0x24030000 | multiplier,
-                       (register << 21) | (3 << 16) | 0x18,
-                       (register << 11) | 0x12,
-                       first, jump(target + 8), second])
-
     def __init__(self, pine):
         super().__init__(pine)
         self.stealth = None
@@ -141,24 +87,6 @@ class Progression(PatchSet):
     def ownership(self):
         return {name: level > 0 for name, level in self.levels.items()}
 
-    @staticmethod
-    def manual_xp_guard(base, caps, tail, allocate):
-        """Two small guard blocks fit verified stubs without a 120-byte arena."""
-        # Select the native XP tail or the caller return with MOVZ.
-        # The shared return delay slot sets the ignored/blocked result to zero.
-        continuation = allocate(packed([
-                 lui(T1, (base + 0x5C + 0x8000) >> 16), addu(T0, T0, T1),
-                 lw(T1, (base + 0x5C) & 0xFFFF, T0),
-                 addiu(T1, T1, 1), sltu(T0, T1, T2),
-                 *li32(T1, tail), (RA << 21) | (T0 << 16) | (T1 << 11) | 0x0A,
-                 jr(T1), addu(V0, ZERO, ZERO)]))
-        return packed([sltiu(T0, A0, len(WEAPON_ORDER)), beq(T0, ZERO, 9),
-                 *li32(T0, caps), addu(T0, T0, A0), lbu(T2, 0, T0),
-                 addiu(T1, ZERO, 0x74),
-                 (A0 << 21) | (T1 << 16) | 0x19,  # multu a0,t1
-                 (T0 << 11) | 0x12,  # mflo t0; only caller-saved HI/LO change
-                 jump(continuation), 0, jr(RA), addu(V0, ZERO, ZERO)])
-
     def level_checks(self):
         if not self.check_mode or self.base is None:
             return ()
@@ -180,7 +108,7 @@ class Progression(PatchSet):
         try:
             data = read_nanotech(self.pine, symbols, SACOperatives.CLANK)
         except ValueError:
-            return ()  # Loading or invalid data cannot award a location.
+            return ()  # still loading
         return tuple(nanotech_location_name(level) for level in nanotech_levels(self.ng_plus)
                      if level <= data['xp_nanotech'])
 
@@ -190,21 +118,18 @@ class Progression(PatchSet):
         try:
             data = read_nanotech(self.pine, symbols, SACOperatives.RATCHET)
         except ValueError:
-            return ()  # Loading or invalid data cannot award a location.
+            return ()  # still loading
         return tuple(ratchet_nanotech_location_name(level) for level in ratchet_nanotech_levels(self.ng_plus)
                      if level <= data['xp_nanotech'])
 
-    def prepare(self, symbols, hooks, module, *, vendor_enabled=True, arena=None):
-        self.patches = []
+    def prepare(self, symbols, module, arena, *, vendor_enabled=True):
         p = self.pine
         self.ng_address = None
         self.save_pointer_address = None
         self.pending_definitions = ()
         self.cap_address = None
-        self.pickup_challenge_address = None
         self.module = module
-        permanent = arena is not None
-        self.config_address = arena.allocate(packed([1, 1, 1])) if permanent else None
+        self.config_address = arena.allocate(packed([1, 1, 1]))
         self.base = symbols.get("GADGET_g_GadgetList")
         replay = require(symbols, NativeFunctions.GLOBALVARS_IS_IN_REPLAY_MODE)
         level_getter = symbols.get(NativeFunctions.GADGET_GET_CURRENT_POWER_LEVEL)
@@ -224,8 +149,7 @@ class Progression(PatchSet):
         pointer = ((a & 65535) << 16) + (low - 65536 if low & 32768 else low)
         if pointer % 4 or not 0x100000 <= pointer <= 0x1FFFFFC:
             raise RuntimeError(f"Invalid native save pointer address: 0x{pointer:08X}")
-        # The relocated module has not run its initialization at this gate.
-        # Validate code now, but dereference initialized data in sync().
+        # The module hasn't initialised yet, so the pointer is followed in sync().
         self.save_pointer_address = pointer
         if self.enabled or self.max_challenge_mode:
             if self.base is None:
@@ -234,153 +158,73 @@ class Progression(PatchSet):
             if level_load != packed([0x8C42005C]):
                 raise RuntimeError("Weapon level getter layout changed")
             self.pending_definitions = tuple(self.levels if self.enabled else TITAN_LOCATIONS)
-        ranges = list(getattr(hooks, "extra_ranges", ()))
-        give, buy = symbols.get(NativeFunctions.WEAPON_PICKUP_GIVE_WEAPON), symbols.get(NativeFunctions.SCRNVENDOR_PROCESS_PURCHASE)
-        if give is not None:
-            ranges.append((give + 0x60, give + 0x278))
-        if buy is not None and vendor_enabled:
-            ranges.append((buy + 0x1FC, buy + 0x338))
+
         edits = self.replay_xp_patches(symbols)
-        if (self.enabled and not self.manual and not permanent) or (module == 31 and self.max_challenge_mode):
+        if module == 31 and self.max_challenge_mode:
+            # The Treehouse has no combat, so weapon XP is switched off there.
             xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
             if entry[xp] != packed([0x27BDFFB0, 0xFFB30028]):
                 raise RuntimeError("Weapon XP entry changed")
             edits.append(Patch(xp, entry[xp], packed([0x03E00008, 0x00001021])))
-            # AP tiers bypass XP. Treehouse has no combat XP sources and
-            # also lends this body to its NG+ vendor hook storage.
-            ranges.append((xp + 8, xp + 0x170))
-        base_edits = list(edits)
 
-        # Challenge-only pickups are discarded during object initialization,
-        # before sync() can set the save's challenge level. Give that one gate
-        # the AP level directly, without changing other replay-mode semantics.
-        pickup_init = symbols.get("WeaponPickup_Init__FP4Moby") if self.max_challenge_mode or permanent else None
+        # Challenge-only pickups are removed during object init, before sync()
+        # has set the save's challenge level, so that one check reads the AP
+        # level directly.
+        pickup_init = symbols.get("WeaponPickup_Init__FP4Moby")
         if pickup_init is not None:
             pickup_gate = p.read_bytes(pickup_init + 0x38, 24)
             if pickup_gate != packed([0x9042001C, 0x10400007, 0x8E510058,
                                       jump(replay, True), 0, 0x14400004]):
                 raise RuntimeError("Challenge pickup initialization gate changed")
-
-        def build(allocate):
-            if pickup_init is not None:
-                self.pickup_challenge_address = allocate(self.ng_plus.to_bytes(4, "little"))
-                flag = self.pickup_challenge_address
-                routine = allocate(packed([lui(V0, (flag + 0x8000) >> 16),
-                                           lw(V0, flag & 0xFFFF, V0), jr(RA), 0]))
-                edits.append(Patch(pickup_init + 0x44, pickup_gate[12:16],
-                                   packed([jump(routine, True)])))
-            if vendor_enabled:
-                edits.extend(TitanPrice(p).prepare(symbols, allocate))
-            if (self.manual or permanent) and module != 31:
-                xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
-                original = entry[xp]
-                if original != packed([0x27BDFFB0, 0xFFB30028]):
-                    raise RuntimeError("Weapon XP entry changed")
-                self.cap_address = allocate(bytes(len(WEAPON_ORDER)))
-                tail = original + packed([jump(xp + 8), 0])
-                wrapper = self.manual_xp_guard(self.base, self.cap_address, allocate(tail), allocate)
-                address = allocate(wrapper)
-                edits.append(Patch(xp, original, packed([jump(address), 0])))
-            targets = [(NativeFunctions.PLAYER_GRANT_BOLTS, self.bolts, 4, 0x27BDFFF0, 0xFFB00000)]
-            # Treehouse has no combat XP sources. Its small vendor-only arena
-            # needs only the bolt handler for any environmental bolt gains.
-            if module != 31:
-                targets.append((NativeFunctions.GLOBALVARS_ADD_EXPERIENCE, self.health_xp, 4, 0x27BDFFE0, None))
-                # Clank's separate award function writes his XP directly; it
-                # never passes through the generic player XP entry above.
-                if symbols.get(NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE) is not None:
-                    targets.append((NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE,
-                                    self.health_xp, 4, 0x27BDFFF0, 0xFFB00000))
-                if permanent or ((not self.enabled or self.manual) and self.weapon_xp != 1):
-                    xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
-                    award = p.read_bytes(xp + 0xFC, 16)
-                    if award != packed([0x0050182B, 0x0043900B, 0x16A00005, 0x8E840064]):
-                        raise RuntimeError("Weapon XP award layout changed")
-                    wrapper = (self.dynamic_weapon_gain_wrapper(xp, self.config_address)
-                               if permanent else self.weapon_gain_wrapper(xp, self.weapon_xp))
-                    address = allocate(wrapper)
-                    edits.append(Patch(xp + 0x104, award[8:], packed([jump(address), 0])))
-            for name, multiplier, register, first, second in targets:
-                if multiplier == 1 and not permanent:
-                    continue
-                target = require(symbols, name)
-                original = entry[target]
-                a, b = struct.unpack("<2I", original)
-                if a != first or (b != second if second is not None else b & 0xFFFF0000 != 0x3C020000):
-                    raise RuntimeError(f"Gain routine changed: {name}")
-                wrapper = (self.dynamic_gain_wrapper(target, original, register,
-                           self.config_address + (8 if name == NativeFunctions.PLAYER_GRANT_BOLTS else 4))
-                           if permanent else self.gain_wrapper(target, original, register, multiplier))
-                address = allocate(wrapper)
-                edits.append(Patch(target, original, packed([jump(address), 0])))
-            if self.stealth is not None:
-                # Shared DLLs can contain Clank code even on another operative's
-                # route. Only the Clank success call is intercepted, never generic kills.
-                # Clank cases use distinct modules, so the module names the case.
-                clank_cases = {CASE_MODULES[case.name]: case.name for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
-                if module in clank_cases:
-                    edits.extend(self.stealth.prepare(symbols, allocate, clank_cases[module]))
-                else:
-                    self.stealth.binding = None
-
-            if self.mission_failure is not None:
-                edits.extend(self.mission_failure.prepare(symbols, allocate))
-
-        if permanent:
-            build(arena.allocate)
-            self.patches = edits
-            return edits
-
-        # First measure all code and data, including stealth. Placeholder
-        # addresses are used only to encode fixed-size instructions; no RAM
-        # reads or writes are made through them. Rebuild with final addresses.
-        sizes = []
-        def measure(data):
-            sizes.append(len(data))
-            return 0
-        build(measure)
-        occupied = hooks.patches + edits
-        addresses = plan_storage(ranges, occupied, sizes)
-        if addresses is None and not getattr(hooks, "gain_storage_prepared", False):
-            guards, extra_ranges = GainStorage(p).prepare(symbols)
-            base_edits.extend(guards)
-            occupied += guards
-            ranges.extend(extra_ranges)
-            addresses = plan_storage(ranges, occupied, sizes)
-        if addresses is None:
-            # Vendor modules without pickup bodies can exhaust or fragment
-            # the ordinary arenas too (notably 19, 22 and 29 in manual NG+).
-            # This independently verified no-op stub is safe in either case.
-            guards, extra_ranges = GainStorage(p).prepare_line(symbols)
-            base_edits.extend(guards)
-            occupied += guards
-            ranges.extend(extra_ranges)
-            addresses = plan_storage(ranges, occupied, sizes)
-        if addresses is None:
-            self.cap_address = None
+            self.pickup_challenge_address = arena.allocate(self.ng_plus.to_bytes(4, "little"))
+            flag = self.pickup_challenge_address
+            routine = arena.allocate(packed([lui(V0, (flag + 0x8000) >> 16),
+                                             lw(V0, flag & 0xFFFF, V0), jr(RA), 0]))
+            edits.append(Patch(pickup_init + 0x44, pickup_gate[12:16], packed([jump(routine, True)])))
+        else:
             self.pickup_challenge_address = None
-            if self.stealth is not None:
+        if vendor_enabled:
+            edits.extend(TitanPrice(p).prepare(symbols, arena.allocate))
+
+        targets = [(NativeFunctions.PLAYER_GRANT_BOLTS, 0x27BDFFF0, 0xFFB00000)]
+        if module != 31:
+            xp = require(symbols, NativeFunctions.GADGET_GETS_XP)
+            original = entry[xp]
+            if original != packed([0x27BDFFB0, 0xFFB30028]):
+                raise RuntimeError("Weapon XP entry changed")
+            self.cap_address = arena.allocate(bytes(len(WEAPON_ORDER)))
+            tail = arena.allocate(original + packed([jump(xp + 8), 0]))
+            guard = arena.allocate(self.manual_xp_guard(self.base, self.cap_address, tail, arena.allocate))
+            edits.append(Patch(xp, original, packed([jump(guard), 0])))
+
+            targets.append((NativeFunctions.GLOBALVARS_ADD_EXPERIENCE, 0x27BDFFE0, None))
+            # Clank's XP goes through its own function, not the player one above.
+            if symbols.get(NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE) is not None:
+                targets.append((NativeFunctions.GLOBALVARS_ADD_CLANK_EXPERIENCE, 0x27BDFFF0, 0xFFB00000))
+            award = p.read_bytes(xp + 0xFC, 16)
+            if award != packed([0x0050182B, 0x0043900B, 0x16A00005, 0x8E840064]):
+                raise RuntimeError("Weapon XP award layout changed")
+            wrapper = arena.allocate(self.weapon_gain_wrapper(xp, self.config_address))
+            edits.append(Patch(xp + 0x104, award[8:], packed([jump(wrapper), 0])))
+        for name, first, second in targets:
+            target = require(symbols, name)
+            original = entry[target]
+            a, b = struct.unpack("<2I", original)
+            if a != first or (b != second if second is not None else b & 0xFFFF0000 != 0x3C020000):
+                raise RuntimeError(f"Gain routine changed: {name}")
+            multiplier = self.config_address + (8 if name == NativeFunctions.PLAYER_GRANT_BOLTS else 4)
+            wrapper = arena.allocate(self.gain_wrapper(target, original, multiplier))
+            edits.append(Patch(target, original, packed([jump(wrapper), 0])))
+
+        if self.stealth is not None:
+            # Each Clank case has its own module, so the module tells us the case.
+            clank_cases = {CASE_MODULES[case.name]: case.name for case in CASES_BY_OPERATIVE[SACOperatives.CLANK]}
+            if module in clank_cases:
+                edits.extend(self.stealth.prepare(symbols, arena.allocate, clank_cases[module]))
+            else:
                 self.stealth.binding = None
-            available = [end - start for start, end in free_blocks(ranges, occupied)]
-            raise RuntimeError(
-                f"Insufficient verified storage for complete native hook plan "
-                f"(module {module}, requests {sizes}, total {sum(sizes)} bytes; "
-                f"free {sum(available)} bytes, largest block {max(available, default=0)} bytes, "
-                f"blocks {available})")
-        edits = base_edits
-        index = 0
-        storage = read_blocks(p, list(zip(addresses, sizes)))
-        def allocate(data):
-            nonlocal index
-            if index >= len(sizes) or len(data) != sizes[index]:
-                raise RuntimeError("Native hook size changed between planning and encoding")
-            address = addresses[index]
-            edits.append(Patch(address, storage[index], data))
-            index += 1
-            return address
-        build(allocate)
-        if index != len(sizes):
-            raise RuntimeError("Native hook requests changed between planning and encoding")
+        if self.mission_failure is not None:
+            edits.extend(self.mission_failure.prepare(symbols, arena.allocate))
         self.patches = edits
         return edits
 
@@ -398,7 +242,7 @@ class Progression(PatchSet):
             self.ng_address = None
             save, = save
             if save == 0:
-                return  # Not initialized yet; retry without any progression writes.
+                return  # not initialised yet
             if save % 4 or not 0x100000 <= save < 0x1FE0000:
                 raise RuntimeError(f"Invalid native save pointer at 0x{self.save_pointer_address:08X}: 0x{save:08X}")
             self.ng_address = save + 0xED4
@@ -412,9 +256,8 @@ class Progression(PatchSet):
         self.pending_definitions = ()
         bridged = []
         if self.ng_plus and (not self.enabled or self.manual):
-            # V4 has no combat path into Titan: normally the vendor supplies
-            # V5. AP vendor purchases are checks, so bridge that boundary as
-            # soon as an owned weapon reaches V4. Leave V5-V8 XP untouched.
+            # XP can't take a weapon past V4; normally the vendor sells V5.
+            # Vendor purchases are checks here, so bump owned V4 weapons to V5.
             bridged = [self.base + WEAPON_ORDER.index(internal) * 0x74 for internal in TITAN_LOCATIONS
                        if not self.manual or self.levels.get(internal, 0) >= 5]
         levelled = [(self.base + WEAPON_ORDER.index(internal) * 0x74, max(0, level - 1))
@@ -440,8 +283,8 @@ class Progression(PatchSet):
         for base, native in levelled:
             current = value[base + 0x5C]
             if self.manual:
-                # Raise the ceiling, not the earned level. Clamp saves from a
-                # previous session and discard XP while frozen at the ceiling.
+                # The AP level is a ceiling, not the level itself. Clamp anything
+                # above it and drop XP while the weapon sits at the ceiling.
                 if current > native:
                     writes.append((base + 0x5C, native))
                 if current >= native and value[base + 0x64]:
@@ -459,18 +302,63 @@ class Progression(PatchSet):
         if blocks:
             write_blocks(self.pine, blocks)
 
+    def replay_xp_patches(self, symbols):
+        """Keep first-clear XP budgets on repeat challenges and enemy kills."""
+        edits = []
+        arena = symbols.get("Arena_PreCalcXPForChallenge__FP4Moby")
+        if arena is not None:
+            code = self.pine.read_bytes(arena + 0x98, 24)
+            words = struct.unpack("<6I", code)
+            if (words[:3] != (0x3C013F80, 0x4481A000, 0x10400003)
+                    or words[3] & 0xFFFF0000 != 0x8E440000
+                    or words[4:] != (0x3C013E80, 0x4481A000)):
+                raise RuntimeError("Arena repeat XP layout changed")
+            # f20 is 1.0 for a first clear, 0.25 after a previous win.
+            edits.append(Patch(arena + 0xA8, code[16:20], packed([0x3C013F80])))
+        moby = symbols.get("MOBY_ComputeWeaponXP__FPC4MobyRC10DamageInfo")
+        if moby is not None:
+            code = self.pine.read_bytes(moby + 0x188, 32)
+            if code != packed([0x14400005, 0, 0x3C013E80, 0x44810000,
+                               0, 0x4600A502, 0x4600A024, 0x44080000]):
+                raise RuntimeError("Enemy repeat XP layout changed")
+            # Repeat kills normally give a quarter of the XP; make it the full amount.
+            edits.append(Patch(moby + 0x190, code[8:12], packed([0x3C013F80])))
+        return edits
+
     @staticmethod
-    def dynamic_gain_wrapper(target, original, register, config):
+    def manual_xp_guard(base, caps, tail, allocate):
+        """Split in two so each half fits in a small free block."""
+        # MOVZ picks between the game's XP code and returning straight away.
+        # Either way the delay slot returns 0.
+        continuation = allocate(packed([
+                 lui(T1, (base + 0x5C + 0x8000) >> 16), addu(T0, T0, T1),
+                 lw(T1, (base + 0x5C) & 0xFFFF, T0),
+                 addiu(T1, T1, 1), sltu(T0, T1, T2),
+                 *li32(T1, tail), (RA << 21) | (T0 << 16) | (T1 << 11) | 0x0A,
+                 jr(T1), addu(V0, ZERO, ZERO)]))
+        return packed([sltiu(T0, A0, len(WEAPON_ORDER)), beq(T0, ZERO, 9),
+                 *li32(T0, caps), addu(T0, T0, A0), lbu(T2, 0, T0),
+                 addiu(T1, ZERO, 0x74),
+                 (A0 << 21) | (T1 << 16) | 0x19,  # multu a0,t1
+                 (T0 << 11) | 0x12,  # mflo t0
+                 jump(continuation), 0, jr(RA), addu(V0, ZERO, ZERO)])
+
+    @staticmethod
+    def gain_wrapper(target, original, config):
+        # Multiply a positive a0 by the word at `config`, then run the two
+        # displaced instructions and carry on. v1 and HI/LO are free here.
         first, second = struct.unpack("<2I", original)
-        return packed([0x18000005 | register << 21, 0,
+        return packed([0x18000005 | A0 << 21, 0,
                        0x3C030000 | ((config + 0x8000) >> 16),
                        0x8C630000 | (config & 65535),
-                       register << 21 | 3 << 16 | 0x18,
-                       register << 11 | 0x12,
+                       A0 << 21 | 3 << 16 | 0x18,
+                       A0 << 11 | 0x12,
                        first, jump(target + 8), second])
 
     @staticmethod
-    def dynamic_weapon_gain_wrapper(target, config):
+    def weapon_gain_wrapper(target, config):
+        # s2 holds the award after level scaling and the per-hit cap, so the
+        # bonus is applied after the cap. Then replay the bnez s5 and its slot.
         return packed([0x3C030000 | ((config + 0x8000) >> 16),
                        0x8C630000 | (config & 65535), 0x02430019, 0x00009012,
                        0x16A00003, 0x8E840064, jump(target + 0x10C), 0,

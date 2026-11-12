@@ -34,7 +34,6 @@ class VendorScoutTests(unittest.TestCase):
         result = self.scouts.for_row(row)
         self.assertEqual(called, [(900, 2)])
         self.assertEqual(result.description, "Progressive Sword\nFor Other Player")
-        self.assertEqual(result.title_color, "orange")
         self.assertTrue(result.progression)
         self.assertEqual(row.price, 35000)
         self.assertIsNone(self.scouts.for_row(SimpleNamespace(node_type=2, weapon_id=5, mod_id=0)))
@@ -47,7 +46,7 @@ class VendorScoutTests(unittest.TestCase):
         for kind,key,location in ((0,5,100),(3,19,101),(4,5,102)):
             row=SimpleNamespace(node_type=kind, weapon_id=key, mod_id=key)
             self.assertEqual(self.scouts.for_row(row).location_id,location)
-            self.assertEqual(self.scouts.for_row(row).title_color, "white")
+            self.assertFalse(self.scouts.for_row(row).progression)
         self.assertNotIn(999,self.scouts.rewards)
 
     def test_every_generated_vendor_location_has_a_native_scout_row(self):

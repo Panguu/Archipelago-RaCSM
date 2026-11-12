@@ -121,8 +121,7 @@ class ActivePlayer:
             state = struct.unpack('<h', self.pine.read_bytes(player + self.state_offset, 2))[0]
             if not 0 <= state < 0x4D:
                 return None
-            # Keep the exact native state until individual Ratchet causes are
-            # verified; do not invent a drowning/falling label from health.
+            # Ratchet's death states aren't mapped to causes yet, so report the raw state.
             cause = f'died (Ratchet state 0x{state:02X})' if 0x22 <= state <= 0x2C else None
             return player, cause
         state = self.pine.read_int32(player + self.state_offset)

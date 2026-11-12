@@ -108,8 +108,7 @@ def write_patched_iso(source: str | Path, target: str | Path, replacements: dict
                 progress("Copying the ISO", src.tell() / total)
 
         end = total
-        # Build-time dictionaries and sorted .apsac manifests have different
-        # insertion orders. Appended extents must be deterministic for hashes.
+        # Append grown files in a fixed order, so the patched disc always hashes the same.
         for path, data in sorted(replacements.items()):
             file = iso.files[path]
             if len(data) <= file.size:

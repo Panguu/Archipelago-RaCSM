@@ -10,7 +10,7 @@ from ..constants import (
     InfobotsOptions,
 )
 from ..constants import VENDOR_LOCATIONS
-from .rule_helpers import HasProgressivePlanet, region_names
+from .rule_helpers import HasEnemyAccess, HasProgressivePlanet, region_names
 
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     name for name, internal in EQUIPMENT_DISPLAY_TO_INTERNAL.items()
@@ -25,7 +25,7 @@ VENDOR_REQUIREMENTS = {
 
 @dataclass
 class CaseOwnershipRule(Rule[TWorld], game="Secret Agent Clank"):
-    """Match resolved AP case ownership, including alternative access modes."""
+    """Whether the player owns the case, worked out the same way as the client does."""
 
     cases: str
 
@@ -45,6 +45,7 @@ class VendorCaseRule(Rule[TWorld], game="Secret Agent Clank"):
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         if self.cases not in region_names(world):
             return False_().resolve(world)
-        rule = CanReachRegion(self.cases) & VENDOR_REQUIREMENTS.get(self.cases, False_())
+        # Buying anything needs bolts, so the player has to be able to reach enemies.
+        rule = CanReachRegion(self.cases) & VENDOR_REQUIREMENTS.get(self.cases, False_()) & HasEnemyAccess()
         return (rule & CaseOwnershipRule(self.cases)).resolve(world)
 

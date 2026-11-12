@@ -1,4 +1,4 @@
-"""Async IPC to a serial game process; this module never opens PINE."""
+"""Talks to the game worker process, which owns the PINE connection."""
 import asyncio
 import multiprocessing
 import time

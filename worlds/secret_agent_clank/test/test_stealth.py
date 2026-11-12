@@ -1,7 +1,6 @@
-from .compiled_memory import load_plan
+from .compiled_memory import load_plan, ram_arena
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 from BaseClasses import CollectionState
@@ -163,7 +162,8 @@ class StealthTests(unittest.TestCase):
             s.load({SACCases.BOLTAIRE_MUSEUM: 7})
             progression = Progression(mem)
             progression.stealth = s
-            edits = progression.prepare(symbols, SimpleNamespace(patches=[]), 1, vendor_enabled=False)
+            arena = ram_arena(mem)
+            edits = progression.prepare(symbols, 1, arena, vendor_enabled=False) + arena.patches
             self.assertIsNotNone(s.binding, path.name)
             spans = sorted((p.address, p.address + len(p.replacement)) for p in edits)
             self.assertTrue(all(b <= c for (a,b),(c,d) in zip(spans, spans[1:])))
@@ -215,8 +215,10 @@ class StealthTests(unittest.TestCase):
                     prog.stealth.configure(dict.fromkeys(STEALTH_CASES, STEALTH_MAX_PER_CASE))
                     prog.stealth.load({})
                     hooks.patches.extend(VendorCatalog(mem).prepare(symbols, hooks))
-                    hooks.patches.extend(prog.prepare(symbols, hooks, module))
+                    arena = ram_arena(mem)
+                    hooks.patches.extend(prog.prepare(symbols, module, arena))
                     hooks.patches.extend(VendorPresentation(mem).prepare(symbols, hooks))
+                    hooks.patches.extend(arena.patches)
                     spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
                     self.assertTrue(all(b <= c for (a,b),(c,d) in zip(spans, spans[1:])))
                     load_plan(hooks)

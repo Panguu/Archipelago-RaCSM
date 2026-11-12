@@ -24,8 +24,8 @@ class NativeVendorTests(unittest.TestCase):
         self.assertEqual(self.vendor.header_addr, 0x6D43F8)
         self.assertEqual(self.vendor.price_addr, 0x5903D0)
         self.assertEqual(self.vendor.purchase_flag_addr, 0x5903D9)
-        self.assertEqual(self.vendor.selected_item().weapon_name, 'clankpda')
-        self.assertEqual(self.vendor.selected_item().node_type, 0)
+        row, = self.vendor.read_items()
+        self.assertEqual((row.weapon_name, row.node_type), ('clankpda', 0))
         self.assertEqual(self.memory.writes, [])
 
     def test_bad_instruction_signature_leaves_rows_unbound(self):
@@ -38,7 +38,6 @@ class NativeVendorTests(unittest.TestCase):
         self.assertEqual(len(self.vendor.read_items()), 1)
         struct.pack_into('<I', self.memory.data, 0x654A0C, 0)
         self.assertEqual(self.vendor.read_items(), [])
-        self.vendor.write_item(0, 3)
         self.assertEqual(self.memory.writes, [])
 
     def test_rejects_invalid_count_and_selection(self):
@@ -46,12 +45,6 @@ class NativeVendorTests(unittest.TestCase):
         for count, selection in ((65, 0), (1, 1), (0, 0)):
             struct.pack_into('<4I', self.memory.data, 0x6D43F8, 0x5904F0, count, 3, selection)
             self.assertEqual(self.vendor.read_items(), [])
-
-    def test_does_not_append_past_native_count(self):
-        self.vendor.bind_runtime(self.symbols)
-        with self.assertRaises(ValueError):
-            self.vendor.write_item(1, 3)
-        self.assertEqual(self.memory.writes, [])
 
     def test_sign_extended_global_addresses(self):
         struct.pack_into('<I', self.memory.data, 0x3CFF10 + 8, 0x3C10006E)

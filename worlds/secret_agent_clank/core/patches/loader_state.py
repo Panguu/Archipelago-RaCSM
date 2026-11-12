@@ -1,9 +1,8 @@
 class StartupBarrierLost(RuntimeError):
-    """The verified loader barrier no longer matches the running game."""
+    """The loader routine in RAM no longer matches the patched ISO."""
 
 
 class LoaderStateReader:
-    """Read loader state and identify stable loads; never write game memory."""
     ORIGINAL = 0x24030005
     STATE = 0x1AAE3C
     STATUS = 0x19EF04
@@ -20,8 +19,7 @@ class LoaderStateReader:
         self._held_candidate = None
 
     def validate(self, *, patched=False):
-        """The concrete startup barrier must validate its resident code."""
-        raise NotImplementedError("Use the verified ISO startup barrier")
+        raise NotImplementedError
 
     def held_module(self, *, settled=False):
         if not self.attached:
@@ -33,15 +31,13 @@ class LoaderStateReader:
         before = tuple(p.batch_read_int32(addresses))
         after = tuple(p.batch_read_int32(addresses))
         state, status, target, handle = before
-        # State 4 + completed relocation. State 5 can still display a loading
-        # screen but the level thread is already running and is NOT safe.
+        # State 4 with relocation finished. By state 5 the level is already
+        # running, even if the loading screen is still up.
         if before != after or (state, status) != (4, 1) or not 0 <= target < 33 or not handle:
             self._held_candidate = None
             return None
         if settled:
-            # PermanentRuntime calls once per poll. Do not initialize the DLL
-            # on the first observation of completed relocation; the entire
-            # loader identity must remain held through the next poll.
+            # Only report the module once it has stayed the same for two polls.
             previous, self._held_candidate = self._held_candidate, before
             if previous != before:
                 return None

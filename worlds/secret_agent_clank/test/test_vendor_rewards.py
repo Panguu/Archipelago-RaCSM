@@ -25,14 +25,15 @@ class VendorRewardsTests(unittest.TestCase):
         hooks = Mock(patches=[])
         manager.text.prepare(symbols, hooks)
         p.write_int32(manager.text.timer, 0)
-        row = vendor.selected_item()
+        selected = vendor._native_header()[2]
+        row = next(row for row in vendor.read_items() if row.index == selected)
         reward = VendorReward(1, 2, 1, "Progressive Wrench", "Pangu", 1)
         manager.scouts = Mock()
         manager.scouts.for_row = lambda r: reward if r.index == row.index else None
         before = vendor.read_items()
         price = p.read_int32(vendor.price_addr)
         manager.tick(symbols)
-        self.assertEqual(vendor.selected_item().icon, 73)
+        self.assertEqual(vendor.read_items()[selected].icon, 73)
         self.assertEqual(p.read_int32(vendor.price_addr), price)
         for old, new in zip(before, vendor.read_items()):
             self.assertEqual(old._replace(icon=new.icon), new)

@@ -1,10 +1,9 @@
-"""Builders are evaluated against independently relocated clean images. Only
-address operands fitting native WORD/J26/HI16/LO16 relocation equations are
-accepted. HI16 carry boundaries are located at the loader's 16-byte alignment;
-this also supports LUI/ORI pairs without rewriting their instruction semantics.
-The compiled file is checked against fresh builder outputs at additional bases.
+"""Turns a patch builder into a relocatable level module.
+
+The builder runs at a few load addresses. Every word that changes with the
+address has to match one of the loader's relocation types (WORD, J26, HI16,
+LO16) and becomes a fixup. The result is then checked at more addresses.
 """
-import struct
 
 from .module_compiler import Fixup, ModuleEdit, compile_module
 from .snr2 import InvalidModule, SNR2Module, word
@@ -15,11 +14,8 @@ CHECK_BASES = (0x328B00, 0x508010, 0x617FF0, 0x708000, 0x80FFF0, 0x900010)
 
 
 def compile_native_plan(data: bytes, imports: dict[str, int], builder, *, arena_start: int | None = None) -> bytes:
-    """builder(base, relocated_bytes, exports) returns prepared Patch records.
-
-    The builder must be pure and use fixed configuration. This compiles a code
-    plan, not a universal configuration ABI: callers must first remove any
-    seed-dependent machine-code choices from a reusable ISO build's planner.
+    """builder(base, relocated_bytes, exports) returns Patch records. It must give
+    the same result every time, so nothing seed-specific can go in the code.
     """
     module = SNR2Module(data)
     anchors = [symbol for symbol in module.symbols if symbol.kind in (2, 3)]
@@ -41,8 +37,8 @@ def compile_native_plan(data: bytes, imports: dict[str, int], builder, *, arena_
                         or len(patch.replacement) != size or offset + size > len(data)
                         or loaded[offset:offset + size] != patch.original):
                     raise InvalidModule(f"Invalid/overlapping native patch at {offset:#x}, size {size}")
-                # Text and byte flags need not be word-aligned. Preserve their
-                # neighboring bytes and combine edits sharing the same word.
+                # Text and byte flags can be unaligned, so widen to whole words
+                # and merge edits that share a word.
                 low, high = offset & ~3, (offset + size + 3) & ~3
                 if high > len(loaded):
                     raise InvalidModule("Aligned native patch exceeds module")
@@ -83,9 +79,8 @@ def compile_native_plan(data: bytes, imports: dict[str, int], builder, *, arena_
                 kind, relative = 6, (first - REFERENCE_BASE) & 65535
             elif first >> 26 == 15 and second >> 16 == first >> 16 and second - first == 16:
                 kind = 5
-                # Most builders emit adjacent LUI/ADDIU or LUI/ORI pairs.
-                # Derive their carry equation directly, rather than repeatedly
-                # rebuilding an entire level to discover the same boundary.
+                # Usually the LUI is followed by its ADDIU/ORI, so the carry can
+                # be worked out directly instead of searched for.
                 following = position + 4
                 if following < len(replacement):
                     lower = word(replacement, following)
@@ -101,14 +96,12 @@ def compile_native_plan(data: bytes, imports: dict[str, int], builder, *, arena_
                         if opcode == 13:
                             relative -= 0x8000
                         fixups[index].append(Fixup(position, kind, anchor.name, relative - anchor.value))
-                        # Independently check either side of the carry edge.
+                        # Check both sides of the carry.
                         edge = (-(relative + 0x8000)) & 65535
                         plan(REFERENCE_BASE + ((edge - 1) & ~15))
                         plan(REFERENCE_BASE + ((edge + 15) & ~15))
                         continue
-                # Find the first aligned base increment causing a carry. Native
-                # HI16 rounds signed LO16; ORI-style operands have a different
-                # boundary and are represented by an adjusted HI16 addend.
+                # Otherwise binary search for the first base where the LUI carries.
                 left, right = 0, 4096
                 while left + 1 < right:
                     middle = (left + right) // 2

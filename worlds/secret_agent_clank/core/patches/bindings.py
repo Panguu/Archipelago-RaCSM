@@ -1,6 +1,5 @@
-"""Only explicitly listed fields are transferred. Object construction, callbacks,
-seed options and inventory always belong to the client. Native bytes carry
-their relocation recipes so validation works at any supported module base.
+"""The fields the client needs from each built level, saved relative to the
+module base. Code is saved with its relocations so it can be checked at any base.
 """
 import struct
 

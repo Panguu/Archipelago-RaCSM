@@ -21,10 +21,6 @@ class SACProgressiveItem(SACItem):
         super().__init__(name, classification, code, player)
         self.stages = tuple(stages)
 
-    def unlocked_by(self, count: int) -> tuple[str, ...]:
-        """What `count` copies of this item unlock between them."""
-        return self.stages[:count]
-
 
 class SACLocation(Location):
     game: str = "Secret Agent Clank"

@@ -21,14 +21,13 @@ class WrenchTests(unittest.TestCase):
     def test_non_ratchet_modules_get_no_code_changes(self):
         for module in (1, 2, 4, 10, 11, 31):
             symbols = Mock()
-            self.assertEqual(self.w.prepare(symbols, module), [])
+            self.assertEqual(self.w.prepare(symbols, module, Mock()), [])
             symbols.get.assert_not_called()
 
     def test_first_copy_changes_only_ownership_data(self):
         self.w.module = 3
         self.w.ownership_address = 0x110000
         self.w.power_address = 0x110004
-        self.w.sites = [(0x100000, 0x30A20020)]
         self.p.batch_write_int32([(0x206328, 3), (0x206324, 0xFFFFFFFF), (0x100000, 0x30A20020)])
         self.w.sync()
         self.assertEqual(self.p.read_int32(0x110000), 0)
@@ -39,7 +38,6 @@ class WrenchTests(unittest.TestCase):
 
     def test_unbound_ownership_never_falls_back_to_instruction_writes(self):
         self.w.module = 3
-        self.w.sites = [(0x100000, 0x30A20020)]
         self.p.batch_write_int32([(0x206328, 3), (0x206324, 0xFFFFFFFF)])
         self.p.writes.clear()
         self.w.sync()

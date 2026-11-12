@@ -1,5 +1,5 @@
-"""Only PIC1's pixels/palette change. Texture headers, PIC2 and all other frontend
-assets remain byte-identical. The logo requires no client drawing hook.
+"""Swaps the main-menu logo by changing only PIC1's pixels and palette. Everything
+else in the frontend archive is left as it was.
 """
 import copy
 from collections import Counter
@@ -91,11 +91,9 @@ def patch_background(data: bytes, branding="archipelago") -> bytes:
 
 
 def patch_menu_archive(data: bytes, branding="archipelago") -> bytes:
-    """Append a replacement member, retaining every other local ZIP record.
-
-    The old member becomes unreachable; the central directory contains exactly
-    one entry for the replacement. Existing file offsets and compressed data
-    are preserved, including the game's original ZIP metadata.
+    """Add the new logo file to the end of the ZIP and point the central directory
+    at it. The old copy is still in the file but nothing refers to it, and every
+    other entry is left untouched.
     """
     stream = io.BytesIO(data)
     with zipfile.ZipFile(stream, "a") as archive:

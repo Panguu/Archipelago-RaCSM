@@ -115,8 +115,7 @@ class PineMixin:
             return False
         if loc_id in self._locally_checked_locations or loc_id in self.checked_locations:
             return True
-        server_locations = getattr(self, "server_locations", None)
-        if server_locations is not None and loc_id not in server_locations:
+        if loc_id not in self.server_locations:
             if name not in self._warned_missing_locations:
                 self._warned_missing_locations.add(name)
                 logger.warning(f"[SAC] {name!r} (id={loc_id}) not in server locations"

@@ -1,12 +1,11 @@
 import logging
 from collections.abc import Callable, Sequence
 
-from .address_maps import BOLTS_ADDRESS, CHALLENGE_MODE_ADDRESS
+from .address_maps import BOLTS_ADDRESS
 from .bolt_rewards import BoltRewards
 from .inventories import (
     AlienCodeInventory,
     CaseInventory,
-    CaseUnlockInventory,
     CutsceneInventory,
     GadgetbotChallengeInventory,
     KeycardInventory,
@@ -78,7 +77,6 @@ class Core:
         self.case.on_death            = self._handle_death
         self.case.on_respawn          = self._handle_respawn
 
-        self.case_unlocks  = CaseUnlockInventory(pine)
         self.vendor        = self.case.vendor
         self.location_hooks = LocationHooks(pine)
         self.location_hooks.permanent = True
@@ -204,7 +202,7 @@ class Core:
         return {slot: bool(owned[name]) for slot, name in enumerate(WEAPON_ORDER) if name in owned}
 
     def close(self):
-        """Detach session data; the permanent ISO loader remains installed."""
+        """Stop managing the game. The ISO's loader patch stays in place."""
         try:
             if (self.traps.managed and self.case.is_ready
                     and self.pine.get_game_id() == "SCUS-97623"):
@@ -330,22 +328,6 @@ class Core:
     @property
     def vendor_cases(self) -> frozenset[str]:
         return self._vendor_cases
-
-    @property
-    def bolts(self) -> int:
-        return self.pine.read_int32(BOLTS_ADDRESS)
-
-    @bolts.setter
-    def bolts(self, value: int) -> None:
-        self.pine.write_int32(BOLTS_ADDRESS, value)
-
-    @property
-    def challenge_mode(self) -> int:
-        return self.pine.read_int8(CHALLENGE_MODE_ADDRESS)
-
-    @challenge_mode.setter
-    def challenge_mode(self, value: int) -> None:
-        self.pine.write_int8(CHALLENGE_MODE_ADDRESS, value)
 
     def tick(self) -> None:
         self.case.check_mission_failure()

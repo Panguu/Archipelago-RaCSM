@@ -1,6 +1,5 @@
-"""PCSX2's PINE UUID is the boot ELF's XOR-of-32-bit-words CRC (Elfheader.cpp,
-ElfObject::GetCRC), not an ISO checksum. Check immutable loaded code as well
-so a stale savestate or a mismatched level cannot pass on the disc CRC alone.
+"""PCSX2 reports the boot ELF's CRC (an XOR of its 32-bit words), not a checksum
+of the ISO, so loaded code is checked as well to catch stale savestates.
 """
 from dataclasses import dataclass
 import hashlib
@@ -23,11 +22,7 @@ def executable_crc(data: bytes) -> str:
 
 
 def stamp_executable(data: bytes, *, build_id: str, abi: int) -> bytes:
-    """Append non-loadable build metadata; ELF segment offsets stay unchanged.
-
-    This stamp identifies a completed build, but installs no runtime hooks.
-    Callers must include and validate the complete native patch set separately.
-    """
+    """Append the build ID after the ELF data, where the game never loads it."""
     if len(data) < 52 or data[:7] != b"\x7fELF\x01\x01\x01":
         raise ValueError("Expected ELF32 executable")
     if type(abi) is not int or not 0 < abi <= 65535 or not build_id:
@@ -36,14 +31,14 @@ def stamp_executable(data: bytes, *, build_id: str, abi: int) -> bytes:
         raise ValueError("Executable already has an SAC build stamp")
     stamp = STAMP_MAGIC + struct.pack("<II", 1, abi) + hashlib.sha256(build_id.encode("utf-8")).digest()
     result = data + bytes((-len(data)) % 4) + stamp
-    # Deliberately avoid an accidental collision with this clean executable.
+    # Make sure the patched ELF can't have the same CRC as the clean one.
     if executable_crc(result) == executable_crc(data):
         result += struct.pack("<I", 1)
     return result
 
 
 def read_pcsx2_crc(pine) -> str:
-    """Use the existing serialized PINE socket; do not open another client."""
+    """Ask PCSX2 for the boot ELF's CRC over the existing PINE connection."""
     response = pine._send_request(struct.pack("<IB", 5, 0x0D))
     if (len(response) != 18 or struct.unpack_from("<I", response)[0] != len(response)
             or response[4] != 0 or struct.unpack_from("<I", response, 5)[0] != 9
@@ -82,12 +77,8 @@ class PatchedGameGuard:
             raise ValueError("Incomplete patched-game identity")
 
     def verify(self, pine) -> None:
-        """Must succeed before writes. Call again after reset or state changes.
-
-        A rejection must drop PINE without invoking legacy code-restoration
-        routines on unverified memory. Callers must separately validate each
-        loaded level's immutable probes before binding that level's tables.
-        """
+        """Check PCSX2 is running this patched build. Run before any write, and
+        again after a reset or savestate load."""
         if pine.get_game_id() != GAME_ID:
             raise WrongPatchedGame("PCSX2 is not running Secret Agent Clank (USA)")
         if read_pcsx2_crc(pine) != self.elf_crc:
@@ -97,19 +88,3 @@ class PatchedGameGuard:
                 raise WrongPatchedGame("Loaded code differs from the patched ISO; cold boot the patched game")
         if pine.get_game_id() != GAME_ID or read_pcsx2_crc(pine) != self.elf_crc:
             raise WrongPatchedGame("PCSX2 changed games during patched-ISO validation")
-
-    @staticmethod
-    def verify_level(pine, *, module: int, base: int, probes: tuple[tuple[int, bytes], ...]) -> None:
-        """Check immutable module-relative code while the caller holds loading."""
-        if not probes or type(base) is not int or base % 16:
-            raise ValueError("Missing or invalid level identity")
-        if pine.read_int32(0x206328) != module:
-            raise WrongPatchedGame("Level changed before patched-code validation")
-        for offset, expected in probes:
-            if type(offset) is not int or offset < 128:
-                raise ValueError("Invalid level probe offset")
-            probe = CodeProbe(base + offset, expected)
-            if pine.read_bytes(probe.address, len(probe.expected)) != probe.expected:
-                raise WrongPatchedGame(f"Module {module} does not contain the expected Archipelago code")
-        if pine.read_int32(0x206328) != module:
-            raise WrongPatchedGame("Level changed during patched-code validation")

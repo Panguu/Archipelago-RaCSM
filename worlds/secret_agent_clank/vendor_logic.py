@@ -1,7 +1,8 @@
-"""Ship resolved vendor rules to the client and run the same rule implementations.
+"""Sends the vendor locations' rules to the client in slot data, so it only shows
+offers the player can logically reach, using the same rule classes as generation.
 
-No executable code is accepted from slot data: only explicitly supported rule
-classes and their dataclass fields. Unsupported new rules fail during generation.
+Only the rule types in RULES can be sent; a vendor rule using any other type fails
+at generation.
 """
 from collections import Counter
 from dataclasses import fields

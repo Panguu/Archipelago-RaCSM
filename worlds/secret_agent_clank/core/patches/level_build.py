@@ -1,6 +1,5 @@
-"""This module does not connect to PCSX2. The generated routines use writable
-configuration tables for run-specific choices. Publishing a build additionally
-requires frontend compilation and a matching runtime binding manifest.
+"""Builds the patched level modules for the ISO. Anything that depends on the
+seed is a table the client fills in at runtime.
 """
 import struct
 
@@ -27,7 +26,7 @@ from .snr2 import SNR2Module
 
 
 class FileMemory:
-    """Only the module and the known loader module-ID field are readable."""
+    """A level module file read as if it were loaded at `base`."""
     def __init__(self, base, loaded, module):
         self.base, self.loaded, self.module = base, loaded, module
 
@@ -64,7 +63,7 @@ def prepare_level(base, loaded, symbols, module, vendor, arena_start, *, identit
                   vendor_locations=VENDOR_LOCATIONS if vendor else {}, entitlements={}, vendor_enabled=vendor)
     objects = {"hooks": hooks}
     wrench = objects["wrench"] = WrenchProgression(memory)
-    hooks.patches.extend(wrench.prepare_permanent(symbols, module, arena))
+    hooks.patches.extend(wrench.prepare(symbols, module, arena))
     travel = objects["mission_travel"] = MissionTravel(memory)
     hooks.patches.extend(travel.prepare(symbols, module=module))
     skins = objects["skins"] = Skins(memory)
@@ -90,8 +89,8 @@ def prepare_level(base, loaded, symbols, module, vendor, arena_start, *, identit
     warning = objects["connection_warning"] = ConnectionWarning(memory)
     hooks.patches.extend(warning.prepare(symbols, hooks))
     hunt = objects["keycard_hunt"] = KeycardHunt(memory)
-    hooks.patches.extend(hunt.prepare_permanent(symbols, module, arena))
-    hooks.patches.extend(progression.prepare(symbols, hooks, module, vendor_enabled=vendor, arena=arena))
+    hooks.patches.extend(hunt.prepare(symbols, module, arena))
+    hooks.patches.extend(progression.prepare(symbols, module, arena, vendor_enabled=vendor))
     if module == 32:
         hooks.patches.extend(prepare_credits(base, loaded, symbols, arena))
     return [*hooks.patches, *arena.patches], objects

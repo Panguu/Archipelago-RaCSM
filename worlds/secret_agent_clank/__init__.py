@@ -21,8 +21,7 @@ components.append(Component(
     func=run_client,
     component_type=Type.CLIENT,
     file_identifier=SuffixIdentifier(SACPatch.patch_file_ending),
-    description="Launch the Client for connecting to Secret Agent Clank. "
-                "Open a .apsac to patch the ISO (first time per build) and connect as that slot.",
+    description="Launch the Client for connecting to Secret Agent Clank.",
     icon="sac_icon",
 ))
 

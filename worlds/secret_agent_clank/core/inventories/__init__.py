@@ -1,6 +1,6 @@
 from .alien_codes import AlienCodeInventory
 from .case_events import EventFlagInventory
-from .case_unlocks import CaseUnlockInventory, CaseUnlockState, resolve_owned_cases
+from .case_unlocks import resolve_owned_cases
 from .cutscenes import CutsceneInventory
 from .gadgetbot_challenges import GadgetbotChallengeInventory
 from .inventory import ItemInventory
@@ -17,8 +17,6 @@ __all__ = [
     "WEAPON_ORDER",
     "AlienCodeInventory",
     "CaseInventory",
-    "CaseUnlockInventory",
-    "CaseUnlockState",
     "CutsceneInventory",
     "EventFlagInventory",
     "GadgetbotChallengeInventory",

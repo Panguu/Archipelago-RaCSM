@@ -24,7 +24,7 @@ class ConnectionWarning:
                 *m.li32(m.A0, message), m.addiu(m.A1, m.ZERO, 0),
                 jump(show, True), m.addiu(m.A2, m.ZERO, 60),
                 m.ld(m.RA, 0, m.SP), m.addiu(m.SP, m.SP, 16)]
-        # Replay the displaced prologue on both paths with the original RA/SP.
+        # Both paths run the two prologue instructions the hook replaced.
         code[7] = m.beq(m.ZERO, m.ZERO, len(code) - 8)
         code += [*words(original), jump(render + 8), m.NOP]
         return packed(code)
@@ -39,18 +39,15 @@ class ConnectionWarning:
         show, render = require(symbols, "HUD_ShowOneLiner__FPCcbi", "HUD_RenderOneLiner__Fv")
         storage, native, original = triangle_storage(p, symbols, [(render, 8)])
         first, second = words(original)
-        # Retail HUD_RenderOneLiner starts with the stack allocation followed
-        # by LUI v0 (the relocated HUD address), before saving registers.
-        # Both that instruction and the stack-save variant can be replayed
-        # verbatim by routine(); neither is a branch or uses the incoming v0.
+        # The second instruction is either LUI v0 or a stack store. Both are
+        # safe to run again from the hook.
         replayable = (second & 0xFFFF0000 == 0x3C020000
                       or second & 0xFFE00000 == 0xFFA00000)
         if first != m.addiu(m.SP, m.SP, -32) or not replayable:
             raise RuntimeError(
                 f"Connection warning render prologue changed at {render:#x}: "
                 f"{first:08x} {second:08x}")
-        # Vendor text uses the head of this verified no-op function. Reserve
-        # only the tail; reject overlap with any other native patch.
+        # Vendor text uses the start of this function, so the warning goes at the end.
         entry = storage + 152
         heartbeat, message = storage + 252, storage + 256
         code = self.routine(heartbeat, message, show, render, original, cooldown)
@@ -69,11 +66,6 @@ class ConnectionWarning:
                 raise RuntimeError("Connection warning storage is occupied")
         self.entry, self.heartbeat = entry, heartbeat
         self.code = code
-        # The entire no-op body was verified above. Publish only its remaining
-        # tail, after the complete warning code, heartbeat, and message.
-        free_start = (entry + len(payload) + 3) & ~3
-        if free_start < storage + len(native):
-            hooks.extra_ranges.append((free_start, storage + len(native)))
         return edits
 
     def refresh(self, connected):

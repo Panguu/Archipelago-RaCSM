@@ -13,4 +13,3 @@ class PatchPlan:
     module: int = 0
     entitlement_table: int | None = None
     gadget_base: int | None = None
-    extra_ranges: list[tuple[int, int]] = field(default_factory=list)

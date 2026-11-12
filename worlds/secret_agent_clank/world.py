@@ -209,6 +209,9 @@ class SecretAgentClankWorld(World):
     def _choose_starting_cases(self, candidates):
         """Two random distinct starting cases, at least one Clank's, preferring pairs that open
         at least MIN_START_ROOM locations between them before any item is received."""
+        # Region reachability decides some rules (vendors need enemy access), so the
+        # case entrances need their rules before the starts are scored.
+        set_entrance_rules(self)
         if self.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             # A later case would also open every case before it on its planet,
             # so start on cases that are first in their planet's unlock order.

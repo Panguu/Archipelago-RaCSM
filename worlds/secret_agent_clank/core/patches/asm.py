@@ -24,6 +24,11 @@ def branch(source, target):
     return 0x10000000 | (((target - source - 4) // 4) & 0xFFFF)
 
 
+def check(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
 @dataclass(frozen=True)
 class Patch:
     address: int

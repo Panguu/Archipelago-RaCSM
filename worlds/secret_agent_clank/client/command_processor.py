@@ -79,19 +79,14 @@ class SACCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_deathlink_mode(self, mode: str) -> bool:
-        """Turn DeathLink on or off for this session."""
-        if mode.lower() not in ("toggle", "on", "off", "status"):
-            logger.warning("[SAC] Usage: /deathlink [toggle|on|off|status]")
-            return False
+        """Turn DeathLink on or off for this session. /deathlink_mode [toggle|on|off|status]"""
         mode = mode.lower()
-        if mode == "on":
-            enable = True
-        elif mode == "off":
-            enable = False
-        elif mode == "toggle":
-            enable = not self.ctx._death_link_enabled
-        else:
+        if mode not in ("toggle", "on", "off", "status"):
+            logger.warning("[SAC] Usage: /deathlink_mode [toggle|on|off|status]")
+            return False
+        if mode == "status":
             logger.info(f"[SAC] DeathLink is {'enabled' if self.ctx._death_link_enabled else 'disabled'}.")
             return True
+        enable = not self.ctx._death_link_enabled if mode == "toggle" else mode == "on"
         async_start(self.ctx._set_death_link_enabled(enable))
         return True

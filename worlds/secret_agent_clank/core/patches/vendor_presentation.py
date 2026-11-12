@@ -11,9 +11,9 @@ from .vendor_text import VendorTextLayout
 
 
 def triangle_storage(pine, symbols, extra=()):
-    # Retail DrawTriangle only transforms local stack vertices and sets a
-    # local color; it never submits geometry. Guard its complete body,
-    # including every instruction except relocated JAL destinations.
+    # The debug triangle routine only builds vertices on its own stack and
+    # never draws them, so its body is free space. Hash the whole body (with
+    # call targets zeroed, since they're relocated) before using it.
     storage = require(symbols, "DEBUGDRAW_DrawTriangle__FPC4VEC3N20UiPC7MATRIX4")
     storage_original, *rest = read_blocks(pine, [(storage, 352), *extra])
     words = struct.unpack("<88I", storage_original)
@@ -32,8 +32,8 @@ class VendorPresentation(PatchSet):
 
     @staticmethod
     def routine(mailbox, encoded):
-        # T3 is the original draw target, T4 the text offset, supplied by
-        # the two tiny entry stubs. Both share the identity validation.
+        # The two entry stubs set t3 to the original draw call and t4 to the
+        # text offset, then share this routine.
         code = [*m.li32(m.T0, mailbox)]
         branches = []
         for i, native_offset in enumerate((None, 0x0C, 0x10, 0x14)):
@@ -97,7 +97,7 @@ class VendorPresentation(PatchSet):
     def publish(self, pointer, row, reward):
         if self.mailbox is None or self.pine.read_int32(self.timer):
             return
-        # Withdraw first; native render can only see the new payload after commit.
+        # Clear the pointer first so the game never draws a half-written entry.
         writes = [(self.mailbox, packed([0]))]
         if reward is not None:
             text = VendorTextLayout._text(reward.item_name, 88, 2 if reward.progression else 1)

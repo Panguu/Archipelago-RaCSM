@@ -1,4 +1,4 @@
-from .compiled_memory import load_plan
+from .compiled_memory import load_plan, ram_arena
 """Full hook installation regressions against local read-only research captures."""
 import unittest
 from itertools import product
@@ -70,26 +70,6 @@ class NativeCapturePlansTests(unittest.TestCase):
                     p.write_bytes(edit.address, edit.original)
                 self.assertEqual(bytes(p.data), before)
 
-    def test_line_storage_rejects_changes_in_body_and_callee(self):
-        capture = Path(__file__).parents[1] / ".research/SAC.p2s.ram"
-        if not capture.exists():
-            self.skipTest("Local clean capture not present")
-        p = CaptureMemory()
-        p.data[:] = capture.read_bytes()
-        symbols = RuntimeSymbols.parse(p.data[:0x1000000], 0)
-        before = bytes(p.data)
-        guards, ranges = GainStorage(p).prepare_line(symbols)
-        self.assertEqual(bytes(p.data), before)
-        self.assertEqual(ranges, [(guards[0].address + 8, guards[0].address + 104)])
-        for address in (guards[0].address, guards[0].address + 0x44,
-                        guards[0].address + 0x54, symbols["SetARGB__7ApeRGBAUi"]):
-            with self.subTest(address=hex(address)):
-                p.data[address] ^= 1
-                with self.assertRaisesRegex(RuntimeError, "line stub layout changed"):
-                    GainStorage(p).prepare_line(symbols)
-                p.data[address] ^= 1
-                self.assertEqual(bytes(p.data), before)
-
     def test_gain_storage_rejects_a_changed_stub_body_without_writing(self):
         capture = Path(__file__).parents[1] / ".research/showers_forced_graveyard.bin"
         if not capture.exists():
@@ -129,13 +109,12 @@ class NativeCapturePlansTests(unittest.TestCase):
                     p.data[:] = raw
                     module = p.read_int32(0x206328)
                     vendor = NativeRuntime(p, None, lambda _: None).vendor_enabled_for_module(module)
+                    arena = ram_arena(p)
                     hooks = LocationHooks(p)
                     hooks.prepare(symbols, pickup_locations=PICKUP_LOCATIONS,
                                   vendor_locations=VENDOR_LOCATIONS if vendor else {},
                                   entitlements={}, vendor_enabled=vendor)
-                    wrench = WrenchProgression(p)
-                    wrench.enabled = True
-                    hooks.patches.extend(wrench.prepare(symbols, module))
+                    hooks.patches.extend(WrenchProgression(p).prepare(symbols, module, arena))
                     hooks.patches.extend(MissionTravel(p).prepare(symbols, module=module))
                     mods = WeaponMods(p)
                     mods.configure({"operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": ng, "weapon_mod_ids": [mod.mod_id for mod in WEAPON_MODS]})
@@ -156,8 +135,8 @@ class NativeCapturePlansTests(unittest.TestCase):
                     if vendor:
                         hooks.patches.extend(VendorPresentation(p).prepare(symbols, hooks))
                     hooks.patches.extend(ConnectionWarning(p).prepare(symbols, hooks))
-                    hooks.patches.extend(progression.prepare(symbols, hooks, module,
-                                                             vendor_enabled=vendor))
+                    hooks.patches.extend(progression.prepare(symbols, module, arena, vendor_enabled=vendor))
+                    hooks.patches.extend(arena.patches)
                     if module != 31:
                         patched = {patch.address for patch in progression.patches}
                         for name in (NativeFunctions.GLOBALVARS_ADD_EXPERIENCE,
@@ -165,10 +144,8 @@ class NativeCapturePlansTests(unittest.TestCase):
                             if symbols.get(name) is not None:
                                 self.assertIn(symbols[name], patched)
                         xp = symbols[NativeFunctions.GADGET_GETS_XP]
-                        if not progression.enabled or progression.manual:
-                            self.assertIn(xp + 0x104, patched)
-                            if not progression.enabled:
-                                self.assertNotIn(xp, patched)
+                        self.assertIn(xp, patched)
+                        self.assertIn(xp + 0x104, patched)
                     spans = sorted((x.address, x.address + len(x.replacement)) for x in hooks.patches)
                     self.assertTrue(all(b <= c for (a, b), (c, d) in zip(spans, spans[1:])))
                     self.assertEqual(p.data, raw, "Planning must not write RAM")

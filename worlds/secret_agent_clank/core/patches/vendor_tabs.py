@@ -8,8 +8,8 @@ from .storage import storage_address
 
 
 class VendorTabs:
-    # These retail debug routines only calculate stack-local geometry/colors;
-    # they never submit it. Keep their public entries as immediate returns.
+    # Debug draw routines that only build geometry on their own stack and never
+    # draw it. They return straight away and their bodies become free space.
     STORAGE = (
         ("DEBUGDRAW_DrawArrowFlat__FPC4VEC3T0fUiT0", 336,
          "25ca36ae2bf19eeaa01db26cd51632c721b84f2142764080363216d98399886c"),
@@ -34,8 +34,7 @@ class VendorTabs:
 
     @staticmethod
     def initial_tab_routine(mode, descriptors, count, builder):
-        # Use the catalog's live comparison bytes: checked, case-locked and
-        # challenge-locked rows must not select an empty purchases tab.
+        # Open on the purchases tab only if some row is actually showing.
         code = [*m.li32(m.T0, descriptors), *m.li32(m.T1, descriptors + count * 8),
                 m.addiu(m.T2, m.ZERO, 1)]
         if count:
@@ -83,9 +82,9 @@ class VendorTabs:
 
     @staticmethod
     def input_routine(mode, pressed, original, builder, dirty):
-        # Read physical press edges, not analog directions or held buttons.
-        # A changed tab consumes confirm for this frame, preventing a purchase
-        # of the newly selected first row when Down and X arrive together.
+        # Uses button presses, not held buttons or the analog stick. Switching
+        # tabs swallows that frame's confirm, so pressing Down and X together
+        # can't buy the first row of the new tab.
         code = [m.addiu(m.SP, m.SP, -16), m.sd(m.RA, 0, m.SP),
                 m.sw(m.A0, 8, m.SP), jump(pressed, True), 0,
                 m.andi(m.V0, m.V0, 12), m.addiu(m.T1, m.ZERO, 4)]
@@ -110,9 +109,8 @@ class VendorTabs:
 
     @classmethod
     def relocate_ammo(cls, original, destinations, tail):
-        # Split only between complete instructions AND their delay slots.
-        # All retail JALs retain their original absolute targets. Relative
-        # branches must be remapped even when they cross the two pieces.
+        # Split the ammo builder in two (never between a branch and its delay
+        # slot). JALs keep their targets; relative branches are recalculated.
         pieces = ((0x70, 0x178), (0x178, 0x284))
         normalized = words(original[0x70:0x284])
         for index, word in enumerate(normalized):
@@ -217,8 +215,8 @@ class VendorTabs:
         self.input_address = allocate(self.input_routine(mode, pressed, analog, builder, dirty))
         initial = self.initial_tab_routine(mode, descriptors, count, builder)
         if count:
-            # Fit around the two relocated ammo pieces without consuming the
-            # catalog row buffer. Split after ADDIU, never in a delay slot.
+            # Too big for one free block, so split it across two (after an ADDIU,
+            # not in a delay slot).
             reset = allocate(bytes(52))
             continuation = allocate(bytes(len(initial) - 44))
             first, second = self.split_initial_tab(initial, reset, continuation)
@@ -229,5 +227,4 @@ class VendorTabs:
             reset = allocate(initial)
         reserve(browse + 0x18, packed([jump(self.input_address, True)]))
         reserve(init + 0x5C, packed([jump(reset, True)]))
-        hooks.extra_ranges.extend(ranges)
         return patches, packed([jump(dispatch), 0])

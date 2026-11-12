@@ -52,8 +52,6 @@ class WeaponMods(PatchSet):
                 or alternate_call != packed([jump(install, True), 0x0220282D])):
             raise RuntimeError("Native mod purchase layout changed")
         guards, ranges = GainStorage(p).prepare(symbols)
-        hooks.extra_ranges = ranges
-        hooks.gain_storage_prepared = True
         recorder = ranges[0][0]
         table, reader = buy + 0x11C, buy + 0x13C
         flags = bytearray([2] * 32)
@@ -65,7 +63,6 @@ class WeaponMods(PatchSet):
         read_code = packed([0x3C030000 | (table >> 16), 0x34630000 | (table & 65535),
                             0x00651821, 0x90620000, 0x03E00008, 0x2442FFFF])
         payload = packed([jump(recorder, True), 0x8E450014, jump(buy + 0x338), 0]) + flags + read_code
-        assert len(payload) == 0x48
         call, = words(call)
         if call >> 26 != 3:
             raise RuntimeError("Native vendor builder changed")
@@ -86,13 +83,9 @@ class WeaponMods(PatchSet):
         return edits
 
     def read(self):
-        """Read mod purchase flags independently of installed mod ownership."""
         if self.table is None:
             raise RuntimeError("Prepare an enabled mod vendor before reading")
-        data = self.pine.read_bytes(self.table, 32)
-        if len(data) != 32:
-            raise RuntimeError("Incomplete mod flag table read")
-        return data
+        return self.pine.read_bytes(self.table, 32)
 
     def sync(self):
         if not self.enabled or self.base is None or self.mod_list is None:
@@ -114,8 +107,8 @@ class WeaponMods(PatchSet):
                     raise RuntimeError(f"Native mod catalog changed: {mod.name}")
             self.validated = True
         writes = []
-        # Challenge rewards install natively on completion; revoking them here
-        # leaves every mod, sold or awarded, owned only once AP sends its item.
+        # The game installs challenge reward mods itself. Remove any mod AP
+        # hasn't sent, however it was installed.
         active = {mod.name for mod in (*self.catalog, *self.challenge_mods)}
         for mod, address, current in zip(WEAPON_MODS, owned, data[3 + len(catalog):]):
             desired = int(mod.name in active and mod.name in self.received)
