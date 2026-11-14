@@ -3,7 +3,10 @@ from .challenge_mode import CHALLENGE_VENDOR_LOCATIONS, PROGRESSIVE_CHALLENGE_MO
 from .cheats import (
     ALL_TRAPS,
     CHEAT_SKILL_POINT_THRESHOLD,
+    DAMAGE_PERCENT,
     GADGETRON_DEBT_PERCENT,
+    TRAP_LINK_RECEIVE,
+    TRAP_LINK_SEND,
     TRAP_DURATIONS,
     SACCheats,
     SACTraps,
@@ -23,6 +26,7 @@ from .keycards import KEYCARD_BITS, KEYCARD_ITEMS, SACKeycardLocations
 from .missions import (
     CHAPTER_ENTRIES,
     MISSION_COMPLETE_NAME,
+    MISSION_CUTSCENE_GATES,
     MISSION_NAMES,
     NATIVE_FINISH_CASES,
     MissionFlag,
@@ -51,6 +55,7 @@ from .option_choices import (
     RingLinkBehaviorOptions,
     SkillPointsOptions,
     WeaponLevelChecksOptions,
+    ProgressiveWrenchOptions,
 )
 from .operatives import ALL_OPERATIVES, OPTIONAL_OPERATIVES, SACOperatives
 from .pickups import CHALLENGE_MODE_PICKUP_LOCATIONS, PICKUP_LOCATION_BY_INTERNAL, PICKUP_LOCATIONS, SACPickups
@@ -125,6 +130,8 @@ from .weapon_progression import (
     TITAN_ITEMS,
     TITAN_LOCATIONS,
     UNLOCK_TO_PROGRESSIVE,
+    WRENCH_ITEMS,
+    WRENCH_MOD_ITEMS,
     checked_levels,
     level_location_name,
     max_level,
@@ -138,6 +145,7 @@ from .weapons import (
     SACProgressiveRatchetWeapons,
     SACQwarkWeapons,
     SACRatchetWeapons,
+    SACRatchetWrenchWeapons,
     SACTitanWeapons,
 )
 
@@ -178,6 +186,7 @@ __all__ = [
     "KEYCARD_ITEMS",
     "LEVELLED_INTERNALS",
     "MISSION_COMPLETE_NAME",
+    "MISSION_CUTSCENE_GATES",
     "MISSION_NAMES",
     "NATIVE_FINISH_CASES",
     "NG_PLUS_VENDOR_ITEMS",
@@ -214,10 +223,15 @@ __all__ = [
     "TRAP_DURATIONS",
     "ALL_TRAPS",
     "ALL_FILLER",
+    "DAMAGE_PERCENT",
     "GADGETRON_DEBT_PERCENT",
+    "TRAP_LINK_RECEIVE",
+    "TRAP_LINK_SEND",
     "NANOTECH_XP_PERCENT",
     "WEAPON_XP_PERCENT",
     "UNLOCK_TO_PROGRESSIVE",
+    "WRENCH_ITEMS",
+    "WRENCH_MOD_ITEMS",
     "UNSUPPORTED_RATCHET_SKIN",
     "VENDOR_CASES",
     "VENDOR_LOCATIONS",
@@ -241,6 +255,7 @@ __all__ = [
     "QwarkSkinOptions",
     "RatchetSkinOptions",
     "RingLinkBehaviorOptions",
+    "ProgressiveWrenchOptions",
     "SACAlienCodeLocations",
     "SACCases",
     "SACCheats",
@@ -260,6 +275,7 @@ __all__ = [
     "SACQwarkWeapons",
     "SACRatchetChallengeLocations",
     "SACRatchetWeapons",
+    "SACRatchetWrenchWeapons",
     "SACSkillPointLocations",
     "SACSpecialChallengeLocations",
     "SACTitanWeapons",

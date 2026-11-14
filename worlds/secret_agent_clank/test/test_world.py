@@ -19,7 +19,7 @@ from BaseClasses import MultiWorld
 from test.general import gen_steps
 from worlds.AutoWorld import call_all
 from ..constants.ratchet_challenges import SACRatchetChallengeLocations
-from ..constants import PROGRESSIVE_WRENCH
+from ..constants import PROGRESSIVE_WRENCH, WRENCH_ITEMS, SACRatchetWrenchWeapons
 from ..locations import ALL_ALIEN_CODES_EVENT
 from ..constants.planets import SACCases
 
@@ -191,7 +191,7 @@ class TestUniversalTrackerRegeneration(unittest.TestCase):
         return mw
 
     def test_progressive_wrench_keeps_mess_hall_challenges_gated(self):
-        original = setup_multiworld(SecretAgentClankWorld, seed=1, options={"progressive_wrench": True})
+        original = setup_multiworld(SecretAgentClankWorld, seed=1, options={"progressive_wrench": "all_progressive"})
         mw = self.regenerate(original.worlds[1].fill_slot_data(), seed=2)
         self.assertTrue(mw.worlds[1].options.progressive_wrench)
         self.assertEqual({l.name for l in mw.get_locations(1)}, {l.name for l in original.get_locations(1)})
@@ -201,6 +201,23 @@ class TestUniversalTrackerRegeneration(unittest.TestCase):
             state.remove(mw.worlds[1].create_item(PROGRESSIVE_WRENCH))
         self.assertFalse(location.can_reach(state))
         state.collect(mw.worlds[1].create_item(PROGRESSIVE_WRENCH))
+        self.assertTrue(location.can_reach(state))
+
+    def test_start_with_wrench_gives_the_first_copy(self):
+        mw = setup_multiworld(SecretAgentClankWorld, seed=1, options={"progressive_wrench": "start_with_wrench"})
+        self.assertEqual([item.name for item in mw.precollected_items[1]].count(PROGRESSIVE_WRENCH), 1)
+        self.assertEqual(sum(item.name == PROGRESSIVE_WRENCH for item in mw.itempool), 4)
+
+    def test_wrench_as_item_gates_mess_hall_on_the_base_wrench(self):
+        mw = setup_multiworld(SecretAgentClankWorld, seed=1, options={"progressive_wrench": "wrench_as_item"})
+        names = [item.name for item in mw.itempool]
+        self.assertEqual([names.count(name) for name in WRENCH_ITEMS], [1] * len(WRENCH_ITEMS))
+        self.assertNotIn(PROGRESSIVE_WRENCH, names)
+        location = mw.get_location(SACRatchetChallengeLocations.THE_MESS_HALL_NAILS_FOR_BREAKFAST, 1)
+        state = mw.get_all_state(False)
+        state.remove(mw.worlds[1].create_item(SACRatchetWrenchWeapons.WRENCH))
+        self.assertFalse(location.can_reach(state))
+        state.collect(mw.worlds[1].create_item(SACRatchetWrenchWeapons.WRENCH))
         self.assertTrue(location.can_reach(state))
 
 

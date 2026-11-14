@@ -132,7 +132,7 @@ class ActivePlayer:
             return None
         return player, self.death_vtables.get(vtable)
 
-    def health_sample(self):
+    def _health(self):
         if self.pointer_address is None:
             return None
         player = self.pine.read_int32(self.pointer_address)
@@ -141,13 +141,27 @@ class ActivePlayer:
         health, maximum = struct.unpack("<2f", self.pine.read_bytes(player + 0x274, 8))
         if not math.isfinite(health) or not math.isfinite(maximum) or maximum <= 0:
             return None
-        return player, health
+        return player, health, maximum
+
+    def health_sample(self):
+        sample = self._health()
+        return None if sample is None else sample[:2]
 
     def kill(self):
         sample = self.health_sample()
         if sample is None or sample[1] <= 0:
             return False
         self.pine.write_int32(sample[0] + 0x274, 0)
+        return True
+
+    def damage(self, percent):
+        """Take `percent` of max health, never going below 1. False if there's no player yet."""
+        sample = self._health()
+        if sample is None:
+            return False
+        player, health, maximum = sample
+        if health > 1:
+            self.pine.write_float(player + 0x274, max(1.0, health - maximum * percent / 100))
         return True
 
     def lower_health(self, value):

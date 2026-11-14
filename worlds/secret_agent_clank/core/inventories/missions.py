@@ -5,6 +5,7 @@ from ...constants import (
     CHAPTER_ENTRIES,
     CUTSCENE_FLAGS,
     MISSION_COMPLETE_NAME,
+    MISSION_CUTSCENE_GATES,
     MISSION_NAMES,
     NATIVE_FINISH_CASES,
     MissionFlag,
@@ -75,6 +76,10 @@ class MissionInventory:
         self._resolved_cases = None
         self._story_addresses = {}
         self._resolved_title_ids = {}
+
+    def _cutscene_seen(self, name):
+        gate = MISSION_CUTSCENE_GATES.get(name)
+        return gate is None or gate.is_set(self.pine.read_int8(gate.address))
 
     def _resolve_labels(self):
         """Native labels identify cases even when they share one module slot."""
@@ -149,7 +154,8 @@ class MissionInventory:
         if not all_missions:
             story = self._story_addresses.get(current_case.name, ())
             complete_name = MISSION_COMPLETE_NAME[current_case.name]
-            if story and complete_name not in self._reported and self.pine.read_int32(story[-1]) == 3:
+            if (story and complete_name not in self._reported and self.pine.read_int32(story[-1]) == 3
+                    and self._cutscene_seen(complete_name)):
                 return [complete_name]
             return []
         entries = CHAPTER_ENTRIES.get(current_case.name)
@@ -160,7 +166,7 @@ class MissionInventory:
             return newly
         values = self.pine.batch_read_int32(addresses)
         for entry, value in zip(entries, values):
-            now = value == MissionFlag.UNLOCKED_COMPLETED
+            now = value == MissionFlag.UNLOCKED_COMPLETED and self._cutscene_seen(entry.name)
             flipped = now and entry.name not in self._reported
             self.completed[entry.name] = now or self.completed.get(entry.name, False)
             if flipped:

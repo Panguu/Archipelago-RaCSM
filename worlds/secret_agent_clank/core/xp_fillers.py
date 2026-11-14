@@ -4,7 +4,7 @@ GADGET_GetsXP is what levels a weapon up, so Weapon XP stops one point short of 
 """
 from dataclasses import dataclass
 
-from ..constants import NANOTECH_XP_PERCENT, WEAPON_ORDER, WEAPON_XP_PERCENT, NativeFunctions
+from ..constants import LEVELLED_INTERNALS, NANOTECH_XP_PERCENT, WEAPON_ORDER, WEAPON_XP_PERCENT, NativeFunctions
 from .case_menu import ee_pointer
 from .nanotech import read_nanotech
 from .patches.asm import jump, packed
@@ -54,6 +54,18 @@ def equipped_weapon(pine, symbols, player: int) -> EquippedWeapon | None:
     gadget = pine.read_int32(player + _PLAYER_WEAPON)
     if gadget >= GADGET_COUNT or WEAPON_ORDER[gadget] is None:
         return None
+    return _weapon(pine, gadgets, gadget)
+
+
+def owned_weapons(pine, symbols, owned: dict[str, bool]) -> list[EquippedWeapon]:
+    """Every owned Ratchet and Clank weapon that levels up."""
+    gadgets = require(symbols, "GADGET_g_GadgetList")
+    weapons = (_weapon(pine, gadgets, gadget) for gadget, internal in enumerate(WEAPON_ORDER)
+               if internal in LEVELLED_INTERNALS and owned.get(internal))
+    return [weapon for weapon in weapons if weapon is not None]
+
+
+def _weapon(pine, gadgets: int, gadget: int) -> EquippedWeapon | None:
     address = gadgets + gadget * GADGET_SIZE
     level, xp = pine.read_int32(address + _LEVEL), pine.read_int32(address + _XP)
     if level + 1 >= MAX_LEVELS:

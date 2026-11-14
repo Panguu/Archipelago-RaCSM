@@ -1,13 +1,12 @@
 import struct
 
-from ...constants import NativeFunctions
+from ...constants import PROGRESSIVE_WRENCH, WRENCH_MOD_ITEMS, NativeFunctions, SACRatchetWrenchWeapons
 from ..symbols import require
 from ..batch_io import read_blocks
 from .asm import Patch, jump, packed
 from .patch import PatchSet
 
-WRENCH_MODS = ("wrenchpower_firebomb", "wrenchpower_triplewave",
-              "wrenchpower_crystallix", "wrenchpower_wildburst")
+WRENCH_MODS = tuple(WRENCH_MOD_ITEMS.values())
 RATCHET_MODULES = {3, 9, 14, 21, 25}
 # Input handler, its size, its first instruction, the wrench button mask, and
 # how many times that mask appears.
@@ -22,13 +21,25 @@ class WrenchProgression(PatchSet):
     def __init__(self, pine):
         super().__init__(pine)
         self.enabled = False
-        self.count = 0
+        self.has_wrench = False
+        self.mods = frozenset()
         self.module = None
         self.power_address = None
         self.ownership_address = None
 
+    @property
+    def unlocked(self):
+        return not self.enabled or self.has_wrench
+
+    def receive(self, names):
+        """Progressive copies unlock the wrench then each mod in order; the separate items unlock their own."""
+        copies = list(names).count(PROGRESSIVE_WRENCH)
+        self.has_wrench = copies > 0 or SACRatchetWrenchWeapons.WRENCH in names
+        self.mods = frozenset({*WRENCH_MODS[:max(0, copies - 1)],
+                               *(power for item, power in WRENCH_MOD_ITEMS.items() if item in names)})
+
     def entitlements(self):
-        return {name: self.count >= index + 2 for index, name in enumerate(WRENCH_MODS)} if self.enabled else {}
+        return {name: name in self.mods for name in WRENCH_MODS} if self.enabled else {}
 
     def prepare(self, symbols, module, arena):
         """Clone each input handler with the wrench masks cleared, and pick the
@@ -87,7 +98,8 @@ class WrenchProgression(PatchSet):
         module, loading, selected = self.pine.batch_read_int32([0x206328, 0x206324, self.power_address])
         if module != self.module or loading != 0xFFFFFFFF:
             return
-        writes = [(self.ownership_address, int(not self.enabled or self.count > 0))]
-        if self.enabled and selected > max(0, self.count - 1):
+        writes = [(self.ownership_address, int(self.unlocked))]
+        # Power 0 is the plain wrench; 1-4 are the mods. Drop back to plain if the mod isn't owned.
+        if self.enabled and selected and (selected > len(WRENCH_MODS) or WRENCH_MODS[selected - 1] not in self.mods):
             writes.append((self.power_address, 0))
         self.pine.batch_write_int32(writes)

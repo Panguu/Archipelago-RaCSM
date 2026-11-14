@@ -77,12 +77,35 @@ class WeaponXPTests(unittest.TestCase):
         for progression, xp in cases:
             with self.subTest(**progression):
                 memory, address = holding()
-                core = SimpleNamespace(
-                    pine=memory, _log=Mock(),
-                    case=SimpleNamespace(symbols=SYMBOLS, active_player=Mock(current_player=Mock(return_value=PLAYER))),
-                    progression=SimpleNamespace(**{"enabled": False, "manual": False, "levels": {}, **progression}))
+                core = weapon_xp_core(memory, SACOperatives.CLANK, progression=progression)
                 self.assertTrue(Core._weapon_xp(core))
                 self.assertEqual(memory.read_int32(address + 0x64), xp)
+
+    def test_qwark_and_gadgetbot_cases_boost_an_owned_weapon(self):
+        for operative in (SACOperatives.QWARK, SACOperatives.GADGETBOTS):
+            with self.subTest(operative=operative):
+                memory, address = holding()
+                core = weapon_xp_core(memory, operative, owned={"blaster": True, "throwTie": False})
+                self.assertTrue(Core._weapon_xp(core))
+                self.assertEqual(memory.read_int32(address + 0x64), 350)
+                core.case.active_player.current_player.assert_not_called()
+
+    def test_qwark_cases_give_nothing_without_a_weapon_that_can_gain_xp(self):
+        for owned, level in (({}, 1), ({"blaster": True}, 7)):
+            with self.subTest(owned=owned, level=level):
+                memory, _ = holding(level=level)
+                memory.writes.clear()
+                self.assertTrue(Core._weapon_xp(weapon_xp_core(memory, SACOperatives.QWARK, owned=owned)))
+                self.assertEqual(memory.writes, [])
+
+
+def weapon_xp_core(memory, operative, *, owned=None, progression=None):
+    case_id = next(case_id for case_id, case in CASE_ID_TO_CASE.items() if case.operative == operative)
+    return SimpleNamespace(
+        pine=memory, _log=Mock(), _debug=Mock(), _owned_equipment=Mock(return_value=owned or {}),
+        case=SimpleNamespace(case_id=case_id, symbols=SYMBOLS,
+                             active_player=Mock(current_player=Mock(return_value=PLAYER))),
+        progression=SimpleNamespace(**{"enabled": False, "manual": False, "levels": {}, **(progression or {})}))
 
 
 class NanotechXPTests(unittest.TestCase):
@@ -99,14 +122,14 @@ class NanotechXPTests(unittest.TestCase):
     def test_ratchet_cases_boost_ratchet_and_the_rest_boost_clank(self):
         for case_id, case in CASE_ID_TO_CASE.items():
             with self.subTest(case=case.name):
-                core = SimpleNamespace(pine=Memory(), _log=Mock(), case=SimpleNamespace(case_id=case_id, symbols={}))
+                core = SimpleNamespace(pine=Memory(), _log=Mock(), _debug=Mock(), case=SimpleNamespace(case_id=case_id, symbols={}))
                 with patch("worlds.secret_agent_clank.core.core.boost_nanotech", return_value=5) as boost:
                     self.assertTrue(Core._nanotech_xp(core))
                 expected = SACOperatives.RATCHET if case.operative == SACOperatives.RATCHET else SACOperatives.CLANK
                 self.assertEqual(boost.call_args.args[2], expected)
 
     def test_loading_defers_it(self):
-        core = SimpleNamespace(pine=Memory(), _log=Mock(), case=SimpleNamespace(case_id=1, symbols={}))
+        core = SimpleNamespace(pine=Memory(), _log=Mock(), _debug=Mock(), case=SimpleNamespace(case_id=1, symbols={}))
         with patch("worlds.secret_agent_clank.core.core.boost_nanotech", side_effect=ValueError("loading")):
             self.assertFalse(Core._nanotech_xp(core))
 

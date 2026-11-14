@@ -1,4 +1,5 @@
 import logging
+import random
 from collections.abc import Callable, Sequence
 
 from .address_maps import BOLTS_ADDRESS
@@ -21,11 +22,11 @@ from ..constants import (
     CASE_ID_TO_CASE,
     CHAPTER_ENTRIES,
     CLANK_PICKUP_TO_INTERNAL,
+    DAMAGE_PERCENT,
     EQUIPMENT_INTERNAL_TO_DISPLAY,
     MISSION_COMPLETE_NAME,
     PICKUP_LOCATIONS,
     PICKUP_LOCATION_BY_INTERNAL,
-    PROGRESSIVE_WRENCH,
     VENDOR_LOCATIONS,
     VENDOR_LOCATION_NAMES,
     WEAPON_ORDER,
@@ -48,7 +49,7 @@ from .stealth import StealthState
 from .titanium_bolts import TitaniumBoltState
 from .traps import Traps
 from .vendor_rewards import VendorRewards
-from .xp_fillers import boost_nanotech, boost_weapon, equipped_weapon
+from .xp_fillers import boost_nanotech, boost_weapon, equipped_weapon, owned_weapons
 from ..patcher.release import load_runtime_build
 
 logger = logging.getLogger("CommonClient")
@@ -163,7 +164,7 @@ class Core:
         self.progression.receive(received_names)
         self.keycards.hunt.receive(received_names)
         self.weapon_mods.received = set(received_names)
-        self.wrench.count = min(5, list(received_names).count(PROGRESSIVE_WRENCH))
+        self.wrench.receive(received_names)
         self.bolt_rewards.received = list(received_names).count(SACFiller.BOLTS)
         if SACCheats.RATCHET_PACK in received_names and not self.ratchet_pack:
             self.ratchet_pack = self._ratchet_pack_pending = True
@@ -263,6 +264,11 @@ class Core:
                 return False
             self._log("[SAC] One HP Trap! You're down to 1 HP.")
             return True
+        if name == SACTraps.DAMAGE:
+            if not self.case.active_player.damage(DAMAGE_PERCENT):
+                return False
+            self._log(f"[SAC] Damage Trap! You lost {DAMAGE_PERCENT}% of your max health.")
+            return True
         if name == SACFiller.NANOTECH_XP:
             return self._nanotech_xp()
         if name == SACFiller.WEAPON_XP:
@@ -278,31 +284,45 @@ class Core:
         except ValueError:
             return False  # still loading
         if gained:
-            self._log(f"[SAC] Nanotech XP: {operative} gained {gained:,} XP.")
+            self._debug(f"[SAC] Nanotech XP: {operative} gained {gained:,} XP.")
         else:
-            self._log(f"[SAC] Nanotech XP: {operative}'s nanotech is already at its cap.")
+            self._debug(f"[SAC] Nanotech XP: {operative}'s nanotech is already at its cap.")
         return True
 
     def _weapon_xp(self) -> bool:
-        player = self.case.active_player.current_player()
-        if player is None:
-            return False
-        weapon = equipped_weapon(self.pine, self.case.symbols, player)
-        if weapon is None:
-            self._log("[SAC] Weapon XP: you aren't holding a weapon that levels up, so it had no effect.")
-            return True
-        name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(weapon.internal, weapon.internal)
         progression = self.progression
-        # Manual progressive weapons only keep XP below the received level.
-        if progression.enabled and (not progression.manual
-                                    or weapon.level >= progression.levels.get(weapon.internal, 0) - 1):
-            self._log(f"[SAC] Weapon XP: {name} levels up from Progressive Weapons, so it had no effect.")
-            return True
+
+        def can_gain(weapon):
+            # Manual progressive weapons only keep XP below the received level.
+            return not progression.enabled or (
+                progression.manual and weapon.level < progression.levels.get(weapon.internal, 0) - 1)
+
+        case = CASE_ID_TO_CASE.get(self.case.case_id)
+        if case is not None and case.operative in (SACOperatives.QWARK, SACOperatives.GADGETBOTS):
+            choices = [weapon for weapon in owned_weapons(self.pine, self.case.symbols, self._owned_equipment())
+                       if can_gain(weapon) and weapon.xp < weapon.xp_to_level - 1]
+            if not choices:
+                self._debug("[SAC] Weapon XP: none of your weapons can gain XP right now, so it had no effect.")
+                return True
+            weapon = random.choice(choices)
+            name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(weapon.internal, weapon.internal)
+        else:
+            player = self.case.active_player.current_player()
+            if player is None:
+                return False
+            weapon = equipped_weapon(self.pine, self.case.symbols, player)
+            if weapon is None:
+                self._debug("[SAC] Weapon XP: you aren't holding a weapon that levels up, so it had no effect.")
+                return True
+            name = EQUIPMENT_INTERNAL_TO_DISPLAY.get(weapon.internal, weapon.internal)
+            if not can_gain(weapon):
+                self._debug(f"[SAC] Weapon XP: {name} levels up from Progressive Weapons, so it had no effect.")
+                return True
         gained = boost_weapon(self.pine, weapon)
         if gained:
-            self._log(f"[SAC] Weapon XP: {name} gained {gained:,} XP.")
+            self._debug(f"[SAC] Weapon XP: {name} gained {gained:,} XP.")
         else:
-            self._log(f"[SAC] Weapon XP: {name} can't gain any more XP right now.")
+            self._debug(f"[SAC] Weapon XP: {name} can't gain any more XP right now.")
         return True
 
     def bolt_balance(self) -> int | None:

@@ -90,3 +90,10 @@ class WeaponLevelChecksOptions:
     LEVEL_8 = 2
     LEVEL_4_AND_8 = 3
     ALL = 4
+
+@dataclass(frozen=True)
+class ProgressiveWrenchOptions:
+    OFF = 0
+    ALL_PROGRESSIVE = 1
+    START_WITH_WRENCH = 2
+    WRENCH_AS_ITEM = 3

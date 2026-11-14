@@ -1,4 +1,4 @@
-from rule_builder.rules import HasAll
+from rule_builder.rules import Has, HasAll
 
 from ..constants import (
     SACAlienCodeLocations,
@@ -21,10 +21,10 @@ REGION = CaseRegion(SACCases.GONDOLA_ASCENT, (
     SACLocation(SACMissionLocations.GONDOLA_ASCENT_COMPLETE, SACLocationType.CASE_COMPLETE, _BASE),
     SACLocation(SACMissionLocations.GONDOLA_ASCENT_GET_A_LIFT, SACLocationType.MISSION, _OMNIKEY),
     SACLocation(SACSkillPointLocations.GONDOLA_ASCENT_STEEL_RAIN,
-                SACLocationType.SKILL_POINT, HasAll(*_BASE_ITEMS, SACClankWeapons.HOLOKNUCKLES)),
+                SACLocationType.SKILL_POINT, Has(SACClankWeapons.HOLOKNUCKLES)),
     SACLocation(SACCutsceneLocations.GONDOLA_ASCENT_FINISH_GONDOLA_CUTSCENE, SACLocationType.CUTSCENE, _OMNIKEY),
     SACLocation(SACAlienCodeLocations.GONDOLA_ASCENT_LEVITICUS_SECRET,
-                SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=0),
+                SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=0),
     SACLocation(SACAlienCodeLocations.GONDOLA_ASCENT_CARLS_SECRET,
                 SACLocationType.ALIEN_CODE, HasAll(*_BASE_ITEMS, SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=1),
     SACLocation(SACAlienCodeLocations.GONDOLA_ASCENT_JESS_SECRET,

@@ -122,7 +122,7 @@ class PermanentRuntime(NativeRuntime):
         if progression.pickup_challenge_address is not None:
             p.write_int32(progression.pickup_challenge_address, progression.ng_plus)
         if self.wrench.ownership_address is not None:
-            p.write_int32(self.wrench.ownership_address, int(not self.wrench.enabled or self.wrench.count > 0))
+            p.write_int32(self.wrench.ownership_address, int(self.wrench.unlocked))
         choices = [self.skins.selected.get(character, 0) for character in SKINS_BY_CHARACTER]
         choices.append(QWARK_GIANT_SKINS.get(self.skins.selected.get("qwark", 0), 0))
         p.write_bytes(self.skins.config_address, bytes(choices))

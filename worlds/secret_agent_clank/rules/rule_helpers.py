@@ -14,9 +14,11 @@ from ..constants import (
     PROGRESSIVE_PLANET_ITEM_NAME,
     PROGRESSIVE_WRENCH,
     InfobotsOptions,
+    ProgressiveWrenchOptions,
     SACCases,
     SACClankGadgets,
     SACClankWeapons,
+    SACRatchetWrenchWeapons,
 )
 from ..options import enabled_operatives
 
@@ -168,5 +170,10 @@ class ProgressiveChallengeModeRule(Rule[TWorld], game="Secret Agent Clank"):
 class ProgressiveWrenchRule(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        rule = Has(PROGRESSIVE_WRENCH) if world.options.progressive_wrench else True_()
+        if world.options.progressive_wrench == ProgressiveWrenchOptions.WRENCH_AS_ITEM:
+            rule = Has(SACRatchetWrenchWeapons.WRENCH)
+        elif world.options.progressive_wrench:
+            rule = Has(PROGRESSIVE_WRENCH)
+        else:
+            rule = True_()
         return rule.resolve(world)

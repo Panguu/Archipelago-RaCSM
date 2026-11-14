@@ -16,7 +16,9 @@ from .constants import (
     SACFiller,
     TITAN_ITEMS,
     WEAPON_MODS,
+    WRENCH_MOD_ITEMS,
     SACCheats,
+    SACRatchetWrenchWeapons,
     SACTraps,
 )
 
@@ -50,8 +52,9 @@ RATCHET_PACK_ITEM_TABLE = _items(BASE_ID + 81, [SACCheats.RATCHET_PACK], USEFUL)
 TRAP_ITEM_TABLE = {
     **_items(BASE_ID + 82, [SACTraps.WEAPON_SWITCHING, SACTraps.MIRRORED_LEVELS,
                             SACTraps.BOLT_CONFUSION, SACTraps.BIG_HEADED], ItemClassification.trap),
-    # Added later, so their IDs come after the keycards.
+    # Added later, so their IDs come after the keycards and the wrench.
     **_items(BASE_ID + 140, [SACTraps.GADGETRON_DEBT, SACTraps.ONE_HP], ItemClassification.trap),
+    **_items(BASE_ID + 149, [SACTraps.DAMAGE], ItemClassification.trap),
 }
 FILLER_ITEM_TABLE = {
     **_items(BASE_ID + 86, [SACFiller.BOLTS], ItemClassification.filler),
@@ -66,6 +69,10 @@ TITAN_ITEM_TABLE = _items(BASE_ID + 103, TITAN_ITEMS, PROGRESSION)
 WEAPON_MOD_ITEM_TABLE = _items(BASE_ID + 117, [mod.name for mod in WEAPON_MODS], USEFUL)
 CHALLENGE_MODE_ITEM_TABLE = _items(BASE_ID + 136, [PROGRESSIVE_CHALLENGE_MODE], PROGRESSION)
 KEYCARD_ITEM_TABLE = _items(BASE_ID + 137, KEYCARD_ITEMS, PROGRESSION)
+WRENCH_ITEM_TABLE = {
+    **_items(BASE_ID + 144, [SACRatchetWrenchWeapons.WRENCH], PROGRESSION),
+    **_items(BASE_ID + 145, WRENCH_MOD_ITEMS, USEFUL),
+}
 
 ALL_ITEMS: dict[str, SACItemData] = {
     **EQUIPMENT_ITEM_TABLE,
@@ -81,6 +88,7 @@ ALL_ITEMS: dict[str, SACItemData] = {
     **WEAPON_MOD_ITEM_TABLE,
     **CHALLENGE_MODE_ITEM_TABLE,
     **KEYCARD_ITEM_TABLE,
+    **WRENCH_ITEM_TABLE,
 }
 
 
@@ -100,3 +108,4 @@ def _weapon_forms() -> dict[str, set[str]]:
 ITEM_NAME_GROUPS: dict[str, set[str]] = {
     weapon.rsplit(" (", 1)[0]: forms for weapon, forms in _weapon_forms().items()
 }
+ITEM_NAME_GROUPS["Wrench"] = {PROGRESSIVE_WRENCH, *WRENCH_ITEM_TABLE}

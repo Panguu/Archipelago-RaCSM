@@ -1,10 +1,3 @@
-"""Only native multi-level weapons participate; tools stay single unlocks.
-
-Roster: https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_(game)
-Challenge tiers: https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_vendors
-RYNO V4 cap: https://ratchet-galaxy.com/en/games/psp/secret-agent-clank/inventory/weapons/ryno
-Six Clank weapons and nine Ratchet weapons; no PDAs, tools, or Clank Fu moves.
-"""
 from .clank_gadgets import SACClankWeapons, SACProgressiveClankWeapons, SACProtoWeapons
 from .option_choices import WeaponLevelChecksOptions
 from .vendor import vendor_location_name
@@ -13,6 +6,7 @@ from .weapons import (
     EQUIPMENT_INTERNAL_TO_DISPLAY,
     SACProgressiveRatchetWeapons,
     SACRatchetWeapons,
+    SACRatchetWrenchWeapons,
     SACTitanWeapons,
 )
 
@@ -65,6 +59,13 @@ def checked_levels(internal, mode, ng_plus):
 
 
 PROGRESSIVE_WRENCH = "Progressive Wrench"
+WRENCH_MOD_ITEMS = {
+    SACRatchetWrenchWeapons.FIREBOMBWRENCHMOD: "wrenchpower_firebomb",
+    SACRatchetWrenchWeapons.TRIPLEWAVEWRENCHMOD: "wrenchpower_triplewave",
+    SACRatchetWrenchWeapons.SHOCKCRYSTALWRENCHMOD: "wrenchpower_crystallix",
+    SACRatchetWrenchWeapons.WILDBURSTWRENCHMOD: "wrenchpower_wildburst",
+}
+WRENCH_ITEMS = (SACRatchetWrenchWeapons.WRENCH, *WRENCH_MOD_ITEMS)
 
 WEAPON_LEVEL_NAME = "Weapon Level: {weapon_name} V{level}"
 

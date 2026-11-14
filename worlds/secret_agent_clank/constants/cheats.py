@@ -43,13 +43,35 @@ class SACTraps:
     BIG_HEADED = "Big Headed Trap"
     GADGETRON_DEBT = "Gadgetron Debt Trap"
     ONE_HP = "One HP Trap"
+    DAMAGE = "Damage Trap"
 
 
 ALL_TRAPS: tuple[str, ...] = (
     SACTraps.WEAPON_SWITCHING, SACTraps.MIRRORED_LEVELS, SACTraps.BOLT_CONFUSION,
-    SACTraps.BIG_HEADED, SACTraps.GADGETRON_DEBT, SACTraps.ONE_HP,
+    SACTraps.BIG_HEADED, SACTraps.GADGETRON_DEBT, SACTraps.ONE_HP, SACTraps.DAMAGE,
 )
 GADGETRON_DEBT_PERCENT = 8
+DAMAGE_PERCENT = 25
+
+TRAP_LINK_SEND: dict[str, str] = {
+    SACTraps.MIRRORED_LEVELS: "Mirror Trap",
+    SACTraps.WEAPON_SWITCHING: "Gadget Shuffle Trap",
+    SACTraps.ONE_HP: "One Hit KO",
+    SACTraps.GADGETRON_DEBT: "Market Crash Trap",
+    SACTraps.DAMAGE: "Damage Trap",
+    SACTraps.BIG_HEADED: SACTraps.BIG_HEADED,
+    SACTraps.BOLT_CONFUSION: SACTraps.BOLT_CONFUSION,
+}
+TRAP_LINK_RECEIVE: dict[str, str] = {
+    **{trap: trap for trap in ALL_TRAPS},
+    **{name: trap for trap, name in TRAP_LINK_SEND.items()},
+    "Flip Horizontal Trap": SACTraps.MIRRORED_LEVELS,
+    "Screen Flip Trap": SACTraps.MIRRORED_LEVELS,
+    "Tool Swap Trap": SACTraps.WEAPON_SWITCHING,
+    "One Hit Trap": SACTraps.ONE_HP,
+    "Player Money Trap": SACTraps.GADGETRON_DEBT,
+    "Expensive Stocks": SACTraps.GADGETRON_DEBT,
+}
 
 
 TRAP_CHEATS: dict[str, tuple[str, ...]] = {
@@ -59,5 +81,5 @@ TRAP_CHEATS: dict[str, tuple[str, ...]] = {
     SACTraps.BIG_HEADED: (SACCheats.BIG_HEADED_CLANK, SACCheats.BIG_HEADED_RATCHET),
 }
 
-# Only the cheat traps last a while; Gadgetron Debt and One HP happen once.
+# Only the cheat traps last a while; Gadgetron Debt, One HP and Damage happen once.
 TRAP_DURATIONS: dict[str, int] = dict.fromkeys(TRAP_CHEATS, 30)

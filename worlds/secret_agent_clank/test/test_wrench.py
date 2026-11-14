@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
+from ..constants import PROGRESSIVE_WRENCH, SACRatchetWrenchWeapons
 from ..core import Core
 from ..core.patches import WrenchProgression
 from .test_runtime import TEST_BUILD, Memory
@@ -15,8 +16,28 @@ class WrenchTests(unittest.TestCase):
 
     def test_progressive_entitlements_use_native_mod_order(self):
         for count in range(6):
-            self.w.count = count
+            self.w.receive([PROGRESSIVE_WRENCH] * count)
+            self.assertEqual(self.w.has_wrench, count > 0)
             self.assertEqual(list(self.w.entitlements().values()), [count >= n + 2 for n in range(4)])
+
+    def test_individual_items_unlock_in_any_order(self):
+        self.w.receive([SACRatchetWrenchWeapons.WILDBURSTWRENCHMOD])
+        self.assertFalse(self.w.has_wrench)
+        self.assertEqual(list(self.w.entitlements().values()), [False, False, False, True])
+        self.w.receive([SACRatchetWrenchWeapons.WILDBURSTWRENCHMOD, SACRatchetWrenchWeapons.WRENCH])
+        self.assertTrue(self.w.has_wrench)
+
+    def test_selected_power_drops_back_when_its_mod_is_missing(self):
+        self.w.module = 3
+        self.w.ownership_address = 0x110000
+        self.w.power_address = 0x110004
+        self.w.receive([SACRatchetWrenchWeapons.WRENCH, SACRatchetWrenchWeapons.TRIPLEWAVEWRENCHMOD])
+        self.p.batch_write_int32([(0x206328, 3), (0x206324, 0xFFFFFFFF), (0x110004, 2)])
+        self.w.sync()
+        self.assertEqual(self.p.read_int32(0x110004), 2)
+        self.p.batch_write_int32([(0x110004, 1)])
+        self.w.sync()
+        self.assertEqual(self.p.read_int32(0x110004), 0)
 
     def test_non_ratchet_modules_get_no_code_changes(self):
         for module in (1, 2, 4, 10, 11, 31):
@@ -31,7 +52,7 @@ class WrenchTests(unittest.TestCase):
         self.p.batch_write_int32([(0x206328, 3), (0x206324, 0xFFFFFFFF), (0x100000, 0x30A20020)])
         self.w.sync()
         self.assertEqual(self.p.read_int32(0x110000), 0)
-        self.w.count = 1
+        self.w.receive([PROGRESSIVE_WRENCH])
         self.w.sync()
         self.assertEqual(self.p.read_int32(0x100000), 0x30A20020)
         self.assertEqual(self.p.read_int32(0x110000), 1)

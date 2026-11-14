@@ -135,6 +135,12 @@ ITEM_IDS = {
     'One HP Trap': 77800141,
     'Nanotech XP': 77800142,
     'Weapon XP': 77800143,
+    'Wrench (Ratchet)': 77800144,
+    'Firebomb Wrench Mod (Ratchet)': 77800145,
+    'Triple Wave Wrench Mod (Ratchet)': 77800146,
+    'Shock Crystal Wrench Mod (Ratchet)': 77800147,
+    'Wild Burst Wrench Mod (Ratchet)': 77800148,
+    'Damage Trap': 77800149,
 }
 
 

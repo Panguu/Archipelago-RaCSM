@@ -78,6 +78,19 @@ class SACCommandProcessor(ClientCommandProcessor):
         async_start(self.ctx._set_ring_link_enabled(enable))
         return True
 
+    def _cmd_traplink(self, mode: str = "toggle") -> bool:
+        """Turn Trap Link on or off for this session. /traplink [toggle|on|off|status]"""
+        mode = mode.lower()
+        if mode not in ("toggle", "on", "off", "status"):
+            logger.warning("[SAC] Usage: /traplink [toggle|on|off|status]")
+            return False
+        if mode == "status":
+            logger.info(f"[SAC] Trap Link is {'enabled' if self.ctx._trap_link_enabled else 'disabled'}.")
+            return True
+        enable = not self.ctx._trap_link_enabled if mode == "toggle" else mode == "on"
+        async_start(self.ctx._set_trap_link_enabled(enable))
+        return True
+
     def _cmd_deathlink_mode(self, mode: str) -> bool:
         """Turn DeathLink on or off for this session. /deathlink_mode [toggle|on|off|status]"""
         mode = mode.lower()

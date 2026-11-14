@@ -43,13 +43,13 @@ class TestProgressiveItems(unittest.TestCase):
         self.assertEqual(world.create_item(PROGRESSIVE_CHALLENGE_MODE).stages, ("Challenge Mode 1", "Challenge Mode 2"))
 
     def test_only_enabled_progressive_items_are_generated(self):
-        off = dict(progressive_weapons="off", progressive_wrench=False, progressive_challenge_mode=False,
+        off = dict(progressive_weapons="off", progressive_wrench="off", progressive_challenge_mode=False,
                    infobots="cases", ng_plus=1)
         cases = (
             ("all off", {}, set()),
             # ng_plus 0 keeps weapons at 4 copies each, so the pool still fits.
             ("weapons", {"progressive_weapons": "manual", "ng_plus": 0}, set(PROGRESSIVE_TO_UNLOCK)),
-            ("wrench", {"progressive_wrench": True}, {PROGRESSIVE_WRENCH}),
+            ("wrench", {"progressive_wrench": "all_progressive"}, {PROGRESSIVE_WRENCH}),
             ("challenge mode", {"progressive_challenge_mode": True}, {PROGRESSIVE_CHALLENGE_MODE}),
             ("planets", {"infobots": "progressive_planet"}, set(PROGRESSIVE_PLANET_ITEM_NAME.values())),
         )

@@ -25,6 +25,7 @@ from .constants import (
     UNLOCK_TO_PROGRESSIVE,
     InfobotsOptions,
     ProgressiveWeaponsOptions,
+    ProgressiveWrenchOptions,
     SACCases,
     SACFiller,
     SACOperatives,
@@ -42,6 +43,7 @@ from .items import (
     RATCHET_PACK_ITEM_TABLE,
     TRAP_ITEM_TABLE,
     EQUIPMENT_ITEM_TABLE,
+    WRENCH_ITEM_TABLE,
 )
 from .locations import CASE_REGIONS, LOCATIONS, LOCATION_NAME_TO_ID, stealth_case_counts
 from .patcher import SACPatch, add_release_patch
@@ -245,8 +247,13 @@ class SecretAgentClankWorld(World):
         pool += [mod.name for mod in self.weapon_mod_catalog]
         pool += [mod.name for mod in enabled_challenge_mods(enabled_operatives(self.options))]
         ratchet_enabled = SACOperatives.RATCHET in enabled_operatives(self.options)
-        if ratchet_enabled and self.options.progressive_wrench:
+        if ratchet_enabled and self.options.progressive_wrench == ProgressiveWrenchOptions.WRENCH_AS_ITEM:
+            pool += list(WRENCH_ITEM_TABLE)
+        elif ratchet_enabled and self.options.progressive_wrench:
             pool += [PROGRESSIVE_WRENCH] * 5
+            if self.options.progressive_wrench == ProgressiveWrenchOptions.START_WITH_WRENCH:
+                pool.remove(PROGRESSIVE_WRENCH)
+                self.multiworld.push_precollected(self.create_item(PROGRESSIVE_WRENCH))
 
         for name in EQUIPMENT_ITEM_TABLE:
             if name in RATCHET_WEAPON_ITEM_TABLE and not ratchet_enabled:

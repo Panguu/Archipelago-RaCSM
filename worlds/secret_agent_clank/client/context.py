@@ -8,13 +8,14 @@ from Utils import async_start
 from ..world import SecretAgentClankWorld
 
 from ..constants import EQUIPMENT_DISPLAY_TO_INTERNAL
-from ..items import CASE_GADGET_ITEM_TABLE, EFFECT_ITEMS, EQUIPMENT_ITEM_TABLE
+from ..items import CASE_GADGET_ITEM_TABLE, EFFECT_ITEMS, EQUIPMENT_ITEM_TABLE, TRAP_ITEM_TABLE
 from ..locations import LOCATION_NAME_TO_ID
 from .command_processor import SACCommandProcessor
 from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
 from .pine_mixin import PineMixin
 from .ring_link import RingLinkMixin
+from .trap_link import TrapLinkMixin
 from .vendor_scouts import VendorScouts
 from .worker_bridge import GameWorker
 
@@ -34,7 +35,7 @@ except ImportError:
     DYNAMIC_PINE_VERSION = None
 
 
-class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
+class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, TrapLinkMixin, CommonContext):
     game = GAME_NAME
     command_processor = SACCommandProcessor
     items_handling = 0b111
@@ -63,6 +64,8 @@ class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
         self._ring_link_outgoing = 0
         self._ring_link_pending = 0
         self._ring_link_sent_at = 0.0
+        self._trap_link_enabled = False
+        self._trap_link_pending: list[str] = []
         self._processed_trap_count: int | None = None
         self._notification_count = None
         self._notification_slot = None
@@ -243,6 +246,8 @@ class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
                     name = received_names[index]
                     if name in EFFECT_ITEMS and not await self._worker.request("effect", name):
                         break
+                    if name in TRAP_ITEM_TABLE:
+                        self._send_trap_link(name)
                     self._processed_trap_count = index + 1
                     self._save_trap_state(self._processed_trap_count)
             except Exception as exc:
@@ -297,6 +302,10 @@ class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
         await self.get_username()
         await self.send_connect(game=self.game)
 
+    async def _send_tags(self, old_tags: set[str]) -> None:
+        if self.server and self.server.socket and self.tags != old_tags:
+            await self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}])
+
     async def connection_closed(self) -> None:
         if self._stealth_load_task is not None:
             self._stealth_load_task.cancel()
@@ -317,6 +326,7 @@ class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
 
         if cmd == "Bounced":
             self._on_ring_link(args)
+            self._on_trap_link(args)
             return
 
         if cmd == "Connected":
@@ -332,9 +342,15 @@ class SACContext(PineMixin, DeathLinkMixin, RingLinkMixin, CommonContext):
             self.slot_data = args.get("slot_data", {})
             self.vendor_scouts.rewards.clear()
             self._scouted_location_ids.clear()
+            old_tags = set(self.tags)
             self._death_link_enabled = bool(self.slot_data.get("death_link", False))
-            async_start(self.update_death_link(self._death_link_enabled))
-            async_start(self._set_ring_link_enabled(bool(self.slot_data.get("ring_link", False))))
+            if self._death_link_enabled:
+                self.tags.add("DeathLink")
+            else:
+                self.tags.discard("DeathLink")
+            self._enable_ring_link(bool(self.slot_data.get("ring_link", False)))
+            self._enable_trap_link(bool(self.slot_data.get("trap_link", False)))
+            async_start(self._send_tags(old_tags))
             allowed = {name for name, lid in self._location_name_to_id.items() if lid in self.server_locations}
             async_start(self._configure_game(identity, dict(self.slot_data), allowed))
             return

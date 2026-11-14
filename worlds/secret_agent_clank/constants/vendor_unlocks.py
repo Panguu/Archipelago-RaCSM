@@ -1,14 +1,3 @@
-"""Shared case gates for scouting, native offers, and generation logic.
-
-Source: https://ratchetandclank.fandom.com/wiki/Secret_Agent_Clank_vendors
-Bolt Foundry is Clank's Galactic Bolt Reserve, not Inside the A-Eye:
-https://ratchetandclank.fandom.com/wiki/Hard_Currency
-
-AP adaptations: weapon delivery becomes its source case (Explosive Nature).
-Titan/Proto upgrades and Clank NG+ mods use the base weapon's source case.
-RYNO and Hot Foot 2.1 use Museum, the first vendor; the wiki gives only
-"Challenge mode" for these. Seed NG+ filtering still applies separately.
-"""
 from .clank_gadgets import SACClankGadgets as G
 from .clank_gadgets import SACClankWeapons as W
 from .planets import SACCases as C

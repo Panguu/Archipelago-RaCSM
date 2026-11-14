@@ -9,16 +9,18 @@ SEND_INTERVAL = 0.5
 
 class RingLinkMixin:
     async def _set_ring_link_enabled(self, enabled: bool) -> None:
+        old_tags = set(self.tags)
+        self._enable_ring_link(enabled)
+        await self._send_tags(old_tags)
+
+    def _enable_ring_link(self, enabled: bool) -> None:
         self._ring_link_enabled = enabled
         self._ring_link_outgoing = 0
         self._ring_link_pending = 0
-        old_tags = set(self.tags)
         if enabled:
             self.tags.add(RING_LINK_TAG)
         else:
             self.tags.discard(RING_LINK_TAG)
-        if self.server and self.server.socket and self.tags != old_tags:
-            await self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}])
         logger.info(f"[SAC] Ring Link {'enabled' if enabled else 'disabled'}.")
 
     def _on_ring_link(self, args: dict) -> None:
