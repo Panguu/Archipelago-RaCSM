@@ -2,7 +2,7 @@
     "compatible_version": 7,
     "version": 7,
     "game": "Secret Agent Clank",
-    "world_version": "0.0.11",
+    "world_version": "0.1.0",
     "authors": [
         "Pangu",
         "Amondo"
