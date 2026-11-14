@@ -4,6 +4,7 @@ offers the player can logically reach, using the same rule classes as generation
 Only the rule types in RULES can be sent; a vendor rule using any other type fails
 at generation.
 """
+import json
 from collections import Counter
 from dataclasses import fields
 
@@ -29,32 +30,56 @@ def logical_inventory(names):
     return counts
 
 
-def _encode(value):
-    if isinstance(value, Rule.Resolved):
-        if value.rule_name not in RULES:
-            raise ValueError(f"Unsupported vendor rule: {value.rule_name}")
-        return {"rule": value.rule_name, "args": {
-            field.name: _encode(getattr(value, field.name)) for field in fields(value)
-            if field.name not in ("player", "caching_enabled")}}
-    if isinstance(value, tuple):
-        return [_encode(child) for child in value]
-    return value
+class _RuleTable:
+    def __init__(self):
+        self.rules = []
+        self._ids = {}
+
+    def add(self, rule):
+        if rule.rule_name not in RULES:
+            raise ValueError(f"Unsupported vendor rule: {rule.rule_name}")
+        args, children = {}, {}
+        for field in fields(rule):
+            if field.name in ("player", "caching_enabled"):
+                continue
+            value = getattr(rule, field.name)
+            if isinstance(value, Rule.Resolved):
+                children[field.name] = self.add(value)
+            elif isinstance(value, tuple) and value and all(isinstance(v, Rule.Resolved) for v in value):
+                children[field.name] = [self.add(v) for v in value]
+            else:
+                args[field.name] = _lists(value)
+        node = [rule.rule_name, args, children]
+        key = json.dumps(node, sort_keys=True)
+        if key not in self._ids:
+            self._ids[key] = len(self.rules)
+            self.rules.append(node)
+        return self._ids[key]
 
 
-def _decode(value):
-    if isinstance(value, dict):
-        cls = RULES[value["rule"]]
-        return cls(**{name: _decode(arg) for name, arg in value["args"].items()},
-                   player=1, caching_enabled=False)
-    if isinstance(value, list):
-        return tuple(_decode(child) for child in value)
-    return value
+def _lists(value):
+    return [_lists(item) for item in value] if isinstance(value, tuple) else value
+
+
+def _tuples(value):
+    return tuple(_tuples(item) for item in value) if isinstance(value, list) else value
+
+
+def _decode_rules(table):
+    decoded = []
+    for name, args, children in table:
+        kwargs = {key: _tuples(value) for key, value in args.items()}
+        for key, ref in children.items():
+            kwargs[key] = tuple(decoded[i] for i in ref) if isinstance(ref, list) else decoded[ref]
+        decoded.append(RULES[name](**kwargs, player=1, caching_enabled=False))
+    return decoded
 
 
 def export_vendor_rules(world):
     """Export the actual location rules and the region graph they depend on."""
     locations = {loc.name: loc for loc in world.multiworld.get_locations(world.player)
                  if loc.name in VENDOR_CASES}
+    table = _RuleTable()
     regions = {}
 
     def include_region(name):
@@ -64,7 +89,7 @@ def export_vendor_rules(world):
         region = world.multiworld.get_region(name, world.player)
         for entrance in region.entrances:
             rule = entrance.access_rule
-            regions[name].append([entrance.parent_region.name, _encode(rule)])
+            regions[name].append([entrance.parent_region.name, table.add(rule)])
             include_region(entrance.parent_region.name)
             for dependency in rule.region_dependencies():
                 include_region(dependency)
@@ -73,18 +98,18 @@ def export_vendor_rules(world):
         include_region(loc.parent_region.name)
         for dependency in loc.access_rule.region_dependencies():
             include_region(dependency)
-    return {"version": 1, "regions": regions, "locations": {
-        name: [loc.parent_region.name, _encode(loc.access_rule)] for name, loc in locations.items()}}
+    exported = {name: [loc.parent_region.name, table.add(loc.access_rule)] for name, loc in locations.items()}
+    return {"version": 2, "rules": table.rules, "regions": regions, "locations": exported}
 
 
 class VendorLogic:
     def __init__(self, data):
-        if data["version"] != 1:
+        if data["version"] != 2:
             raise ValueError("Unsupported vendor logic version")
-        self.regions = {name: [(parent, _decode(rule)) for parent, rule in entrances]
+        rules = _decode_rules(data["rules"])
+        self.regions = {name: [(parent, rules[rule]) for parent, rule in entrances]
                         for name, entrances in data["regions"].items()}
-        self.locations = {name: (parent, _decode(rule))
-                          for name, (parent, rule) in data["locations"].items()}
+        self.locations = {name: (parent, rules[rule]) for name, (parent, rule) in data["locations"].items()}
 
     def available(self, received_names):
         state = _VendorState(received_names)
