@@ -5,7 +5,7 @@ from argparse import Namespace
 import colorama
 
 from CommonClient import get_base_parser, gui_enabled, handle_url_arg, server_loop
-from Utils import async_start, init_logging
+from Utils import init_logging
 
 from ..patcher.launch import prepare_iso, start_game
 from .command_processor import SACCommandProcessor

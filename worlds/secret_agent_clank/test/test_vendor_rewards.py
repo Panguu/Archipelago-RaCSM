@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from ..client import VendorReward
 from ..core.patches import VendorPresentation
-from ..core import RuntimeSymbols, VendorItem, VendorRewards, VendorState
+from ..core import RuntimeSymbols, VendorRewards, VendorState
 from .test_native_capture_plans import CaptureMemory
 
 

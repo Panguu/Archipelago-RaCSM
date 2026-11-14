@@ -5,7 +5,6 @@ import struct
 import unittest
 
 from ..core import Core
-from ..core.patches.asm import packed
 from ..core.patches.identity import WrongPatchedGame
 from ..core.patches.iso_startup_barrier import ISOStartupBarrier
 from ..core.patches.snr2 import SNR2Module, resident_exports

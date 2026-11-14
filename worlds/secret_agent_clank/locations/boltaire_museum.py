@@ -16,6 +16,7 @@ from ..rules import ProgressiveChallengeModeRule, VendorCaseRule
 from .model import CaseRegion, SACLocation, SACLocationType
 
 _FINISH_MISSION = HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.JETBOOTS)
+_REACH_INSIDE_MUSEUM = HasAll(SACClankGadgets.BLACK_OUT_PEN, HasAny(SACClankGadgets.JETBOOTS, SACClankWeapons.THROWTIE))
 
 
 _VENDOR = VendorCaseRule(SACCases.BOLTAIRE_MUSEUM)
@@ -43,10 +44,10 @@ REGION = CaseRegion(SACCases.BOLTAIRE_MUSEUM, (
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_THE_LEGENDS,
                 SACLocationType.ALIEN_CODE, Has(SACClankGadgets.THERM_OPTIC_SHADES), flag_bit=1),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_RONNS_SECRET,
-                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES),
+                SACLocationType.ALIEN_CODE, HasAll(SACClankGadgets.BLACK_OUT_PEN, SACClankGadgets.THERM_OPTIC_SHADES),
                 flag_bit=0),
     SACLocation(SACAlienCodeLocations.BOLTAIRE_MUSEUM_BENS_SECRET,
-                SACLocationType.ALIEN_CODE, _FINISH_MISSION & Has(SACClankGadgets.THERM_OPTIC_SHADES),
+                SACLocationType.ALIEN_CODE, _REACH_INSIDE_MUSEUM & Has(SACClankGadgets.THERM_OPTIC_SHADES),
                 flag_bit=2),
     SACLocation(SACVendor.BOLTAIRE_MUSEUM_HOLO_KNUCKLES, SACLocationType.VENDOR, _VENDOR),
     SACLocation(SACVendor.BOLTAIRE_MUSEUM_CLANK_FU_KICK, SACLocationType.VENDOR, _VENDOR),

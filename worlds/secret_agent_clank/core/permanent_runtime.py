@@ -72,7 +72,6 @@ class PermanentRuntime(NativeRuntime):
         self.hooks.patches = []
         self.hooks.reported = set()
         self.hooks.installed = True
-        self.wrench.sites = []
         self.weapon_mods.validated = False
         self.progression.ng_address = None
         self.progression.pending_definitions = tuple(self.progression.levels)

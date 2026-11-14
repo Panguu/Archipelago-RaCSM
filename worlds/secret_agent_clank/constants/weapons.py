@@ -18,6 +18,13 @@ class SACRatchetWeapons:
     BOLTTRANSFER      = "Bolt Extractor (Ratchet)"
     RYNO              = "RYNO (Ratchet)"
 
+@dataclass(frozen=True)
+class SACRatchetWrenchWeapons:
+    WRENCH = "Wrench (Ratchet)"
+    FIREBOMBWRENCHMOD = "Firebomb Wrench Mod (Ratchet)"
+    TRIPLEWAVEWRENCHMOD = "Triple Wave Wrench Mod (Ratchet)"
+    SHOCKCRYSTALWRENCHMOD = "Shock Crystal Wrench Mod (Ratchet)"
+    WILDBURSTWRENCHMOD = "Wild Burst Wrench Mod (Ratchet)"
 
 @dataclass(frozen=True)
 class SACProgressiveRatchetWeapons:
