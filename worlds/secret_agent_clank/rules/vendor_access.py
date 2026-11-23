@@ -5,16 +5,12 @@ from typing_extensions import override
 
 from ..constants import (
     ALL_CASES,
-    CASES_BY_OPERATIVE,
-    CASE_NAME_TO_CASE,
     EQUIPMENT_DISPLAY_TO_INTERNAL,
-    PLANET_ACCESS_ITEM_NAME,
-    PROGRESSIVE_CHARACTER_ITEM_NAME,
     VENDOR_REQUIREMENT_ITEMS,
     InfobotsOptions,
 )
 from ..constants import VENDOR_LOCATIONS
-from .rule_helpers import HasProgressivePlanet, region_names
+from .rule_helpers import HasEnemyAccess, HasProgressivePlanet, region_names
 
 VENDOR_ONLY_ITEM_NAMES: frozenset[str] = frozenset(
     name for name, internal in EQUIPMENT_DISPLAY_TO_INTERNAL.items()
@@ -29,23 +25,15 @@ VENDOR_REQUIREMENTS = {
 
 @dataclass
 class CaseOwnershipRule(Rule[TWorld], game="Secret Agent Clank"):
-    """Match resolved AP case ownership, including alternative access modes."""
+    """Whether the player owns the case, worked out the same way as the client does."""
 
     cases: str
 
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         rule = Has(self.cases)
-        case = CASE_NAME_TO_CASE[self.cases]
-        mode = world.options.infobots
-        if mode == InfobotsOptions.CHARACTER_UNLOCKS:
-            item = PROGRESSIVE_CHARACTER_ITEM_NAME.get(case.operative)
-            if item:
-                rule = rule | Has(item, list(CASES_BY_OPERATIVE[case.operative]).index(case) + 1)
-        elif mode == InfobotsOptions.PROGRESSIVE_PLANET:
+        if world.options.infobots == InfobotsOptions.PROGRESSIVE_PLANET:
             rule = rule | HasProgressivePlanet(world, self.cases)
-        elif mode != InfobotsOptions.CASES and case.planet in PLANET_ACCESS_ITEM_NAME:
-            rule = rule | Has(PLANET_ACCESS_ITEM_NAME[case.planet])
         return rule.resolve(world)
 
 
@@ -57,6 +45,7 @@ class VendorCaseRule(Rule[TWorld], game="Secret Agent Clank"):
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         if self.cases not in region_names(world):
             return False_().resolve(world)
-        rule = CanReachRegion(self.cases) & VENDOR_REQUIREMENTS.get(self.cases, False_())
+        # Buying anything needs bolts, so the player has to be able to reach enemies.
+        rule = CanReachRegion(self.cases) & VENDOR_REQUIREMENTS.get(self.cases, False_()) & HasEnemyAccess()
         return (rule & CaseOwnershipRule(self.cases)).resolve(world)
 

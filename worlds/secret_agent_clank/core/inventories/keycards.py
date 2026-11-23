@@ -1,4 +1,3 @@
-"""Native keycard bits and the actual keycard door opening in Treehouse."""
 import struct
 
 from ...constants import KEYCARD_BITS
@@ -20,7 +19,7 @@ class KeycardInventory:
         self._door = None
 
     def bind(self, symbols):
-        if self.hunt.enabled and self.pine.read_int32(0x206328) == 31:
+        if (self.hunt.enabled or self.hunt.enable_address is not None) and self.pine.read_int32(0x206328) == 31:
             self.flags.pointer_address = self.hunt.pointer_address
         else:
             self.flags.bind(symbols)

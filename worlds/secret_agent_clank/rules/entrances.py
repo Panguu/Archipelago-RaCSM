@@ -14,7 +14,7 @@ from ..constants import (
     SACClankWeapons,
 )
 from .nanotech import ClankNanotechRule
-from .rule_helpers import HasCase, HasCharacter, HasPlanet, disabled_operatives
+from .rule_helpers import HasCase, disabled_operatives
 
 if TYPE_CHECKING:
     from ..world import SecretAgentClankWorld
@@ -47,7 +47,7 @@ class CaseAccessRule(Rule[TWorld], game="Secret Agent Clank"):
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         case = CASE_NAME_TO_CASE[self.cases]
-        rule = HasPlanet(case.planet) & HasCase(case.name) & HasCharacter(case.name)
+        rule = HasCase(case.name)
         item = CASE_NAME_TO_INFOBOT.get(case.name)
         if item:
             rule = rule | Has(item)

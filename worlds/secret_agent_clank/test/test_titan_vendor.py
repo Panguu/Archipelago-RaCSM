@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan
 import unittest
 
 from ..constants import TITAN_LOCATIONS, WEAPON_ORDER
@@ -24,7 +25,7 @@ class TitanTests(unittest.TestCase):
         p.write_bytes = lambda address, data: p.data.__setitem__(slice(address, address + len(data)), data)
         h.patches = edits
         h.reported = set(checked)
-        h._install_plan()
+        load_plan(h)
         return p, h
 
     def execute(self, p, start, regs):

@@ -1,4 +1,3 @@
-"""Vendor reward text hooks installed with the other native patches."""
 import hashlib
 import struct
 
@@ -8,13 +7,13 @@ from ..symbols import require
 from . import mips as m
 from .asm import Patch, jump, packed
 from .patch import PatchSet
-from .vendor_text_preview import VendorTextPreview
+from .vendor_text import VendorTextLayout
 
 
 def triangle_storage(pine, symbols, extra=()):
-    # Retail DrawTriangle only transforms local stack vertices and sets a
-    # local color; it never submits geometry. Guard its complete body,
-    # including every instruction except relocated JAL destinations.
+    # The debug triangle routine only builds vertices on its own stack and
+    # never draws them, so its body is free space. Hash the whole body (with
+    # call targets zeroed, since they're relocated) before using it.
     storage = require(symbols, "DEBUGDRAW_DrawTriangle__FPC4VEC3N20UiPC7MATRIX4")
     storage_original, *rest = read_blocks(pine, [(storage, 352), *extra])
     words = struct.unpack("<88I", storage_original)
@@ -33,8 +32,8 @@ class VendorPresentation(PatchSet):
 
     @staticmethod
     def routine(mailbox, encoded):
-        # T3 is the original draw target, T4 the text offset, supplied by
-        # the two tiny entry stubs. Both share the identity validation.
+        # The two entry stubs set t3 to the original draw call and t4 to the
+        # text offset, then share this routine.
         code = [*m.li32(m.T0, mailbox)]
         branches = []
         for i, native_offset in enumerate((None, 0x0C, 0x10, 0x14)):
@@ -62,7 +61,7 @@ class VendorPresentation(PatchSet):
         render, title, description, encoded = require(symbols, "SCRNVENDOR_Render__Fv",
             "HUD_FontPrintWindowAreaScaledXY__FP20tFontPrintWindowDataff",
             "HUD_FontPrintWindowArea__FP20tFontPrintWindowData", "HUD_SetUseEncodedTextColorTo__Fb")
-        call_sites = (*VendorTextPreview.TITLE_CALLS, VendorTextPreview.DESCRIPTION_CALL)
+        call_sites = (*VendorTextLayout.TITLE_CALLS, VendorTextLayout.DESCRIPTION_CALL)
         storage, storage_original, switch, *calls = triangle_storage(
             self.pine, symbols, [(encoded, 12), *((render + site, 4) for site in call_sites)])
         current_call = dict(zip(call_sites, calls))
@@ -81,8 +80,8 @@ class VendorPresentation(PatchSet):
             address = storage + len(body)
             body.extend(code)
             return address
-        for sites, offset, target in ((VendorTextPreview.TITLE_CALLS, 16, title),
-                                     ((VendorTextPreview.DESCRIPTION_CALL,), 104, description)):
+        for sites, offset, target in ((VendorTextLayout.TITLE_CALLS, 16, title),
+                                     ((VendorTextLayout.DESCRIPTION_CALL,), 104, description)):
             address = reserve(packed([*m.li32(m.T3, target), jump(common), m.addiu(m.T4, m.ZERO, offset)]))
             for site in sites:
                 original = packed([jump(target, True)])
@@ -98,11 +97,11 @@ class VendorPresentation(PatchSet):
     def publish(self, pointer, row, reward):
         if self.mailbox is None or self.pine.read_int32(self.timer):
             return
-        # Withdraw first; native render can only see the new payload after commit.
+        # Clear the pointer first so the game never draws a half-written entry.
         writes = [(self.mailbox, packed([0]))]
         if reward is not None:
-            text = VendorTextPreview._text(reward.item_name, 88, 2 if reward.progression else 1)
-            text += VendorTextPreview._text("For " + reward.recipient_name + "\nArchipelago reward", 152)
+            text = VendorTextLayout._text(reward.item_name, 88, 2 if reward.progression else 1)
+            text += VendorTextLayout._text("For " + reward.recipient_name + "\nArchipelago reward", 152)
             writes += [(self.mailbox + 4, struct.pack("<3I", row.node_type, row.weapon_id, row.mod_id) + text),
                        (self.mailbox, packed([pointer]))]
         write_blocks(self.pine, writes)

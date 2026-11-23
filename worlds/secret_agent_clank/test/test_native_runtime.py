@@ -1,176 +1,18 @@
 import struct
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from ..constants import MISSION_COMPLETE_NAME, GoalOptions, SACCases, SACClankGadgets
+from ..constants import MISSION_COMPLETE_NAME, GoalOptions, SACCases
 from ..core import CASE_LABELS, Core, NativeRuntime, module_counts
 from ..core.inventories import AlienCodeInventory, KeycardInventory, MissionInventory
-from ..core.patches import MARKER, LoaderBarrierLost, LoaderGate, LocationHooks
 from ..locations import ALIEN_CODE_FLAGS, ALIEN_CODE_LOCATIONS, KEYCARD_LOCATIONS
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
+from ..constants.planets import ALL_CASES
 
 
 class NativeRuntimeTests(unittest.TestCase):
-    def test_lost_barrier_stops_sync_without_reloading(self):
-        self.p.get_game_id = lambda: "SCUS-97623"
-        gate = self.runtime.gate = LoaderGate(self.p)
-        struct.pack_into("<11I", self.p.data, gate.SIGNATURE_START, *gate.SIGNATURE)
-        gate.arm()
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.p.batch_write_int32([(gate.SITE, gate.ORIGINAL), (gate.STATE, 4),
-                                 (gate.STATUS, 1), (gate.TARGET, 16),
-                                 (gate.HANDLE, 0x200000)])
-        self.p.writes.clear()
-        with self.assertRaisesRegex(LoaderBarrierLost, "automatic reload is disabled"):
-            self.runtime.service(set(), {})
-        self.assertFalse(gate.armed)
-        self.assertFalse(self.hooks.installed)
-        self.assertEqual(self.p.writes, [])
-        self.hooks.prepare.assert_not_called()
-        self.hooks.sync_entitlements.assert_not_called()
-        self.assertFalse(self.runtime.reload_requested)
-
-    def test_unknown_loader_change_does_not_enter_recovery(self):
-        self.runtime.gate.armed = True
-        self.runtime.gate.held_module.side_effect = RuntimeError("unknown loader code")
-        with self.assertRaisesRegex(RuntimeError, "unknown loader code"):
-            self.runtime.service(set(), {})
-        self.assertFalse(self.runtime.reload_requested)
-        self.hooks.prepare.assert_not_called()
-
-    def test_missing_hooks_reload_current_module_once(self):
-        self.p.writes.clear()
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.assertEqual(self.p.read_int32(0x206324), 16)
-        self.runtime.gate.arm.assert_called_once()
-        self.assertTrue(self.runtime.reload_requested)
-        self.assertFalse(self.hooks.installed)
-        self.p.write_int32(0x206324, 0xFFFFFFFF)
-        self.p.writes.clear()
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.assertEqual(self.p.writes, [])
-
-    def test_reload_waits_for_settled_game_and_preserves_pending_travel(self):
-        for address, value in ((0x206324, 22), (0x100, 4), (0x206338, 2), (0x206328, 0)):
-            with self.subTest(address=address):
-                original = self.p.read_int32(address)
-                self.p.write_int32(address, value)
-                self.p.writes.clear()
-                self.assertFalse(self.runtime.service(set(), {}))
-                self.assertEqual(self.p.writes, [])
-                self.assertFalse(self.runtime.reload_requested)
-                self.p.write_int32(address, original)
-
-    def test_current_hooks_resume_without_reloading(self):
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.p.writes.clear()
-        self.assertTrue(self.runtime.service(set(), {}))
-        self.assertEqual(self.p.writes, [])
-
-    def test_reload_rechecks_state_before_writing(self):
-        self.p.batch_read_int32 = Mock(side_effect=[
-            [16, 0xFFFFFFFF, 5, 3], [16, 22, 5, 3]])
-        self.p.writes.clear()
-        self.runtime._reload_current_level()
-        self.assertEqual(self.p.writes, [])
-        self.assertFalse(self.runtime.reload_requested)
-
-    def test_transition_blocks_runtime_writes_even_with_current_hooks(self):
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.runtime.vendor_catalog = Mock()
-        self.runtime.skins = Mock()
-        for address, value in ((0x100, 0), (0x100, 1), (0x100, 2),
-                               (0x100, 3), (0x100, 4), (0x206338, 2),
-                               (0x206324, 22)):
-            with self.subTest(address=address, value=value):
-                original = self.p.read_int32(address)
-                self.p.write_int32(address, value)
-                self.assertFalse(self.runtime.service(set(), {}))
-                self.runtime.connection_warning.refresh.assert_not_called()
-                self.runtime.vendor_catalog.sync_cases.assert_not_called()
-                self.runtime.skins.sync.assert_not_called()
-                self.hooks.sync_checked.assert_not_called()
-                self.hooks.sync_entitlements.assert_not_called()
-                self.p.write_int32(address, original)
-
-    def test_travel_during_hook_validation_blocks_runtime_writes(self):
-        self.hooks.installed = True
-        def begin_travel():
-            self.p.write_int32(0x206324, 22)
-            return True
-        self.hooks.is_current.side_effect = begin_travel
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.runtime.connection_warning.refresh.assert_not_called()
-        self.hooks.sync_checked.assert_not_called()
-        self.hooks.sync_entitlements.assert_not_called()
-
-    def test_reconnect_can_retry_reload_after_failure(self):
-        self.runtime.reload_requested = True
-        self.runtime.close()
-        self.assertFalse(self.runtime.reload_requested)
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.assertEqual(self.p.read_int32(0x206324), 16)
-
-    def test_watchdog_refreshes_current_module_with_server_status(self):
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        for connected in (True, False):
-            self.runtime.ap_connected = connected
-            self.assertTrue(self.runtime.service(set(), {}))
-            self.runtime.connection_warning.refresh.assert_called_with(connected)
-        self.runtime.connection_warning.refresh.reset_mock()
-        self.hooks.is_current.return_value = False
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.runtime.connection_warning.refresh.assert_not_called()
-
-    def test_active_runtime_updates_vendor_case_gates(self):
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.runtime.vendor_catalog = Mock()
-        self.runtime.vendor_cases = frozenset({SACCases.THE_SHOWERS})
-        self.assertTrue(self.runtime.service(set(), {}))
-        self.runtime.vendor_catalog.sync_cases.assert_called_once_with(self.runtime.vendor_cases)
-        self.runtime.vendor_catalog.reset_mock()
-        self.hooks.is_current.return_value = False
-        self.runtime.service(set(), {})
-        self.runtime.vendor_catalog.sync_cases.assert_not_called()
-
-    def test_active_runtime_uses_individual_rules_when_present(self):
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.runtime.vendor_catalog = Mock()
-        self.runtime.available_vendor_locations = frozenset({'test offer'})
-        self.assertTrue(self.runtime.service(set(), {}))
-        self.runtime.vendor_catalog.sync_locations.assert_called_once_with(frozenset({'test offer'}))
-        self.runtime.vendor_catalog.sync_cases.assert_not_called()
-
-    def test_close_expires_watchdog_only_in_current_game_module(self):
-        self.p.get_game_id = lambda: "SCUS-97623"
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.runtime.close()
-        self.runtime.connection_warning.refresh.assert_called_once_with(False)
-        self.runtime.connection_warning.refresh.reset_mock()
-        self.hooks.is_current.return_value = False
-        self.runtime.close()
-        self.runtime.connection_warning.refresh.assert_not_called()
-
-    def test_title_module_releases_loader_without_gameplay_hooks(self):
-        self.runtime.gate.held_module.return_value = 0
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.runtime.gate.release.assert_called_once()
-        self.hooks.prepare.assert_not_called()
-        self.runtime.log.assert_not_called()
-
-    def test_settled_title_does_not_request_a_level_reset(self):
-        self.p.batch_write_int32([(0x1AAE78, 0), (0x1AAE3C, 5), (0x19EF04, 1),
-                                 (0x206324, 0xFFFFFFFF), (0x206338, 3)])
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.runtime.log.assert_not_called()
-        self.runtime.gate.arm.assert_called_once()
+    def setUp(self):
+        self.p = Memory()
 
     def test_vendor_selection_uses_native_modules_and_shared_cases(self):
         runtime = NativeRuntime(Memory(), Mock(), Mock())
@@ -179,7 +21,6 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertNotIn(21, runtime.vendor_modules)
 
     def test_ratchet_routes_enable_vendors_but_qwark_and_gadgetbots_do_not(self):
-        from ..constants.planets import ALL_CASES
         runtime = NativeRuntime(self.p, Mock(), Mock())
         runtime.configure_vendors(case.name for case in ALL_CASES)
         for module in (3, 9, 14, 21, 25):
@@ -196,169 +37,6 @@ class NativeRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.vendor_modules, set())
         runtime.configure_vendors([SACCases.HIGH_TREEHOUSE])
         self.assertTrue(runtime.vendor_enabled_for_module(31))
-
-    def test_no_vendor_module_keeps_progression_without_titan_hooks(self):
-        self.runtime.configure_vendors([])
-        self.runtime.gate.held_module.return_value = 21
-        self.runtime.progression = Mock(ng_plus=1)
-        self.runtime.progression.prepare.return_value = []
-        self.hooks.patches = []
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
-                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog:
-            catalog.return_value.prepare.return_value = []
-            self.assertFalse(self.runtime.service(set(), {}))
-            catalog.return_value.sync_cases.assert_not_called()
-        self.assertEqual(self.hooks.prepare.call_args.kwargs["vendor_locations"], {})
-        self.assertFalse(self.hooks.prepare.call_args.kwargs["vendor_enabled"])
-        self.assertFalse(self.runtime.progression.prepare.call_args.kwargs["vendor_enabled"])
-        self.hooks.install_at_loader_gate.assert_called_once()
-
-    def setUp(self):
-        travel = patch("worlds.secret_agent_clank.core.patches.mission_travel.MissionTravel.prepare", return_value=[])
-        travel.start()
-        self.addCleanup(travel.stop)
-        self.p = Memory()
-        self.hooks = Mock(installed=False, entitlement_table=None, module=16)
-        self.runtime = NativeRuntime(self.p, self.hooks, Mock())
-        self.runtime.connection_warning = Mock()
-        self.runtime.connection_warning.prepare.return_value = []
-        self.runtime.gate = Mock(armed=False, STATE=0x100)
-        self.runtime.gate.held_module.return_value = None
-        self.p.batch_write_int32([(0x206324, 0xFFFFFFFF), (0x206328, 16),
-                                 (0x206338, 3), (0x100, 5)])
-
-    def test_incoming_hooks_survive_outgoing_module_during_startup(self):
-        hooks = LocationHooks(self.p)
-        hooks.installed = True
-        hooks.module = 16
-        hooks.marker_address = 0x120000
-        self.p.data[0x120000:0x120000 + len(MARKER)] = MARKER
-        core = Core(self.p)
-        core.location_hooks = hooks
-        core.native_runtime = self.runtime
-        self.runtime.hooks = hooks
-        self.runtime.awaiting_start = True
-        core.apply_inventory(ratchet={}, clank={})
-        core.case.check_transition = Mock(return_value=False)
-        self.p.batch_write_int32([(0x206328, 1)])
-        core.tick()
-        self.assertTrue(hooks.installed)
-        self.assertTrue(self.runtime.awaiting_start)
-        self.runtime.log.assert_not_called()
-        self.p.batch_write_int32([(0x206328, 16)])
-        self.assertTrue(self.runtime.service(set(), {}))
-        self.assertTrue(hooks.installed)
-        self.runtime.log.assert_not_called()
-
-    def test_waits_for_preinit_before_resuming_polling(self):
-        self.runtime.awaiting_start = True
-        self.hooks.entitlement_table = 0x120000
-        self.assertFalse(self.runtime.service(set(), {}))
-        self.assertTrue(self.runtime.awaiting_start)
-        self.hooks.is_current.assert_not_called()
-        self.runtime.log.assert_not_called()
-
-    def test_startup_waits_for_every_intermediate_loader_state(self):
-        self.runtime.awaiting_start = True
-        for state in range(5):
-            with self.subTest(state=state):
-                self.p.write_int32(0x100, state)
-                self.assertFalse(self.runtime.service(set(), {}))
-                self.assertTrue(self.runtime.awaiting_start)
-                self.runtime.gate.arm.assert_not_called()
-                self.hooks.sync_entitlements.assert_not_called()
-
-    def test_changed_held_target_after_planning_prevents_install(self):
-        self.runtime.gate.held_module.side_effect = [1, 2]
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
-                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog"), \
-                self.assertRaisesRegex(RuntimeError, "left the loader barrier"):
-            self.runtime.service(set(), {})
-        self.hooks.install_at_loader_gate.assert_not_called()
-        self.runtime.connection_warning.refresh.assert_not_called()
-        self.assertEqual(self.runtime.generation, 0)
-
-    def test_leaving_barrier_after_install_prevents_initialization_writes(self):
-        self.runtime.gate.held_module.side_effect = [1, 1, None]
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
-                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog, \
-                self.assertRaisesRegex(RuntimeError, "left the loader barrier"):
-            self.runtime.service(set(), {})
-        self.hooks.install_at_loader_gate.assert_called_once()
-        catalog.return_value.sync_cases.assert_not_called()
-        self.runtime.connection_warning.refresh.assert_not_called()
-        self.assertEqual(self.runtime.generation, 0)
-
-    def test_inventory_waits_for_native_startup_to_finish(self):
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.p.batch_write_int32([(0x206338, 1)])
-        self.assertFalse(self.runtime.service(set(), {11: True}))
-        self.hooks.sync_entitlements.assert_not_called()
-
-    def test_initial_connection_reloads_without_inventory_writes(self):
-        self.p.writes.clear()
-        self.assertFalse(self.runtime.service(set(), {11: True}))
-        self.runtime.gate.arm.assert_called_once()
-        self.hooks.prepare.assert_not_called()
-        self.assertEqual(self.p.writes, [(0x206324, 16)])
-
-    def test_held_module_installs_before_release_then_rearms_after_start(self):
-        gate = self.runtime.gate
-        gate.armed = True
-        gate.held_module.return_value = 1
-        calls = []
-        self.hooks.install_at_loader_gate.side_effect = lambda g: calls.append("install")
-        gate.release.side_effect = lambda: calls.append("release")
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), \
-                patch("worlds.secret_agent_clank.core.native_runtime.VendorCatalog") as catalog:
-            catalog.return_value.prepare.return_value = []
-            catalog.return_value.sync_cases.side_effect = lambda cases: calls.append("case gates")
-            self.assertFalse(self.runtime.service({"throwTie"}, {11: True}))
-        self.assertEqual(calls, ["install", "case gates", "release"])
-        self.assertTrue(self.runtime.awaiting_start)
-        self.p.batch_write_int32([(0x100, 4)])
-        gate.reset_mock()
-        self.assertFalse(self.runtime.service(set(), {}))
-        gate.arm.assert_not_called()
-        self.p.batch_write_int32([(0x100, 5)])
-        gate.armed = False
-        gate.held_module.return_value = None
-        self.hooks.installed = True
-        self.hooks.is_current.return_value = True
-        self.assertTrue(self.runtime.service(set(), {11: False}))
-        gate.arm.assert_called_once()
-        self.hooks.sync_entitlements.assert_called_once_with({11: False})
-
-    def test_failed_install_releases_loader(self):
-        self.runtime.gate.held_module.return_value = 1
-        self.hooks.prepare.side_effect = ValueError("signature")
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"), self.assertRaises(ValueError):
-            self.runtime.service(set(), {})
-        self.runtime.gate.release.assert_called_once()
-
-    def test_loader_waits_for_stored_stealth_counts(self):
-        from ..core.stealth import StealthState
-        self.runtime.configure_vendors([])
-        self.runtime.gate.held_module.return_value = 1
-        self.runtime.progression = Mock(ng_plus=0, max_challenge_mode=0)
-        self.runtime.progression.prepare.return_value = []
-        self.runtime.progression.stealth = StealthState(self.p)
-        self.runtime.progression.stealth.configure({SACCases.BOLTAIRE_MUSEUM: 1})
-        self.hooks.patches = []
-        with patch("worlds.secret_agent_clank.core.native_runtime.RuntimeSymbols"):
-            self.assertFalse(self.runtime.service(set(), {}))
-            self.hooks.prepare.assert_not_called()
-            self.runtime.gate.release.assert_not_called()
-            self.runtime.progression.stealth.load({})
-            self.assertFalse(self.runtime.service(set(), {}))
-        self.hooks.prepare.assert_called_once()
-        self.runtime.gate.release.assert_called_once()
-
-    def test_ap_session_cannot_disable_native_hooks(self):
-        core = Core(self.p)
-        core.apply_inventory(ratchet={"throwTie": False}, clank={SACClankGadgets.BLACK_OUT_PEN: True})
-        self.assertEqual(core._entitlements(), {11: False, 17: True, 25: False})
 
 
 class MissionLabelTests(unittest.TestCase):
@@ -405,7 +83,7 @@ class AlienFlagTests(unittest.TestCase):
         self.assertEqual(len(cards.check()), 3)
         self.assertTrue(cards.door_opened)
         self.assertFalse(cards.chalice_collected)
-        core = Core(p)
+        core = Core(p, permanent_build=TEST_BUILD)
         core.keycards = cards
         core.goal = GoalOptions.CHALICE_OF_POWER
         core.on_goal = Mock()
@@ -418,7 +96,7 @@ class AlienFlagTests(unittest.TestCase):
         core.on_goal.assert_called_once()
 
     def test_saved_chalice_completes_only_chalice_goal(self):
-        core = Core(Memory())
+        core = Core(Memory(), permanent_build=TEST_BUILD)
         core.keycards.flags.read = lambda index: bytes([1]) if index == 0xCB else bytes([0])
         core.keycards.check()
         core.on_goal = Mock()

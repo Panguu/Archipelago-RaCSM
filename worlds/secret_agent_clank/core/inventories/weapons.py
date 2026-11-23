@@ -1,10 +1,6 @@
-"""Shared native GadgetData array for Ratchet and Clank weapons, tools and abilities."""
-from typing import TYPE_CHECKING
-
 from ...constants import WEAPON_ORDER
+from ...pypine import Pine
 
-if TYPE_CHECKING:
-    from ...pypine import Pine
 
 WEAPON_STRUCT_SIZE: int = 0x74
 
@@ -18,7 +14,7 @@ MOD_SLOT_COUNT    = 3
 
 
 class WeaponAddresses:
-    def __init__(self, base: int, pine: "Pine") -> None:
+    def __init__(self, base: int, pine: Pine) -> None:
         self.base = base
         self.pine = pine
 
@@ -26,7 +22,7 @@ class WeaponAddresses:
         return f"WeaponAddresses(base=0x{self.base:X})"
 
 
-def build_weapons(array_base: int | None, pine: "Pine") -> dict[str, WeaponAddresses]:
+def build_weapons(array_base: int | None, pine: Pine) -> dict[str, WeaponAddresses]:
     if array_base is None:
         return {}
     weapons: dict[str, WeaponAddresses] = {}
@@ -39,7 +35,7 @@ def build_weapons(array_base: int | None, pine: "Pine") -> dict[str, WeaponAddre
 class WeaponInventory:
     """Owned flags for the GadgetData array, with the same interface as ItemInventory."""
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.weapons: dict[str, WeaponAddresses] = {}
         self._raw_owned: dict[str, int] = {}

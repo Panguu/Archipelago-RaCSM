@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan, ram_arena
 import struct
 import unittest
 from pathlib import Path
@@ -120,10 +121,12 @@ class VendorCatalogTests(unittest.TestCase):
             progression = Progression(p)
             progression.configure({'ng_plus': ng, 'progressive_weapons': ProgressiveWeaponsOptions.AUTOMATIC})
             hooks.patches.extend(VendorCatalog(p).prepare(symbols, hooks))
-            hooks.patches.extend(progression.prepare(symbols, hooks, 3))
+            arena = ram_arena(p)
+            hooks.patches.extend(progression.prepare(symbols, 3, arena))
+            hooks.patches.extend(arena.patches)
             spans = sorted((p.address, p.address + len(p.replacement)) for p in hooks.patches)
             self.assertTrue(all(b <= c for (_, b), (c, _) in zip(spans, spans[1:])))
-            hooks._install_plan()
+            load_plan(hooks)
             if ng == 1:
                 self.check_purchase_paths(p, symbols, hooks)
             for change in reversed(hooks.patches):

@@ -7,7 +7,10 @@ from unittest.mock import Mock, patch
 from ..client import GameRuntime, GameWorker
 from ..constants import GoalOptions, MissionsOptions
 from ..core import death_sent_text, death_text
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
+from ..core.patches.identity import WrongPatchedGame
+from ..constants.missions import MISSION_COMPLETE_NAME
+from ..constants.planets import SACCases
 
 
 class TestRuntime:
@@ -95,6 +98,26 @@ class WorkerProcessTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(self.worker.process.is_alive())
 
 
+class PatchedGameWorkerTests(unittest.TestCase):
+    def test_identity_failure_drops_connection_without_restoration_or_commands(self):
+        for command in ('tick', 'items', 'sync', 'effect', 'reset_traps', 'death', 'disconnect'):
+            with self.subTest(command=command):
+                pine = Memory()
+                pine.disconnect = Mock()
+                build = {'abi': 1, 'build_id': 'test-build', 'elf_crc': '12345678', 'loader_routine': 0x1C0000, 'modules': {}}
+                with patch('worlds.secret_agent_clank.client.game_worker.Pine', return_value=pine):
+                    runtime = GameRuntime(Mock(), permanent_build=build)
+                runtime.connected = True
+                runtime.core.close = Mock()
+                runtime.core.native_runtime.verify = Mock(side_effect=WrongPatchedGame('different ISO'))
+                with self.assertRaises(WrongPatchedGame):
+                    runtime.dispatch(command, None)
+                self.assertFalse(runtime.connected)
+                runtime.core.close.assert_not_called()
+                pine.disconnect.assert_called_once()
+                self.assertEqual(pine.writes, [])
+
+
 class GameRuntimeTests(unittest.TestCase):
     def setUp(self):
         self.pine = Memory()
@@ -104,8 +127,10 @@ class GameRuntimeTests(unittest.TestCase):
         self.pine.get_game_id = Mock(return_value='SCUS-97623')
         self.events = []
         with patch('worlds.secret_agent_clank.client.game_worker.Pine', return_value=self.pine) as factory:
-            self.runtime = GameRuntime(lambda *event: self.events.append(event))
+            self.runtime = GameRuntime(lambda *event: self.events.append(event), permanent_build=TEST_BUILD)
             factory.assert_called_once_with()
+        self.runtime.core.native_runtime.verify = Mock(return_value=None)
+        self.runtime.core.native_runtime._gameplay_settled = Mock(return_value=True)
 
     def test_reconnect_uses_one_pine_and_closes_core_first(self):
         calls = []
@@ -135,6 +160,16 @@ class GameRuntimeTests(unittest.TestCase):
         self.assertFalse(self.runtime.location('unselected'))
         self.assertEqual(len(self.events), 1)
 
+    def test_connected_diagnostics_read_the_iso_startup_barrier(self):
+        self.runtime.connected = True
+        barrier = self.runtime.core.native_runtime.startup_barrier
+        self.pine.write_int32(barrier.SIGNATURE_START, 0x3C020020)
+        self.pine.writes.clear()
+        info = self.runtime.diagnostic('sac_info')
+        self.assertEqual(info['loader']['barrier_instruction'], '0x3C020020')
+        self.assertFalse(info['startup_barrier_attached'])
+        self.assertEqual(self.pine.writes, [])
+
     def test_failed_restore_still_disconnects(self):
         self.runtime.dispatch('connect', 28011)
         self.runtime.core.close = Mock(side_effect=RuntimeError('restore failed'))
@@ -151,8 +186,6 @@ class GameRuntimeTests(unittest.TestCase):
         self.pine.disconnect.assert_called_once()
 
     def test_configuration_events_and_slot_reset_keep_the_single_pine(self):
-        from ..constants.missions import MISSION_COMPLETE_NAME
-        from ..constants.planets import SACCases
         identity = ('seed', 0, 1)
         self.runtime.dispatch('configure', (identity, {
             'goal': GoalOptions.PICK_AND_MIX, 'pick_and_mix_goals': ['defeat_klunk', 'chalice_of_power'],

@@ -76,8 +76,8 @@ class StealthState:
         if not self.cases or not self.loaded or self.binding is None:
             return
         case, counter, site, replacement, address, code = self.binding
-        # Safe even during loading: never interpret a replaced module as a
-        # counter. Poll before the loader installs the next module's plan.
+        # Check the hook is still there first, so a module that's being replaced
+        # isn't read as a counter.
         if (self.pine.read_bytes(site, 4) != replacement
                 or self.pine.read_bytes(address, len(code)) != code):
             self.binding = None

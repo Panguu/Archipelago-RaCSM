@@ -1,0 +1,8 @@
+# CI reads this file; keep these exclusions aligned with .apignore.
+/.research/
+/.client_state/
+/build/
+/apworld.ignore
+*.iso
+*.rel
+*.apworld

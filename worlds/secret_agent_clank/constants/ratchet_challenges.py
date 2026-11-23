@@ -1,6 +1,4 @@
-"""Ratchet arena challenge locations.
-
-Win counters are resolved at runtime from the native arena table, which lists
+"""Win counters are resolved at runtime from the native arena table, which lists
 each case's five challenges consecutively in the order given here.
 """
 from dataclasses import dataclass

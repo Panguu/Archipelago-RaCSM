@@ -8,7 +8,7 @@ class Case:
     case_id: int
     planet: str
     operative: str
-    menu_id: "int | None" = None
+    menu_id: int | None = None
 
 
 class EventFlag(NamedTuple):

@@ -1,17 +1,14 @@
 import math
 import struct
-from typing import TYPE_CHECKING
 
 from .case_menu import ee_pointer
-
-if TYPE_CHECKING:
-    from ..pypine import Pine
+from ..pypine import Pine
 
 
 class CharacterState:
     DEAD_STATE_VALUES: frozenset[int] = frozenset()
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.state_addr:  int | None = None
         self.health_addr: int | None = None
@@ -124,8 +121,7 @@ class ActivePlayer:
             state = struct.unpack('<h', self.pine.read_bytes(player + self.state_offset, 2))[0]
             if not 0 <= state < 0x4D:
                 return None
-            # Keep the exact native state until individual Ratchet causes are
-            # verified; do not invent a drowning/falling label from health.
+            # Ratchet's death states aren't mapped to causes yet, so report the raw state.
             cause = f'died (Ratchet state 0x{state:02X})' if 0x22 <= state <= 0x2C else None
             return player, cause
         state = self.pine.read_int32(player + self.state_offset)
@@ -136,7 +132,7 @@ class ActivePlayer:
             return None
         return player, self.death_vtables.get(vtable)
 
-    def health_sample(self):
+    def _health(self):
         if self.pointer_address is None:
             return None
         player = self.pine.read_int32(self.pointer_address)
@@ -145,7 +141,11 @@ class ActivePlayer:
         health, maximum = struct.unpack("<2f", self.pine.read_bytes(player + 0x274, 8))
         if not math.isfinite(health) or not math.isfinite(maximum) or maximum <= 0:
             return None
-        return player, health
+        return player, health, maximum
+
+    def health_sample(self):
+        sample = self._health()
+        return None if sample is None else sample[:2]
 
     def kill(self):
         sample = self.health_sample()
@@ -153,3 +153,28 @@ class ActivePlayer:
             return False
         self.pine.write_int32(sample[0] + 0x274, 0)
         return True
+
+    def damage(self, percent):
+        """Take `percent` of max health, never going below 1. False if there's no player yet."""
+        sample = self._health()
+        if sample is None:
+            return False
+        player, health, maximum = sample
+        if health > 1:
+            self.pine.write_float(player + 0x274, max(1.0, health - maximum * percent / 100))
+        return True
+
+    def lower_health(self, value):
+        """False if there's no player yet."""
+        sample = self.health_sample()
+        if sample is None:
+            return False
+        if sample[1] > value:
+            self.pine.write_float(sample[0] + 0x274, value)
+        return True
+
+    def current_player(self):
+        if self.pointer_address is None:
+            return None
+        player = self.pine.read_int32(self.pointer_address)
+        return player if ee_pointer(player, 0x348) else None

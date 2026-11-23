@@ -1,4 +1,3 @@
-"""Word packing, jump/branch encoding, and the Patch record used by every patch plan."""
 import struct
 from dataclasses import dataclass
 
@@ -23,6 +22,11 @@ def jump(address, link=False):
 
 def branch(source, target):
     return 0x10000000 | (((target - source - 4) // 4) & 0xFFFF)
+
+
+def check(condition, message):
+    if not condition:
+        raise RuntimeError(message)
 
 
 @dataclass(frozen=True)

@@ -1,4 +1,3 @@
-"""Exact retail no-op debug stubs eligible for reclaimed hook storage."""
 from dataclasses import dataclass
 
 from ...constants import DebugDrawFunctions
@@ -30,7 +29,6 @@ class DebugStub:
     signature: bytes
 
 
-# Order is also the frontend STUBS order in StartingCase.
 DEBUG_STUBS = (
     DebugStub(DebugDrawFunctions.PRINT_TEXT, TEXT_SIGNATURE),
     DebugStub(DebugDrawFunctions.PRINT_VECTOR_TEXT, VECTOR_SIGNATURE),

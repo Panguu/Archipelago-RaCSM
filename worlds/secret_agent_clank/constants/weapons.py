@@ -18,6 +18,13 @@ class SACRatchetWeapons:
     BOLTTRANSFER      = "Bolt Extractor (Ratchet)"
     RYNO              = "RYNO (Ratchet)"
 
+@dataclass(frozen=True)
+class SACRatchetWrenchWeapons:
+    WRENCH = "Wrench (Ratchet)"
+    FIREBOMBWRENCHMOD = "Firebomb Wrench Mod (Ratchet)"
+    TRIPLEWAVEWRENCHMOD = "Triple Wave Wrench Mod (Ratchet)"
+    SHOCKCRYSTALWRENCHMOD = "Shock Crystal Wrench Mod (Ratchet)"
+    WILDBURSTWRENCHMOD = "Wild Burst Wrench Mod (Ratchet)"
 
 @dataclass(frozen=True)
 class SACProgressiveRatchetWeapons:
@@ -36,9 +43,8 @@ class SACProgressiveRatchetWeapons:
 
 @dataclass(frozen=True)
 class SACTitanWeapons:
-    """Fully-upgraded (NG+ Titan Vendor) counterpart to SACRatchetWeapons -- only the
-    weapons with a Titan tier get a member here, matched by shared attribute name to
-    the SACRatchetWeapons entry it upgrades (see constants/weapon_progression.py)."""
+    """The NG+ Titan upgrades, for the Ratchet weapons that have one. Each shares its
+    attribute name with the SACRatchetWeapons entry it upgrades."""
     SHOCKROCKET  = "Titan Electro Rocket (Ratchet)"
     PLASMAWHIP   = "Titan Plasma Cord (Ratchet)"
     PORKBOMB     = "Titan Meat Mortar (Ratchet)"

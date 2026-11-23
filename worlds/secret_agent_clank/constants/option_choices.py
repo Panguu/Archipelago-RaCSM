@@ -52,10 +52,15 @@ class SkillPointsOptions:
 
 @dataclass(frozen=True)
 class InfobotsOptions:
-    PLANETS = 0
     CASES = 1
     PROGRESSIVE_PLANET = 2
-    CHARACTER_UNLOCKS = 3
+
+
+@dataclass(frozen=True)
+class RingLinkBehaviorOptions:
+    ITEMS = 0
+    ITEMS_AND_TRAPS = 1
+    NEITHER = 2
 
 
 @dataclass(frozen=True)
@@ -85,3 +90,10 @@ class WeaponLevelChecksOptions:
     LEVEL_8 = 2
     LEVEL_4_AND_8 = 3
     ALL = 4
+
+@dataclass(frozen=True)
+class ProgressiveWrenchOptions:
+    OFF = 0
+    ALL_PROGRESSIVE = 1
+    START_WITH_WRENCH = 2
+    WRENCH_AS_ITEM = 3

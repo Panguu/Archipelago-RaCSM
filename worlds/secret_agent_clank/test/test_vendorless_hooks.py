@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan
 import unittest
 from unittest.mock import patch
 
@@ -37,7 +38,7 @@ class VendorlessHooksTests(unittest.TestCase):
         self.assertEqual(hooks.tables, {})
         self.assertTrue(all(not (edit.address < storage + 352 and edit.address + len(edit.replacement) > storage + 152)
                             for edit in hooks.patches))
-        hooks._install_plan()
+        load_plan(hooks)
         for slot in range(40):
             self.p.write_int32(self.base + slot * 0x74 + 0x70, 7)
         for site in (self.load + 0x2F0, self.restart + 0x12C):
@@ -60,7 +61,7 @@ class VendorlessHooksTests(unittest.TestCase):
                    side_effect=fake_storage(storage, bytes(self.p.data[storage:storage + 352]))):
             hooks.prepare(self.symbols, pickup_locations={}, vendor_locations={},
                           entitlements={2: False, 3: True}, vendor_enabled=False)
-        hooks._install_plan()
+        load_plan(hooks)
         for slot in range(40):
             self.p.write_int32(self.base + slot * 0x74 + 0x70, 7)
         hooks.sync_entitlements({2: False, 3: True})
@@ -87,7 +88,7 @@ class VendorlessHooksTests(unittest.TestCase):
         hooks.prepare(self.symbols, pickup_locations={2: "Test pickup"}, vendor_locations={},
                       entitlements={2: False}, vendor_enabled=False)
         self.assertEqual(set(hooks.tables), {"pickup"})
-        hooks._install_plan()
+        load_plan(hooks)
         target = (self.p.read_int32(give + 0x50) & 0x3FFFFFF) << 2
         cpu = CPU(self.p)
         cpu.r[4:7] = [2, 1, 1]

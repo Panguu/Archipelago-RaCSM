@@ -1,4 +1,3 @@
-"""Native Operatives -> Cases menu, separate from mission completion flags."""
 import struct
 from dataclasses import dataclass
 

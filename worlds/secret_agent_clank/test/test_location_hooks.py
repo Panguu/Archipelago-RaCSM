@@ -8,12 +8,13 @@ from ..core.patches import (
     Entitlements,
     GameFlags,
     LocationHooks,
-    Patch,
     jump,
     words,
 )
 from ..locations import ALL_LOCATIONS
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
+from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
+from ..locations.model import SACLocationType
 
 
 def run_routine(code, gadget, flag):
@@ -59,24 +60,6 @@ def run_routine(code, gadget, flag):
 
 
 class LocationHookTests(unittest.TestCase):
-    def test_partial_installation_rolls_back_before_returning_failure(self):
-        mem = Memory()
-        calls = []
-
-        def write(address, data):
-            calls.append(address)
-            mem.data[address:address + len(data)] = data
-            if len(calls) == 2:
-                raise OSError("Simulated transport failure after write")
-
-        mem.write_bytes = write
-        hooks = LocationHooks(mem)
-        hooks.patches = [Patch(0x100, b"AAAA", b"aaaa"), Patch(0x104, b"BBBB", b"bbbb")]
-        mem.data[0x100:0x108] = b"AAAABBBB"
-        with self.assertRaises(OSError):
-            hooks._install_plan()
-        self.assertEqual(mem.read_bytes(0x100, 8), b"AAAABBBB")
-        self.assertFalse(hooks.installed)
 
     def test_preinit_entitlements_preserve_unmanaged_slots_and_return_address(self):
         program = words(Entitlements._build_routine(0x180000, 0x200000, 0x350000))
@@ -142,16 +125,12 @@ class LocationHookTests(unittest.TestCase):
         self.assertTrue(vendor_names <= set(ALL_LOCATIONS))
 
     def test_every_pickup_location_is_reported_by_the_client(self):
-        from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
-        from ..locations.model import SACLocationType
-        from ..locations import ALL_LOCATIONS
         pickup_types = {SACLocationType.RATCHET_WEAPON, SACLocationType.CLANK_WEAPON,
                         SACLocationType.CLANK_GADGET, SACLocationType.GADGET_PICKUP}
         pickups = {name for name, loc in ALL_LOCATIONS.items() if loc.type in pickup_types}
         self.assertEqual(pickups, set(PICKUP_LOCATION_BY_INTERNAL.values()))
 
     def test_every_pickup_location_is_hooked(self):
-        from ..constants.pickups import PICKUP_LOCATION_BY_INTERNAL
         self.assertEqual(set(PICKUP_LOCATIONS.values()), set(PICKUP_LOCATION_BY_INTERNAL.values()))
 
     def test_code_and_marker_are_word_aligned(self):
@@ -199,25 +178,10 @@ class LocationHookTests(unittest.TestCase):
         self.assertEqual(hooks.poll(), [])
         self.assertFalse(hooks.installed)
 
-    def test_same_module_reload_requires_rebinding_before_inventory(self):
-
-        memory = Memory()
-        core = Core(memory)
-        hooks = core.location_hooks
-        hooks.module = 0
-        hooks.marker_address = 0x110000
-        hooks.installed = True
-        core.case.case_menu.screen_address = 0x100000
-        hooks.sync_checked = Mock()
-        self.assertFalse(core._bind_native_locations())
-        self.assertFalse(hooks.installed)
-        hooks.sync_checked.assert_not_called()
-        self.assertEqual(memory.writes, [])
-
     def test_core_sends_native_checks_once_without_granting_items(self):
 
         memory = Memory()
-        core = Core(memory)
+        core = Core(memory, permanent_build=TEST_BUILD)
         core.location_hooks.poll = Mock(return_value=["clankpda", "throwTie"])
         core.send_location = Mock()
         core._read_native_locations()

@@ -17,14 +17,17 @@ from Options import (
 from .constants import (
     OPTIONAL_OPERATIVES,
     STEALTH_MAX_PER_CASE,
+    ALL_TRAPS,
     TRAP_DURATIONS,
     ClankSkinOptions,
+    ProgressiveWrenchOptions,
     GoalOptions,
     InfobotsOptions,
     MissionsOptions,
     ProgressiveWeaponsOptions,
     QwarkSkinOptions,
     RatchetSkinOptions,
+    RingLinkBehaviorOptions,
     SkillPointsOptions,
     WeaponLevelChecksOptions,
     SACOperatives,
@@ -151,10 +154,8 @@ class SendScoutedLocations(DefaultOnToggle):
 class Infobots(Choice):
     """Choose how access is unlocked."""
     display_name = "Infobots"
-    option_planets = InfobotsOptions.PLANETS
     option_cases = InfobotsOptions.CASES
     option_progressive_planet = InfobotsOptions.PROGRESSIVE_PLANET
-    option_character_unlocks = InfobotsOptions.CHARACTER_UNLOCKS
     default = InfobotsOptions.CASES
 
 
@@ -287,9 +288,22 @@ class RatchetNanotechChecks(Toggle):
     display_name = "Ratchet Nanotech Locations"
 
 
-class ProgressiveWrench(Toggle):
-    """Adds 5 Progressive Wrench items to the pool (Ratchet only) each copy upgrades the wrench a level. Wrench starts as disabled if this is turned on."""
+class ProgressiveWrench(Choice):
+    """Shuffles Ratchet's wrench and its four mods into the pool. Requires Ratchet.
+
+    - Off: the wrench works as normal.
+    - All Progressive: 5 Progressive Wrench items. The first unlocks the wrench, each after it the next mod.
+    - Start With Wrench: as All Progressive, but you start with the first copy.
+    - Wrench As Item: the wrench and each mod are separate items, found in any order.
+
+    Until the wrench is received, Ratchet can't use it.
+    """
     display_name = "Progressive Wrench"
+    option_off = ProgressiveWrenchOptions.OFF
+    option_all_progressive = ProgressiveWrenchOptions.ALL_PROGRESSIVE
+    option_start_with_wrench = ProgressiveWrenchOptions.START_WITH_WRENCH
+    option_wrench_as_item = ProgressiveWrenchOptions.WRENCH_AS_ITEM
+    default = ProgressiveWrenchOptions.OFF
 
 
 class WeaponXPMultiplier(Range):
@@ -324,6 +338,32 @@ class DeathAmnesty(Range):
     default = 0
 
 
+class RingLink(Toggle):
+    """Share bolt gains and losses with every player who has Ring Link on, in any game that supports it.
+    One bolt is one ring. Your bolts never go below 0."""
+    display_name = "Ring Link"
+
+
+class TrapLink(Toggle):
+    """Share traps with every player who has Trap Link on, in any game that supports it. When you receive a trap,
+    the other players get the closest trap their game has, and theirs are sent to you the same way."""
+    display_name = "Trap Link"
+
+
+class RingLinkBehavior(Choice):
+    """Which bolt changes made by received items are shared over Ring Link. Bolts you pick up or spend in game
+    are always shared. Starting bolts are never shared.
+
+    - Items: Bolts items are shared, Gadgetron Debt Traps are not.
+    - Items and Traps: both Bolts items and Gadgetron Debt Traps are shared.
+    - Neither: only bolts you pick up or spend in game are shared."""
+    display_name = "Ring Link Behavior"
+    option_items = RingLinkBehaviorOptions.ITEMS
+    option_items_and_traps = RingLinkBehaviorOptions.ITEMS_AND_TRAPS
+    option_neither = RingLinkBehaviorOptions.NEITHER
+    default = RingLinkBehaviorOptions.ITEMS
+
+
 class StartingWeapons(Range):
     """Number of random Ratchet weapons the player begins the game with."""
     display_name = "Starting Weapons"
@@ -349,7 +389,7 @@ class StartingBolts(Range):
 
 
 class TrapChance(Range):
-    """Percent chance for each filler item to be replaced with a trap instead of Bolts."""
+    """Percent chance for each filler item (Bolts, Nanotech XP or Weapon XP) to be a trap instead."""
     display_name = "Trap Chance"
     range_start = 0
     range_end = 100
@@ -361,12 +401,12 @@ class TrapWeight(ItemDict):
     display_name = "Trap Weight"
     min = 0
     max = 100
-    valid_keys = TRAP_DURATIONS.keys()
-    default = dict.fromkeys(TRAP_DURATIONS.keys(), 1)
+    valid_keys = ALL_TRAPS
+    default = dict.fromkeys(ALL_TRAPS, 1)
 
 
 class TrapDuration(OptionCounter):
-    """How many seconds each trap type stays active once triggered."""
+    """How many seconds each trap type stays active once triggered. Gadgetron Debt, One HP and Damage are instant, so they have no duration."""
     display_name = "Trap Duration"
     min = 1
     max = 300
@@ -382,6 +422,9 @@ class SecretAgentClankOptions(PerGameCommonOptions):
     start_inventory_from_pool: StartInventoryPool
     death_link: DeathLink
     death_amnesty: DeathAmnesty
+    ring_link: RingLink
+    ring_link_behavior: RingLinkBehavior
+    trap_link: TrapLink
     all_missions: Missions
     all_cutscenes: AllCutscenes
     skill_points: SkillPoints
@@ -421,6 +464,18 @@ class SecretAgentClankOptions(PerGameCommonOptions):
         return bool(self.keycards_and_alien_codes)
 
 
+# Options sent in slot_data, for the client and for Universal Tracker to regenerate from.
+SLOT_DATA_OPTIONS = (
+    "infobots", "death_link", "death_amnesty", "ring_link", "ring_link_behavior", "trap_link", "all_missions", "all_cutscenes",
+    "skill_points", "random_skill_points", "skill_point_count", "keycard_hunt", "keycards_and_alien_codes",
+    "send_scouted_locations", "goal", "pick_and_mix_goals", "progressive_wrench", "progressive_weapons",
+    "weapon_level_checks", "nanotech_checks", "ratchet_nanotech_checks", "stealth_takedown_checks",
+    "weapon_xp_multiplier", "health_xp_multiplier", "bolt_multiplier", "ng_plus", "progressive_challenge_mode",
+    "starting_weapons", "starting_gadgets", "starting_bolts", "clank_skin", "ratchet_skin", "qwark_skin",
+    "trap_chance", "trap_weight", "trap_duration",
+)
+
+
 sac_option_groups = [
     OptionGroup("SAC Goal Options", [Goal, PickAndMixGoals]),
     OptionGroup("SAC Game Options", [
@@ -430,7 +485,10 @@ sac_option_groups = [
         ProgressiveChallengeMode,
         WeaponXPMultiplier,
         HealthXPMultiplier,
-        BoltMultiplier
+        BoltMultiplier,
+        RingLink,
+        RingLinkBehavior,
+        TrapLink,
     ]),
     OptionGroup("SAC Item Options", [
         KeycardHunt,

@@ -1,4 +1,3 @@
-"""Slot layout of the native GadgetData array shared by Ratchet and Clank, and the internal slot names."""
 from enum import IntEnum
 
 WEAPON_ORDER: list["str | None"] = [

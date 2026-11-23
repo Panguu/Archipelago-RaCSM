@@ -1,7 +1,6 @@
 from .planets import SACCases
 
 STEALTH_MAX_PER_CASE = 10
-"""Highest stealth_takedown_checks value."""
 
 
 class SACStealth:

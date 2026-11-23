@@ -6,6 +6,7 @@ from NetUtils import NetworkItem
 
 from ..core import ItemNotifications, death_text, receipt_text, sent_text
 from .test_runtime import Memory
+from ..client.context import SACContext
 
 
 class NotificationTests(unittest.TestCase):
@@ -59,7 +60,6 @@ class SentNotificationTests(unittest.TestCase):
         self.assertIn(b'\x90\x0d', sent_text('Hookshot', 'Bob'))
 
     def test_only_our_items_for_other_players_are_shown(self):
-        from ..client.context import SACContext
         ctx = SimpleNamespace(slot=1, _worker=SimpleNamespace(request=Mock(return_value=None)),
                               player_names={1: "Me", 2: "Bob"},
                               item_names=SimpleNamespace(lookup_in_slot=lambda item, slot: f"item{item}@{slot}"))

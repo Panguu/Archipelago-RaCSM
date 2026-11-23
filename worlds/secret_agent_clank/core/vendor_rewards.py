@@ -1,7 +1,6 @@
-"""Refresh scouted vendor cosmetics without changing native transactions."""
-from importlib.resources import files
+from .patches import VendorPresentation
 
-from .patches import VendorIconPreview, VendorPresentation
+AP_ICON_ID = 73
 
 
 class VendorRewards:
@@ -9,16 +8,11 @@ class VendorRewards:
         self.pine, self.vendor, self.log = pine, vendor, log
         self.text = VendorPresentation(pine)
         self.scouts = None
-        self.icon = VendorIconPreview(pine)
         self.warned = False
         self.last_text = None
         self.rows = {}
-        root = files(__package__.rsplit(".", 1)[0]).joinpath("icon")
-        self.indices = root.joinpath("archipelago-icon.indices").read_bytes()
-        self.palette = root.joinpath("archipelago-icon.clut").read_bytes()
 
     def invalidate(self):
-        self.icon = VendorIconPreview(self.pine)
         self.last_text = None
         self.rows.clear()
         self.warned = False
@@ -31,12 +25,10 @@ class VendorRewards:
                 address = pointer + row.index * 0x1C
                 original = self.rows.get(address)
                 if (original is not None and original[0] == (row.node_type, row.weapon_id, row.mod_id)
-                        and row.icon == self.icon.ICON_ID):
+                        and row.icon == AP_ICON_ID):
                     self.pine.write_int32(address + 4, original[1])
         if self.last_text is not None and self.text.mailbox is not None and not self.pine.read_int32(self.text.timer):
             self.pine.write_int32(self.text.mailbox, 0)
-        if self.icon.installed:
-            self.icon.restore()
         self.last_text = None
         self.rows.clear()
 
@@ -53,25 +45,17 @@ class VendorRewards:
             pointer, _count, selected = header
             rows = self.vendor.read_items()
             rewards = [(row, self.scouts.for_row(row)) for row in rows]
-            ap_rows = any(row.node_type in (0, 3, 4) for row in rows)
-            if not ap_rows and self.icon.installed:
-                self.icon.restore()
-                self.rows.clear()
-            if ap_rows and any(row.icon == self.icon.ICON_ID or reward is not None
-                               for row, reward in rewards) and not self.icon.installed:
-                self.icon.prepare(symbols, indices=self.indices, palette=self.palette, selected_only=False)
-                self.icon.apply()
             if self.vendor._native_header() != header:
                 return
             for row, reward in rewards:
                 address = pointer + row.index * 0x1C
                 identity = (row.node_type, row.weapon_id, row.mod_id)
                 old = self.rows.get(address)
-                if reward is not None and self.icon.installed:
-                    if row.icon != self.icon.ICON_ID:
+                if reward is not None:
+                    if row.icon != AP_ICON_ID:
                         self.rows[address] = (identity, row.icon)
-                        self.pine.write_int32(address + 4, self.icon.ICON_ID)
-                elif old is not None and old[0] == identity and row.icon == self.icon.ICON_ID:
+                        self.pine.write_int32(address + 4, AP_ICON_ID)
+                elif old is not None and old[0] == identity and row.icon == AP_ICON_ID:
                     self.pine.write_int32(address + 4, old[1])
                     self.rows.pop(address, None)
             entry = next(((row, reward) for row, reward in rewards if row.index == selected), None)

@@ -19,6 +19,8 @@ from ..core.patches import Progression
 from ..rules import CLANK_ENEMY_CASES
 from ..world import SecretAgentClankWorld
 from .test_runtime import Memory
+from ..rules.nanotech import nanotech_cases_required
+from ..rules.nanotech import ratchet_nanotech_cases_required
 
 
 class ClankNativeNanotechTests(unittest.TestCase):
@@ -146,11 +148,9 @@ class NanotechTests(unittest.TestCase):
         self.assertFalse(reachable(26))
 
     def test_tiers_cap_at_available_cases(self):
-        from ..rules.nanotech import nanotech_cases_required
         self.assertEqual([nanotech_cases_required(level) for level in (16, 25, 26, 60, 61, 85)], [1, 1, 2, 5, 5, 7])
 
     def test_ratchet_case_count_tiers(self):
-        from ..rules.nanotech import ratchet_nanotech_cases_required
         self.assertEqual([ratchet_nanotech_cases_required(level) for level in (21, 35, 36, 60, 61, 90)],
                          [1, 1, 2, 3, 3, 5])
         mw = setup_multiworld(SecretAgentClankWorld, options={

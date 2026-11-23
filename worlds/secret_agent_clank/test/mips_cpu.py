@@ -1,4 +1,3 @@
-"""Small instruction interpreter for native watchdog regression tests."""
 import struct
 
 
@@ -11,6 +10,7 @@ class CPU:
         self.r[31], self.r[29] = self.STOP, 0x1FF0000
         self.calls = []
         self.lo = 0
+        self.hi = 0
         self.f = [0] * 32
 
     def float(self, register):
@@ -51,6 +51,11 @@ class CPU:
                 elif fn == 0x19: self.lo = (self.r[rs] * self.r[rt]) & 0xFFFFFFFF
                 elif fn == 0x18: self.lo = (self.r[rs] * self.r[rt]) & 0xFFFFFFFF
                 elif fn == 0x12: self.r[rd] = self.lo
+                elif fn == 0x10: self.r[rd] = self.hi
+                elif fn == 0x1B:
+                    divisor = self.r[rt]
+                    self.lo, self.hi = (divmod(self.r[rs], divisor) if divisor
+                                        else (0xFFFFFFFF, self.r[rs]))
                 elif fn == 0x0A:
                     if self.r[rt] == 0: self.r[rd] = self.r[rs]
                 elif fn == 0x0B:

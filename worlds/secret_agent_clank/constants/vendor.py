@@ -1,6 +1,4 @@
-"""SAC's single shop, reached from Clank's pause menu.
-
-Base offers live here; weapon mods and Titan/Proto upgrades are in weapon_mods.py and
+"""Base offers live here; weapon mods and Titan/Proto upgrades are in weapon_mods.py and
 weapon_progression.py. Every purchase is named by its SACVendor constant.
 """
 from dataclasses import dataclass

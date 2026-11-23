@@ -1,4 +1,3 @@
-"""Read-only Clank and Ratchet progression; never awards checks or changes XP."""
 import struct
 from bisect import bisect_right
 from dataclasses import dataclass
@@ -65,7 +64,8 @@ def read_nanotech(pine, symbols, operative):
     hud = struct.unpack('<f', pine.read_bytes(hud_address, 4))[0] if hud_address else None
     if pine.batch_read_int32(addresses) != before or pine.read_int32(pointer) != save:
         raise ValueError("Level changed during read; try again after loading")
-    return dict(module=before[0], saved_xp=xp, challenge_mode=ng, xp_nanotech=rows[index][2],
+    return dict(module=before[0], saved_xp=xp, xp_address=save + native.save_offset,
+                level_xp=rows[index][1], challenge_mode=ng, xp_nanotech=rows[index][2],
                 ng_cap=rows[counts[0] - 1][2], ng_plus_cap=rows[counts[1] - 1][2],
                 next_xp=rows[index + 1][1] if index + 1 < count else None,
                 hud_max=hud)

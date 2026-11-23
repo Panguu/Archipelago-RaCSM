@@ -1,14 +1,11 @@
-from typing import TYPE_CHECKING
 
 from .address_maps import QUICK_SELECT_ADDRESS, QUICK_SELECT_SLOT_COUNT
-
-if TYPE_CHECKING:
-    from ..pypine import Pine
+from ..pypine import Pine
 
 
 class QuickSelectState:
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
 
     @property

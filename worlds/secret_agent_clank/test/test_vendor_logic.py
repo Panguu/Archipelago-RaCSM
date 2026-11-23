@@ -12,12 +12,12 @@ from ..world import SecretAgentClankWorld
 from ..client.vendor_scouts import VendorScouts
 from ..core.patches import VendorCatalog
 from ..core import Core
-from .test_runtime import Memory
+from .test_runtime import TEST_BUILD, Memory
 
 
 class VendorLogicTests(unittest.TestCase):
     def test_exported_rules_match_reachability_across_inventory_changes(self):
-        for mode in range(4):
+        for mode in ("cases", "progressive_planet"):
             for progressive in range(3):
                 with self.subTest(mode=mode, progressive=progressive):
                     mw = setup_multiworld(SecretAgentClankWorld, seed=12345, options={
@@ -57,7 +57,7 @@ class VendorLogicTests(unittest.TestCase):
         names = [name for name in names if name != SACClankGadgets.JETBOOTS]
         self.assertNotIn(loc.name, logic.available(names))
         self.assertIn(loc.name, logic.available(names + [SACClankGadgets.JETBOOTS]))
-        core = Core(Memory())
+        core = Core(Memory(), permanent_build=TEST_BUILD)
         core.vendor_logic = logic
         core.apply_inventory(ratchet={}, clank={}, received_names=names)
         self.assertNotIn(loc.name, core.native_runtime.available_vendor_locations)

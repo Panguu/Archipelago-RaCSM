@@ -1,5 +1,5 @@
 import struct
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 from .address_maps import VENDOR_ITEM_MAX_COUNT, VENDOR_ITEM_STRIDE
 from .address_maps.ps2 import (
@@ -10,9 +10,7 @@ from .address_maps.ps2 import (
     _ITEM_OFFSET_WEAPON_ID,
 )
 from ..constants import WEAPON_ORDER
-
-if TYPE_CHECKING:
-    from ..pypine import Pine
+from ..pypine import Pine
 
 
 class VendorItem(NamedTuple):
@@ -33,7 +31,7 @@ class VendorSnapshot(NamedTuple):
 
 
 def purchased_base_item(before: VendorSnapshot, after: VendorSnapshot) -> str | None:
-    """Require a paid, disappearing base-item offer; inventory is not evidence."""
+    """The base item just bought: its price was paid and the purchase flag set."""
     row = next((r for r in before.rows if r.index == before.selected_index), None)
     if row is None or row.node_type != 0 or row.weapon_name is None:
         return None
@@ -46,7 +44,7 @@ def purchased_base_item(before: VendorSnapshot, after: VendorSnapshot) -> str | 
 
 class VendorState:
 
-    def __init__(self, pine: "Pine") -> None:
+    def __init__(self, pine: Pine) -> None:
         self.pine = pine
         self.menu_addr: int | None = None
         self.items_addr: int | None = None
@@ -123,12 +121,6 @@ class VendorState:
             return None
         return pointer, count, selected
 
-    def selected_item(self) -> VendorItem | None:
-        header = self._native_header()
-        if header is None:
-            return None
-        return next((row for row in self.read_items() if row.index == header[2]), None)
-
     @property
     def state(self) -> int:
         """32-bit native pause-screen enum; zero when unbound."""
@@ -179,32 +171,6 @@ class VendorState:
                 weapon_id=weapon_id, weapon_name=weapon_name, mod_id=mod_id,
             ))
         return items
-
-    def write_item(
-        self,
-        index: int,
-        weapon_id: int,
-        mod_id: int = 0,
-        node_type: int = 3,
-        icon: int = 51,
-        active: bool = True,
-    ) -> None:
-        if self.header_addr is not None:
-            header = self._native_header()
-            if header is None:
-                return
-            self.items_addr, count, _selected = header
-            if not 0 <= index < count:
-                raise ValueError("Native vendor capacity is unverified; only existing rows may be edited")
-        if self.items_addr is None:
-            return
-        if not (0 <= index < VENDOR_ITEM_MAX_COUNT):
-            raise ValueError(f"index must be 0-{VENDOR_ITEM_MAX_COUNT - 1}, got {index}")
-        base = self.items_addr + index * VENDOR_ITEM_STRIDE
-        values = (1 if active else 0, icon, node_type, weapon_id, mod_id)
-        self.pine.batch_write_int32(list(zip(
-            (base + off for off in self._FIELDS), values,
-        )))
 
     def __repr__(self) -> str:
         return (

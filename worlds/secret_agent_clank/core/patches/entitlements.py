@@ -1,4 +1,3 @@
-"""AP ownership snapshot applied before native object initialization."""
 from . import mips as m
 from .asm import jump, packed
 from .patch import Patch
@@ -32,7 +31,6 @@ class Entitlements(Patch):
         return self
 
     def read(self):
-        """Return the ownership snapshot and object-init invocation count."""
         if self.table is None:
             raise RuntimeError("Prepare Entitlements before reading")
         data = self.pine.read_bytes(self.table, 41)
@@ -42,7 +40,7 @@ class Entitlements(Patch):
 
     @staticmethod
     def _build_routine(table, gadget_base, fallback):
-        """Apply managed AP ownership immediately before native object init."""
+        # Copy AP ownership into the gadget list, then continue into the game's object init.
         owned = gadget_base + GADGET_OWNED_OFFSET
         return packed([
             *m.li32(m.T0, table),                          # t0 = table

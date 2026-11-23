@@ -63,8 +63,8 @@ ALL_CASES: tuple[Case, ...] = (
     Case(SACCases.ASYANICA_ROOFTOPS, 7, SACPlanets.ASYANICA, SACOperatives.CLANK),
     Case(SACCases.GLACIARA_SKI_SLOPES, 8, SACPlanets.GLACIARA, SACOperatives.SPECIAL_MISSIONS, menu_id=10),
     Case(SACCases.THE_MESS_HALL, 9, SACPlanets.PRISON_PLANET, SACOperatives.RATCHET, menu_id=12),
-    Case(SACCases.AZCOTAL_ALLEY, 10, SACPlanets.GLACIARA, SACOperatives.CLANK),
-    Case(SACCases.GONDOLA_ASCENT, 11, SACPlanets.GLACIARA, SACOperatives.CLANK),
+    Case(SACCases.AZCOTAL_ALLEY, 10, SACPlanets.RIONOSIS, SACOperatives.CLANK),
+    Case(SACCases.GONDOLA_ASCENT, 11, SACPlanets.RIONOSIS, SACOperatives.CLANK),
     Case(SACCases.SUCK_AND_JIVE, 12, SACPlanets.RIONOSIS, SACOperatives.QWARK),
     Case(SACCases.HIGH_ROLLERS_CASINO, 13, SACPlanets.CASINO, SACOperatives.CLANK),
     Case(SACCases.THE_EXERCISE_YARD, 14, SACPlanets.PRISON_PLANET, SACOperatives.RATCHET),
@@ -72,7 +72,7 @@ ALL_CASES: tuple[Case, ...] = (
     Case(SACCases.VENANTONIO_LABS, 16, SACPlanets.VENANTONIO, SACOperatives.CLANK),
     Case(SACCases.VENANTONIO_CANALS, 17, SACPlanets.VENANTONIO, SACOperatives.SPECIAL_MISSIONS),
     Case(SACCases.MADAM_BUTTERQWARK, 18, SACPlanets.VENANTONIO, SACOperatives.QWARK),
-    Case(SACCases.GALACTIC_BOLT_RESERVE, 19, SACPlanets.VENANTONIO, SACOperatives.CLANK),
+    Case(SACCases.GALACTIC_BOLT_RESERVE, 19, SACPlanets.FORT_SPROCKET, SACOperatives.CLANK),
     Case(SACCases.INSIDE_THE_A_EYE, 20, SACPlanets.FORT_SPROCKET, SACOperatives.GADGETBOTS),
     Case(SACCases.THE_SHOWERS, 21, SACPlanets.PRISON_PLANET, SACOperatives.RATCHET),
     Case(SACCases.SPACESHIP_GRAVEYARD, 22, SACPlanets.SPACESHIP_GRAVEYARD, SACOperatives.CLANK),
@@ -81,7 +81,7 @@ ALL_CASES: tuple[Case, ...] = (
     Case(SACCases.PRISON_BREAKOUT, 25, SACPlanets.PRISON_PLANET, SACOperatives.RATCHET),
     Case(SACCases.DAMS_EDGE_HYDRANO, 26, SACPlanets.HYDRANO, SACOperatives.SPECIAL_MISSIONS),
     Case(SACCases.A_FICTION_FULL_OF_DOLLARS, 27, SACPlanets.HYDRANO, SACOperatives.QWARK),
-    Case(SACCases.BULKHEAD_LOCK, 28, SACPlanets.FORT_SPROCKET, SACOperatives.GADGETBOTS),
+    Case(SACCases.BULKHEAD_LOCK, 28, SACPlanets.HYDRANO, SACOperatives.GADGETBOTS),
     Case(SACCases.UNDERWATER_BUNKER, 29, SACPlanets.HYDRANO, SACOperatives.CLANK),
     Case(SACCases.KLUNKS_LAIR, 30, SACPlanets.HYDRANO, SACOperatives.CLANK),
 )
@@ -101,9 +101,6 @@ CASES_BY_OPERATIVE: dict[str, tuple[Case, ...]] = {
     operative: tuple(case for case in ALL_CASES if case.operative == operative) for operative in OPERATIVE_NAMES
 }
 
-PLANET_ACCESS_ITEM_NAME: dict[str, str] = {
-    planet: f"{planet} Access" for planet in PLANET_NAMES[1:]
-}
 PROGRESSIVE_PLANET_ITEM_NAME: dict[str, str] = {
     planet: f"Progressive {planet}" for planet in PLANET_NAMES
 }

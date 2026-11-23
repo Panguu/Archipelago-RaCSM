@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 from ..constants import SACTraps
 from ..core import RATCHET_PACK_BIT, TRAP_BITS, RuntimeSymbols, Traps
+from ..core.address_maps import BOLTS_ADDRESS
 from .test_runtime import Memory
 
 
@@ -86,6 +87,14 @@ class TrapTests(unittest.TestCase):
         self.assertEqual(self.traps.managed, 0)
         self.traps.address.return_value = None
         self.assertFalse(self.traps.reset({}))
+
+    def test_gadgetron_debt_takes_eight_percent_of_bolts(self):
+        for bolts, left in ((10_000, 9_200), (12_345, 11_358), (12, 12), (0, 0)):
+            with self.subTest(bolts=bolts):
+                self.memory.write_int32(BOLTS_ADDRESS, bolts)
+                self.assertEqual(self.traps.gadgetron_debt(), bolts - left)
+                self.assertEqual(self.memory.read_int32(BOLTS_ADDRESS), left)
+        self.assertNotIn(SACTraps.GADGETRON_DEBT, TRAP_BITS)  # not a timed cheat
 
     def test_ratchet_pack_survives_trap_expiry_and_restore(self):
         self.memory.write_int32(0x100000, 1 << 12)

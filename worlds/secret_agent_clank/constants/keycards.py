@@ -1,4 +1,3 @@
-"""Keycard locations and their bits in native flag 0xAA."""
 from dataclasses import dataclass
 
 

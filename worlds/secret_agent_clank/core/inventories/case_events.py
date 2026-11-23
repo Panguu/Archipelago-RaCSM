@@ -1,16 +1,13 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
 
 from ...constants import EventFlag
-
-if TYPE_CHECKING:
-    from ...pypine import Pine
+from ...pypine import Pine
 
 
 class CaseEventInventory:
     """Reports each location name once get() reads it complete and AP has not confirmed it."""
 
-    def __init__(self, pine: "Pine", names: Iterable[str]) -> None:
+    def __init__(self, pine: Pine, names: Iterable[str]) -> None:
         self.pine = pine
         self.names: tuple[str, ...] = tuple(names)
         self.completed: dict[str, bool] = dict.fromkeys(self.names, False)
@@ -50,7 +47,7 @@ class CaseEventInventory:
 class EventFlagInventory(CaseEventInventory):
     """Locations whose completion is a bitmask in one byte of EE memory."""
 
-    def __init__(self, pine: "Pine", event_flags: dict[str, EventFlag]) -> None:
+    def __init__(self, pine: Pine, event_flags: dict[str, EventFlag]) -> None:
         super().__init__(pine, event_flags)
         self.event_flags = event_flags
 

@@ -1,4 +1,3 @@
-"""Unlock cosmetic menu entries and feed the game's native skin loader."""
 import struct
 
 from ..constants import (
@@ -21,6 +20,7 @@ class Skins:
         self.pine = pine
         self.flags = GlobalFlags(pine)
         self.selected = {}
+        self.config_address = None
 
     def configure(self, data):
         selected = {}
@@ -33,13 +33,11 @@ class Skins:
             selected[character] = value
         self.selected = selected
 
-    def prepare(self, symbols):
-        """Validate the save layout and bypass cosmetic visibility prerequisites.
-
-        Some skins otherwise require story flags, NG+, a code, or a Size Matters
-        save. Changing their menu predicate avoids granting gameplay progress.
-        Ownership is separate: sync grants the purchased bits without currency.
+    def prepare(self, symbols, *, arena=None):
+        """Make every skin show up in the menu without the story flags, NG+, codes
+        or Size Matters save some of them need. Owning them is handled by sync().
         """
+        self.config_address = arena.allocate(bytes(4)) if arena is not None else None
         if not self.flags.bind(symbols):
             raise RuntimeError("Skin save pointer could not be validated")
         selected = require(symbols, "SelectedSPHeroSkinID__F8PLR_TYPE")
@@ -57,11 +55,10 @@ class Skins:
         original = self.pine.read_bytes(address, 16)
         if original != packed([0x27BDFFF0, 0x2483FFFE, 0xFFB00000, 0x2C620012]):
             raise RuntimeError("Native skin unlock predicate changed")
-        # Keep the retail exclusion of Robo-Ratchet: its standalone asset is
-        # absent, so merely previewing this entry can break the native loader.
-        # The unlock predicate now returns immediately. Its unreachable body
-        # provides storage for initialization on the game thread, after a new
-        # save exists but before the native model swap reads the selected skin.
+        # Robo-Ratchet stays hidden: its model isn't on the disc, and even
+        # previewing it can crash the loader. The unlock check now returns
+        # straight away, and its body holds a routine that runs on the game
+        # thread once a new save exists but before the skin model loads.
         load = require(symbols, "HEROSKIN_LoadSelectedSpecilaSkin__Fv")
         loader = struct.unpack("<11I", self.pine.read_bytes(load + 0x0C, 44))
         low = loader[3] & 0xFFFF
@@ -83,15 +80,19 @@ class Skins:
                 m.sb(m.T2, 0, m.T1),
                 *m.li32(m.T1, SKIN_OWNED_OFFSET), m.addu(m.T1, m.T0, m.T1),
                 m.lw(m.T2, 0, m.T1), *m.li32(m.T3, ALL_SKINS_MASK)]
-        # Full ownership is the persistent initialization marker shared with
-        # sync(). Once unlocked, preserve the menu's selection across loads
-        # and client restarts, including the native default selection (zero).
+        # Owning every skin marks the save as set up. From then on the menu's
+        # selection (including the default, 0) is kept across loads and restarts.
         code += [m.and_(m.T2, m.T2, m.T3)]
         initialized_branch = len(code)
         code += [0, m.NOP, m.lw(m.T2, 0, m.T1),
                 m.or_(m.T2, m.T2, m.T3), m.sw(m.T2, 0, m.T1),
                 *m.li32(m.T1, SKIN_SAVE_OFFSET), m.addu(m.T0, m.T0, m.T1)]
-        for player_type, character in enumerate(SKINS_BY_CHARACTER):
+        if arena is not None:
+            code += [*m.li32(m.T3, self.config_address)]
+            for player_type in range(4):
+                code += [m.lbu(m.T1, player_type, m.T3), m.beq(m.T1, m.ZERO, 2), m.NOP,
+                         m.sb(m.T1, player_type * SKIN_CHARACTER_STRIDE, m.T0)]
+        for player_type, character in enumerate(SKINS_BY_CHARACTER if arena is None else ()):
             skin = self.selected.get(character, 0)
             if skin:
                 code += [m.addiu(m.T1, m.ZERO, skin),
@@ -104,6 +105,10 @@ class Skins:
                  jump(load + 0x40), m.NOP, jump(load + 0x4C), m.NOP]
         predicate = [m.xori(m.V0, m.A0, UNSUPPORTED_RATCHET_SKIN),
                      m.jr(m.RA), m.sltu(m.V0, m.ZERO, m.V0)]
+        if arena is not None:
+            entry = arena.allocate(packed(code))
+            return [Patch(address, original[:12], packed(predicate)),
+                    Patch(load + 0x38, displaced, packed([jump(entry), m.NOP]))]
         replacement = packed([*predicate, *code])
         if len(replacement) > 0xF8:
             raise RuntimeError("Skin initialization exceeds predicate storage")
@@ -115,11 +120,15 @@ class Skins:
                 Patch(load + 0x38, displaced, packed([jump(address + len(predicate) * 4), m.NOP]))]
 
     def sync(self):
-        """Run at the loader gate before native skin loading, then while ready.
+        """Called at the loader gate, before the skin model loads, and while playing.
 
-        Apply YAML defaults only when first unlocking this save's skins.
-        Subsequent calls preserve the native menu selection.
+        The YAML defaults are only applied the first time a save's skins are
+        unlocked. After that the player's menu choice is kept.
         """
+        if self.config_address is not None:
+            choices = [self.selected.get(character, 0) for character in SKINS_BY_CHARACTER]
+            choices.append(QWARK_GIANT_SKINS.get(self.selected.get("qwark", 0), 0))
+            self.pine.write_bytes(self.config_address, bytes(choices))
         pointer = self.flags.pointer_address
         if pointer is None:
             return False

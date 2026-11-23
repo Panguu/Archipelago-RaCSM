@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import IntFlag
 from typing import NamedTuple
 
+from .cutscenes import CUTSCENE_FLAGS, SACCutsceneLocations
 from .planets import SACCases
 
 
@@ -254,6 +255,13 @@ MISSION_COMPLETE_NAME: dict[str, str] = {
 }
 
 MISSION_NAMES: tuple[str, ...] = tuple(entry.name for entries in CHAPTER_ENTRIES.values() for entry in entries)
+
+# The game marks these complete when the next planet loads, so they wait for the case's ending cutscene instead.
+MISSION_CUTSCENE_GATES = {
+    SACMissionLocations.VENANTONIO_LABS_OUT_OF_THE_FRYING_PAN:
+        CUTSCENE_FLAGS[SACCutsceneLocations.VENANTONIO_LABS_COMPLETE_CUTSCENE],
+    SACMissionLocations.VENANTONIO_LABS_COMPLETE: CUTSCENE_FLAGS[SACCutsceneLocations.VENANTONIO_LABS_COMPLETE_CUTSCENE],
+}
 
 NATIVE_FINISH_CASES = {
     24: SACCases.THE_QUASAR_FIELDS,

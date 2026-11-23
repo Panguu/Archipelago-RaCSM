@@ -1,3 +1,4 @@
+from .compiled_memory import load_plan
 import unittest
 from pathlib import Path
 
@@ -65,7 +66,7 @@ class WeaponModTests(unittest.TestCase):
         mods = WeaponMods(p)
         mods.configure({"operatives": {"Ratchet": 1, "Clank": 1}, "ng_plus": 1, "weapon_mod_ids": [mod.mod_id for mod in WEAPON_MODS]})
         hooks.patches.extend(mods.prepare(symbols, hooks, 22, set(), True))
-        hooks._install_plan()
+        load_plan(hooks)
         mod = WEAPON_MODS[0]
         gadget = mods.base + WEAPON_ORDER.index(EQUIPMENT_DISPLAY_TO_INTERNAL[mod.weapon]) * 0x74
         p.batch_write_int32([(gadget + 0x70, 0)])

@@ -19,6 +19,7 @@ class BoltRewards:
         self.pine = pine
         self.log = log
         self.on_state_changed = on_state_changed or (lambda delivered, pending: None)
+        self.on_balance_changed = lambda kind, change: None
         self.enabled = False
         self.received = 0
         self.starting_bolts = 0
@@ -51,6 +52,7 @@ class BoltRewards:
             current = self.pine.read_int32(BOLTS_ADDRESS)
             if current == pending["before"]:
                 self.pine.write_int32(BOLTS_ADDRESS, pending["after"])
+                self.on_balance_changed(pending.get("kind", "items"), pending["after"] - pending["before"])
             elif current != pending["after"]:
                 raise RuntimeError("An interrupted bolt reward has an uncertain balance; "
                                    "delivery is paused to avoid duplicating or overwriting bolts.")
@@ -60,8 +62,10 @@ class BoltRewards:
                 self.delivered = pending["count"]
             self.pending = None
             self._save()
-        if self.pine.read_int32(BOLTS_ADDRESS) > MAX_BOLTS:
+        current = self.pine.read_int32(BOLTS_ADDRESS)
+        if current > MAX_BOLTS:
             self.pine.write_int32(BOLTS_ADDRESS, MAX_BOLTS)
+            self.on_balance_changed("cap", MAX_BOLTS - current)
         if not self.starting_delivered:
             before = self.pine.read_int32(BOLTS_ADDRESS)
             after = min(MAX_BOLTS, before + self.starting_bolts)
@@ -69,6 +73,7 @@ class BoltRewards:
             self._save()
             if after != before:
                 self.pine.write_int32(BOLTS_ADDRESS, after)
+                self.on_balance_changed("starting", after - before)
             self.starting_delivered, self.pending = True, None
             self._save()
             if self.starting_bolts:
@@ -81,6 +86,7 @@ class BoltRewards:
         self.pending = {"before": before, "after": after, "count": self.received}
         self._save()
         self.pine.write_int32(BOLTS_ADDRESS, after)
+        self.on_balance_changed("items", after - before)
         self.delivered, self.pending = self.received, None
         self._save()
         self.log(f"[SAC] Received {after - before:,} bolts from {count} AP bolt item(s).")
