@@ -95,7 +95,7 @@ class SingleWeaponMode(Choice):
     """Restrict generation to one long-range projectile weapon.
     Off includes every weapon. Selecting a weapon removes all other weapons,
     their mods, vendor locations, and Weapon Level checks. Starting Weapons
-    is capped at one when enabled. RYNO requires NG+ Items to be enabled.
+    is capped at one when enabled. RYNO turns on NG+ Items automatically.
     """
 
     display_name = "Single Weapon Mode"
@@ -131,7 +131,7 @@ class Goal(Choice):
     """Determines what the player needs to complete to achieve their goal.
     - Defeat Otto: Defeat Otto Destruct on Quodrona.
     - All Skill Points: Complete every skill point of the Skill Points tier (Easy, or Easy and Hard).
-      Clank/Skyboard Challenge skill points don't count. Requires Skill Points to be on.
+      Clank/Skyboard Challenge skill points don't count. Sets Skill Points to Easy if it is off.
     - All Clank Challenges: Complete every Clank Challenge check in the seed. Requires Clank Challenges to be on.
     - Pick and Mix: Complete every goal you select in Pick and Mix Goals."""
 
@@ -145,7 +145,7 @@ class Goal(Choice):
 
 class PickAndMixGoals(OptionSet):
     """Add or remove victory conditions. All selected conditions must be completed.
-    At least one must be selected when Goal is Pick and Mix.
+    If none are selected when Goal is Pick and Mix, Defeat Otto is used.
     The valid options are: defeat_otto, all_skill_points, all_clank_challenges"""
 
     display_name = "Pick and Mix Goals"

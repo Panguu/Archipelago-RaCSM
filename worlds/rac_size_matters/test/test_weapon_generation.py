@@ -3,9 +3,9 @@ import random
 import unittest
 
 from Fill import distribute_items_restrictive
-from test.general import setup_multiworld
+from test.general import gen_steps, setup_multiworld
+from worlds.AutoWorld import call_all
 
-from Options import OptionError
 
 from ..data.weapons import WEAPON_DATA
 from ..items import NG_PLUS_WEAPONS, PROGRESSIVE_WEAPON_NAME, WEAPON_ITEM_TABLE
@@ -15,11 +15,11 @@ LONG_PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.
 
 
 class TestWeaponGeneration(unittest.TestCase):
-    def test_ryno_requires_ng_plus(self):
-        with self.assertRaisesRegex(OptionError, r"RYNO requires NG\+ Items"):
-            setup_multiworld(RACSizeMatterWorld, options={
-                "single_weapon_mode": "ryno", "ng_plus_items": 0,
-            })
+    def test_ryno_enables_ng_plus(self):
+        mw = setup_multiworld(RACSizeMatterWorld, options={
+            "single_weapon_mode": "ryno", "ng_plus_items": 0,
+        })
+        self.assertTrue(mw.worlds[1].options.ng_plus_items)
 
     def test_dropdown_choices_and_default(self):
         from ..options import SingleWeaponMode
@@ -84,3 +84,20 @@ class TestWeaponGeneration(unittest.TestCase):
                     distribute_items_restrictive(mw)
                     self.assertTrue(mw.can_beat_game())
                     self.assertTrue(mw.fulfills_accessibility())
+
+
+class TestTrackerPreplacedItems(unittest.TestCase):
+    def test_tracker_regen_keeps_rolled_starting_items(self):
+        options = {"starting_weapons": 3, "starting_gadgets": 3, "random_starting_planet": "weighted"}
+        for seed in range(10):
+            with self.subTest(seed=seed):
+                mw = setup_multiworld(RACSizeMatterWorld, seed=seed, options=options)
+                slot = mw.worlds[1].fill_slot_data()
+                ut = setup_multiworld(RACSizeMatterWorld, steps=(), seed=seed + 1000)
+                ut.re_gen_passthrough = {RACSizeMatterWorld.game: slot}
+                for step in gen_steps:
+                    call_all(ut, step)
+                self.assertEqual(ut.worlds[1].preplaced_items, mw.worlds[1].preplaced_items)
+                self.assertEqual(ut.worlds[1].starting_planet_id, mw.worlds[1].starting_planet_id)
+                self.assertEqual(sorted(item.name for item in ut.itempool if item.advancement),
+                                 sorted(item.name for item in mw.itempool if item.advancement))

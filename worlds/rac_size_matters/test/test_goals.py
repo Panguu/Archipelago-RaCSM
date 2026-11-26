@@ -59,13 +59,25 @@ class GoalGenerationTests(unittest.TestCase):
 
     def test_invalid_goals_fail(self):
         for options in (
-            {"goal": "pick_and_mix"},
-            {"goal": "all_skill_points", "skill_points": "off"},
             {"goal": "all_clank_challenges", "clank_challenges": "off"},
-            {"goal": "pick_and_mix", "pick_and_mix_goals": {"all_skill_points"}, "skill_points": "off"},
+            {"goal": "all_clank_challenges", "clank_challenge_groups": set()},
+            {"goal": "pick_and_mix", "pick_and_mix_goals": {"all_clank_challenges"}, "clank_challenges": "off"},
         ):
             with self.subTest(options=options), self.assertRaises(OptionError):
                 setup_multiworld(RACSizeMatterWorld, options=options)
+
+    def test_empty_pick_and_mix_falls_back_to_defeat_otto(self):
+        mw = setup_multiworld(RACSizeMatterWorld, options={"goal": "pick_and_mix"})
+        self.assertEqual(mw.worlds[1].options.pick_and_mix_goals.value, {"defeat_otto"})
+
+    def test_skill_point_goal_enables_easy_skill_points(self):
+        for options in (
+            {"goal": "all_skill_points", "skill_points": "off"},
+            {"goal": "pick_and_mix", "pick_and_mix_goals": {"all_skill_points"}, "skill_points": "off"},
+        ):
+            with self.subTest(options=options):
+                mw = setup_multiworld(RACSizeMatterWorld, options=options)
+                self.assertEqual(mw.worlds[1].options.skill_points.current_key, "easy")
 
     def test_pick_and_mix_ignored_without_pick_and_mix_goal(self):
         mw = setup_multiworld(RACSizeMatterWorld, options={

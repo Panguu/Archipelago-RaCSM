@@ -180,14 +180,20 @@ class RACSizeMatterWorld(World):
 
     def _validate_weapon_options(self) -> None:
         """Require a long-range projectile weapon that will actually survive item-pool filtering."""
-        enabled_weapons = frozenset(self.options.single_weapon_mode.enabled_weapons)
-        if not self.options.ng_plus_items:
-            enabled_weapons -= NG_PLUS_WEAPONS
+        long_range = frozenset(
+            name for name in self.options.single_weapon_mode.enabled_weapons if WEAPON_DATA[name].is_long_projectile
+        )
         player_name = self.multiworld.get_player_name(self.player)
-        if not any(WEAPON_DATA[name].is_long_projectile for name in enabled_weapons):
+        if not self.options.ng_plus_items and long_range and long_range <= NG_PLUS_WEAPONS:
+            self.options.ng_plus_items.value = True
+            logging.warning(
+                f"{player_name}'s RAC Size Matters: {SingleWeaponMode.display_name} "
+                f"'{self.options.single_weapon_mode.current_key}' needs NG+ Items; enabling it."
+            )
+        if not long_range:
             raise OptionError(
                 f"{player_name}'s RAC Size Matters: {SingleWeaponMode.display_name} "
-                "RYNO requires NG+ Items to be enabled."
+                "requires a long-range projectile weapon."
             )
 
     def create_regions(self) -> None:
@@ -251,6 +257,10 @@ class RACSizeMatterWorld(World):
     def _choose_preplaced_items(self) -> list[str]:
         """Items precollected ahead of the pool: starting-planet infobot(s) plus
         any Starting Weapons/Starting Gadgets rolls."""
+        if self.using_ut:
+            self.starting_planet_id = self.passthrough.get("starting_planet_id")
+            return list(self.passthrough["preplaced_items"])
+
         preplaced: list[str] = []
 
         random_start = self.options.random_starting_planet.value
@@ -496,6 +506,7 @@ class RACSizeMatterWorld(World):
             Rac5Options.STARTING_GADGETS: self.options.starting_gadgets.value,
             Rac5Options.RANDOM_STARTING_PLANET: self.options.random_starting_planet.value,
             "starting_planet_id": self.starting_planet_id,
+            "preplaced_items": self.preplaced_items,
             Rac5Options.EXPERIMENTAL_SKINS: bool(self.options.experimental_skins.value),
             Rac5Options.BALANCE_PATCH: bool(self.options.balance_patch.value),
             Rac5Options.STARTING_SKIN: self.options.starting_skin.value,

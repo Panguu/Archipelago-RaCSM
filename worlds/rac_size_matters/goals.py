@@ -1,5 +1,7 @@
 """Goal selection shared by generation, Universal Tracker and the client."""
 
+import logging
+
 from rule_builder.rules import And, CanReachRegion, Rule
 
 from Options import OptionError
@@ -36,11 +38,18 @@ def selected_goals(goal: int, pick_and_mix_goals) -> tuple[int, ...]:
 def validate_goals(world) -> None:
     options = world.options
     player_name = world.multiworld.get_player_name(world.player)
+    if options.goal.value == Goal.option_pick_and_mix and not options.pick_and_mix_goals.value:
+        options.pick_and_mix_goals.value = {"defeat_otto"}
+        logging.warning(
+            f"{player_name}'s RAC Size Matters: {Goal.display_name} Pick and Mix has no "
+            f"{PickAndMixGoals.display_name} selected; using Defeat Otto."
+        )
     goals = selected_goals(options.goal.value, options.pick_and_mix_goals.value)
-    if not goals:
-        raise OptionError(
-            f"{player_name}'s RAC Size Matters: {Goal.display_name} Pick and Mix requires at least one "
-            f"{PickAndMixGoals.display_name} selection."
+    if Goal.option_all_skill_points in goals and options.skill_points.value == SkillPoints.option_off:
+        options.skill_points.value = SkillPoints.option_easy
+        logging.warning(
+            f"{player_name}'s RAC Size Matters: the All Skill Points goal needs {SkillPoints.display_name}; "
+            "setting it to Easy."
         )
     if Goal.option_all_skill_points in goals and not required_skill_points(options):
         raise OptionError(
