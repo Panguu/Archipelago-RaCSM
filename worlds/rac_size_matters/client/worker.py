@@ -17,16 +17,20 @@ from ..constants import Rac5CutsceneLocations
 from ..constants.options import Rac5Options
 from ..core import RAC5SaveData, TextColour, address_maps, colored_text, set_trap_durations, vendor_presentation
 from ..core.core import Core
+from ..core.location_checks import LocationChecks
 from ..core.notifications import sent_text
 from ..core.options import ClientOptions
 from ..core.save_data import highest_weapon_levels
 from ..core.skins import Skin
 from ..locations import ALL_LOCATIONS
+from ..goals import GOAL_NAMES
+from ..options import Goal
 from ..pypine import Pine
 from ..world import RACSizeMatterWorld
 from . import protocol
 from .ammo_link import AmmoLinkMixin
-from .bolt_link import BoltLinkMixin
+from .ring_link import RingLinkMixin
+from .trap_link import TrapLinkMixin
 from .constants import GAME_NAME
 from .deathlink import DeathLinkMixin
 from .ghost_link import GhostLinkMixin
@@ -42,7 +46,8 @@ class GameWorker(
     EventsHandlerMixin,
     DeathLinkMixin,
     AmmoLinkMixin,
-    BoltLinkMixin,
+    RingLinkMixin,
+    TrapLinkMixin,
     GhostLinkMixin,
     VendorHandlerMixin,
     InventoryMixin,
@@ -74,6 +79,7 @@ class GameWorker(
         self.pine = Pine()
         self.pine_connected = False
         self._pine_lock = asyncio.Lock()
+        self._pine_connect_lock = asyncio.Lock()
 
         self._location_name_to_id = {name: data.code for name, data in ALL_LOCATIONS.items()}
         self.vendor_scouts = VendorScouts(self._location_name_to_id)
@@ -114,9 +120,10 @@ class GameWorker(
         self._pushed_ammo_link: dict[str, int] = {}
         self._applied_ammo_link: dict[str, int] = {}
 
-        self._bolt_link_enabled = False
-        self._last_bolt_link_push: float = 0.0
-        self._pushed_bolt_link: int | None = None
+        self._ring_link_enabled = False
+        self._reset_ring_link()
+        self._trap_link_enabled = False
+        self._trap_link_seen = set()
 
         self._ghost_link_enabled = False
         self._ghost_link_interval: float = 5.0
@@ -126,6 +133,7 @@ class GameWorker(
         self._ghost_link_following: int | None = None
 
         self._wiring = Core(self.pine, log=self._log)
+        self._wiring.player_bolts.on_change = self._record_ring_link_change
         self._wiring.native.vendor_scouts = self.vendor_scouts
 
     # --- CommonContext stand-ins: requests the client process carries out ---
@@ -266,6 +274,7 @@ class GameWorker(
             self._on_connected(*args)
         elif kind == protocol.AP_DISCONNECTED:
             self.ap_connected = False
+            self._ring_link_remainder = 0
             self._wiring.native.ap_connected = False
         elif kind == protocol.LOCATIONS:
             self.checked_locations, self.server_locations = set(args[0]), set(args[1])
@@ -274,9 +283,15 @@ class GameWorker(
         elif kind == protocol.STORED:
             self._on_stored(*args)
         elif kind == protocol.BOUNCED:
-            data = args[0]
-            if self._death_link_enabled and data.get("source") != self.auth:
+            tags, data = args
+            if not isinstance(data, dict):
+                return
+            if "DeathLink" in tags and self._death_link_enabled and data.get("source") != self.auth:
                 asyncio.create_task(self._receive_death_link(data))
+            if "RingLink" in tags:
+                await self._receive_ring_link(data)
+            if "TrapLink" in tags:
+                await self._receive_trap_link(data)
         elif kind == protocol.VENDOR_REWARDS:
             self.vendor_scouts.rewards = dict(args[0])
         elif kind == protocol.ITEM_SENT:
@@ -325,7 +340,12 @@ class GameWorker(
         self._wiring._ap_inventory_ready = False
         self._death_link_enabled = bool(self.slot_data.get(Rac5Options.DEATH_LINK, False))
         self._ammo_link_enabled = bool(self.slot_data.get(Rac5Options.AMMO_LINK, False))
-        self._bolt_link_enabled = bool(self.slot_data.get(Rac5Options.BOLT_LINK, False))
+        # Legacy slot data can opt into the replacement without shared-balance storage.
+        self._ring_link_enabled = bool(self.slot_data.get(Rac5Options.RING_LINK, self.slot_data.get("bolt_link", False)))
+        self._reset_ring_link()
+        self._wiring.player_bolts._prev = None
+        self._trap_link_enabled = bool(self.slot_data.get(Rac5Options.TRAP_LINK, False))
+        self._trap_link_seen = set()
         self._ghost_link_enabled = bool(self.slot_data.get(Rac5Options.GHOST_LINK, False))
         self._ghost_link_interval = float(self.slot_data.get(Rac5Options.GHOST_LINK_UPDATE_INTERVAL, 5) or 0)
         if self._ghost_link_enabled:
@@ -372,15 +392,15 @@ class GameWorker(
             try:
                 vendor_presentation.set_icon_style(str(self.slot_data.get(Rac5Options.AP_ICON, "original")))
             except ValueError as e:
-                logger.info(f"[RAC] {e}")
-        for tag, enabled in (
-            ("DeathLink", self._death_link_enabled),
-            ("AmmoLink", self._ammo_link_enabled),
-            ("BoltLink", self._bolt_link_enabled),
-            ("GhostLink", self._ghost_link_enabled),
-        ):
-            if enabled:
-                asyncio.create_task(self._update_link_tag(tag, True))
+                self._log(f"[RAC] {e}")
+        self._post((protocol.UPDATE_LINK_TAGS, {
+            "DeathLink": self._death_link_enabled,
+            "AmmoLink": self._ammo_link_enabled,
+            "BoltLink": False,
+            "RingLink": self._ring_link_enabled,
+            "TrapLink": self._trap_link_enabled,
+            "GhostLink": self._ghost_link_enabled,
+        }))
         self._wiring.wire(
             send_location=self._append_location_by_name,
             send_deathlink=self._send_death_link_from_sync,
@@ -429,8 +449,6 @@ class GameWorker(
         link_keys = []
         if self._ammo_link_enabled:
             link_keys.append(self._ammo_link_key())
-        if self._bolt_link_enabled:
-            link_keys.append(self._bolt_link_key())
         if self._ghost_link_enabled:
             link_keys += [self._ghost_link_key(slot) for slot in self._ghost_link_slots]
         keys = [self._filler_applied_key(), self._save_data_key(), self._starting_items_key(), *link_keys]
@@ -455,8 +473,6 @@ class GameWorker(
         self._try_restore_weapon_state()
         if self._ammo_link_enabled:
             asyncio.create_task(self._guarded_wiring_call(self._apply_ammo_link_update))
-        if self._bolt_link_enabled:
-            asyncio.create_task(self._guarded_wiring_call(self._apply_bolt_link_update))
         if self._ghost_link_enabled:
             self._refresh_ghost_link_peers()
         starting_items_key = self._starting_items_key()
@@ -504,6 +520,21 @@ class GameWorker(
     def cmd_states(self) -> None:
         for state in self._states():
             logger.info(repr(state))
+
+    def cmd_goal(self) -> None:
+        if self.slot is None:
+            logger.info("Connect to an Archipelago slot to see goal status.")
+            return
+        statuses = LocationChecks(self._wiring).goal_status()
+        if self.finished_game:
+            statuses = dict.fromkeys(statuses, True)
+        if not statuses:
+            logger.info("No goals selected.")
+            return
+        if self.slot_data.get(Rac5Options.GOAL, 0) == Goal.option_pick_and_mix:
+            logger.info(f"Goals: {sum(statuses.values())}/{len(statuses)} completed")
+        for goal, completed in statuses.items():
+            logger.info(f"{GOAL_NAMES[goal]}: {'completed' if completed else 'incomplete'}")
 
     def cmd_rac5_info(self) -> None:
         options = "\n".join(f"{key}: {value}" for key, value in self.slot_data.items())
@@ -580,14 +611,25 @@ class GameWorker(
         self._debug_messages = not self._debug_messages
         logger.info(f"[RAC] Debug messages {'enabled' if self._debug_messages else 'disabled'}.")
 
-    async def cmd_toggle_deathlink(self) -> None:
-        await self._set_death_link_enabled(not self._death_link_enabled)
-
-    async def cmd_toggle_ammolink(self) -> None:
-        await self._set_ammo_link_enabled(not self._ammo_link_enabled)
-
-    async def cmd_toggle_boltlink(self) -> None:
-        await self._set_bolt_link_enabled(not self._bolt_link_enabled)
+    async def cmd_link(self, link: str, state: str = "") -> None:
+        links = {
+            "deathlink": "death", "ammolink": "ammo", "ringlink": "ring",
+            "traplink": "trap", "ghostlink": "ghost",
+        }
+        if link not in links or state not in ("", "on", "off", "toggle"):
+            logger.info("[RAC] Invalid link command. Use /<link> [on|off|toggle].")
+            return
+        name = links[link]
+        enabled = getattr(self, f"_{name}_link_enabled")
+        if not state:
+            logger.info(f"[RAC] {name.title()} Link is {'on' if enabled else 'off'}.")
+            return
+        desired = not enabled if state == "toggle" else state == "on"
+        if desired == enabled:
+            logger.info(f"[RAC] {name.title()} Link is already {'on' if enabled else 'off'}.")
+            return
+        await getattr(self, f"_set_{name}_link_enabled")(desired)
+        logger.info(f"[RAC] {name.title()} Link is {'on' if desired else 'off'}.")
 
 
 def worker_main(inbox, outbox) -> None:

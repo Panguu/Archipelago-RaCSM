@@ -98,6 +98,8 @@ class RACContext(CommonContext):
             asyncio.create_task(self.update_death_link(args[0]))
         elif kind == protocol.UPDATE_LINK_TAG:
             asyncio.create_task(self._update_link_tag(*args))
+        elif kind == protocol.UPDATE_LINK_TAGS:
+            asyncio.create_task(self._update_link_tags(args[0]))
         elif kind == protocol.GUI_ERROR:
             self._messagebox_connection_loss = self.gui_error(args[0], ConnectionError(args[0]))
         else:
@@ -124,15 +126,16 @@ class RACContext(CommonContext):
             self.auth = pending
 
     async def _update_link_tag(self, tag: str, enabled: bool) -> None:
-        """Generic counterpart to CommonContext.update_death_link — sets/clears an arbitrary
-        connection tag and pushes ConnectUpdate if already connected."""
-        old_tags = self.tags.copy()
-        if enabled:
-            self.tags.add(tag)
-        else:
-            self.tags -= {tag}
-        if old_tags != self.tags and self.server and not self.server.socket.closed:
-            await self.send_msgs([{"cmd": "ConnectUpdate", "tags": list(self.tags)}])
+        await self._update_link_tags({tag: enabled})
+
+    async def _update_link_tags(self, states: dict[str, bool]) -> None:
+        """Apply link states together, preserving unrelated tags and sending one update."""
+        tags = (self.tags - states.keys()) | {tag for tag, enabled in states.items() if enabled}
+        if tags == self.tags:
+            return
+        self.tags = tags
+        if self.server and not self.server.socket.closed:
+            await self.send_msgs([{"cmd": "ConnectUpdate", "tags": sorted(tags)}])
 
     async def server_auth(self, password_requested: bool = False) -> None:
         if password_requested and not self.password:
@@ -189,8 +192,8 @@ class RACContext(CommonContext):
             self._worker_state[protocol.RECEIVED_ITEMS] = (protocol.RECEIVED_ITEMS, list(self.items_received), 0)
             return
 
-        if cmd == "Bounced" and "DeathLink" in args.get("tags", []):
-            self._to_worker((protocol.BOUNCED, args.get("data", {})))
+        if cmd == "Bounced" and {"DeathLink", "RingLink", "TrapLink"}.intersection(args.get("tags", [])):
+            self._to_worker((protocol.BOUNCED, args.get("tags", []), args.get("data", {})))
 
     async def connection_closed(self) -> None:
         self._to_worker((protocol.AP_DISCONNECTED,))

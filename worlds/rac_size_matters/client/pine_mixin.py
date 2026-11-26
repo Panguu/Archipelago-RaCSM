@@ -24,11 +24,12 @@ class PineMixin:
             self._connection_sync_pending = True
             self._pending_item_apply = True
             self.current_planet = "Galaxy"
-            logger.info(f"[RAC] Selected {SUPPORTED_GAMES[game_id]} addresses [{game_id}].")
+            self._log(f"[RAC] Selected {SUPPORTED_GAMES[game_id]} addresses [{game_id}].")
 
     async def _teardown_pine_connection(self) -> None:
         """Drop the raw socket. Safe to call even if it's already down."""
         self.pine_connected = False
+        self._ring_link_remainder = 0
         try:
             self._wiring.native.close()
         except Exception:
@@ -46,9 +47,10 @@ class PineMixin:
         self._pending_item_apply = True
 
     async def reconnect_pine(self) -> None:
-        async with self._pine_lock:
-            await self._teardown_pine_connection()
-        await self._attempt_pine_connect(is_reconnect=True)
+        async with self._pine_connect_lock:
+            async with self._pine_lock:
+                await self._teardown_pine_connection()
+            await self._connect_pine_locked(is_reconnect=True)
 
     async def _reject_wrong_game(self, game_id: str, *, is_disconnect: bool) -> None:
         known_game = GAME_ID_TO_OTHER_RATCHET.get(game_id)
@@ -73,6 +75,10 @@ class PineMixin:
             await self._teardown_pine_connection()
 
     async def _attempt_pine_connect(self, is_reconnect: bool = False) -> None:
+        async with self._pine_connect_lock:
+            await self._connect_pine_locked(is_reconnect=is_reconnect)
+
+    async def _connect_pine_locked(self, is_reconnect: bool = False) -> None:
         async with self._pine_lock:
             def _connect_and_get_game_id() -> str:
                 self.pine.connect()
@@ -92,13 +98,18 @@ class PineMixin:
 
         # PCSX2 may have changed games during the settle delay.
         async with self._pine_lock:
-            game_id = self.pine.get_game_id()
+            try:
+                game_id = self.pine.get_game_id()
+            except Exception:
+                logger.warning("[RAC] PINE connection lost during startup. Use /reconnect.")
+                await self._teardown_pine_connection()
+                return
         if game_id not in SUPPORTED_GAMES:
             await self._reject_wrong_game(game_id, is_disconnect=False)
             return
 
         async with self._pine_lock:
-            logger.info(
+            self._log(
                 f"[RAC] {'Reconnected' if is_reconnect else 'Connected'} to PCSX2 - "
                 f"R&C: Size Matters {SUPPORTED_GAMES[game_id]} [{game_id}] detected."
             )
@@ -190,7 +201,8 @@ class PineMixin:
         await self._apply_received_items()
         self._maybe_persist_weapon_state()
         self._maybe_sync_ammo_link()
-        self._maybe_sync_bolt_link()
+        async with self._pine_lock:
+            self._maybe_sync_ring_link()
         self._maybe_sync_ghost_link()
 
     def _maybe_persist_weapon_state(self, *, force: bool = False) -> None:

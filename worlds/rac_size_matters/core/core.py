@@ -106,6 +106,7 @@ class Core:
             self._log,
             self.shrink_ray,
             patch_options=patch_options,
+            missions=self.missions,
         )
         self._prev_vendor: MenuStateValue | None = None
 
@@ -184,7 +185,7 @@ class Core:
         self._prev_vendor = None
         self.native = NativeRuntime(
             self.pine, self.vendor, previous_native.send_location, self._log,
-            self.shrink_ray, patch_options=previous_native.patch_options,
+            self.shrink_ray, patch_options=previous_native.patch_options, missions=self.missions,
         )
         for name in ("vendor_scouts", "enabled", "checked", "allowed_locations", "treehouse_unlocked",
                      "progressive_challenge_mode_enabled", "ap_connected"):
@@ -331,8 +332,10 @@ class Core:
         LocationChecks(self).goal()
         service_traps(self.pine)
         if self.native.tick():
+            self.player_bolts._prev = None
             return
         if self._refresh_main_menu_state():
+            self.player_bolts._prev = None
             return
         previous_planet_id = self.planet.planet_id
         became_ready = self.planet.check_transition()
@@ -342,9 +345,11 @@ class Core:
             self.send_location(name)
 
         if self.planet.giant_clank_active:
+            self.player_bolts._prev = None
             return
 
         if self.planet.planet_id == _KALIDON_RACE_ID:
+            self.player_bolts._prev = None
             if self.planet.is_ready and self.skyboard_enabled:
                 for name in self.skyboard.check():
                     self.send_location(name)
@@ -355,9 +360,11 @@ class Core:
         self.planet.check_equipped_armour()
 
         if not self.planet.is_ready:
+            self.player_bolts._prev = None
             return
 
         if became_ready:
+            self.player_bolts._prev = None
             self._planet_settle_until = time.monotonic() + _PLANET_SETTLE_SECONDS
             self.planet.weapons.wipe(preserve_levels=previous_planet_id == _KALIDON_RACE_ID)
             if not self._initial_load_done:

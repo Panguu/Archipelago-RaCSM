@@ -81,6 +81,7 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
             ctx = PineMixin()
             ctx.pine = SerialOnlyPine()
             ctx._pine_lock = asyncio.Lock()
+            ctx._pine_connect_lock = asyncio.Lock()
             ctx._wiring = Core(ctx.pine)
             ctx.pine_connected = False
             ctx.slot = ctx.server = None
@@ -95,7 +96,7 @@ class AutomaticRegionTests(unittest.IsolatedAsyncioTestCase):
             for name in ("force_sync", "_send_map_page", "_apply_received_items"):
                 setattr(ctx, name, AsyncMock())
             for name in ("_maybe_persist_weapon_state", "_maybe_sync_ammo_link",
-                         "_maybe_sync_bolt_link", "_maybe_sync_ghost_link"):
+                         "_maybe_sync_ring_link", "_maybe_sync_ghost_link"):
                 setattr(ctx, name, Mock())
             core = ctx._wiring
             core.native.enabled = True

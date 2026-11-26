@@ -29,6 +29,28 @@ def prepare(name="pokitaru"):
 
 
 class MultiplayerSkinsTests(unittest.TestCase):
+    def test_standalone_secondary_texture_gates(self):
+        for path in (Path(__file__).parents[1] / "standalone_skins").glob("*.pnach"):
+            p = Memory()
+            writes = {}
+            for line in path.read_text().splitlines():
+                if line.startswith("patch=1,EE,2"):
+                    _, _, address, _, value = line.split(",")
+                    writes[int(address, 16) & 0x0FFFFFFF] = int(value, 16)
+            for address, word in writes.items():
+                p.write_int32(address, word)
+            gates = [a for a, w in writes.items() if w in (0x2E850012, 0x2E880012)]
+            self.assertEqual(len(gates), 2)
+            for gate in gates:
+                branch = gate + (4 if writes[gate] == 0x2E850012 else 8)
+                target = branch + 4 + (writes[branch] & 65535) * 4
+                for selected in range(7, 20):
+                    cpu = CPU(p)
+                    cpu.r[m.S4] = selected
+                    stop = target if selected < 18 else branch + 8
+                    cpu.run(gate, stop=stop, max_steps=5)
+                    self.assertEqual(cpu.calls, [])
+
     def test_standalone_patches_reload_all_skins(self):
         patches = Path(__file__).parents[1] / "standalone_skins"
         for filename, entry, load_model in (
@@ -85,7 +107,7 @@ class MultiplayerSkinsTests(unittest.TestCase):
                 self.assertEqual(cpu.r[m.S3], selected)
                 self.assertEqual(cpu.r[m.S0] & 0xFFFFFFFF, 0xFFFFFFFF)
 
-    def test_all_levels_install_restore_and_red_only_menu(self):
+    def test_all_levels_install_restore_and_primary_texture_menu(self):
         for name in FIXTURES:
             with self.subTest(level=name):
                 p, f, plan = prepare(name)
@@ -103,7 +125,7 @@ class MultiplayerSkinsTests(unittest.TestCase):
                 self.assertEqual(p.data, before)
 
     def test_native_converter_matches_full_skeleton_for_all_meshes(self):
-        for region, (index, (name, geometry)) in product(("pokitaru", "eu_pokitaru", "jp_pokitaru"), enumerate(GEOMETRY.items())):
+        for region, (index, (name, geometry)) in product(("pokitaru", "Challax", "eu_pokitaru", "jp_pokitaru"), enumerate(GEOMETRY.items())):
             with self.subTest(region=region, skin=name):
                 p, f, plan = prepare(region)
                 code = p.read_bytes(f["base"], 0x280000)
@@ -145,17 +167,40 @@ class MultiplayerSkinsTests(unittest.TestCase):
                     # The generated loader must use the regional MP table too,
                     # not just the Python-side descriptor/menu builder.
                     self.assertEqual(c.r[m.S1], f.get("mp_table", mp.MP_TABLE) + index * 64)
+                    self.assertEqual(c.r[m.A2], 4 if index >= 11 else 3)
+                    if index >= 11:
+                        self.assertEqual(p.read_int32(c.r[m.A3] + 36), b + 0x7F000)
+                        self.assertEqual(p.read_int32(c.r[m.A3] + 40), 0x1000)
+                        self.assertEqual(p.read_int32(c.r[m.A3] + 44), p.read_int32(c.r[m.S1] + 0x2C))
+                    self.assertEqual(p.read_int32(c.r[m.A3] + 24), b + 0x84000)
+                    self.assertEqual(p.read_int32(c.r[m.A3] + 32),
+                                     p.read_int32(plan.descriptors + (index + 7) * 24 + 12))
                     c.r[m.V0] = 1
+
+                extra_calls = []
+
+                def texture_size(c):
+                    self.assertGreaterEqual(index, 11)
+                    self.assertEqual(c.r[m.A1], p.read_int32(c.r[m.S1] + 12))
+                    extra_calls.append("size")
+                    c.r[m.V0] = 0x1000
+
+                def texture_load(c):
+                    self.assertGreaterEqual(index, 11)
+                    self.assertEqual(c.r[m.A2], b + 0x7F000)
+                    self.assertEqual(c.r[m.A3], 0x5000)
+                    extra_calls.append("load")
 
                 cpu.run(
                     plan.finish,
                     stubs={
-                        size: lambda c: c.r.__setitem__(m.V0, 0x4550),
-                        load: lambda c: c.r.__setitem__(m.V0, 1),
+                        size: texture_size,
+                        load: texture_load,
                         asset: load_asset,
                     },
                     max_steps=200000,
                 )
+                self.assertEqual(extra_calls, ["size", "load"] if index >= 11 else [])
                 self.assertEqual(cpu.r[m.V0], 1)
                 self.assertEqual(p.read_int8(f.get("mcp", mp.MCP) + 0x2E0), index + 7)
                 self.assertEqual(p.read_int32(pending), 0xFFFFFFFF)

@@ -38,6 +38,11 @@ class RACCommandProcessor(ClientCommandProcessor):
         self.ctx.call_worker("cmd_rac5_info")
         return True
 
+    def _cmd_goal(self) -> bool:
+        """Show completion of selected goals and the completed/total count for Pick and Mix."""
+        self.ctx.call_worker("cmd_goal")
+        return True
+
     def _cmd_vendor_refresh(self) -> bool:
         """Debug: force-rewrite the vendor item list immediately, without waiting for the next tick."""
         self.ctx.call_worker("cmd_vendor_refresh")
@@ -51,7 +56,7 @@ class RACCommandProcessor(ClientCommandProcessor):
         selected = names.get(skin.lower().replace("-", "_").replace(" ", "_"))
         if selected is None:
             logger.info("[RAC] /skin default|pirate|trash|tuxedo|qwark|ninja (or 0-19). "
-                        "Multiplayer skins use their red variant.")
+                        "Kangaroo and Tuxedo Ratchet include their secondary texture.")
             return False
         self.ctx.call_worker("cmd_skin", selected)
         return True
@@ -85,17 +90,30 @@ class RACCommandProcessor(ClientCommandProcessor):
         self.ctx.call_worker("cmd_debug")
         return True
 
-    def _cmd_toggle_deathlink(self) -> bool:
-        """Toggle DeathLink on or off for this session."""
-        self.ctx.call_worker("cmd_toggle_deathlink")
+    def _link_command(self, link: str, state: str) -> bool:
+        state = state.strip().lower()
+        if state not in ("", "on", "off", "toggle"):
+            logger.info(f"[RAC] Use /{link} [on|off|toggle]; no argument shows status.")
+            return False
+        self.ctx.call_worker("cmd_link", link, state)
         return True
 
-    def _cmd_toggle_ammolink(self) -> bool:
-        """Toggle AmmoLink on or off for this session."""
-        self.ctx.call_worker("cmd_toggle_ammolink")
-        return True
+    def _cmd_deathlink(self, state: str = "") -> bool:
+        """/deathlink [on|off|toggle]. No argument shows current status."""
+        return self._link_command("deathlink", state)
 
-    def _cmd_toggle_boltlink(self) -> bool:
-        """Toggle BoltLink on or off for this session."""
-        self.ctx.call_worker("cmd_toggle_boltlink")
-        return True
+    def _cmd_ammolink(self, state: str = "") -> bool:
+        """/ammolink [on|off|toggle]. No argument shows current status."""
+        return self._link_command("ammolink", state)
+
+    def _cmd_ringlink(self, state: str = "") -> bool:
+        """/ringlink [on|off|toggle]. No argument shows current status."""
+        return self._link_command("ringlink", state)
+
+    def _cmd_traplink(self, state: str = "") -> bool:
+        """/traplink [on|off|toggle]. No argument shows current status."""
+        return self._link_command("traplink", state)
+
+    def _cmd_ghostlink(self, state: str = "") -> bool:
+        """/ghostlink [on|off|toggle]. No argument shows current status."""
+        return self._link_command("ghostlink", state)

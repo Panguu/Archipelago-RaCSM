@@ -1,4 +1,4 @@
-"""US multiplayer skins in the single-player menu."""
+"""Multiplayer models, including Kangaroo and Tuxedo secondary textures."""
 
 import struct
 
@@ -118,7 +118,7 @@ def prepare(pine, *, code_start, code, skin):
         patch(lower, packed(word(lower)), packed((word(lower) & 0xFFFF0000) | (new & 65535)))
 
     # These allocations are disjoint from the model, promoted geometry,
-    # two texture buffers, and one another.
+    # both texture buffers, and one another.
     rows, menu_table, descriptors = buffer + 0x72000, buffer + 0x74000, buffer + 0x74800
     finish, stock_finish, owned, label, add_row = (buffer + x for x in (0x75000, 0x75700, 0x75800, 0x75840, 0x75880))
     strings = buffer + 0x75A00
@@ -246,8 +246,9 @@ def prepare(pine, *, code_start, code, skin):
         m.lbu(m.S2, 0, m.T0),  # Load byte; Load 32-bit constant.
         *m.li32(m.T0, apply),  # Load apply into T0.
         m.lbu(m.S3, 0, m.T0),  # Load byte; Load 32-bit constant.
-        m.lw(m.A1, 12, m.S1),  # Load A1 from S1 + 12.
-    )  # Load word.
+    )
+    c.emit(m.sltiu(m.T0, m.S4, 18), m.lw(m.A1, 12, m.S1))
+    c.branch(m.bne(m.T0, m.ZERO, 0), "textures")
     c.branch(m.beq(m.A1, m.ZERO, 0), "textures")  # Branch 0 words if A1 == ZERO.
     c.branch(m.beq(m.S2, m.ZERO, 0), "textures")  # Branch 0 words if S2 == ZERO.
     c.emit(
@@ -286,9 +287,10 @@ def prepare(pine, *, code_start, code, skin):
         m.sw(m.T1, 28, m.SP),  # Load word; Store word.
         m.lw(m.T1, 12, m.T0),  # Load T1 from T0 + 12.
         m.sw(m.T1, 32, m.SP),  # Load word; Store word.
-        m.lw(m.T0, 12, m.S1),  # Load T0 from S1 + 12.
-        m.addiu(m.A2, m.ZERO, 3),  # Set A2 to ZERO + 3.
-    )  # Load word; Add signed immediate.
+        m.addiu(m.A2, m.ZERO, 3),  # Two native placeholders plus primary texture.
+    )
+    c.emit(m.sltiu(m.T0, m.S4, 18))
+    c.branch(m.bne(m.T0, m.ZERO, 0), "load", m.lw(m.T0, 12, m.S1))
     c.branch(m.beq(m.T0, m.ZERO, 0), "load")  # Branch 0 words if T0 == ZERO.
     c.emit(
         *m.li32(m.T0, buffer + 0x7F000),  # Load buffer + 520192 into T0.

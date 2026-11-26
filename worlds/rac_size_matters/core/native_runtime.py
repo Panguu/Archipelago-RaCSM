@@ -18,6 +18,7 @@ from .patches import (
     item_toast,
     multiplayer_skins,
     pokitaru_ship,
+    quodrona_replay,
     ship_menu,
     skins,
     sprout_pickup,
@@ -33,13 +34,14 @@ logger = logging.getLogger("CommonClient")
 
 
 class NativeRuntime:
-    def __init__(self, pine, vendor, send_location, log, shrink_ray=None, patch_options=None):
+    def __init__(self, pine, vendor, send_location, log, shrink_ray=None, patch_options=None, missions=None):
         self.patch_options = patch_options or PatchOptions()
         self.pine, self.vendor = pine, vendor
         self.send_location, self.log = send_location, log
         self.gate = LoaderGate(pine, game_id=address_maps.GAME_ID)
         self.starting_planet = StartingPlanet(pine, log, game_id=address_maps.GAME_ID)
         self.shrink_ray = shrink_ray
+        self.missions = missions
         self.vendor_scouts = None
         self.presentation = None
         self._presentation_pending = None
@@ -230,7 +232,9 @@ class NativeRuntime:
         skin_plans = []
         hud_plans = []
         box = PLANET_ADDRESSES[target].small_text_box
-        if box is not None and plan is not None and options.skins:
+        # Skin menus do not depend on the optional HUD text-box mapping.
+        # US Outpost Omega 1 has no mapped text box but still needs skins.
+        if plan is not None and options.skins:
             has_hero_buffer = p.read_int32(multiplayer_skins.mcp_address(self.gate.game_id) + 0x2DC) != 0
             extended = has_hero_buffer and options.multiplayer_skins
             self.skin = skins.prepare(
@@ -244,7 +248,7 @@ class NativeRuntime:
             skin_plans.append(self.skin)
             if extended:
                 skin_plans.append(multiplayer_skins.prepare(p, code_start=base, code=code, skin=self.skin))
-            if options.item_toast:
+            if options.item_toast and box is not None:
                 self.toast = item_toast.prepare(
                     p, code_start=base, code=code, small_box=box, starter=plan.starter, frame_hook=self.skin.entry
                 )
@@ -285,6 +289,8 @@ class NativeRuntime:
         if self.toast is not None:
             hud_plans.append(self.toast)
         planet_plans = []
+        if target == 10:
+            planet_plans.append(quodrona_replay.prepare(p, code_start=base, code=code))
         if target == 1 and options.pokitaru_ship:
             planet_plans.append(pokitaru_ship.prepare(p, gate=self.gate))
         elif target == 2 and options.sprout_pickup:
@@ -314,6 +320,8 @@ class NativeRuntime:
             for patch in self.plans:
                 patch.install()
                 installed.append(patch)
+        except (ConnectionError, TimeoutError):
+            raise
         except Exception:
             for patch in reversed(installed):
                 patch.restore()
@@ -322,6 +330,9 @@ class NativeRuntime:
             self.skin = None
             raise
         self.vendor.native_plan = plan
+        if self.missions is not None:
+            for name in self.missions.prepare_replay(target):
+                self._report(name)
         # Stage 5 follows the held relocation stage. Keep the new display
         # pending until gameplay is ready so loading cleanup cannot discard it.
         self._presentation_pending = presentation
@@ -418,6 +429,16 @@ class NativeRuntime:
         self.starting_planet.service(self.vendor.planet.starting_planet_id)
         p = self.pine
         state = p.read_int32(self.gate.STATE)
+        # The frontend is a loaded module too (state 6). CURRENT_PLANET can
+        # still describe the previous save; it is not permission to reload it.
+        # Keep servicing New Game destination patches above, but wait for the
+        # player to leave the frontend before driving gameplay or attach reloads.
+        if state == 6 and p.read_int32(self.gate.TARGET) == 0:
+            self.module = None
+            self._attach_reload_requested = False
+            self._released = False
+            self.vendor.planet.is_ready = False
+            return True
         if self._released:
             if state == 4:
                 return True
@@ -429,7 +450,17 @@ class NativeRuntime:
         if held is not None:
             try:
                 self._prepare(*held)
-            finally:
+            except (ConnectionError, TimeoutError):
+                logger.error(
+                    "[RAC] PINE failed during native patch installation. Stop and restart "
+                    "the game in PCSX2 before reconnecting; the level may be partially patched."
+                )
+                raise
+            except Exception:
+                self.gate.release()
+                self._released = True
+                raise
+            else:
                 self.gate.release()
                 self._released = True
             return True

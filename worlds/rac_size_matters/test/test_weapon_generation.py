@@ -11,28 +11,29 @@ from ..data.weapons import WEAPON_DATA
 from ..items import NG_PLUS_WEAPONS, PROGRESSIVE_WEAPON_NAME, WEAPON_ITEM_TABLE
 from ..world import RACSizeMatterWorld
 
-PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.is_projectile)
 LONG_PROJECTILES = tuple(name for name, weapon in WEAPON_DATA.items() if weapon.is_long_projectile)
 
 
 class TestWeaponGeneration(unittest.TestCase):
-    def test_no_available_long_projectile_rejected(self):
-        non_long = [name for name in WEAPON_DATA if name not in LONG_PROJECTILES]
-        short_projectiles = [name for name in PROJECTILES if name not in LONG_PROJECTILES]
-        for weapons, ng_plus in (([], 1), (non_long, 1), (short_projectiles, 1), (["RYNO"], 0),
-                                 ([*non_long, "RYNO"], 0)):
-            with self.subTest(weapons=weapons, ng_plus=ng_plus):
-                with self.assertRaisesRegex(OptionError, "at least one long-range projectile weapon"):
-                    setup_multiworld(RACSizeMatterWorld, options={
-                        "enabled_weapons": weapons, "ng_plus_items": ng_plus,
-                    })
+    def test_ryno_requires_ng_plus(self):
+        with self.assertRaisesRegex(OptionError, r"RYNO requires NG\+ Items"):
+            setup_multiworld(RACSizeMatterWorld, options={
+                "single_weapon_mode": "ryno", "ng_plus_items": 0,
+            })
+
+    def test_dropdown_choices_and_default(self):
+        from ..options import SingleWeaponMode
+        self.assertEqual(SingleWeaponMode.default, SingleWeaponMode.option_off)
+        self.assertEqual(SingleWeaponMode(0).enabled_weapons, frozenset(WEAPON_DATA))
+        self.assertEqual(set(SingleWeaponMode.name_lookup.values()),
+                         {"off", *(name.lower().replace(" ", "_") for name in LONG_PROJECTILES)})
 
     def test_single_weapon_with_default_starting_count(self):
         for weapon in LONG_PROJECTILES:
             for progressive in range(3):
                 with self.subTest(weapon=weapon, progressive=progressive):
                     mw = setup_multiworld(RACSizeMatterWorld, seed=42, options={
-                        "enabled_weapons": [weapon], "progressive_weapons": progressive,
+                        "single_weapon_mode": weapon.lower().replace(" ", "_"), "progressive_weapons": progressive,
                     })
                     expected = PROGRESSIVE_WEAPON_NAME[weapon] if progressive else weapon
                     weapons = [item.name for item in mw.precollected_items[1]
@@ -51,7 +52,7 @@ class TestWeaponGeneration(unittest.TestCase):
                 seed = index * 1000 + case
                 rng = random.Random(seed)
                 options = {
-                    "enabled_weapons": [weapon],
+                    "single_weapon_mode": weapon.lower().replace(" ", "_"),
                     "starting_weapons": case % 3,
                     "starting_gadgets": rng.randrange(9),
                     "progressive_weapons": (case // 3) % 3,

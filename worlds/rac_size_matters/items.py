@@ -239,6 +239,9 @@ ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE: dict[str, RACItemData] = {
 
 FILLER_ITEM_TABLE: dict[str, RACItemData] = {
     Rac5Filler.BOLTS: RACItemData(BASE_ID + 400, ItemClassification.filler),
+    Rac5Filler.NANOTECH_EXP: RACItemData(BASE_ID + 401, ItemClassification.filler),
+    Rac5Filler.WEAPON_EXP: RACItemData(BASE_ID + 402, ItemClassification.filler),
+    Rac5Filler.REFILL_AMMO: RACItemData(BASE_ID + 403, ItemClassification.filler),
 }
 
 INFOBOT_ITEM_TABLE: dict[str, RACItemData] = {
@@ -295,6 +298,7 @@ ITEM_NAME_GROUPS: dict[str, set[str]] = {
     "Progressive Armours": {*ARMOUR_PROGRESSIVE_ITEM_TABLE, *ARMOUR_PROGRESSIVE_UNIFIED_ITEM_TABLE},
     "Infobots": set(INFOBOT_ITEM_TABLE),
     "Traps": set(TRAP_ITEM_TABLE),
+    "Filler": set(FILLER_ITEM_TABLE),
     PROJECTILE_WEAPONS_GROUP: {
         name
         for weapon in WEAPONS

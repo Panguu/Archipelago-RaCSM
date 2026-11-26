@@ -15,12 +15,12 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5Weapons,
 )
-from ..items import GLITCHES_ITEM_NAME
 from ..options import (
     AllCutscenes,
     AllMissions,
     ChallengeMode,
     EnableSkyboardChallengeSkillPoints,
+    Logic,
     ShrinkRayOptions,
     SkillPoints,
     SkyboardChallenges,
@@ -30,7 +30,8 @@ from .model import Completion, LocationOptions, Rac5Categories, Rac5CompletionSo
 
 _C = Rac5Categories
 _S = Rac5CompletionSources
-_GLITCH = HasAll(GLITCHES_ITEM_NAME, Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT)
+_NORMAL = True_(options=[OptionFilter(Logic, (Logic.option_normal, Logic.option_glitched), "in")])
+_GLITCH = True_(options=[OptionFilter(Logic, (Logic.option_glitched,), "in")])
 
 LOCATIONS = (
     Rac5Locations(
@@ -45,7 +46,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5TBolts.KALIDON_FACTORY,
         Rac5Planets.KALIDON,
-        Has(Rac5Gadgets.HYPERSHOT) | HasAll(GLITCHES_ITEM_NAME, Rac5Gadgets.SHRINK_RAY),
+        Has(Rac5Gadgets.HYPERSHOT) | _GLITCH,
         Completion(_S.BOLT_BITS, None, 1024),
         categories=frozenset((_C.TITANIUM_BOLT,)),
         native_planets=(3,),
@@ -54,7 +55,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5TBolts.KALIDON_RAMP,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.BOLT_BITS, None, 512),
         categories=frozenset((_C.TITANIUM_BOLT,)),
         native_planets=(3,),
@@ -63,7 +64,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5LocationNames.KALIDON_CHESTPLATE,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.ARMOUR, "sludge", 1),
         categories=frozenset((_C.ARMOUR_PICKUP,)),
         definition_order=24,
@@ -73,7 +74,7 @@ LOCATIONS = (
         Rac5Planets.KALIDON,
         (
             HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY)
-            | HasAll(Rac5Gadgets.SHRINK_RAY, GLITCHES_ITEM_NAME)
+            | (Has(Rac5Gadgets.SHRINK_RAY) & _GLITCH)
         ),
         Completion(_S.ARMOUR, "wildfire", 16),
         categories=frozenset((_C.ARMOUR_PICKUP,)),
@@ -100,7 +101,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5SkillPoints.KALIDON_EXPLOSIVE,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.SKILL_BITS, None, 256),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (1, 2), "in"),)),
         categories=frozenset((_C.SKILL_POINT, _C.EASY_SKILL_POINT)),
@@ -110,7 +111,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5SkillPoints.KALIDON_SUPER_LOMBAX,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.SKILL_BITS, None, 512),
         options=LocationOptions(requirements=(OptionFilter(SkillPoints, (2,), "in"),)),
         categories=frozenset((_C.SKILL_POINT, _C.HARD_SKILL_POINT)),
@@ -147,7 +148,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5CutsceneLocations.KALIDON_SEARCH,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.MISSIONS, 32814024, 4, 3),
         options=LocationOptions(requirements=(OptionFilter(AllMissions, (1,), "in"),)),
         categories=frozenset((_C.STORY_MISSION, _C.MISSION)),
@@ -158,7 +159,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5CutsceneLocations.KALIDON_EXPLORE,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.MISSIONS, 32814024, 8, 3),
         options=LocationOptions(
             requirements=(OptionFilter(AllCutscenes, (1,), "in"), OptionFilter(SkyboardChallenges, (1,), "in")),
@@ -330,7 +331,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT) | _GLITCH,
+        HasAll(Rac5Gadgets.SHRINK_RAY, Rac5Gadgets.HYPERSHOT),
         Completion(_S.EVENTS, Rac5ShrinkRayGrindrail.KALIDON_ENTER_FACTORY),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset((_C.SHRINK_RAY_SKIP,)),
@@ -339,7 +340,7 @@ LOCATIONS = (
     Rac5Locations(
         Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY,
         Rac5Planets.KALIDON,
-        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & HasClankPack() | _GLITCH,
+        HasAll(Rac5Gadgets.HYPERSHOT, Rac5Gadgets.SHRINK_RAY) & (HasClankPack() | _NORMAL),
         Completion(_S.EVENTS, Rac5ShrinkRayGrindrail.KALIDON_INSIDE_FACTORY),
         options=LocationOptions(requirements=(OptionFilter(ShrinkRayOptions, (1,), "in"),)),
         categories=frozenset((_C.SHRINK_RAY_SKIP,)),

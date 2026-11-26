@@ -8,4 +8,6 @@ TRAP_DURATIONS: dict[str, float] = {
     Rac5Traps.TRAP_WEAPON_SWITCHING: 20,
     Rac5Traps.TRAP_RESET_LEVEL: 1,
     Rac5Traps.TRAP_NO_CLANK: 20,
+    Rac5Traps.TRAP_GADGETRON_DEBT: 1,
+    Rac5Traps.TRAP_DROPPED_AMMO: 1,
 }

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from ..constants import Rac5CutsceneLocations
 from ..locations import ALL_LOCATIONS
 from ..locations.observation import LocationObservation
 from .address_maps import save_address
@@ -69,6 +70,29 @@ class MissionInventory:
 
     def sync_from_ap(self, checked_locations: "set[str]") -> None:
         self.completed.update(name for name in checked_locations if name in VALIDATED_MISSION_MAP.values())
+
+    def prepare_replay(self, planet_id: int) -> list[str]:
+        """Reset missable encounters before objects are initialized on entry.
+
+        Keep the entry cinematic and AP history. Challax's remaining mission
+        flags select its completed layout.
+        Never enforce these values during gameplay: the encounters must still
+        be able to finish and advance the story normally.
+        """
+        if planet_id != 7:
+            return []
+        name, clear_mask = Rac5CutsceneLocations.CHALLAX_EXPLORE, 0xFFFE
+        canonical, _ = _NAME_TO_ADDR_MASK[name]
+        address = save_address(canonical)
+        raw = self.pine.read_int16(address)
+        # Capture real completions before clearing their game-side flags,
+        # including when attaching to a completed vanilla save.
+        newly = [location for location, (addr, mask) in _NAME_TO_ADDR_MASK.items()
+                 if addr == canonical and raw & mask and location not in self.completed]
+        self.completed.update(newly)
+        if raw & clear_mask:
+            self.pine.write_int16(address, raw & ~clear_mask)
+        return newly
 
     def __repr__(self) -> str:
         return f"MissionInventory(completed={len(self.completed)}/{len(VALIDATED_MISSION_MAP)})"

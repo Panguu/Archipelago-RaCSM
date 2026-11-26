@@ -28,15 +28,23 @@ class LocationChecks:
         core = self.core
         if core._goal_reported:
             return
+        statuses = self.goal_status(observe_otto=True)
+        if statuses and all(statuses.values()):
+            core.on_goal()
+            core._goal_reported = True
+
+    def goal_status(self, *, observe_otto=False):
+        """Selected goal completion; read-only unless the game poll requests observation."""
+        core = self.core
+        if core._goal_reported:
+            return dict.fromkeys(core.options.goals, True)
         conditions = {
-            Goal.option_defeat_otto: self.otto_defeated,
+            Goal.option_defeat_otto: (self.otto_defeated if observe_otto else
+                                    lambda: Rac5CutsceneLocations.QUODRONA_GOAL in core.missions.completed),
             Goal.option_all_skill_points: lambda: self.all_in_seed(TIERED_SKILL_POINTS, core.skill_points.completed),
             Goal.option_all_clank_challenges: lambda: self.all_in_seed(CLANK_CHALLENGE_NAMES, core.clank.completed),
         }
-        goals = core.options.goals
-        if goals and all(conditions[goal]() for goal in goals):
-            core.on_goal()
-            core._goal_reported = True
+        return {goal: conditions[goal]() for goal in core.options.goals}
 
     def otto_defeated(self):
         """Latch Otto's defeat before loader/menu gates can hide the ending transition."""

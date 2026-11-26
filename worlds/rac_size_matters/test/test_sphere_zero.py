@@ -7,19 +7,16 @@ from .bases import RACSizeMatterTestBase
 
 
 class TestNoSphereZeroLocations(RACSizeMatterTestBase):
-    """Fuzz seed 9226: Outpost Omega start with every starting weapon, so nothing is reachable at the start."""
+    """Outpost Omega start with a single weapon and no free starting checks."""
     options: ClassVar[dict[str, Any]] = {
         "starting_weapons": 13,
+        "single_weapon_mode": "laser_tracer",
         "starting_gadgets": 1,
         "clank_pack": True,
         "random_starting_planet": "unweighted",
         "progressive_weapons": False,
         "progressive_mods": False,
         "progressive_armour": False,
-        "enabled_weapons": [
-            "RYNO", "Acid Bomb Glove", "Laser Tracer", "Scorcher", "Concussion Gun",
-            "Shock Rocket", "Static Barrier", "Agents of Doom",
-        ],
         "clank_challenges": False,
         "skyboard_challenges": "off",
         "enable_skyboard_challenge_skill_points": True,

@@ -40,6 +40,24 @@ class TestRegistration(RACSizeMatterTestBase):
             self.assertTrue(table, f"{label} table is empty")
 
 
+class TestLinkOptions(RACSizeMatterTestBase):
+    options = {
+        "ring_link": "share_bolts",
+        "trap_link": True, "trap_weight": {"Trap: No Clank": 0},
+    }
+
+    def test_link_options_reach_client_slot_data(self):
+        data = self.world.fill_slot_data()
+        self.assertTrue(data['ring_link'])
+        self.assertNotIn('ring_link_ratio', data)
+        self.assertNotIn('ring_link_ratio', self.world.options_dataclass.type_hints)
+        self.assertNotIn('ring_link_spending', data)
+        self.assertNotIn('ring_link_spending', self.world.options_dataclass.type_hints)
+        self.assertTrue(data['trap_link'])
+        self.assertEqual(data['trap_weight']['Trap: No Clank'], 0)
+        self.assertNotIn('bolt_link', data)
+
+
 class TestDefaultGeneration(RACSizeMatterTestBase):
     """Standard WorldTestBase suite with all defaults."""
 

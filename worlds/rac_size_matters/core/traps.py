@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import time
 from typing import TYPE_CHECKING
 
@@ -7,9 +6,11 @@ from ..constants import Rac5Traps
 from ..data.traps import TRAP_DURATIONS
 from . import address_maps
 from .no_clank import NoClank
+from .patches.loader_gate import LoaderGate
 
 if TYPE_CHECKING:
     from ..pypine import Pine
+    from .weapons import WeaponInventory
 
 _DIRECT_ADDRESSES: dict[str, str] = {
     Rac5Traps.TRAP_FEVERDREAMTIME: "DREAMTIME_EFFECT",
@@ -82,6 +83,20 @@ def _write_effect(pine: "Pine", trap_name: str, on: bool) -> None:
         pine.write_int8(address_maps.CHEATS, wanted)
 
 
+def traps_ready(pine: "Pine") -> bool:
+    """Check live loader state, never a cached planet or main-menu flag."""
+    if pine.get_game_id() != address_maps.GAME_ID:
+        return False
+    gate = LoaderGate(pine, game_id=address_maps.GAME_ID)
+    target = pine.read_int32(gate.TARGET)
+    return (
+        pine.read_int32(gate.STATE) == 6
+        and 1 <= target <= 24
+        and pine.read_int32(address_maps.CURRENT_PLANET_ADDRESS) == target
+        and pine.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR) == 0xFFFFFFFF
+    )
+
+
 def service_traps(pine: "Pine") -> None:
     """Called every tick: expire overdue traps and re-assert every trap's effect, so
     effects the game resets (level loads, save loads) are re-applied while active and
@@ -98,6 +113,9 @@ def service_traps(pine: "Pine") -> None:
         effect.update(active)
         if not active and not effect.backpacks:
             _no_clank_effects.pop(pine, None)
+
+    if not traps_ready(pine):
+        return
 
     for trap_name in _active_deadlines:
         if trap_name in _DIRECT_ADDRESSES or trap_name in _CHEAT_BITS:
@@ -116,11 +134,31 @@ def close_no_clank_trap(pine: "Pine") -> None:
     service_traps(pine)
 
 
-def activate_trap(pine: "Pine", trap_name: str) -> None:
+def activate_trap(
+    pine: "Pine", trap_name: str, *, weapons: "WeaponInventory | None" = None,
+    debt_percent: int = 20,
+) -> None:
     """Activate a trap by name and schedule it to automatically revert. Re-activating
     a still-active trap extends (stacks) its deadline rather than reverting at the first."""
+    if trap_name == Rac5Traps.TRAP_DROPPED_AMMO:
+        if weapons is None or not traps_ready(pine):
+            return
+        for name, owned in weapons.weapons.items():
+            if owned:
+                weapons.set_ammo(name, 0)
+        return
+    if trap_name == Rac5Traps.TRAP_GADGETRON_DEBT:
+        if not traps_ready(pine):
+            return
+        current = max(0, pine.read_int32(address_maps.PLAYER_BOLT_COUNT))
+        percent = max(10, min(99, int(debt_percent)))
+        deduction = current * percent // 100
+        pine.write_int32(address_maps.PLAYER_BOLT_COUNT, max(0, current - deduction))
+        return
     if trap_name == Rac5Traps.TRAP_RESET_LEVEL:
-        planet_id = pine.read_int8(address_maps.CURRENT_PLANET_ADDRESS)
+        if not traps_ready(pine):
+            return
+        planet_id = pine.read_int32(address_maps.CURRENT_PLANET_ADDRESS)
         pine.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, planet_id)
         return
 
@@ -145,12 +183,8 @@ def activate_trap(pine: "Pine", trap_name: str) -> None:
         _no_clank_effects.setdefault(pine, NoClank(pine))
 
     def _revert() -> None:
+        # Timers only update bookkeeping. The guarded game poll owns writes.
         _expire(trap_name)
-        try:
-            service_traps(pine)
-        except Exception:
-            # _needs_clear / the NoClank snapshot keep the revert pending; the next tick retries it.
-            logging.getLogger("CommonClient").warning(f"[RAC] {trap_name} revert pending retry.", exc_info=True)
 
     _revert_handles[trap_name] = loop.call_at(new_deadline, _revert)
     service_traps(pine)
@@ -161,6 +195,8 @@ def reconcile_traps(pine: "Pine") -> None:
     called on PINE (re)connect and on each save load — catches a bit left stuck by a client
     restart, a dropped revert, or a save written while a trap was active."""
     service_traps(pine)
+    if not traps_ready(pine):
+        return
     for trap_name, field in _DIRECT_ADDRESSES.items():
         address = getattr(address_maps, field)
         if trap_name in _active_deadlines:

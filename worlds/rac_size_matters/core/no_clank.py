@@ -41,6 +41,8 @@ class NoClank:
         if p.read_int32(gate.STATE) != 6:
             return None
         planet = p.read_int32(address_maps.CURRENT_PLANET_ADDRESS)
+        if p.read_int32(gate.TARGET) != planet or planet == 0:
+            return None
         # Exclude races and other special modes even if a player address is known.
         if planet not in (*range(1, 11), 0x17, 0x18):
             return None

@@ -39,6 +39,7 @@ class Memory:
         for address, data in SKIN_EXIT_FIXTURES[fixture]["segments"]:
             self.data[address : address + len(data) // 2] = bytes.fromhex(data)
         self.write_int32(0x1F4C76C, self.fixture["planet"])
+        self.write_int32(0x01EDDAE4, self.fixture["planet"])
         self.writes.clear()
 
     def get_game_id(self):
@@ -337,6 +338,68 @@ class NativePatchTests(unittest.TestCase):
             v.install()
         self.assertEqual(p.writes, [])
 
+    def test_frontend_does_not_reload_stale_planet_on_connect(self):
+        from ..core import address_maps
+
+        for stale_planet in (0, 1, 7, 24):
+            with self.subTest(stale_planet=stale_planet):
+                p = Memory()
+                planet = SimpleNamespace(starting_planet_id=2, is_ready=True)
+                runtime = NativeRuntime(p, SimpleNamespace(planet=planet), Mock(), Mock())
+                runtime.enabled = True
+                runtime.starting_planet.service = Mock()
+                runtime.gate.arm = Mock()
+                runtime.gate.held_module = Mock(return_value=None)
+                runtime._poll = Mock()
+                runtime.module = stale_planet
+                runtime._attach_reload_requested = True
+                p.write_int32(runtime.gate.STATE, 6)
+                p.write_int32(runtime.gate.TARGET, 0)
+                p.write_int32(address_maps.CURRENT_PLANET_ADDRESS, stale_planet)
+                p.write_int32(address_maps.NEW_PLANET_START_LOAD_ADDR, 0xFFFFFFFF)
+                p.writes.clear()
+                for _ in range(3):
+                    self.assertTrue(runtime.tick())
+                self.assertEqual(p.writes, [])
+                runtime._poll.assert_not_called()
+                self.assertFalse(planet.is_ready)
+                self.assertIsNone(runtime.module)
+                self.assertFalse(runtime._attach_reload_requested)
+                runtime.starting_planet.service.assert_called_with(2)
+                # Once the player loads a real level, attachment still works.
+                p.write_int32(runtime.gate.TARGET, 1)
+                p.write_int32(address_maps.CURRENT_PLANET_ADDRESS, 1)
+                self.assertTrue(runtime.tick())
+                self.assertEqual(p.read_int32(address_maps.NEW_PLANET_START_LOAD_ADDR), 1)
+
+    def test_transport_failure_does_not_attempt_patch_rollback(self):
+        p = Memory()
+        plan, _, _ = plans(p)
+        failure = TimeoutError("uncertain write")
+        p.write_bytes = Mock(side_effect=failure)
+        with self.assertRaises(TimeoutError) as caught:
+            plan.install()
+        self.assertIs(caught.exception, failure)
+        p.write_bytes.assert_called_once()
+        self.assertFalse(plan.installed)
+
+    def test_transport_failure_keeps_loader_held(self):
+        p = Memory()
+        planet = SimpleNamespace(starting_planet_id=None)
+        runtime = NativeRuntime(p, SimpleNamespace(planet=planet), Mock(), Mock())
+        runtime.enabled = True
+        runtime.starting_planet.service = Mock()
+        runtime.gate.arm = Mock()
+        runtime.gate.held_module = Mock(return_value=(1, 0xD4B380))
+        runtime.gate.release = Mock()
+        failure = TimeoutError("uncertain write")
+        runtime._prepare = Mock(side_effect=failure)
+        with self.assertRaises(TimeoutError) as caught:
+            runtime.tick()
+        self.assertIs(caught.exception, failure)
+        runtime.gate.release.assert_not_called()
+        self.assertFalse(runtime._released)
+
     def test_partial_install_rolls_back(self):
         p = Memory()
         v, _, _ = plans(p)
@@ -363,6 +426,30 @@ class NativePatchTests(unittest.TestCase):
         self.assertEqual(len(runtime.plans), 7)
         self.assertIn(runtime.skin, runtime.plans)
         self.assertEqual(p.read_int32(pokitaru_ship.SITE), 0x24020001)
+
+    def test_skin_install_does_not_require_hud_text_box(self):
+        from dataclasses import replace
+        from ..core.address_maps import PLANET_ADDRESSES
+        from .test_multiplayer_skins import FIXTURES as MP_FIXTURES
+
+        p = Memory()
+        for address, data in MP_FIXTURES["pokitaru"]["segments"]:
+            p.write_bytes(address, bytes.fromhex(data))
+        planet = SimpleNamespace(is_ready=True, planet_id=1)
+        runtime = NativeRuntime(p, SimpleNamespace(planet=planet, native_plan=None),
+                                lambda _: None, lambda _: None)
+        runtime.gate.held_module = lambda: (1, 0xD4B380)
+        # Exercise real installers with retail Pokitaru excerpts and the
+        # missing HUD mapping that first-visit US Outpost Omega has.
+        self.assertIsNone(PLANET_ADDRESSES[6].small_text_box)
+        with patch.dict(PLANET_ADDRESSES, {1: replace(PLANET_ADDRESSES[1], small_text_box=None)}):
+            runtime._prepare(1, 0xD4B380)
+        self.assertTrue(runtime.skin.installed)
+        self.assertEqual(runtime.skin.model_count, 20)
+        self.assertTrue(any(getattr(plan, "count", None) == 20 and plan.installed
+                            for plan in runtime.plans))
+        self.assertIsNone(runtime.toast)
+        self.assertIsNone(runtime.connection_warning)
 
     def test_patch_switches_leave_disabled_features_uninstalled(self):
         p = Memory()

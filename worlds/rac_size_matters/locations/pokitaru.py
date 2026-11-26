@@ -1,5 +1,5 @@
 from rule_builder.options import OptionFilter
-from rule_builder.rules import Has, HasAny, True_
+from rule_builder.rules import HasAny, True_
 
 from ..constants import (
     Rac5CutsceneLocations,
@@ -12,15 +12,15 @@ from ..constants import (
     Rac5VendorLocations,
     Rac5Weapons,
 )
-from ..items import GLITCHES_ITEM_NAME, PROGRESSIVE_WEAPON_NAME
-from ..options import AllCutscenes, AllMissions, ChallengeMode, SkillPoints
+from ..items import PROGRESSIVE_WEAPON_NAME
+from ..options import AllCutscenes, AllMissions, ChallengeMode, Logic, SkillPoints
 from ..rules._helpers import HasChallengeMode, HasClankPack, HasProjectileWeapon
 from .model import Completion, LocationOptions, Rac5CompletionSources, Rac5Locations
 
 _S = Rac5CompletionSources
 
 
-_GLITCH = Has(GLITCHES_ITEM_NAME) & HasClankPack()
+_GLITCH = True_(options=[OptionFilter(Logic, (Logic.option_glitched,), "in")]) & HasClankPack()
 
 
 LOCATIONS = (

@@ -43,6 +43,7 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
         if world.game in world.multiworld.re_gen_passthrough:
             world.using_ut = True
             world.passthrough = world.multiworld.re_gen_passthrough[world.game]
+            world.options.logic.value = world.passthrough.get(Rac5Options.LOGIC, 0)
             world.options.goal.value = world.passthrough.get(Rac5Options.GOAL, 0)
             world.options.pick_and_mix_goals.value = set(world.passthrough.get(Rac5Options.PICK_AND_MIX_GOALS, ()))
             world.options.all_missions.value = world.passthrough.get(Rac5Options.ALL_MISSIONS, True)
@@ -53,9 +54,9 @@ def setup_options_from_slot_data(world: "RACSizeMatterWorld") -> None:
             world.options.progressive_weapons.value = world.passthrough[Rac5Options.PROGRESSIVE_WEAPONS]
             world.options.progressive_mods.value = world.passthrough.get(Rac5Options.PROGRESSIVE_MODS, False)
             world.options.progressive_armour.value = world.passthrough[Rac5Options.PROGRESSIVE_ARMOUR]
-            world.options.enabled_weapons.value = set(world.passthrough.get(
-                Rac5Options.ENABLED_WEAPONS, world.options.enabled_weapons.default
-            ))
+            world.options.single_weapon_mode.value = world.passthrough.get(
+                Rac5Options.SINGLE_WEAPON_MODE, world.options.single_weapon_mode.default
+            )
             world.options.death_link.value = world.passthrough[Rac5Options.DEATH_LINK]
             world.options.clank_challenges.value = world.passthrough.get(Rac5Options.CLANK_CHALLENGES, 0)
             world.options.clank_challenge_groups.value = set(world.passthrough.get(

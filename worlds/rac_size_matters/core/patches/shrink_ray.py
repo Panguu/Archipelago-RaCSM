@@ -74,6 +74,14 @@ class DoorLocks:
                 and p.read_int32(rt + 4) == moby)
 
     def install(self):
+        self._release()
+        self.installed = True
+
+    def release_completed(self, puzzle_bits):
+        """Open only completed puzzles, independently of the skip option."""
+        self._release(puzzle_bits=puzzle_bits)
+
+    def _release(self, puzzle_bits=None):
         self._validate()
         if self.locks is None:
             self._discover()
@@ -81,12 +89,14 @@ class DoorLocks:
             if not self._valid_lock(lock):
                 raise RuntimeError("Shrink Ray object changed; reload the planet")
         for lock in self.locks:
+            if puzzle_bits is not None and not puzzle_bits & (1 << lock[4]):
+                continue
             rt = lock[3]
             # Never interfere with an in-progress puzzle or player restoration.
             if self.pine.read_int32(rt + 0x4C) == 0 and self.pine.read_int8(rt + 0x50):
-                self.changed.add(lock)
+                if puzzle_bits is None:
+                    self.changed.add(lock)
                 self.pine.write_int8(rt + 0x50, 0)
-        self.installed = True
 
     def restore(self):
         self._validate()

@@ -46,6 +46,7 @@ class TestNoClank(unittest.TestCase):
         config = address_maps.PLANET_ADDRESSES[planet]
         self.base = config.player_state - 0x100
         p.data[LoaderGate(p, game_id=address_maps.GAME_ID).STATE] = 6
+        p.data[LoaderGate(p, game_id=address_maps.GAME_ID).TARGET] = planet
         p.data[address_maps.CURRENT_PLANET_ADDRESS] = planet
         p.data[address_maps.NEW_PLANET_START_LOAD_ADDR] = 0xFFFFFFFF
         p.data[self.base + 0x59C] = p.data[self.base + 0x5B0] = 0x200000 + object_shift
@@ -170,6 +171,53 @@ class TestNoClank(unittest.TestCase):
         self.assertEqual(TrapDuration.default[name], 20)
         self.assertEqual(TrapWeight.default[name], 1)
 
+    def test_frontend_blocks_reset_effects_and_cleanup_with_stale_planet(self):
+        p = self.pine
+        p.data[LoaderGate.TARGET] = 0
+        with patch.object(traps, "_active_deadlines", {Rac5Traps.TRAP_BRIGHTNESS: float("inf")}), \
+                patch.object(traps, "_needs_clear", {Rac5Traps.TRAP_MIRROR_LEVEL}):
+            traps.activate_trap(p, Rac5Traps.TRAP_RESET_LEVEL)
+            traps.service_traps(p)
+            traps.reconcile_traps(p)
+            self.effect.update(True)
+            self.assertEqual(p.writes, [])
+            self.assertIn(Rac5Traps.TRAP_MIRROR_LEVEL, traps._needs_clear)
+        p.data[LoaderGate.TARGET] = 1
+        traps.activate_trap(p, Rac5Traps.TRAP_RESET_LEVEL)
+        self.assertEqual(p.writes, [(address_maps.NEW_PLANET_START_LOAD_ADDR, 1)])
+
+    def test_frontend_leaves_received_traps_unconsumed(self):
+        from types import SimpleNamespace
+        from ..client.vendor import InventoryMixin
+
+        self.pine.data[LoaderGate.TARGET] = 0
+        ctx = SimpleNamespace(pine=self.pine, pine_connected=True,
+                              _processed_trap_count=3, items_received=[None] * 4)
+        InventoryMixin._grant_new_trap_items(ctx)
+        self.assertEqual(ctx._processed_trap_count, 3)
+        self.assertEqual(self.pine.writes, [])
+
+    def test_reset_does_not_overwrite_pending_travel(self):
+        self.pine.data[address_maps.NEW_PLANET_START_LOAD_ADDR] = 7
+        traps.activate_trap(self.pine, Rac5Traps.TRAP_RESET_LEVEL)
+        self.assertEqual(self.pine.writes, [])
+
+    def test_timer_expiry_only_updates_bookkeeping(self):
+        from unittest.mock import Mock
+        loop = Mock()
+        loop.time.return_value = 100
+        name = Rac5Traps.TRAP_NO_CLANK
+        try:
+            with patch.object(asyncio, "get_event_loop", return_value=loop):
+                traps.activate_trap(self.pine, name)
+            self.pine.writes.clear()
+            self.pine.data[LoaderGate.TARGET] = 0
+            loop.call_at.call_args.args[1]()
+            self.assertEqual(self.pine.writes, [])
+            self.assertNotIn(name, traps._active_deadlines)
+        finally:
+            traps._no_clank_effects.pop(self.pine, None)
+
     def test_stacking_expiry_and_disconnect_restore(self):
         loop = asyncio.new_event_loop()
         name = Rac5Traps.TRAP_NO_CLANK
@@ -186,6 +234,7 @@ class TestNoClank(unittest.TestCase):
                 callback = timer._callback
                 timer.cancel()
                 callback()
+                traps.service_traps(self.pine)
                 self.assertNotIn(name, traps._active_deadlines)
                 self.assertEqual(self.pine.read_int32(self.base + 0x5AC), self.objects[1])
                 traps.activate_trap(self.pine, name)
@@ -208,6 +257,7 @@ class TestNoClank(unittest.TestCase):
             callback = timer._callback
             timer.cancel()
             callback()
+            traps.service_traps(self.pine)
             self.assertEqual(self.pine.read_int32(self.base + 0x5AC), self.objects[1])
         finally:
             traps.close_no_clank_trap(self.pine)
@@ -223,6 +273,7 @@ class TestNoClank(unittest.TestCase):
             callback = timer._callback
             timer.cancel()
             callback()
+            traps.service_traps(self.pine)
             self.assertEqual(self.pine.read_int32(self.base + 0x5AC), 0)
             # Disabling the option also returns the normal pack.
             traps.set_clank_pack_ownership(self.pine, enabled=False, owned=False)

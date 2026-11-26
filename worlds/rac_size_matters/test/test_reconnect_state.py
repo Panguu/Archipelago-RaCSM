@@ -175,3 +175,30 @@ class PersistLevelTests(unittest.IsolatedAsyncioTestCase):
         await ctx.force_sync()
         ctx._wiring.planet.weapons.wipe.assert_called_once()
         ctx._wiring.planet.weapons.restore_levels.assert_called_once_with({"Lacerator": 3})
+
+
+class ConnectionLifecycleTests(unittest.IsolatedAsyncioTestCase):
+    async def test_reconnect_waits_for_startup_to_finish(self):
+        ctx = GameWorker.__new__(GameWorker)
+        ctx._pine_lock = asyncio.Lock()
+        ctx._pine_connect_lock = asyncio.Lock()
+        ctx._teardown_pine_connection = AsyncMock()
+        started, finish = asyncio.Event(), asyncio.Event()
+        calls = []
+
+        async def connect(is_reconnect=False):
+            calls.append(is_reconnect)
+            if not is_reconnect:
+                started.set()
+                await finish.wait()
+
+        ctx._connect_pine_locked = connect
+        startup = asyncio.create_task(ctx._attempt_pine_connect())
+        await started.wait()
+        reconnect = asyncio.create_task(ctx.reconnect_pine())
+        await asyncio.sleep(0)
+        ctx._teardown_pine_connection.assert_not_awaited()
+        finish.set()
+        await asyncio.gather(startup, reconnect)
+        self.assertEqual(calls, [False, True])
+        ctx._teardown_pine_connection.assert_awaited_once()

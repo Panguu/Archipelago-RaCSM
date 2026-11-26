@@ -17,9 +17,24 @@ from Options import (
 )
 
 from .constants.options import Rac5Options
+from .items import FILLER_ITEM_TABLE
 from .data.challenges import DEFAULT_CLANK_CHALLENGE_GROUPS
 from .data.traps import TRAP_DURATIONS
 from .data.weapons import WEAPON_DATA
+
+
+class Logic(Choice):
+    """Easy preserves the original equipment requirements.
+    Normal also allows the approved Kalidon and Quodrona routes without Clank Pack.
+    Glitched includes Normal routes plus Pokitaru with only Clank Pack, Kalidon's
+    factory-side bolt without gadgets, and Wildfire Boots with only Shrink Ray.
+    Planet access and other check-specific requirements still apply."""
+
+    display_name = "Logic"
+    option_easy = 0
+    option_normal = 1
+    option_glitched = 2
+    default = 0
 
 
 class ClankPack(Toggle):
@@ -76,17 +91,28 @@ class ProgressiveArmour(Choice):
     default = 0
 
 
-class EnabledWeapons(OptionSet):
-    """Selects which weapons are included in generation at all. Leave a weapon out to
-    remove it entirely: its own item(s) (including its Progressive Weapon/Mod items),
-    its vendor/collectible location, its mod-vendor locations, and its Weapon Level
-    Checks locations are all excluded from the pool, exactly as if the weapon didn't
-    exist in this seed. Defaults to every weapon. At least one long-range projectile
-    weapon must remain available after applying NG+ Items."""
+class SingleWeaponMode(Choice):
+    """Restrict generation to one long-range projectile weapon.
+    Off includes every weapon. Selecting a weapon removes all other weapons,
+    their mods, vendor locations, and Weapon Level checks. Starting Weapons
+    is capped at one when enabled. RYNO requires NG+ Items to be enabled.
+    """
 
-    display_name = "Enabled Weapons"
-    valid_keys = frozenset(WEAPON_DATA)
-    default = frozenset(WEAPON_DATA)
+    display_name = "Single Weapon Mode"
+    option_off = 0
+    option_lacerator = 1
+    option_shock_rocket = 2
+    option_sniper_mine = 3
+    option_laser_tracer = 4
+    option_ryno = 5
+    default = 0
+
+    @property
+    def enabled_weapons(self) -> frozenset[str]:
+        if self.value == self.option_off:
+            return frozenset(WEAPON_DATA)
+        return frozenset(name for name in WEAPON_DATA
+                         if name.lower().replace(" ", "_") == self.current_key)
 
 
 class ClankChallenges(Choice):
@@ -184,13 +210,26 @@ class AmmoLink(Toggle):
     display_name = "Ammo Link"
 
 
-class BoltLink(Toggle):
-    """Share your bolt count with every other connected player who also has
-    Bolt Link enabled (and toggled on client-side, same as DeathLink): your
-    bolt count mirrors everyone else's -- spend or collect bolts on any
-    linked player and everyone else's balance matches."""
+class RingLink(Choice):
+    """Share ordinary bolt gains and spending with Ring Link players across games.
+    Incoming gains and losses use 100 bolts per ring times Bolt Multiplier.
+    Starting bolts and AP bolt items are not sent. Share Bolts keeps Gadgetron
+    Debt local without sending its bolt loss. Share Bolts and Traps allows Gadgetron Debt and shares its bolt loss
+    through Ring Link. This does not enable Trap Link."""
 
-    display_name = "Bolt Link"
+    display_name = "Ring Link"
+    option_off = 0
+    option_share_bolts = 1
+    option_share_bolts_and_traps = 2
+    default = 0
+
+
+class TrapLink(Toggle):
+    """Share traps across games using the agreed equivalent effects.
+    Traps with zero Trap Weight are ignored on receipt. Linked traps received
+    outside gameplay are discarded, and are never sent again."""
+
+    display_name = "Trap Link"
 
 
 class GhostLink(Toggle):
@@ -394,11 +433,23 @@ class TrapChance(Range):
     default = 0
 
 
+class FillerWeight(ItemDict):
+    """Relative frequency of Bolts, Nanotech XP, Weapon XP, and Refill Ammo.
+    Zero disables a filler. If all weights are zero, falls back to Bolts.
+    Nanotech XP grants 10% and Weapon XP grants 25% of the next level requirement; weapon items affect the equipped weapon.
+    """
+
+    display_name = "Filler Weight"
+    min = 0
+    max = 100
+    valid_keys = FILLER_ITEM_TABLE.keys()
+    default = dict.fromkeys(FILLER_ITEM_TABLE, 1)
+
+
 class TrapWeight(ItemDict):
     """Sets the relative weights of trap types in the filler pool. A higher value increases
     how often that trap is chosen over the others when a filler item rolls as a trap (see
-    Trap Chance). Has no effect when Trap Chance is 0, or when every weight here is 0
-    (Bolts fills in instead)."""
+    Trap Chance). When Trap Chance is 0, or every weight here is 0, the Filler Weight option chooses the filler. A zero weight also disables that trap when received through Trap Link."""
 
     display_name = "Trap Weight"
     min = 0
@@ -407,8 +458,22 @@ class TrapWeight(ItemDict):
     default = dict.fromkeys(TRAP_DURATIONS.keys(), 1)
 
 
+class GadgetronDebtPercent(Range):
+    """Percentage of current bolts removed by Gadgetron Debt, including Trap Link.
+    Deducts this percentage directly, rounded down to whole bolts, with no
+    minimum or maximum deduction.
+    """
+
+    display_name = "Gadgetron Debt Percent"
+    range_start = 10
+    range_end = 99
+    default = 20
+
+
 class TrapDuration(OptionCounter):
-    """How many seconds each trap type stays active once triggered."""
+    """How many seconds each trap type stays active once triggered.
+    Instant traps (Reset Level, Gadgetron Debt, and Dropped Ammo) ignore duration.
+    """
 
     display_name = "Trap Duration"
     min = 1
@@ -506,7 +571,7 @@ class BalancePatch(Toggle):
 
 
 class ExperimentalSkins(Toggle):
-    """Patches the thirteen red multiplayer skins into the single-player skin menu.
+    """Patches the thirteen multiplayer skins with secondary textures for Kangaroo and Tuxedo Ratchet into the single-player skin menu.
     Experimental. When off, the multiplayer skins aren't patched in at all, and
     Starting Skin can't be set to one of them."""
 
@@ -515,8 +580,8 @@ class ExperimentalSkins(Toggle):
 
 class StartingSkin(Choice):
     """Cosmetic skin for Ratchet. Applied automatically on each planet load.
-    Includes the thirteen red multiplayer skins (MP Ratchet onwards), which need
-    Experimental Skins on; blue variants are excluded.
+    Includes the thirteen multiplayer skins with secondary textures for Kangaroo and Tuxedo Ratchet (MP Ratchet onwards), which need
+    Experimental Skins on; optional extra textures are not loaded.
     All skins are unlocked in-game regardless of this choice."""
 
     display_name = "Starting Skin"
@@ -559,17 +624,19 @@ class ApIcon(Choice):
 class RACSizeMatterOptions(PerGameCommonOptions):
     __annotations__ = {
         Rac5Options.START_INVENTORY_FROM_POOL: StartInventoryPool,
+        Rac5Options.LOGIC: Logic,
         Rac5Options.GOAL: Goal,
         Rac5Options.PICK_AND_MIX_GOALS: PickAndMixGoals,
         Rac5Options.PROGRESSIVE_WEAPONS: ProgressiveWeapons,
         Rac5Options.CLANK_PACK: ClankPack,
         Rac5Options.PROGRESSIVE_MODS: ProgressiveMods,
         Rac5Options.PROGRESSIVE_ARMOUR: ProgressiveArmour,
-        Rac5Options.ENABLED_WEAPONS: EnabledWeapons,
+        Rac5Options.SINGLE_WEAPON_MODE: SingleWeaponMode,
         Rac5Options.DEATH_LINK: DeathLink,
         Rac5Options.DEATH_AMNESTY: DeathAmnesty,
         Rac5Options.AMMO_LINK: AmmoLink,
-        Rac5Options.BOLT_LINK: BoltLink,
+        Rac5Options.RING_LINK: RingLink,
+        Rac5Options.TRAP_LINK: TrapLink,
         Rac5Options.GHOST_LINK: GhostLink,
         Rac5Options.GHOST_LINK_UPDATE_INTERVAL: GhostLinkUpdateInterval,
         Rac5Options.ALL_MISSIONS: AllMissions,
@@ -597,7 +664,9 @@ class RACSizeMatterOptions(PerGameCommonOptions):
         Rac5Options.AP_ICON: ApIcon,
         Rac5Options.TRAP_CHANCE: TrapChance,
         Rac5Options.TRAP_WEIGHT: TrapWeight,
+        Rac5Options.FILLER_WEIGHT: FillerWeight,
         Rac5Options.TRAP_DURATION: TrapDuration,
+        Rac5Options.GADGETRON_DEBT_PERCENT: GadgetronDebtPercent,
         Rac5Options.WEAPON_EXPERIENCE_MULTIPLIER: WeaponExperienceMultiplier,
         Rac5Options.BOLT_MULTIPLIER: BoltMultiplier,
         Rac5Options.NANOTECH_EXPERIENCE_MULTIPLIER: NanotechExperienceMultiplier,
@@ -613,6 +682,7 @@ racsm_option_groups = [
         [
             ProgressionBalancing,
             Accessibility,
+            Logic,
             BalancePatch,
         ],
     ),
@@ -623,7 +693,8 @@ racsm_option_groups = [
             DeathLink,
             DeathAmnesty,
             AmmoLink,
-            BoltLink,
+            RingLink,
+            TrapLink,
             GhostLink,
             GhostLinkUpdateInterval,
         ],
@@ -639,10 +710,12 @@ racsm_option_groups = [
             ProgressiveWeapons,
             ProgressiveMods,
             ProgressiveArmour,
-            EnabledWeapons,
+            SingleWeaponMode,
             TrapChance,
             TrapWeight,
+            FillerWeight,
             TrapDuration,
+            GadgetronDebtPercent,
             WeaponExperienceMultiplier,
             BoltMultiplier,
             NanotechExperienceMultiplier,

@@ -36,6 +36,16 @@ class ShrinkRaySkipInventory:
             self.plan.restore()
         else:
             self.plan._validate(replacement=self.plan.installed)
+        if planet == 7:
+            # Challax replays its encounters on entry. Preserve independently
+            # completed puzzle access, including checked AP locations restored
+            # into a fresh save, without completing any other puzzle.
+            bits = self._read() & 0x0030
+            for name in self.completed:
+                if SHRINK_RAY_LOCATION_PLANETS[name] == planet:
+                    bits |= SHRINK_RAY_PUZZLE_BITS[name]
+            if bits:
+                self.plan.release_completed(bits)
 
     def _read(self) -> int:
         return self.pine.read_int16(address_maps.SHRINK_RAY_GATE_ADDRESS) or 0

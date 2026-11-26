@@ -44,6 +44,39 @@ class TestVendorRuleParity(RACSizeMatterTestBase):
         # decode() applies the same depth limit CommonClient enforces on server packets.
         decode(encode([{"cmd": "Connected", "slot_data": self.world.fill_slot_data()}]))
 
+    def test_slot_lock_wrappers_preserve_client_rules(self):
+        expected = json.loads(json.dumps(build_vendor_rules(self.world)))
+        unlocked = False
+
+        def wrap(original):
+            def rule(state):
+                return unlocked and original(state)
+            return rule
+
+        # Model a pre-fill meta-world wrapping locations (including events) and
+        # entrances after Size Matters has installed its own rules.
+        spots = list(self.world.get_locations())
+        spots.extend(entrance for region in self.multiworld.get_regions(self.player)
+                     for entrance in region.entrances)
+        originals = [(spot, spot.access_rule) for spot in spots]
+        for spot, original in originals:
+            spot.access_rule = wrap(original)
+
+        with self.assertRaisesRegex(TypeError, "Vendor access requires a rule-builder rule"):
+            build_vendor_rules(self.world)
+        payload = self.world.fill_slot_data()["vendor_rules"]
+        self.assertEqual(json.loads(json.dumps(payload)), expected)
+        decode(encode([{"cmd": "Connected", "slot_data": self.world.fill_slot_data()}]))
+        state = self.multiworld.get_all_state(False)
+        for spot, original in originals:
+            self.assertFalse(spot.access_rule(state))
+        unlocked = True
+        for spot, original in originals:
+            self.assertEqual(spot.access_rule(state), original(state))
+        self.assertFalse(location_accessible(payload, Rac5VendorLocations.DREAMTIME_SUCK, {}))
+        self.assertTrue(location_accessible(payload, Rac5VendorLocations.DREAMTIME_SUCK,
+                                            {"Infobot: Outpost Omega": 1}))
+
 
 class TestProgressiveVendorRuleParity(TestVendorRuleParity):
     options = {**TestVendorRuleParity.options, "challenge_mode": 2,

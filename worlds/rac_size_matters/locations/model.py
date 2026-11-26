@@ -103,7 +103,7 @@ class LocationOptions:
     def __call__(self, options) -> bool:
         if not all(requirement.check(options) for requirement in self.requirements):
             return False
-        if self.weapon is not None and self.weapon not in options.enabled_weapons.value:
+        if self.weapon is not None and self.weapon not in options.single_weapon_mode.enabled_weapons:
             return False
         if self.challenge_group is not None and self.challenge_group not in options.clank_challenge_groups.value:
             return False

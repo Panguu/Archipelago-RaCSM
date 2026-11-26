@@ -27,10 +27,11 @@ class GhostLinkMixin:
                     self._ghost_link_key(slot) for slot in self._ghost_link_slots
                 ]}])
         else:
-            self._wiring.ghost_ratchet.stop_following()
+            async with self._pine_lock:
+                self._wiring.ghost_ratchet.stop_following()
             self._ghost_link_peers.clear()
             self._ghost_link_following = None
-        logger.info(f"[RAC] GhostLink {'enabled' if enabled else 'disabled'}.")
+        self._log(f"[RAC] GhostLink {'enabled' if enabled else 'disabled'}.")
 
     def _refresh_ghost_link_slots(self) -> None:
         """Watches every other slot playing this game, since which have Ghost Link toggled on
@@ -39,7 +40,7 @@ class GhostLinkMixin:
             slot for slot, info in self.slot_info.items()
             if slot != self.slot and info.game == self.game
         ]
-        logger.info(f"[RAC] GhostLink watching slots: {self._ghost_link_slots} "
+        self._log(f"[RAC] GhostLink watching slots: {self._ghost_link_slots} "
                     f"(update interval: {self._ghost_link_interval}s)")
 
     def _maybe_sync_ghost_link(self) -> None:

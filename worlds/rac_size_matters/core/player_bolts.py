@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from . import address_maps
 
@@ -16,12 +16,13 @@ class PlayerBoltInventory:
         self.pine = pine
         self.multiplier: int = 1
         self._prev: int | None = None
+        self.on_change: Callable[[int], None] = lambda delta: None
 
     def get(self) -> int:
         return self.pine.read_int32(address_maps.PLAYER_BOLT_COUNT)
 
     def set(self, value: int) -> None:
-        self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, min(value, MAX_PLAYER_BOLTS))
+        self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, max(0, min(value, MAX_PLAYER_BOLTS)))
 
     def rebaseline(self, value: int | None = None) -> None:
         """Re-sync the baseline apply_boost() diffs against, without boosting anything.
@@ -38,13 +39,17 @@ class PlayerBoltInventory:
         diff = current - self._prev
         if diff <= 0:
             self._prev = current
+            if diff:
+                self.on_change(diff)
             return
         if self.multiplier > 1:
             boosted = min(self._prev + diff * self.multiplier, MAX_PLAYER_BOLTS)
             self.set(boosted)
+            diff = boosted - self._prev
             self._prev = boosted
         else:
             self._prev = current
+        self.on_change(diff)
 
     def __repr__(self) -> str:
         return f"PlayerBoltInventory(prev={self._prev}, multiplier={self.multiplier})"

@@ -86,11 +86,16 @@ class Rac5Filler:
     """String constants for each filler item"""
 
     BOLTS = "Bolts"
+    NANOTECH_EXP = "Nanotech XP"
+    WEAPON_EXP = "Weapon XP"
+    REFILL_AMMO = "Refill Ammo"
 
 
 class Rac5Traps:
     """String constants for each trap"""
 
+    TRAP_DROPPED_AMMO = "Trap: Dropped Ammo"
+    TRAP_GADGETRON_DEBT = "Trap: Gadgetron Debt"
     TRAP_FEVERDREAMTIME = "Trap: Feverdream"
     TRAP_RESET_LEVEL = "Trap: Reset Level"
     TRAP_BRIGHTNESS = "Trap: Whats Gamma?"

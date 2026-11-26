@@ -59,6 +59,10 @@ class Plan:
                 attempted.append(edit)
                 self.pine.write_bytes(edit.address, edit.replacement)
             self._validate(replacement=True)
+        except (ConnectionError, TimeoutError):
+            # The write outcome is unknown and the transport is unusable.
+            # Do not replay writes or hide the original failure with rollback.
+            raise
         except Exception:
             for edit in reversed(attempted):
                 self.pine.write_bytes(edit.address, edit.original)

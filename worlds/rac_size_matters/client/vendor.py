@@ -1,6 +1,8 @@
 import random
 from collections import Counter
 
+from CommonClient import logger
+
 from ..core import (
     ALL_TRAPS,
     INFOBOT_ITEM_TO_PLANET,
@@ -8,7 +10,11 @@ from ..core import (
     activate_trap,
     address_maps,
 )
+from ..constants import Rac5Traps
+from ..constants.options import Rac5Options
+from ..core.filler import grant_filler
 from ..core.menu import MenuStateValue
+from ..core.traps import traps_ready
 from ..core.notifications import receipt_text
 from ..core.player_bolts import MAX_PLAYER_BOLTS
 from ..items import (
@@ -217,6 +223,9 @@ class InventoryMixin:
             return
         inventory = self._parse_inventory()
         async with self._pine_lock:
+            if not traps_ready(self.pine):
+                self._pending_item_apply = True
+                return
             self._wiring.apply_inventory(**inventory)
             self._sync_vendor_rule_items()
             if self.items_received and self._filler_checkpoint_synced:
@@ -306,6 +315,7 @@ class InventoryMixin:
         for network_item in new_items:
             item_name = self.item_names[self.game].get(network_item.item, "")
             if item_name != "Bolts":
+                grant_filler(self._wiring, item_name)
                 continue
             if starting_bolts and not skipped_precollected:
                 skipped_precollected = True
@@ -316,15 +326,19 @@ class InventoryMixin:
             return
         try:
             current = self.pine.read_int32(address_maps.PLAYER_BOLT_COUNT)
+            before = current
             for _ in range(bolt_items_to_grant):
                 grant = min(200000, max(35000, int(current * 0.2)))
                 current = min(current + grant, MAX_PLAYER_BOLTS)
             self.pine.write_int32(address_maps.PLAYER_BOLT_COUNT, current)
             self._wiring.player_bolts.rebaseline(current)
+            logger.info(f"[RAC] Bolts filler: +{current - before:,} bolts ({current:,} total).")
         except Exception as exc:
             self._log(f"[RAC] Could not grant bolts: {exc}", "warning")
 
     def _grant_new_trap_items(self) -> None:
+        if not self.pine_connected or not traps_ready(self.pine):
+            return
         new_items = self.items_received[self._processed_trap_count:]
         self._processed_trap_count = len(self.items_received)
 
@@ -335,6 +349,22 @@ class InventoryMixin:
             if item_name not in ALL_TRAPS:
                 continue
             try:
-                activate_trap(self.pine, item_name)
+                if item_name == Rac5Traps.TRAP_GADGETRON_DEBT:
+                    bolts = self._wiring.player_bolts
+                    bolts.apply_boost()
+                    before = bolts.get()
+                    activate_trap(self.pine, item_name, debt_percent=self.slot_data.get(
+                        Rac5Options.GADGETRON_DEBT_PERCENT, 20))
+                    after = bolts.get()
+                    bolts.rebaseline(after)
+                    logger.info(f"[RAC] Gadgetron Debt Trap: -{before - after:,} bolts ({after:,} remaining).")
+                    if (int(self.slot_data.get(Rac5Options.RING_LINK, 0)) == 2
+                            and self._ring_link_ready()):
+                        self._ring_link_remainder += after - before
+                elif item_name == Rac5Traps.TRAP_DROPPED_AMMO:
+                    activate_trap(self.pine, item_name, weapons=self._wiring.planet.weapons)
+                else:
+                    activate_trap(self.pine, item_name)
+                self._send_trap_link(item_name)
             except Exception as exc:
                 self._log(f"[RAC] Could not activate trap {item_name!r}: {exc}", "warning")

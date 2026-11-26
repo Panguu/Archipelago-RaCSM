@@ -1,8 +1,6 @@
 import asyncio
 import time
 
-from CommonClient import logger
-
 _AMMO_LINK_PUSH_INTERVAL: float = 0.5
 
 
@@ -19,7 +17,7 @@ class AmmoLinkMixin:
         if enabled and self.slot is not None:
             self.set_notify(self._ammo_link_key())
             await self.send_msgs([{"cmd": "Get", "keys": [self._ammo_link_key()]}])
-        logger.info(f"[RAC] AmmoLink {'enabled' if enabled else 'disabled'}.")
+        self._log(f"[RAC] AmmoLink {'enabled' if enabled else 'disabled'}.")
 
     def _maybe_sync_ammo_link(self) -> None:
         if not self._ammo_link_enabled or self.slot is None or not self.pine_connected:

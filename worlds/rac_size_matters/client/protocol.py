@@ -13,7 +13,7 @@ AP_DISCONNECTED = "ap_disconnected"
 LOCATIONS = "locations"            # (checked: set[int], server: set[int])
 RECEIVED_ITEMS = "received_items"  # (items: list[NetworkItem], index: int)
 STORED = "stored"                  # (updated: dict[str, Any])
-BOUNCED = "bounced"                # (data: dict)
+BOUNCED = "bounced"                # (tags: list[str], data: dict)
 VENDOR_REWARDS = "vendor_rewards"  # (rewards: dict[int, VendorReward])
 ITEM_SENT = "item_sent"            # (item_name: str, player_name: str)
 CALL = "call"                      # (method: str, args: tuple) -- only worker cmd_* methods
@@ -26,6 +26,7 @@ CHECK_LOCATIONS = "check_locations"  # (location_ids: list[int])
 SET_NOTIFY = "set_notify"          # (keys: list[str])
 UPDATE_DEATH_LINK = "update_death_link"  # (enabled: bool)
 UPDATE_LINK_TAG = "update_link_tag"      # (tag: str, enabled: bool)
+UPDATE_LINK_TAGS = "update_link_tags"    # (states: dict[str, bool])
 GUI_ERROR = "gui_error"            # (text: str)
 
 

@@ -20,6 +20,7 @@ from .items import (
     ARMOUR_SETS,
     CLANK_PACK_NAME,
     GADGET_ITEM_TABLE,
+    FILLER_ITEM_TABLE,
     GLITCHES_ITEM_NAME,
     INFOBOT_ITEM_TABLE,
     ITEM_NAME_GROUPS,
@@ -46,7 +47,7 @@ from .options import (
     ArmourSetChecks,
     ClankChallenges,
     EnableClankChallengeSkillPoints,
-    EnabledWeapons,
+    SingleWeaponMode,
     EnableSkyboardChallengeSkillPoints,
     ExperimentalSkins,
     ProgressiveArmour,
@@ -176,15 +177,14 @@ class RACSizeMatterWorld(World):
 
     def _validate_weapon_options(self) -> None:
         """Require a long-range projectile weapon that will actually survive item-pool filtering."""
-        enabled_weapons = frozenset(self.options.enabled_weapons.value)
+        enabled_weapons = frozenset(self.options.single_weapon_mode.enabled_weapons)
         if not self.options.ng_plus_items:
             enabled_weapons -= NG_PLUS_WEAPONS
         player_name = self.multiworld.get_player_name(self.player)
         if not any(WEAPON_DATA[name].is_long_projectile for name in enabled_weapons):
             raise OptionError(
-                f"{player_name}'s RAC Size Matters: {EnabledWeapons.display_name} must include at least "
-                "one long-range projectile weapon available with NG+ Items applied - many locations "
-                "are only reachable with one."
+                f"{player_name}'s RAC Size Matters: {SingleWeaponMode.display_name} "
+                "RYNO requires NG+ Items to be enabled."
             )
 
     def create_regions(self) -> None:
@@ -192,6 +192,12 @@ class RACSizeMatterWorld(World):
 
     def set_rules(self) -> None:
         set_rules(self)
+        from .vendor_rules import build_vendor_rules
+
+        # The client needs in-game requirements, not cross-world generation gates.
+        # Slot Lock wraps live access rules in stage_pre_fill with plain functions
+        # that cannot be represented by the vendor wire format.
+        self.vendor_rules = build_vendor_rules(self)
 
     def generate_basic(self) -> None:
         self._validate_sphere_zero()
@@ -254,7 +260,7 @@ class RACSizeMatterWorld(World):
             preplaced += [Rac5Infobots.POKITARU]
 
         ng_plus = bool(self.options.ng_plus_items)
-        enabled_weapons = self.options.enabled_weapons.value
+        enabled_weapons = self.options.single_weapon_mode.enabled_weapons
         weapon_count = self.options.starting_weapons.value
         if weapon_count > 0:
             if self.options.progressive_weapons:
@@ -283,7 +289,7 @@ class RACSizeMatterWorld(World):
 
         pool: list[str] = []
         ng_plus = bool(self.options.ng_plus_items)
-        enabled_weapons = self.options.enabled_weapons.value
+        enabled_weapons = self.options.single_weapon_mode.enabled_weapons
         if self.options.progressive_weapons:
             for display, steps in WEAPON_PROGRESSIVE_STEPS.items():
                 if not ng_plus and display in NG_PLUS_WEAPONS:
@@ -441,16 +447,20 @@ class RACSizeMatterWorld(World):
         raise OptionError(message)
 
     def fill_slot_data(self) -> dict[str, Any]:
-        from .vendor_rules import build_vendor_rules
-
         return {
-            "vendor_rules": build_vendor_rules(self),
+            "vendor_rules": self.vendor_rules,
             "split_infobots": True,
+            Rac5Options.LOGIC: self.options.logic.value,
             Rac5Options.GOAL: self.options.goal.value,
             Rac5Options.PICK_AND_MIX_GOALS: sorted(self.options.pick_and_mix_goals.value),
             Rac5Options.DEATH_LINK: bool(self.options.death_link.value),
             Rac5Options.AMMO_LINK: bool(self.options.ammo_link.value),
-            Rac5Options.BOLT_LINK: bool(self.options.bolt_link.value),
+            Rac5Options.RING_LINK: self.options.ring_link.value,
+            Rac5Options.TRAP_LINK: bool(self.options.trap_link.value),
+            # ItemDict drops zero entries; retain explicit disabled traps for Trap Link.
+            Rac5Options.TRAP_WEIGHT: {
+                name: self.options.trap_weight.value.get(name, 0) for name in TRAP_ITEM_TABLE
+            },
             Rac5Options.GHOST_LINK: bool(self.options.ghost_link.value) and bool(self.settings.ghost_link),
             Rac5Options.GHOST_LINK_UPDATE_INTERVAL: int(self.options.ghost_link_update_interval.value),
             Rac5Options.ALL_MISSIONS: bool(self.options.all_missions.value),
@@ -478,7 +488,7 @@ class RACSizeMatterWorld(World):
             Rac5Options.PROGRESSIVE_WEAPONS: self.options.progressive_weapons.value,
             Rac5Options.PROGRESSIVE_MODS: self.options.progressive_mods.value,
             Rac5Options.PROGRESSIVE_ARMOUR: self.options.progressive_armour.value,
-            Rac5Options.ENABLED_WEAPONS: sorted(self.options.enabled_weapons.value),
+            Rac5Options.SINGLE_WEAPON_MODE: self.options.single_weapon_mode.value,
             Rac5Options.STARTING_WEAPONS: self.options.starting_weapons.value,
             Rac5Options.STARTING_GADGETS: self.options.starting_gadgets.value,
             Rac5Options.RANDOM_STARTING_PLANET: self.options.random_starting_planet.value,
@@ -494,6 +504,7 @@ class RACSizeMatterWorld(World):
             Rac5Options.NANOTECH_LEVEL_MAX: self.options.nanotech_level_max.value,
             Rac5Options.WEAPON_LEVEL_CHECKS: self.options.weapon_level_checks.value,
             Rac5Options.TRAP_DURATION: dict(self.options.trap_duration.value),
+            Rac5Options.GADGETRON_DEBT_PERCENT: self.options.gadgetron_debt_percent.value,
         }
 
     @staticmethod
@@ -507,4 +518,8 @@ class RACSizeMatterWorld(World):
             names = [name for name in TRAP_ITEM_TABLE if weights.get(name, 0) > 0]
             if names:
                 return self.random.choices(names, weights=[weights[name] for name in names])[0]
+        weights = self.options.filler_weight.value
+        names = [name for name in FILLER_ITEM_TABLE if weights.get(name, 0) > 0]
+        if names:
+            return self.random.choices(names, weights=[weights[name] for name in names])[0]
         return "Bolts"

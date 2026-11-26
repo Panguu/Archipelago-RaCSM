@@ -3,8 +3,6 @@ import random
 import time
 from typing import Any
 
-from CommonClient import logger
-
 from ..core import (
     PlayerMovementState as PlayerState,
     TextColour,
@@ -73,7 +71,7 @@ class DeathLinkMixin:
         the server-side "DeathLink" connection tag."""
         self._death_link_enabled = enabled
         await self.update_death_link(enabled)
-        logger.info(f"[RAC] DeathLink {'enabled' if enabled else 'disabled'}.")
+        self._log(f"[RAC] DeathLink {'enabled' if enabled else 'disabled'}.")
 
     def _send_death_link_from_sync(self, player_state: int) -> None:
         if not self._death_link_enabled:
@@ -82,7 +80,7 @@ class DeathLinkMixin:
         if now - self._last_death_link < 1:
             return
         self._last_death_link = now
-        logger.info("[RAC] DeathLink sent.")
+        self._log("[RAC] DeathLink sent.")
         source = self.auth or "Ratchet"
         planet_name = self.current_planet or "an unknown planet"
         cause_text = _death_cause(player_state)

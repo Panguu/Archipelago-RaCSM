@@ -1,7 +1,7 @@
 # Size Matters: standalone skins for PCSX2
 
-Adds all seven single-player skins (including Trash Ratchet) and all 13 red
-multiplayer skins to the single-player Skins menu. No Archipelago client,
+Adds all seven single-player skins (including Trash Ratchet) and all 13
+multiplayer skins with secondary textures for Kangaroo and Tuxedo Ratchet to the single-player Skins menu. No Archipelago client,
 server, Python, or PINE connection is needed to use these files.
 
 | Disc | Patch file |
@@ -35,7 +35,7 @@ https://pcsx2.net/docs/advanced/writing-patches/
   save instead.
 - Select Default Ratchet and save before removing the patch. Fully restart
   PCSX2 after disabling it; disabling a PNACH does not undo injected code.
-- This adds the red multiplayer variants; blue team variants are not included.
+- Kangaroo and Tuxedo Ratchet load their secondary texture; other multiplayer skins use their primary texture.
 - Multiplayer mode and alternate executable revisions are not supported.
 
 

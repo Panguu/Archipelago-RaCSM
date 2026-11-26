@@ -32,6 +32,7 @@ class TestGoalRuntime(unittest.TestCase):
                         _goal_reported=False, _initial_load_done=True, options=ClientOptions(),
                         _ap_inventory_ready=True, on_goal=Mock(), send_location=Mock(),
                         native=SimpleNamespace(tick=Mock(return_value=True)),
+                        player_bolts=SimpleNamespace(_prev=100),
                     )
                     # Earlier boss stages must not complete the game.
                     pine.mem[address] = 0x3F
@@ -41,6 +42,7 @@ class TestGoalRuntime(unittest.TestCase):
                     # The native loader gate would previously skip world checks.
                     with patch('worlds.rac_size_matters.core.core.service_traps'):
                         Core.tick(core)
+                    self.assertIsNone(core.player_bolts._prev)
                     core.on_goal.assert_called_once()
                     core.send_location.assert_called_once_with(goal)
                     pine.mem[address] = 0

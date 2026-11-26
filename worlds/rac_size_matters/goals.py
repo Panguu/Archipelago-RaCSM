@@ -19,6 +19,12 @@ GOAL_EVENTS: dict[int, str] = {
     Goal.option_pick_and_mix: "Pick and Mix Completed",
 }
 
+GOAL_NAMES = {
+    Goal.option_defeat_otto: "Defeat Otto Destruct",
+    Goal.option_all_skill_points: "All Skill Points",
+    Goal.option_all_clank_challenges: "All Clank Challenges",
+}
+
 
 def selected_goals(goal: int, pick_and_mix_goals) -> tuple[int, ...]:
     """Every goal that must be completed: the chosen goal, or each Pick and Mix selection."""
