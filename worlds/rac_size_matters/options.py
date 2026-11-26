@@ -573,7 +573,7 @@ class BalancePatch(Toggle):
 class ExperimentalSkins(Toggle):
     """Patches the thirteen multiplayer skins with secondary textures for Kangaroo and Tuxedo Ratchet into the single-player skin menu.
     Experimental. When off, the multiplayer skins aren't patched in at all, and
-    Starting Skin can't be set to one of them."""
+    a multiplayer Starting Skin falls back to a random original skin."""
 
     display_name = "Experimental Skins"
 
@@ -581,7 +581,7 @@ class ExperimentalSkins(Toggle):
 class StartingSkin(Choice):
     """Cosmetic skin for Ratchet. Applied automatically on each planet load.
     Includes the thirteen multiplayer skins with secondary textures for Kangaroo and Tuxedo Ratchet (MP Ratchet onwards), which need
-    Experimental Skins on; optional extra textures are not loaded.
+    Experimental Skins on (otherwise a random original skin is used); optional extra textures are not loaded.
     All skins are unlocked in-game regardless of this choice."""
 
     display_name = "Starting Skin"

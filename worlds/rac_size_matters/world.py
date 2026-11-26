@@ -1,3 +1,4 @@
+import logging
 from typing import Any, ClassVar
 
 from BaseClasses import CollectionState, ItemClassification, Tutorial
@@ -165,14 +166,16 @@ class RACSizeMatterWorld(World):
             self.options.nanotech_level_max.value = 50
 
     def _validate_skin_options(self) -> None:
-        """Multiplayer skins only exist in-game when Experimental Skins patches them in."""
-        if self.options.experimental_skins or self.options.starting_skin.value < StartingSkin.option_mp_ratchet:
+        """Multiplayer skins only exist in-game when Experimental Skins patches them in, so fall back to a random original skin."""
+        skin = self.options.starting_skin
+        if self.options.experimental_skins or skin.value < StartingSkin.option_mp_ratchet:
             return
-        player_name = self.multiworld.get_player_name(self.player)
-        raise OptionError(
-            f"{player_name}'s RAC Size Matters: {StartingSkin.display_name} "
-            f"'{self.options.starting_skin.current_key}' is a multiplayer skin and needs "
-            f"{ExperimentalSkins.display_name} enabled."
+        original = skin.current_key
+        skin.value = self.random.randrange(StartingSkin.option_mp_ratchet)
+        logging.warning(
+            f"{self.multiworld.get_player_name(self.player)}'s RAC Size Matters: {StartingSkin.display_name} "
+            f"'{original}' is a multiplayer skin and needs {ExperimentalSkins.display_name} enabled; "
+            f"using '{skin.current_key}' instead."
         )
 
     def _validate_weapon_options(self) -> None:
